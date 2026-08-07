@@ -1,0 +1,186 @@
+@import "tailwindcss";
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: #000;
+  color: #fff;
+}
+
+/* ── Premium catalog product card (/faucets/ranges) ──
+   Continuous matte coated catalog paper across FULL card
+   (no separate white / colored image box) */
+.product-card {
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 10px;
+  background-color: #e0e8ef;
+  background-image:
+    radial-gradient(ellipse 95% 80% at 50% 28%, #f4f7f9 0%, transparent 62%),
+    radial-gradient(ellipse 70% 50% at 18% 12%, rgba(255, 255, 255, 0.55) 0%, transparent 55%),
+    radial-gradient(ellipse 65% 45% at 85% 88%, rgba(196, 210, 222, 0.35) 0%, transparent 55%),
+    linear-gradient(180deg, #eef3f6 0%, #e4ebf1 45%, #dce5ed 100%);
+  box-shadow: none;
+}
+
+/* Paper grain — fine matte catalog fiber (full card) */
+.product-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.28;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='paperGrain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='5' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.7 0 0 0 0 0.74 0 0 0 0 0.78 0 0 0 0.45 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paperGrain)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+  background-repeat: repeat;
+}
+
+/* Soft linen fibers + faint brushed strokes */
+.product-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.45;
+  mix-blend-mode: soft-light;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0,
+      transparent 2px,
+      rgba(255, 255, 255, 0.07) 2px,
+      rgba(255, 255, 255, 0.07) 3px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 3px,
+      rgba(148, 166, 184, 0.06) 3px,
+      rgba(148, 166, 184, 0.06) 4px
+    ),
+    repeating-linear-gradient(
+      -24deg,
+      transparent 0,
+      transparent 22px,
+      rgba(255, 255, 255, 0.06) 22px,
+      rgba(255, 255, 255, 0.06) 23px,
+      transparent 23px,
+      transparent 48px,
+      rgba(158, 176, 194, 0.05) 48px,
+      rgba(158, 176, 194, 0.05) 49px
+    );
+}
+
+.product-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(18, 42, 62, 0.08);
+}
+
+/* Image sits directly on card paper — no panel fill */
+.product-card__image-panel {
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+.product-card__image-panel::before,
+.product-card__image-panel::after {
+  display: none;
+}
+
+.product-card__image-panel img {
+  filter: drop-shadow(0 14px 22px rgba(20, 36, 52, 0.14));
+}
+
+/* Network map pin soft pulse */
+@keyframes network-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scale(1.55);
+    opacity: 0;
+  }
+}
+
+.animate-network-pulse {
+  animation: network-pulse 3s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-network-pulse {
+    animation: none;
+  }
+}
+
+/* Awards — shine sweep + sparkles */
+@keyframes award-shine {
+  0% {
+    transform: translateX(-160%);
+  }
+  40%,
+  100% {
+    transform: translateX(320%);
+  }
+}
+
+.award-shine > span {
+  animation: award-shine 5.5s ease-in-out infinite;
+}
+
+@keyframes award-sparkle {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+}
+
+.award-sparkle {
+  animation: award-sparkle 2.4s ease-in-out infinite;
+}
+
+.award-sparkle-delay {
+  animation-delay: 0.6s;
+}
+
+.award-sparkle-delay-2 {
+  animation-delay: 1.2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .award-shine > span,
+  .award-sparkle {
+    animation: none;
+  }
+}
+
+
