@@ -1,10 +1,7 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI!;
+const MONGODB_URI = process.env.MONGODB_URI;
 
-if (!MONGODB_URI) {
-  throw new Error("Please define the MONGODB_URI environment variable in .env.local");
-}
 
 // Extend the NodeJS global to cache connection across hot-reloads in dev
 declare global {
@@ -22,6 +19,10 @@ if (!cached) {
 }
 
 export async function connectDB(): Promise<typeof mongoose> {
+  if (!MONGODB_URI) {
+    throw new Error("Please define the MONGODB_URI environment variable in Vercel / .env.local");
+  }
+
   if (cached.conn) return cached.conn;
 
   if (!cached.promise) {
