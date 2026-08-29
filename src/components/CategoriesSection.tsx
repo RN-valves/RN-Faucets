@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -78,12 +79,14 @@ const CIRCUMFERENCE = 2 * Math.PI * ARC_R;
 
 function CategoryProgressRing({
   isActive,
-  duration = 4000,
+  isPaused = false,
+  duration = 4500,
   onComplete,
   onClick,
   label,
 }: {
   isActive: boolean;
+  isPaused?: boolean;
   duration?: number;
   onComplete: () => void;
   onClick: () => void;
@@ -91,17 +94,27 @@ function CategoryProgressRing({
 }) {
   const circleRef = useRef<SVGCircleElement>(null);
   const rafRef = useRef<number | null>(null);
+  const elapsedRef = useRef(0);
+  const lastTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive) {
+      elapsedRef.current = 0;
+      lastTimeRef.current = null;
+      return;
+    }
 
     let active = true;
-    const startTime = performance.now();
+    lastTimeRef.current = performance.now();
 
     const updateProgress = (now: number) => {
       if (!active) return;
-      const elapsed = now - startTime;
-      const p = Math.min(elapsed / duration, 1);
+      if (lastTimeRef.current !== null && !isPaused) {
+        elapsedRef.current += now - lastTimeRef.current;
+      }
+      lastTimeRef.current = now;
+
+      const p = Math.min(elapsedRef.current / duration, 1);
       if (circleRef.current) {
         circleRef.current.style.strokeDashoffset = String(
           CIRCUMFERENCE * (1 - p)
@@ -110,6 +123,7 @@ function CategoryProgressRing({
       if (p < 1) {
         rafRef.current = requestAnimationFrame(updateProgress);
       } else {
+        elapsedRef.current = 0;
         onComplete();
       }
     };
@@ -123,7 +137,7 @@ function CategoryProgressRing({
         rafRef.current = null;
       }
     };
-  }, [isActive, duration, onComplete]);
+  }, [isActive, isPaused, duration, onComplete]);
 
   if (!isActive) {
     return (
@@ -205,6 +219,7 @@ function CategoryProgressRing({
   );
 }
 
+
 interface CategoriesSectionProps {
   data?: {
     visible?: boolean;
@@ -254,6 +269,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
   ];
 
   const [virtualIndex, setVirtualIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
   const router = useRouter();
 
   const sectionRef = useRef<HTMLElement>(null);
@@ -263,7 +279,9 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
 
   const isDraggingRef = useRef(false);
   const startXRef = useRef(0);
+  const startTrackXRef = useRef(0);
   const dragDistanceRef = useRef(0);
+  const lastWheelTimeRef = useRef(0);
 
   const isMobile = useCallback(() => {
     return typeof window !== "undefined" && window.innerWidth <= 900;
@@ -271,19 +289,21 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
 
   const slideTo = useCallback(
     (index: number) => {
-      setVirtualIndex(index);
+      const targetIndex = Math.max(0, index);
+      setVirtualIndex(targetIndex);
 
       if (!sliderTrackRef.current || isMobile()) return;
 
-      const xOffset = index * STEP;
+      const xOffset = targetIndex * STEP;
 
       gsap.to(sliderTrackRef.current, {
         x: -xOffset,
-        duration: 0.8,
+        duration: 0.75,
         ease: "power3.out",
+        overwrite: "auto",
         onComplete: () => {
-          if (categoriesList.length > 0 && index >= categoriesList.length * 2) {
-            const resetIdx = (index % categoriesList.length) + categoriesList.length;
+          if (categoriesList.length > 0 && targetIndex >= categoriesList.length * 2) {
+            const resetIdx = (targetIndex % categoriesList.length) + categoriesList.length;
             setVirtualIndex(resetIdx);
             gsap.set(sliderTrackRef.current, { x: -(resetIdx * STEP) });
           }
@@ -297,36 +317,53 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
     slideTo(virtualIndex + 1);
   }, [slideTo, virtualIndex]);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handlePrev = useCallback(() => {
+    slideTo(Math.max(0, virtualIndex - 1));
+  }, [slideTo, virtualIndex]);
+
+  // ── Drag & Touch Handlers with real-time responsive tracking ──
+  const handlePointerDown = (clientX: number) => {
     isDraggingRef.current = true;
-    startXRef.current = e.clientX;
+    startXRef.current = clientX;
     dragDistanceRef.current = 0;
+    startTrackXRef.current = -(virtualIndex * STEP);
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDraggingRef.current) return;
-    dragDistanceRef.current = e.clientX - startXRef.current;
+  const handlePointerMove = (clientX: number) => {
+    if (!isDraggingRef.current || !sliderTrackRef.current || isMobile()) return;
+    const dx = clientX - startXRef.current;
+    dragDistanceRef.current = dx;
+    // Live spring translation during drag
+    gsap.set(sliderTrackRef.current, { x: startTrackXRef.current + dx });
   };
 
-  const handleMouseUp = () => {
+  const handlePointerUp = () => {
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
 
-    if (Math.abs(dragDistanceRef.current) > 40) {
-      if (dragDistanceRef.current < 0) {
-        slideTo(virtualIndex + 1);
-      } else {
-        slideTo(Math.max(0, virtualIndex - 1));
-      }
+    const threshold = 45;
+    if (dragDistanceRef.current < -threshold) {
+      slideTo(virtualIndex + 1);
+    } else if (dragDistanceRef.current > threshold) {
+      slideTo(Math.max(0, virtualIndex - 1));
+    } else {
+      // Snap back smoothly
+      slideTo(virtualIndex);
     }
   };
 
+  // ── Horizontal wheel gesture only (Never locks vertical page scroll) ──
   const handleWheel = (e: React.WheelEvent) => {
-    if (Math.abs(e.deltaX) > 20 || Math.abs(e.deltaY) > 20) {
-      if (e.deltaX > 0 || e.deltaY > 0) {
-        slideTo(virtualIndex + 1);
+    // Only intercept if user is explicitly scrolling sideways (trackpad horizontal swipe or Shift+Wheel)
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && Math.abs(e.deltaX) > 25) {
+      const now = Date.now();
+      if (now - lastWheelTimeRef.current < 350) return;
+      lastWheelTimeRef.current = now;
+
+      if (e.deltaX > 0) {
+        handleNext();
       } else {
-        slideTo(Math.max(0, virtualIndex - 1));
+        handlePrev();
       }
     }
   };
@@ -387,6 +424,11 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
       ref={sectionRef}
       data-header-theme="light"
       className="categories-section"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        handlePointerUp();
+      }}
       style={{
         position: "relative",
         width: "100%",
@@ -471,6 +513,27 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         }
         .categories-card.is-featured .categories-card-title {
           font-size: 28px;
+        }
+
+        .category-nav-arrow {
+          width: 42px;
+          height: 42px;
+          border-radius: 50%;
+          background: #ffffff;
+          border: 1px solid #e5e5e5;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #111111;
+          cursor: pointer;
+          transition: all 0.25s ease;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        }
+        .category-nav-arrow:hover {
+          background: #111111;
+          color: #ffffff;
+          border-color: #111111;
+          transform: scale(1.06);
         }
 
         @media (max-width: 1200px) {
@@ -595,43 +658,74 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           {data?.description || "Top-rated, best-selling products trusted and loved by our customers."}
         </p>
 
+        {/* Indicators + Arrow Navigation */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "18px",
+            justifyContent: "space-between",
+            maxWidth: "340px",
             marginTop: "44px",
           }}
-          role="group"
-          aria-label="Category navigation indicators"
         >
-          {categoriesList.map((cat, i) => (
-            <CategoryProgressRing
-              key={cat.id || i}
-              isActive={activeCategoryIdx === i}
-              duration={4000}
-              onComplete={handleNext}
-              onClick={() => {
-                const currentGroup = Math.floor(
-                  virtualIndex / categoriesList.length
-                );
-                slideTo(currentGroup * categoriesList.length + i);
-              }}
-              label={`Show category ${i + 1}: ${cat.name}`}
-            />
-          ))}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "14px",
+            }}
+            role="group"
+            aria-label="Category navigation indicators"
+          >
+            {categoriesList.map((cat, i) => (
+              <CategoryProgressRing
+                key={cat.id || i}
+                isActive={activeCategoryIdx === i}
+                isPaused={isHovered || isDraggingRef.current}
+                duration={4500}
+                onComplete={handleNext}
+                onClick={() => {
+                  const currentGroup = Math.floor(
+                    virtualIndex / categoriesList.length
+                  );
+                  slideTo(currentGroup * categoriesList.length + i);
+                }}
+                label={`Show category ${i + 1}: ${cat.name}`}
+              />
+            ))}
+          </div>
+
+          {/* Prev / Next Smooth Arrow Controls */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <button
+              type="button"
+              onClick={handlePrev}
+              className="category-nav-arrow"
+              aria-label="Previous Category"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={handleNext}
+              className="category-nav-arrow"
+              aria-label="Next Category"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* ── RIGHT SIDE: Horizontal Category Cards Slider ── */}
       <div
         className="categories-right"
-        onMouseLeave={() => {
-          isDraggingRef.current = false;
-        }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
+        onMouseDown={(e) => handlePointerDown(e.clientX)}
+        onMouseMove={(e) => handlePointerMove(e.clientX)}
+        onMouseUp={handlePointerUp}
+        onTouchStart={(e) => handlePointerDown(e.touches[0].clientX)}
+        onTouchMove={(e) => handlePointerMove(e.touches[0].clientX)}
+        onTouchEnd={handlePointerUp}
         onWheel={handleWheel}
         style={{
           width: "72%",
@@ -642,6 +736,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           position: "relative",
           cursor: isDraggingRef.current ? "grabbing" : "grab",
           userSelect: "none",
+          touchAction: "pan-y",
         }}
       >
         <div
@@ -665,7 +760,10 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
                 ref={(el) => {
                   cardRefs.current[i] = el;
                 }}
-                onClick={() => {
+                onClick={(e) => {
+                  // If dragging was more than 10px, do not trigger click
+                  if (Math.abs(dragDistanceRef.current) > 10) return;
+
                   if (isFeatured && cat.href) {
                     router.push(cat.href);
                   } else {
@@ -730,3 +828,4 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
     </section>
   );
 }
+

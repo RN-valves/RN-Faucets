@@ -6,6 +6,8 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useRouter } from "next/navigation";
 import { addToCart } from "@/utils/cart";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -83,28 +85,42 @@ const STEP = 340 + 48;
 
 function DarkProgressDot({
   isActive,
-  duration = 4000,
+  isPaused = false,
+  duration = 4500,
   onComplete,
   onClick,
   label,
 }: {
   isActive: boolean;
+  isPaused?: boolean;
   duration?: number;
   onComplete: () => void;
   onClick: () => void;
   label: string;
 }) {
   const rafRef = useRef<number | null>(null);
+  const elapsedRef = useRef(0);
+  const lastTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive) {
+      elapsedRef.current = 0;
+      lastTimeRef.current = null;
+      return;
+    }
 
     let active = true;
-    const startTime = performance.now();
+    lastTimeRef.current = performance.now();
 
     const tick = (now: number) => {
       if (!active) return;
-      if (now - startTime >= duration) {
+      if (lastTimeRef.current !== null && !isPaused) {
+        elapsedRef.current += now - lastTimeRef.current;
+      }
+      lastTimeRef.current = now;
+
+      if (elapsedRef.current >= duration) {
+        elapsedRef.current = 0;
         onComplete();
         return;
       }
@@ -120,7 +136,7 @@ function DarkProgressDot({
         rafRef.current = null;
       }
     };
-  }, [isActive, duration, onComplete]);
+  }, [isActive, isPaused, duration, onComplete]);
 
   if (!isActive) {
     return (
@@ -206,6 +222,7 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
 
   const router = useRouter();
   const [virtualIndex, setVirtualIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
 
   const sectionRef = useRef<HTMLElement>(null);
   const leftContentRef = useRef<HTMLDivElement>(null);
@@ -214,7 +231,9 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
 
   const isDraggingRef = useRef(false);
   const startXRef = useRef(0);
+  const startTrackXRef = useRef(0);
   const dragDistanceRef = useRef(0);
+  const lastWheelTimeRef = useRef(0);
 
   const isMobile = useCallback(() => {
     return typeof window !== "undefined" && window.innerWidth <= 900;
@@ -222,20 +241,22 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
 
   const slideTo = useCallback(
     (index: number) => {
-      setVirtualIndex(index);
+      const targetIndex = Math.max(0, index);
+      setVirtualIndex(targetIndex);
 
       if (!sliderTrackRef.current || isMobile()) return;
 
-      const xOffset = index * STEP;
+      const xOffset = targetIndex * STEP;
 
       gsap.to(sliderTrackRef.current, {
         x: -xOffset,
-        duration: 0.8,
+        duration: 0.75,
         ease: "power3.out",
+        overwrite: "auto",
         onComplete: () => {
-          if (index >= BASE_PRODUCTS.length * 2) {
+          if (targetIndex >= BASE_PRODUCTS.length * 2) {
             const resetIdx =
-              (index % BASE_PRODUCTS.length) + BASE_PRODUCTS.length;
+              (targetIndex % BASE_PRODUCTS.length) + BASE_PRODUCTS.length;
             setVirtualIndex(resetIdx);
             gsap.set(sliderTrackRef.current, { x: -(resetIdx * STEP) });
           }
@@ -249,36 +270,52 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
     slideTo(virtualIndex + 1);
   }, [slideTo, virtualIndex]);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handlePrev = useCallback(() => {
+    slideTo(Math.max(0, virtualIndex - 1));
+  }, [slideTo, virtualIndex]);
+
+  // ── Drag & Touch Handlers with real-time responsive tracking ──
+  const handlePointerDown = (clientX: number) => {
     isDraggingRef.current = true;
-    startXRef.current = e.clientX;
+    startXRef.current = clientX;
     dragDistanceRef.current = 0;
+    startTrackXRef.current = -(virtualIndex * STEP);
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDraggingRef.current) return;
-    dragDistanceRef.current = e.clientX - startXRef.current;
+  const handlePointerMove = (clientX: number) => {
+    if (!isDraggingRef.current || !sliderTrackRef.current || isMobile()) return;
+    const dx = clientX - startXRef.current;
+    dragDistanceRef.current = dx;
+    // Live spring translation during drag
+    gsap.set(sliderTrackRef.current, { x: startTrackXRef.current + dx });
   };
 
-  const handleMouseUp = () => {
+  const handlePointerUp = () => {
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
 
-    if (Math.abs(dragDistanceRef.current) > 40) {
-      if (dragDistanceRef.current < 0) {
-        slideTo(virtualIndex + 1);
-      } else {
-        slideTo(Math.max(0, virtualIndex - 1));
-      }
+    const threshold = 45;
+    if (dragDistanceRef.current < -threshold) {
+      slideTo(virtualIndex + 1);
+    } else if (dragDistanceRef.current > threshold) {
+      slideTo(Math.max(0, virtualIndex - 1));
+    } else {
+      // Snap back smoothly
+      slideTo(virtualIndex);
     }
   };
 
+  // ── Horizontal wheel gesture only (Never locks vertical page scroll) ──
   const handleWheel = (e: React.WheelEvent) => {
-    if (Math.abs(e.deltaX) > 20 || Math.abs(e.deltaY) > 20) {
-      if (e.deltaX > 0 || e.deltaY > 0) {
-        slideTo(virtualIndex + 1);
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && Math.abs(e.deltaX) > 25) {
+      const now = Date.now();
+      if (now - lastWheelTimeRef.current < 350) return;
+      lastWheelTimeRef.current = now;
+
+      if (e.deltaX > 0) {
+        handleNext();
       } else {
-        slideTo(Math.max(0, virtualIndex - 1));
+        handlePrev();
       }
     }
   };
@@ -339,6 +376,11 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
       ref={sectionRef}
       data-header-theme="light"
       className="best-seller-section"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        handlePointerUp();
+      }}
       style={{
         position: "relative",
         width: "100vw",
@@ -379,6 +421,28 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
         .best-seller-cart-btn {
           transition: background 0.35s ease, color 0.35s ease;
         }
+
+        .best-seller-nav-arrow {
+          width: 42px;
+          height: 42px;
+          border-radius: 50%;
+          background: #ffffff;
+          border: 1px solid #e5e5e5;
+          display: flex;
+          align-items: center;
+          justifyContent: center;
+          color: #111111;
+          cursor: pointer;
+          transition: all 0.25s ease;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        }
+        .best-seller-nav-arrow:hover {
+          background: #111111;
+          color: #ffffff;
+          border-color: #111111;
+          transform: scale(1.06);
+        }
+
         @media (max-width: 1200px) {
           .best-seller-section {
             padding: 0 40px !important;
@@ -488,43 +552,74 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
           Top-rated, best-selling products trusted and loved by our customers.
         </p>
 
+        {/* Indicators + Arrow Navigation */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "18px",
+            justifyContent: "space-between",
+            maxWidth: "320px",
             marginTop: "44px",
           }}
-          role="group"
-          aria-label="Best seller category navigation indicators"
         >
-          {BASE_PRODUCTS.map((cat, i) => (
-            <DarkProgressDot
-              key={cat.id}
-              isActive={activeCategoryIdx === i}
-              duration={4000}
-              onComplete={handleNext}
-              onClick={() => {
-                const currentGroup = Math.floor(
-                  virtualIndex / BASE_PRODUCTS.length
-                );
-                slideTo(currentGroup * BASE_PRODUCTS.length + i);
-              }}
-              label={`Show product ${i + 1}: ${cat.name}`}
-            />
-          ))}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "14px",
+            }}
+            role="group"
+            aria-label="Best seller category navigation indicators"
+          >
+            {BASE_PRODUCTS.map((cat, i) => (
+              <DarkProgressDot
+                key={cat.id}
+                isActive={activeCategoryIdx === i}
+                isPaused={isHovered || isDraggingRef.current}
+                duration={4500}
+                onComplete={handleNext}
+                onClick={() => {
+                  const currentGroup = Math.floor(
+                    virtualIndex / BASE_PRODUCTS.length
+                  );
+                  slideTo(currentGroup * BASE_PRODUCTS.length + i);
+                }}
+                label={`Show product ${i + 1}: ${cat.name}`}
+              />
+            ))}
+          </div>
+
+          {/* Prev / Next Smooth Arrow Controls */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <button
+              type="button"
+              onClick={handlePrev}
+              className="best-seller-nav-arrow"
+              aria-label="Previous Product"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={handleNext}
+              className="best-seller-nav-arrow"
+              aria-label="Next Product"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* ── RIGHT SIDE: Horizontal Category Cards Slider (72% width) ── */}
       <div
         className="best-seller-right"
-        onMouseLeave={() => {
-          isDraggingRef.current = false;
-        }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
+        onMouseDown={(e) => handlePointerDown(e.clientX)}
+        onMouseMove={(e) => handlePointerMove(e.clientX)}
+        onMouseUp={handlePointerUp}
+        onTouchStart={(e) => handlePointerDown(e.touches[0].clientX)}
+        onTouchMove={(e) => handlePointerMove(e.touches[0].clientX)}
+        onTouchEnd={handlePointerUp}
         onWheel={handleWheel}
         style={{
           width: "72%",
@@ -535,6 +630,7 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
           position: "relative",
           cursor: isDraggingRef.current ? "grabbing" : "grab",
           userSelect: "none",
+          touchAction: "pan-y",
         }}
       >
         <div
@@ -552,6 +648,7 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
             const cardWidth = isFeatured ? 500 : 340;
             const cardHeight = isFeatured ? 660 : 520;
             const infoPad = isFeatured ? "28px 32px 32px" : "20px 22px 24px";
+
 
             return (
               <div
