@@ -80,7 +80,7 @@ export default function CustomerOrdersPage() {
     setIsMounted(true);
     const activeSession = getCustomerSession();
     if (!activeSession) {
-      router.push("/login");
+      router.push("/login-user");
       return;
     }
     setSession(activeSession);

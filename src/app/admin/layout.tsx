@@ -47,15 +47,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     window.addEventListener("rn-theme-changed", handleThemeChange);
 
     const auth = getAdminAuth();
-    if (pathname === "/admin/login") {
-      if (auth) {
-        router.push("/admin/dashboard");
-      }
-      return () => window.removeEventListener("rn-theme-changed", handleThemeChange);
-    }
-
     if (!auth) {
-      router.push("/admin/login");
+      router.replace("/login-user");
     } else {
       setIsAuthenticated(true);
     }
@@ -94,17 +87,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       >
         Loading RN Admin Panel...
       </div>
-    );
-  }
-
-  // Login page without sidebar wrapper
-  if (pathname === "/admin/login") {
-    return (
-      <AdminThemeContext.Provider value={{ theme, toggleTheme }}>
-        <AdminMobileContext.Provider value={{ mobileOpen, setMobileOpen, toggleMobile }}>
-          {children}
-        </AdminMobileContext.Provider>
-      </AdminThemeContext.Provider>
     );
   }
 
