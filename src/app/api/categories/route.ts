@@ -2,10 +2,25 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Category from "@/models/Category";
 
-export async function GET() {
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export async function GET(request: Request) {
   try {
     await connectDB();
-    const categories = await Category.find({}).sort({ createdAt: -1 }).lean();
+    const { searchParams } = new URL(request.url);
+    const showAll =
+      searchParams.get("all") === "true" ||
+      searchParams.get("admin") === "true";
+
+    const filter: Record<string, unknown> = {};
+
+    if (!showAll) {
+      filter.status = { $ne: "Inactive" };
+      filter.isVisibleWebsite = { $ne: false };
+    }
+
+    const categories = await Category.find(filter).sort({ createdAt: -1 }).lean();
     return NextResponse.json(categories);
   } catch (error) {
     console.error("GET /api/categories error:", error);

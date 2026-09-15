@@ -29,10 +29,10 @@ export default function RetailUserRegistrationPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mobile,
-          otp: "1234",
           name: fullName,
           email,
           userType: "Customer",
+          isDirectRegistration: true,
         }),
       });
       const data = await res.json();

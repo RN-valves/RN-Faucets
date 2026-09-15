@@ -83,6 +83,12 @@ const CARD_BG =
 
 const STEP = 340 + 48;
 
+const RING_SIZE = 28;
+const SVG_VP = 28;
+const ARC_R = 11;
+const ARC_STROKE = 2;
+const CIRCUMFERENCE = 2 * Math.PI * ARC_R;
+
 function DarkProgressDot({
   isActive,
   isPaused = false,
@@ -98,6 +104,7 @@ function DarkProgressDot({
   onClick: () => void;
   label: string;
 }) {
+  const circleRef = useRef<SVGCircleElement>(null);
   const rafRef = useRef<number | null>(null);
   const elapsedRef = useRef(0);
   const lastTimeRef = useRef<number | null>(null);
@@ -106,28 +113,37 @@ function DarkProgressDot({
     if (!isActive) {
       elapsedRef.current = 0;
       lastTimeRef.current = null;
+      if (circleRef.current) {
+        circleRef.current.style.strokeDashoffset = String(CIRCUMFERENCE);
+      }
       return;
     }
 
     let active = true;
     lastTimeRef.current = performance.now();
 
-    const tick = (now: number) => {
+    const updateProgress = (now: number) => {
       if (!active) return;
       if (lastTimeRef.current !== null && !isPaused) {
         elapsedRef.current += now - lastTimeRef.current;
       }
       lastTimeRef.current = now;
 
-      if (elapsedRef.current >= duration) {
+      const p = Math.min(elapsedRef.current / duration, 1);
+      if (circleRef.current) {
+        circleRef.current.style.strokeDashoffset = String(
+          CIRCUMFERENCE * (1 - p)
+        );
+      }
+      if (p < 1) {
+        rafRef.current = requestAnimationFrame(updateProgress);
+      } else {
         elapsedRef.current = 0;
         onComplete();
-        return;
       }
-      rafRef.current = requestAnimationFrame(tick);
     };
 
-    rafRef.current = requestAnimationFrame(tick);
+    rafRef.current = requestAnimationFrame(updateProgress);
 
     return () => {
       active = false;
@@ -145,11 +161,14 @@ function DarkProgressDot({
         onClick={onClick}
         aria-label={label}
         style={{
+          width: `${RING_SIZE}px`,
+          height: `${RING_SIZE}px`,
           padding: 0,
+          margin: 0,
           background: "transparent",
           border: "none",
           cursor: "pointer",
-          display: "flex",
+          display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
           outline: "none",
@@ -160,8 +179,8 @@ function DarkProgressDot({
             width: "8px",
             height: "8px",
             borderRadius: "50%",
-            background: "rgba(0,0,0,0.2)",
-            transition: "all 0.35s ease-in-out",
+            background: "rgba(0,0,0,0.22)",
+            transition: "all 0.3s ease",
           }}
         />
       </button>
@@ -174,28 +193,57 @@ function DarkProgressDot({
       onClick={onClick}
       aria-label={label}
       style={{
+        width: `${RING_SIZE}px`,
+        height: `${RING_SIZE}px`,
         padding: 0,
+        margin: 0,
         background: "transparent",
+        border: "none",
         cursor: "pointer",
-        display: "flex",
+        display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
         outline: "none",
-        width: "28px",
-        height: "28px",
-        borderRadius: "50%",
-        boxSizing: "border-box",
-        border: "2px solid #111111",
+        position: "relative",
       }}
     >
-      <div
-        style={{
-          width: "8px",
-          height: "8px",
-          borderRadius: "50%",
-          background: "#111111",
-        }}
-      />
+      <svg
+        width={RING_SIZE}
+        height={RING_SIZE}
+        viewBox={`0 0 ${SVG_VP} ${SVG_VP}`}
+        style={{ transform: "rotate(-90deg)", display: "block" }}
+      >
+        {/* Background Track */}
+        <circle
+          cx={SVG_VP / 2}
+          cy={SVG_VP / 2}
+          r={ARC_R}
+          fill="none"
+          stroke="rgba(0, 0, 0, 0.12)"
+          strokeWidth={1.5}
+        />
+        {/* Animated Progress Arc */}
+        <circle
+          ref={circleRef}
+          cx={SVG_VP / 2}
+          cy={SVG_VP / 2}
+          r={ARC_R}
+          fill="none"
+          stroke="#111111"
+          strokeWidth={ARC_STROKE}
+          strokeLinecap="round"
+          strokeDasharray={CIRCUMFERENCE}
+          strokeDashoffset={CIRCUMFERENCE}
+          style={{ willChange: "stroke-dashoffset" }}
+        />
+        {/* Center Dot */}
+        <circle
+          cx={SVG_VP / 2}
+          cy={SVG_VP / 2}
+          r={3}
+          fill="#111111"
+        />
+      </svg>
     </button>
   );
 }
@@ -219,6 +267,20 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
     ...productsList.map((p, i) => ({ ...p, id: (p.id || i) + productsList.length })),
     ...productsList.map((p, i) => ({ ...p, id: (p.id || i) + productsList.length * 2 })),
   ];
+
+  const sectionTitle =
+    data?.title &&
+    data.title !== "Best seller\nCategories" &&
+    data.title !== "Best seller Categories"
+      ? data.title
+      : "New\nArrivals";
+
+  const sectionDesc =
+    data?.description &&
+    data.description !==
+      "Top-rated, best-selling products trusted and loved by our customers."
+      ? data.description
+      : "Discover our latest precision-engineered designs and innovative bath fittings.";
 
   const router = useRouter();
   const [virtualIndex, setVirtualIndex] = useState(0);
@@ -254,16 +316,16 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
         ease: "power3.out",
         overwrite: "auto",
         onComplete: () => {
-          if (targetIndex >= BASE_PRODUCTS.length * 2) {
+          if (targetIndex >= productsList.length * 2) {
             const resetIdx =
-              (targetIndex % BASE_PRODUCTS.length) + BASE_PRODUCTS.length;
+              (targetIndex % productsList.length) + productsList.length;
             setVirtualIndex(resetIdx);
             gsap.set(sliderTrackRef.current, { x: -(resetIdx * STEP) });
           }
         },
       });
     },
-    [isMobile]
+    [isMobile, productsList.length]
   );
 
   const handleNext = useCallback(() => {
@@ -369,7 +431,7 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
     return () => ctx.revert();
   }, []);
 
-  const activeCategoryIdx = virtualIndex % BASE_PRODUCTS.length;
+  const activeCategoryIdx = virtualIndex % productsList.length;
 
   return (
     <section
@@ -392,7 +454,7 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
         padding: "110px 56px 40px",
         boxSizing: "border-box",
       }}
-      aria-label="Best Seller Categories"
+      aria-label="New Arrivals"
     >
       <style>{`
         .best-seller-card {
@@ -423,24 +485,32 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
         }
 
         .best-seller-nav-arrow {
-          width: 42px;
-          height: 42px;
+          width: 44px;
+          height: 44px;
           border-radius: 50%;
           background: #ffffff;
-          border: 1px solid #e5e5e5;
-          display: flex;
+          border: 1px solid #e0e0e0;
+          padding: 0;
+          margin: 0;
+          display: inline-flex;
           align-items: center;
-          justifyContent: center;
+          justify-content: center;
           color: #111111;
           cursor: pointer;
-          transition: all 0.25s ease;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+          outline: none;
+          box-sizing: border-box;
+          box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .best-seller-nav-arrow:hover {
           background: #111111;
           color: #ffffff;
           border-color: #111111;
           transform: scale(1.06);
+          box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+        }
+        .best-seller-nav-arrow:active {
+          transform: scale(0.96);
         }
 
         @media (max-width: 1200px) {
@@ -532,7 +602,7 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
             MozOsxFontSmoothing: "grayscale",
           }}
         >
-          Best seller{"\n"}Categories
+          {sectionTitle}
         </h2>
 
         <p
@@ -549,7 +619,7 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
             MozOsxFontSmoothing: "grayscale",
           }}
         >
-          Top-rated, best-selling products trusted and loved by our customers.
+          {sectionDesc}
         </p>
 
         {/* Indicators + Arrow Navigation */}
@@ -566,23 +636,23 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "14px",
+              gap: "6px",
             }}
             role="group"
-            aria-label="Best seller category navigation indicators"
+            aria-label="New arrivals navigation indicators"
           >
-            {BASE_PRODUCTS.map((cat, i) => (
+            {productsList.map((cat, i) => (
               <DarkProgressDot
-                key={cat.id}
+                key={cat.id || i}
                 isActive={activeCategoryIdx === i}
                 isPaused={isHovered || isDraggingRef.current}
                 duration={4500}
                 onComplete={handleNext}
                 onClick={() => {
                   const currentGroup = Math.floor(
-                    virtualIndex / BASE_PRODUCTS.length
+                    virtualIndex / productsList.length
                   );
-                  slideTo(currentGroup * BASE_PRODUCTS.length + i);
+                  slideTo(currentGroup * productsList.length + i);
                 }}
                 label={`Show product ${i + 1}: ${cat.name}`}
               />
@@ -597,7 +667,7 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
               className="best-seller-nav-arrow"
               aria-label="Previous Product"
             >
-              <ChevronLeft size={18} />
+              <ChevronLeft size={20} strokeWidth={1.8} style={{ display: "block", marginLeft: "-1px" }} />
             </button>
             <button
               type="button"
@@ -605,7 +675,7 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
               className="best-seller-nav-arrow"
               aria-label="Next Product"
             >
-              <ChevronRight size={18} />
+              <ChevronRight size={20} strokeWidth={1.8} style={{ display: "block", marginRight: "-1px" }} />
             </button>
           </div>
         </div>
@@ -643,7 +713,7 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
             willChange: "transform",
           }}
         >
-          {DISPLAY_ITEMS.map((product, i) => {
+          {productsSequence.map((product, i) => {
             const isFeatured = virtualIndex === i;
             const cardWidth = isFeatured ? 500 : 340;
             const cardHeight = isFeatured ? 660 : 520;

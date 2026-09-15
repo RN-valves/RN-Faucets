@@ -240,7 +240,7 @@ export const importProductsJSON = async (jsonData: unknown): Promise<{ success: 
 
 export const getAdminCategories = async (): Promise<AdminCategory[]> => {
   try {
-    const res = await fetch("/api/categories");
+    const res = await fetch("/api/categories?all=true");
     if (!res.ok) throw new Error("fetch failed");
     return res.json();
   } catch {
@@ -350,7 +350,7 @@ export const deleteAdminCategory = async (id: string): Promise<boolean> => {
 
 export const getAdminSubcategories = async (categoryId?: string): Promise<AdminSubcategory[]> => {
   try {
-    const url = categoryId ? `/api/subcategories?categoryId=${categoryId}` : "/api/subcategories";
+    const url = categoryId ? `/api/subcategories?categoryId=${categoryId}&all=true` : "/api/subcategories?all=true";
     const res = await fetch(url);
     if (!res.ok) throw new Error("fetch failed");
     return res.json();

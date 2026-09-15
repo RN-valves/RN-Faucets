@@ -231,14 +231,21 @@ interface CategoriesSectionProps {
 
 export default function CategoriesSection({ data }: CategoriesSectionProps) {
   const [dbCategories, setDbCategories] = useState<CategoryItem[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   // Fetch live Category data & dynamic Category Main Images from Database
   useEffect(() => {
     fetch("/api/categories")
       .then((res) => res.json())
       .then((dataArr: any[]) => {
-        if (Array.isArray(dataArr) && dataArr.length > 0) {
-          const mapped: CategoryItem[] = dataArr.map((cat: any, index: number) => ({
+        if (Array.isArray(dataArr)) {
+          const activeOnly = dataArr.filter(
+            (cat: any) =>
+              cat.status !== "Inactive" &&
+              cat.isVisibleWebsite !== false &&
+              cat.isVisible !== false
+          );
+          const mapped: CategoryItem[] = activeOnly.map((cat: any, index: number) => ({
             id: index,
             name: cat.name,
             subtitle: cat.description || cat.title || `Explore ${cat.name} luxury collection`,
@@ -248,18 +255,24 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           }));
           setDbCategories(mapped);
         }
+        setIsLoaded(true);
       })
-      .catch((err) => console.error("Failed to load dynamic categories:", err));
+      .catch((err) => {
+        console.error("Failed to load dynamic categories:", err);
+        setIsLoaded(true);
+      });
   }, []);
 
   if (data?.visible === false) return null;
 
-  const validPropsCategories = data?.categories?.filter((c) => Boolean(c.image));
+  const validPropsCategories = data?.categories?.filter((c: any) => Boolean(c.image) && c.status !== "Inactive" && c.isVisibleWebsite !== false);
   const categoriesList =
-    dbCategories.length > 0
+    isLoaded && dbCategories.length > 0
       ? dbCategories
       : validPropsCategories && validPropsCategories.length > 0
       ? validPropsCategories
+      : dbCategories.length > 0
+      ? dbCategories
       : FALLBACK_CATEGORIES;
 
   const displaySequence = [

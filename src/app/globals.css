@@ -114,6 +114,72 @@ body {
   filter: drop-shadow(0 14px 22px rgba(20, 36, 52, 0.14));
 }
 
+/* ── Darker Studio Background for Subcategories ── */
+.subcategory-card {
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 12px;
+  background-color: #9cb1c2;
+  background-image:
+    radial-gradient(ellipse 95% 80% at 50% 28%, #c6d7e5 0%, transparent 62%),
+    radial-gradient(ellipse 70% 50% at 18% 12%, rgba(255, 255, 255, 0.45) 0%, transparent 55%),
+    radial-gradient(ellipse 65% 45% at 85% 88%, rgba(98, 122, 145, 0.55) 0%, transparent 55%),
+    linear-gradient(180deg, #b4c6d4 0%, #9cb1c2 45%, #7e96aa 100%);
+  box-shadow: 0 4px 18px rgba(18, 38, 56, 0.08);
+}
+
+.subcategory-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.35;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='subGrain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='5' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.55 0 0 0 0 0.60 0 0 0 0 0.65 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23subGrain)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+  background-repeat: repeat;
+}
+
+.subcategory-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.38;
+  mix-blend-mode: soft-light;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0,
+      transparent 2px,
+      rgba(255, 255, 255, 0.08) 2px,
+      rgba(255, 255, 255, 0.08) 3px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 3px,
+      rgba(80, 105, 130, 0.09) 3px,
+      rgba(80, 105, 130, 0.09) 4px
+    );
+}
+
+.subcategory-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.subcategory-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(18, 42, 62, 0.16);
+}
+
+.subcategory-card .product-card__image-panel img {
+  filter: drop-shadow(0 16px 26px rgba(12, 24, 38, 0.22));
+}
+
 /* Network map pin soft pulse */
 @keyframes network-pulse {
   0%,

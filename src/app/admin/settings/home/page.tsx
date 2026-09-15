@@ -222,7 +222,7 @@ export default function AdminHomeSettingPage() {
               { id: "header_footer", label: "1. Header & Footer" },
               { id: "hero", label: "2. Hero Carousel" },
               { id: "categories", label: "3. Showcase & Categories" },
-              { id: "bestsellers", label: "4. Best Sellers & Why Buy" },
+              { id: "bestsellers", label: "4. New Arrivals & Why Buy" },
               { id: "content", label: "5. Reels, Support & Blogs" },
             ].map((t) => (
               <button
@@ -487,7 +487,7 @@ export default function AdminHomeSettingPage() {
             <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: "12px", padding: "24px", boxShadow: shadow }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: `1px solid ${border}`, paddingBottom: "12px" }}>
                 <div>
-                  <h3 style={{ margin: 0, color: textMain, fontSize: "16px" }}>Best Seller Products</h3>
+                  <h3 style={{ margin: 0, color: textMain, fontSize: "16px" }}>New Arrivals Products</h3>
                   <p style={{ margin: "2px 0 0 0", fontSize: "12px", color: textMuted }}>Select products from catalog to automatically reuse existing product images without R2 duplication.</p>
                 </div>
               </div>

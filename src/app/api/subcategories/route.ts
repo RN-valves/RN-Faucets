@@ -7,9 +7,17 @@ export async function GET(request: Request) {
     await connectDB();
     const { searchParams } = new URL(request.url);
     const categoryId = searchParams.get("categoryId");
+    const showAll =
+      searchParams.get("all") === "true" ||
+      searchParams.get("admin") === "true";
 
     const filter: Record<string, unknown> = {};
     if (categoryId) filter.categoryId = categoryId;
+
+    if (!showAll) {
+      filter.status = { $ne: "Inactive" };
+      filter.isVisibleWebsite = { $ne: false };
+    }
 
     const subcategories = await Subcategory.find(filter).sort({ displayOrder: 1, createdAt: -1 }).lean();
     return NextResponse.json(subcategories);

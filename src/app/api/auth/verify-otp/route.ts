@@ -1,21 +1,71 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
+import Otp from "@/models/Otp";
 
 export async function POST(request: Request) {
   try {
     await connectDB();
-    const { mobile, otp, name, email, userType, businessName, gstNumber } = await request.json();
+    const { mobile, otp, name, email, userType, businessName, gstNumber, isDirectRegistration } = await request.json();
 
-    if (!mobile || !otp) {
-      return NextResponse.json({ error: "Mobile number and OTP are required." }, { status: 400 });
+    if (!mobile) {
+      return NextResponse.json({ error: "Mobile number is required." }, { status: 400 });
     }
 
     const cleanMobile = String(mobile).replace(/\D/g, "").slice(-10);
+    const enteredOtp = otp ? String(otp).trim() : "";
 
-    // Verify OTP (demo accepts 1234)
-    if (otp.toString().trim() !== "1234" && otp.toString().trim().length !== 4) {
-      return NextResponse.json({ error: "Invalid OTP. Please enter 1234." }, { status: 400 });
+    // If not direct registration, verify OTP
+    if (!isDirectRegistration) {
+      if (!enteredOtp) {
+        return NextResponse.json({ error: "OTP is required." }, { status: 400 });
+      }
+
+      let isValidOtp = false;
+
+      // 1. Check in MongoDB Otp collection
+      const otpRecord = await Otp.findOne({
+        mobile: cleanMobile,
+        otp: enteredOtp,
+        expiresAt: { $gt: new Date() },
+      });
+
+      if (otpRecord) {
+        isValidOtp = true;
+        // Clean up verified OTP
+        await Otp.deleteMany({ mobile: cleanMobile });
+      } else {
+        // 2. Fallback to MSG91 OTP verify API
+        const authKey = process.env.MSG91_AUTH_KEY;
+        const baseUrl = process.env.MSG91_BASE_URL || "https://control.msg91.com/api/v5";
+        if (authKey) {
+          try {
+            const verifyUrl = `${baseUrl}/otp/verify?otp=${enteredOtp}&mobile=91${cleanMobile}`;
+            const verifyRes = await fetch(verifyUrl, {
+              method: "GET",
+              headers: { authkey: authKey },
+            });
+            const verifyData = await verifyRes.json();
+            if (
+              verifyData &&
+              (verifyData.type === "success" ||
+                verifyData.message === "OTP verified success" ||
+                verifyData.message === "OTP verified success.")
+            ) {
+              isValidOtp = true;
+            }
+          } catch (vErr) {
+            console.error("MSG91 OTP verify error:", vErr);
+          }
+        }
+      }
+
+      if (!isValidOtp) {
+        return NextResponse.json(
+          { error: "Invalid or expired OTP. Please enter the correct code." },
+          { status: 400 }
+        );
+      }
     }
 
     // Find or create customer

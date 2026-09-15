@@ -154,8 +154,8 @@ const HomeSettingSchema = new Schema<IHomeSetting>(
     },
     bestSellersSection: {
       visible: { type: Boolean, default: true },
-      title: { type: String, default: "Best seller\nCategories" },
-      description: { type: String, default: "Top-rated, best-selling products trusted and loved by our customers." },
+      title: { type: String, default: "New\nArrivals" },
+      description: { type: String, default: "Discover our latest precision-engineered designs and innovative bath fittings." },
       products: [
         {
           id: { type: Number },

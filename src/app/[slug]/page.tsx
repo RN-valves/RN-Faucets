@@ -282,7 +282,7 @@ export default function DynamicCategoryPage({ params }: { params: Promise<{ slug
           style={{
             display: "grid",
             gridTemplateColumns: `repeat(${Math.min(topCards.length, 3)}, 1fr)`,
-            gap: "20px",
+            gap: "28px",
           }}
         >
           {topCards.map((card) => (
@@ -292,98 +292,99 @@ export default function DynamicCategoryPage({ params }: { params: Promise<{ slug
               onClick={(e) => {
                 if (card.isComingSoon) e.preventDefault();
               }}
-              style={{ textDecoration: "none" }}
+              style={{
+                textDecoration: "none",
+                padding: "24px 20px 24px",
+                display: "flex",
+                flexDirection: "column",
+                height: "580px",
+                boxSizing: "border-box",
+                cursor: card.isComingSoon ? "default" : "pointer",
+                position: "relative",
+                transition: "transform 0.35s ease, box-shadow 0.35s ease",
+              }}
+              className="subcategory-card group"
             >
-              <div
-                style={{
-                  position: "relative",
-                  height: "560px",
-                  overflow: "hidden",
-                  cursor: card.isComingSoon ? "default" : "pointer",
-                }}
-                className="group"
-              >
-                <Image
-                  src={card.image}
-                  alt={card.title}
-                  fill
-                  unoptimized
-                  style={{
-                    objectFit: "cover",
-                    objectPosition: "center",
-                    transition: "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
-                  }}
-                  className={card.isComingSoon ? "" : "group-hover:scale-105"}
-                />
-
-                {card.isComingSoon && (
-                  <span
-                    style={{
-                      position: "absolute",
-                      top: "24px",
-                      right: "24px",
-                      backgroundColor: "rgba(0, 0, 0, 0.8)",
-                      color: "#ffffff",
-                      fontSize: "12px",
-                      fontWeight: 600,
-                      letterSpacing: "0.08em",
-                      textTransform: "uppercase",
-                      padding: "6px 14px",
-                      borderRadius: "20px",
-                      backdropFilter: "blur(4px)",
-                      zIndex: 3,
-                      border: "1px solid rgba(255, 255, 255, 0.2)",
-                    }}
-                  >
-                    Coming Soon
-                  </span>
-                )}
-
-                {/* Bottom Gradient */}
-                <div
+              {card.isComingSoon && (
+                <span
                   style={{
                     position: "absolute",
-                    inset: 0,
-                    background:
-                      "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 40%, transparent 100%)",
-                  }}
-                />
-
-                {/* Text content */}
-                <div
-                  style={{
-                    position: "absolute",
-                    bottom: "32px",
-                    left: "32px",
-                    right: "32px",
-                    zIndex: 2,
+                    top: "20px",
+                    right: "20px",
+                    backgroundColor: "rgba(0, 0, 0, 0.75)",
+                    color: "#ffffff",
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    padding: "4px 12px",
+                    borderRadius: "16px",
+                    backdropFilter: "blur(4px)",
+                    zIndex: 10,
                   }}
                 >
-                  <h3
-                    style={{
-                      fontFamily: "'Manrope', system-ui, sans-serif",
-                      fontSize: "clamp(28px, 2.5vw, 38px)",
-                      fontWeight: 600,
-                      color: "#ffffff",
-                      letterSpacing: "-0.03em",
-                      margin: "0 0 8px",
-                    }}
-                  >
-                    {card.title}
-                  </h3>
-                  <p
-                    style={{
-                      fontFamily: "'Manrope', system-ui, sans-serif",
-                      fontSize: "14px",
-                      fontWeight: 400,
-                      color: "rgba(255, 255, 255, 0.9)",
-                      margin: 0,
-                      lineHeight: 1.35,
-                    }}
-                  >
-                    {card.subtitle}
-                  </p>
-                </div>
+                  Coming Soon
+                </span>
+              )}
+
+              {/* Subcategory PNG sits on full-card textured paper */}
+              <div
+                className="product-card__image-panel"
+                style={{
+                  flex: "1 1 auto",
+                  width: "100%",
+                  minHeight: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  overflow: "hidden",
+                  padding: "4px 4px 10px",
+                  boxSizing: "border-box",
+                }}
+              >
+                <img
+                  src={card.image}
+                  alt={card.title}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    maxWidth: "96%",
+                    maxHeight: "100%",
+                    objectFit: "contain",
+                    transform: "scale(1.12)",
+                    transition: "transform 0.45s ease",
+                  }}
+                  className={card.isComingSoon ? "" : "group-hover:scale-[1.18]"}
+                />
+              </div>
+
+              {/* Title & Subtitle */}
+              <div style={{ flexShrink: 0, marginTop: "12px", padding: "0 6px" }}>
+                <h3
+                  style={{
+                    fontFamily: "'Manrope', system-ui, sans-serif",
+                    fontSize: "20px",
+                    fontWeight: 600,
+                    lineHeight: 1.3,
+                    color: "#1a1a1a",
+                    margin: "0 0 6px 0",
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  {card.title}
+                </h3>
+                <p
+                  style={{
+                    fontFamily: "'Manrope', system-ui, sans-serif",
+                    fontSize: "14px",
+                    fontWeight: 400,
+                    color: "#475569",
+                    margin: 0,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {card.subtitle}
+                </p>
               </div>
             </Link>
           ))}
@@ -404,63 +405,66 @@ export default function DynamicCategoryPage({ params }: { params: Promise<{ slug
             style={{
               display: "grid",
               gridTemplateColumns: `repeat(${Math.min(bottomCards.length, 3)}, 1fr)`,
-              gap: "20px",
+              gap: "28px",
             }}
           >
             {bottomCards.map((card) => (
               <Link
                 key={card.id}
                 href={card.href}
-                style={{ textDecoration: "none" }}
+                style={{
+                  textDecoration: "none",
+                  padding: "24px 20px 20px",
+                  display: "flex",
+                  flexDirection: "column",
+                  height: "460px",
+                  boxSizing: "border-box",
+                  cursor: "pointer",
+                  position: "relative",
+                  transition: "transform 0.35s ease, box-shadow 0.35s ease",
+                }}
+                className="subcategory-card group"
               >
                 <div
+                  className="product-card__image-panel"
                   style={{
-                    position: "relative",
-                    height: "360px",
+                    flex: "1 1 auto",
+                    width: "100%",
+                    minHeight: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                     overflow: "hidden",
-                    cursor: "pointer",
+                    padding: "4px 4px 8px",
+                    boxSizing: "border-box",
                   }}
-                  className="group"
                 >
-                  <Image
+                  <img
                     src={card.image}
                     alt={card.title}
-                    fill
-                    unoptimized
                     style={{
-                      objectFit: "cover",
-                      objectPosition: "center",
-                      transition: "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
+                      width: "100%",
+                      height: "100%",
+                      maxWidth: "96%",
+                      maxHeight: "100%",
+                      objectFit: "contain",
+                      transform: "scale(1.12)",
+                      transition: "transform 0.45s ease",
                     }}
-                    className="group-hover:scale-105"
+                    className="group-hover:scale-[1.18]"
                   />
+                </div>
 
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    background:
-                      "linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.15) 50%, transparent 100%)",
-                  }}
-                />
-
-                <div
-                  style={{
-                    position: "absolute",
-                    bottom: "28px",
-                    left: "28px",
-                    right: "28px",
-                    zIndex: 2,
-                  }}
-                >
+                <div style={{ flexShrink: 0, marginTop: "10px", padding: "0 4px" }}>
                   <h3
                     style={{
                       fontFamily: "'Manrope', system-ui, sans-serif",
-                      fontSize: "clamp(26px, 2.2vw, 34px)",
+                      fontSize: "18px",
                       fontWeight: 600,
-                      color: "#ffffff",
-                      letterSpacing: "-0.03em",
-                      margin: "0 0 6px",
+                      lineHeight: 1.3,
+                      color: "#1a1a1a",
+                      margin: "0 0 6px 0",
+                      letterSpacing: "-0.02em",
                     }}
                   >
                     {card.title}
@@ -468,21 +472,20 @@ export default function DynamicCategoryPage({ params }: { params: Promise<{ slug
                   <p
                     style={{
                       fontFamily: "'Manrope', system-ui, sans-serif",
-                      fontSize: "14px",
+                      fontSize: "13px",
                       fontWeight: 400,
-                      color: "rgba(255, 255, 255, 0.9)",
+                      color: "#475569",
                       margin: 0,
-                      lineHeight: 1.35,
+                      lineHeight: 1.4,
                     }}
                   >
                     {card.subtitle}
                   </p>
                 </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+              </Link>
+            ))}
+          </div>
+        </section>
       )}
 
       {/* ── 5. Blogs Section ── */}

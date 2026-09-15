@@ -115,8 +115,8 @@ const DEFAULT_HOME_SETTINGS = {
   },
   bestSellersSection: {
     visible: true,
-    title: "Best seller\nCategories",
-    description: "Top-rated, best-selling products trusted and loved by our customers.",
+    title: "New\nArrivals",
+    description: "Discover our latest precision-engineered designs and innovative bath fittings.",
     products: [
       {
         id: 0,

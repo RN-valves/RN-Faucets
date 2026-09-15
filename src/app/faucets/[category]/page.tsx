@@ -264,7 +264,7 @@ export default function CategoryPage({
                 href={`/faucets/${category}/${encodeURIComponent(prodCode)}`}
                 style={{
                   textDecoration: "none",
-                  padding: "40px 32px 28px",
+                  padding: "24px 20px 24px",
                   display: "flex",
                   flexDirection: "column",
                   height: "580px",
@@ -286,7 +286,7 @@ export default function CategoryPage({
                     alignItems: "center",
                     justifyContent: "center",
                     overflow: "hidden",
-                    padding: "12px 8px 16px",
+                    padding: "4px 4px 10px",
                     boxSizing: "border-box",
                   }}
                 >
@@ -294,17 +294,20 @@ export default function CategoryPage({
                     src={product.image || "/api/media/website/catalogue/products/default/image.webp"}
                     alt={product.name}
                     style={{
-                      maxWidth: "88%",
+                      width: "100%",
+                      height: "100%",
+                      maxWidth: "96%",
                       maxHeight: "100%",
                       objectFit: "contain",
+                      transform: "scale(1.12)",
                       transition: "transform 0.45s ease",
                     }}
-                    className="group-hover:scale-[1.04]"
+                    className="group-hover:scale-[1.18]"
                   />
                 </div>
 
                 {/* Editorial title + price + finish dots */}
-                <div style={{ flexShrink: 0, marginTop: "8px" }}>
+                <div style={{ flexShrink: 0, marginTop: "12px", padding: "0 6px" }}>
                   <h3
                     style={{
                       fontFamily: "'Manrope', system-ui, sans-serif",

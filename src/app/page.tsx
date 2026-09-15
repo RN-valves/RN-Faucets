@@ -512,7 +512,7 @@ export default function Home() {
       {/* ── 3. Categories Storytelling Section ── */}
       <CategoriesSection data={homeSetting?.categoriesSection} />
 
-      {/* ── 4. Best Seller Categories (Dark Premium) ── */}
+      {/* ── 4. New Arrivals (Dark Premium / Carousel) ── */}
       <BestSellerCategoriesSection data={homeSetting?.bestSellersSection} />
 
       {/* ── 5. Why Buy from RN Faucets Directly ── */}

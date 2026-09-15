@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { connectDB } from "@/lib/mongodb";
+import Otp from "@/models/Otp";
 
 export async function POST(request: Request) {
   try {
@@ -12,15 +14,30 @@ export async function POST(request: Request) {
     }
 
     const cleanMobile = mobile.trim();
-    // Default test OTP for instant testing, also delivered live via MSG91
-    const otp = "1234";
+
+    // Generate random 4-digit OTP (1000 - 9999)
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+
+    // Store OTP in MongoDB with 10-minute expiry
+    try {
+      await connectDB();
+      await Otp.deleteMany({ mobile: cleanMobile });
+      await Otp.create({
+        mobile: cleanMobile,
+        otp,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      });
+    } catch (dbErr) {
+      console.error("Failed to store OTP in MongoDB:", dbErr);
+    }
 
     const authKey = process.env.MSG91_AUTH_KEY;
     const templateId = process.env.MSG91_OTP_TEMPLATE_ID;
+    const baseUrl = process.env.MSG91_BASE_URL || "https://control.msg91.com/api/v5";
 
     if (authKey && templateId) {
       try {
-        const msg91Url = `https://control.msg91.com/api/v5/otp?template_id=${templateId}&mobile=91${cleanMobile}&otp=${otp}`;
+        const msg91Url = `${baseUrl}/otp?template_id=${templateId}&mobile=91${cleanMobile}&otp=${otp}&authkey=${authKey}`;
         const smsRes = await fetch(msg91Url, {
           method: "POST",
           headers: {
@@ -37,8 +54,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `OTP sent successfully to +91 ${cleanMobile}. (Demo OTP: ${otp})`,
-      otp,
+      message: `OTP sent successfully to +91 ${cleanMobile}.`,
     });
   } catch (error: any) {
     console.error("POST /api/auth/send-otp error:", error);
@@ -48,3 +64,4 @@ export async function POST(request: Request) {
     );
   }
 }
+
