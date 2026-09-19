@@ -8,73 +8,12 @@ import SupportLinksSection from "@/components/SupportLinksSection";
 import FooterSection from "@/components/FooterSection";
 
 const HERO_IMAGE_DEFAULT =
-  "https://hindware.com/_next/image?url=https%3A%2F%2Fhindwarestg.blob.core.windows.net%2Fcontainer1%2Fproducts%2Ffd5e935d-4329-4d05-ae85-2af0f1be36fa.png&w=1920&q=75";
-
-const SHOWCASE_CARDS_FALLBACK = [
-  {
-    id: "ranges",
-    title: "Ranges",
-    subtitle: "Curated Faucet Collection for Every Space",
-    image:
-      "https://hindware.com/_next/image?url=https%3A%2F%2Fhindwarestg.blob.core.windows.net%2Fcontainer1%2Fproducts%2Fa47e2b2b-87b9-41a9-90be-488c7364c1be.png&w=1080&q=75",
-  },
-  {
-    id: "accessories",
-    title: "Bathroom Accessories",
-    subtitle: "Bathroom Accessories — Functional Details that Elevate Your Space",
-    image:
-      "https://hindware.com/_next/image?url=https%3A%2F%2Fhindwarestg.blob.core.windows.net%2Fcontainer1%2Fproducts%2F1ea9505b-58b6-4cdb-99c6-938f941e24f9.png&w=1080&q=75",
-  },
-  {
-    id: "add-ons",
-    title: "Add-ons",
-    subtitle: "Functional add-ons for your Bath Spaces",
-    image:
-      "https://hindware.com/_next/image?url=https%3A%2F%2Fhindwarestg.blob.core.windows.net%2Fcontainer1%2Fproducts%2F93827b74-9750-459d-bc38-94d7681a43f8.jpeg&w=1080&q=75",
-  },
-];
-
-const FEATURE_CARDS_FALLBACK = [
-  {
-    id: "concealed-body",
-    title: "Concealed Body",
-    subtitle: "Concealed Body — Hidden Strength Behind Flawless Performance",
-    image:
-      "https://hindware.com/_next/image?url=https%3A%2F%2Fhindwarestg.blob.core.windows.net%2Fcontainer1%2Fproducts%2Fdcebe235-4c08-4f25-947a-9f15d15fd620.png&w=1080&q=75",
-  },
-  {
-    id: "drains",
-    title: "Drains",
-    subtitle: "Bathroom Drains — Efficient Waste Management with Lasting Durability",
-    image:
-      "https://hindware.com/_next/image?url=https%3A%2F%2Fhindwarestg.blob.core.windows.net%2Fcontainer1%2Fproducts%2F8ce61f19-4a5c-40ac-9e56-85716d2afb4b.png&w=1080&q=75",
-  },
-];
-
-const FAUCET_BLOGS = [
-  {
-    id: 1,
-    title: "A Guide to Choose the Perfect Washbasin Tap for Your Bathroom",
-    image:
-      "https://hindware.com/_next/image?url=https%3A%2F%2Fhindwarestg.blob.core.windows.net%2Fcontainer1%2Fblog%2Felevate-your-culinary-space-with-these-innovative-kitchen-tap-designs.png&w=828&q=75",
-  },
-  {
-    id: 2,
-    title: "How to Clean and Maintain Bathroom Floor Drains",
-    image:
-      "https://hindware.com/_next/image?url=https%3A%2F%2Fhindwarestg.blob.core.windows.net%2Fcontainer1%2Fproducts%2FBathroom-floor-drains--1770875269314.png&w=828&q=75",
-  },
-  {
-    id: 3,
-    title: "How to Install a Toilet Paper Holder",
-    image:
-      "https://hindware.com/_next/image?url=https%3A%2F%2Fhindwarestg.blob.core.windows.net%2Fcontainer1%2Fproducts%2FHow-to-Install-a-Toilet-Paper-Holder-1767873275815.png&w=828&q=75",
-  },
-];
+  "/api/media/website/catalogue/categories/cat-cp-faucets/banner.webp";
 
 export default function FaucetsPage() {
   const [category, setCategory] = useState<any>(null);
   const [subcategories, setSubcategories] = useState<any[]>([]);
+  const [blogs, setBlogs] = useState<any[]>([]);
 
   useEffect(() => {
     async function loadData() {
@@ -97,6 +36,14 @@ export default function FaucetsPage() {
             );
           });
           setSubcategories(filtered);
+        }
+
+        const blogRes = await fetch("/api/blogs");
+        if (blogRes.ok) {
+          const blogData = await blogRes.json();
+          if (Array.isArray(blogData.blogs)) {
+            setBlogs(blogData.blogs.slice(0, 3));
+          }
         }
       } catch (err) {
         console.error("Error loading faucets data:", err);
@@ -501,8 +448,8 @@ export default function FaucetsPage() {
           >
             Blogs
           </h2>
-          <a
-            href="#"
+          <Link
+            href="/blogs"
             style={{
               fontFamily: "'Manrope', system-ui, sans-serif",
               fontSize: "14px",
@@ -513,7 +460,7 @@ export default function FaucetsPage() {
             }}
           >
             View All Blogs
-          </a>
+          </Link>
         </div>
 
         <div
@@ -523,8 +470,12 @@ export default function FaucetsPage() {
             gap: "24px",
           }}
         >
-          {FAUCET_BLOGS.map((blog) => (
-            <article key={blog.id} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          {blogs.map((blog) => (
+            <Link
+              key={blog.id || blog._id}
+              href="/blogs"
+              style={{ display: "flex", flexDirection: "column", gap: "12px", textDecoration: "none" }}
+            >
               <div
                 style={{
                   position: "relative",
@@ -536,7 +487,7 @@ export default function FaucetsPage() {
                 className="group cursor-pointer"
               >
                 <Image
-                  src={blog.image}
+                  src={blog.image || "/api/media/website/catalogue/products/default/image.webp"}
                   alt={blog.title}
                   fill
                   unoptimized
@@ -562,7 +513,7 @@ export default function FaucetsPage() {
               >
                 {blog.title}
               </h3>
-            </article>
+            </Link>
           ))}
         </div>
       </section>

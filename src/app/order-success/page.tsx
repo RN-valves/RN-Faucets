@@ -8,8 +8,12 @@ import { saveCartItems, type CartItem } from "@/utils/cart";
 import Link from "next/link";
 
 interface OrderInfo {
+  id?: string;
+  orderId?: string;
   items: CartItem[];
   total: number;
+  paymentMethod?: string;
+  paymentStatus?: string;
   shipping: {
     firstName: string;
     lastName: string;
@@ -29,19 +33,20 @@ export default function OrderSuccessPage() {
 
   useEffect(() => {
     setIsMounted(true);
-    
-    // Generate a random order number
-    const num = "HW-ORD-" + Math.floor(1000000 + Math.random() * 9000000);
-    setOrderNumber(num);
 
     // Retrieve order details
     const stored = localStorage.getItem("last_placed_order");
     if (stored) {
       try {
-        setOrderInfo(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        setOrderInfo(parsed);
+        setOrderNumber(parsed.orderId || parsed.id || `RN-ORD-${Math.floor(100000 + Math.random() * 900000)}`);
       } catch (e) {
         console.error(e);
+        setOrderNumber(`RN-ORD-${Math.floor(100000 + Math.random() * 900000)}`);
       }
+    } else {
+      setOrderNumber(`RN-ORD-${Math.floor(100000 + Math.random() * 900000)}`);
     }
 
     // Clear cart items in localStorage

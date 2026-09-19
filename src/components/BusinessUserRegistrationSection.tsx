@@ -8,7 +8,7 @@ import Image from "next/image";
 import { setCustomerSession } from "@/utils/customerAuth";
 
 const BUSINESS_BG =
-  "https://hindware.com/img/registration/anti-skid-tile.jpg";
+  "/api/media/website/catalogue/products/default/image.webp";
 
 const COUNTRY_CODES = ["+91", "+1", "+44", "+61", "+971"];
 

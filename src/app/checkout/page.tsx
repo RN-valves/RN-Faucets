@@ -4,10 +4,26 @@ import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import FooterSection from "@/components/FooterSection";
 import SupportLinksSection from "@/components/SupportLinksSection";
-import { getCartItems, type CartItem } from "@/utils/cart";
+import { getCartItems, saveCartItems, type CartItem } from "@/utils/cart";
+import { getCustomerSession } from "@/utils/customerAuth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Pencil, Plus, Check, Truck, MapPin, Phone, Download, Headset } from "lucide-react";
+import {
+  Pencil,
+  Plus,
+  Check,
+  Truck,
+  MapPin,
+  Phone,
+  Download,
+  Headset,
+  Tag,
+  ShieldCheck,
+  CreditCard,
+  Banknote,
+  ChevronRight,
+  Loader2,
+} from "lucide-react";
 
 interface Address {
   id: string;
@@ -20,52 +36,26 @@ interface Address {
   pinCode: string;
 }
 
-const DEFAULT_ADDRESSES: Address[] = [
-  {
-    id: "addr-1",
-    name: "Test.",
-    label: "HOME",
-    phone: "7845124575",
-    addressLine: "Mandi, MANDI, Himachal Pradesh",
-    city: "MANDI",
-    state: "Himachal Pradesh",
-    pinCode: "175020"
-  },
-  {
-    id: "addr-2",
-    name: "Test.",
-    label: "HOME",
-    phone: "8545152645",
-    addressLine: "Mandi, MANDI, Himachal Pradesh",
-    city: "MANDI",
-    state: "Himachal Pradesh",
-    pinCode: "175020"
-  },
-  {
-    id: "addr-3",
-    name: "test abc.",
-    label: "HOME",
-    phone: "8888888888",
-    addressLine: "3224 & 3227, Hakim Baka Street, near Chaumukha Mandir, Chawri Chawri Bazar, Old Delhi",
-    city: "Old Delhi",
-    state: "PUNE, Maharashtra",
-    pinCode: "411060"
-  }
-];
+const SAVED_ADDRESSES_KEY = "rn_saved_addresses";
 
 export default function CheckoutPage() {
   const router = useRouter();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isMounted, setIsMounted] = useState(false);
-  const [addresses, setAddresses] = useState<Address[]>(DEFAULT_ADDRESSES);
-  const [selectedAddressId, setSelectedAddressId] = useState("addr-1");
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState("");
   const [orderNote, setOrderNote] = useState("");
-  const [couponCode, setCouponCode] = useState("RN05OFF");
+  const [couponCode, setCouponCode] = useState("");
   const [isCouponApplied, setIsCouponApplied] = useState(false);
+  const [discountPercent, setDiscountPercent] = useState(0);
+  const [discountFixedAmount, setDiscountFixedAmount] = useState(0);
+  const [appliedCouponName, setAppliedCouponName] = useState("");
+  const [isCheckingCoupon, setIsCheckingCoupon] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("online"); // online or cod
 
-  // Address creation form states
+  // Address creation / edit form states
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingAddrId, setEditingAddrId] = useState<string | null>(null);
   const [newAddr, setNewAddr] = useState({
     name: "",
     label: "HOME",
@@ -73,7 +63,7 @@ export default function CheckoutPage() {
     addressLine: "",
     city: "",
     state: "",
-    pinCode: ""
+    pinCode: "",
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
@@ -89,45 +79,145 @@ export default function CheckoutPage() {
     }
     setCartItems(items);
 
-    // Compute dynamic delivery dates (Min: +4 days, Max: +8 days)
     const options: Intl.DateTimeFormatOptions = { day: "2-digit", month: "short", year: "numeric" };
     const today = new Date();
-    
+
     const minDate = new Date(today);
     minDate.setDate(today.getDate() + 4);
-    
+
     const maxDate = new Date(today);
     maxDate.setDate(today.getDate() + 8);
 
     setMinDeliveryDate(minDate.toLocaleDateString("en-GB", options));
     setMaxDeliveryDate(maxDate.toLocaleDateString("en-GB", options));
+
+    // Load dynamic saved addresses
+    const session = getCustomerSession();
+    let loadedAddresses: Address[] = [];
+    const stored = localStorage.getItem(SAVED_ADDRESSES_KEY);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          loadedAddresses = parsed;
+        }
+      } catch (err) {
+        console.error("Failed to parse saved addresses:", err);
+      }
+    }
+
+    if (loadedAddresses.length > 0) {
+      setAddresses(loadedAddresses);
+      setSelectedAddressId(loadedAddresses[0].id);
+    } else {
+      setAddresses([]);
+      setShowAddForm(true);
+      if (session) {
+        setNewAddr((prev) => ({
+          ...prev,
+          name: session.name || "",
+          phone: session.mobile || "",
+        }));
+      }
+    }
   }, [router]);
 
-  const handleApplyCoupon = () => {
+  const handleApplyCoupon = async () => {
     if (isCouponApplied) {
       setIsCouponApplied(false);
       setCouponCode("");
-    } else {
-      if (couponCode.trim().toUpperCase() === "RN05OFF") {
-        setIsCouponApplied(true);
-      } else {
-        alert("Invalid coupon code. Try RN05OFF");
+      setDiscountPercent(0);
+      setDiscountFixedAmount(0);
+      setAppliedCouponName("");
+      return;
+    }
+
+    const code = couponCode.trim().toUpperCase();
+    if (!code) {
+      alert("Please enter a coupon code");
+      return;
+    }
+
+    setIsCheckingCoupon(true);
+    try {
+      const res = await fetch(`/api/discounts?q=${encodeURIComponent(code)}`);
+      if (res.ok) {
+        const data = await res.json();
+        const found = data.discounts?.find(
+          (d: any) => d.name.toUpperCase() === code && d.status === "Active"
+        );
+
+        if (found) {
+          if (found.startValue && totalMRP < found.startValue) {
+            alert(`Coupon ${code} requires a minimum cart value of ₹${found.startValue}`);
+            setIsCheckingCoupon(false);
+            return;
+          }
+
+          if (found.type === "Amount") {
+            setDiscountFixedAmount(Number(found.value));
+            setDiscountPercent(0);
+          } else {
+            setDiscountPercent(Number(found.value));
+            setDiscountFixedAmount(0);
+          }
+          setIsCouponApplied(true);
+          setAppliedCouponName(code);
+          setIsCheckingCoupon(false);
+          return;
+        }
       }
+
+      // Default promo code
+      if (code === "RN05OFF") {
+        setDiscountPercent(5);
+        setDiscountFixedAmount(0);
+        setIsCouponApplied(true);
+        setAppliedCouponName("RN05OFF");
+      } else {
+        alert("Invalid or inactive coupon code.");
+      }
+    } catch (err) {
+      console.error("Coupon verification error:", err);
+      if (code === "RN05OFF") {
+        setDiscountPercent(5);
+        setDiscountFixedAmount(0);
+        setIsCouponApplied(true);
+        setAppliedCouponName("RN05OFF");
+      } else {
+        alert("Invalid coupon code.");
+      }
+    } finally {
+      setIsCheckingCoupon(false);
     }
   };
 
-  const handleAddAddressSubmit = (e: React.FormEvent) => {
+  const handleEditAddress = (addr: Address) => {
+    setEditingAddrId(addr.id);
+    setNewAddr({
+      name: addr.name,
+      label: addr.label,
+      phone: addr.phone,
+      addressLine: addr.addressLine,
+      city: addr.city,
+      state: addr.state,
+      pinCode: addr.pinCode,
+    });
+    setShowAddForm(true);
+  };
+
+  const handleAddressFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const errors: Record<string, string> = {};
     if (!newAddr.name.trim()) errors.name = "Name is required";
     if (!newAddr.phone.trim() || newAddr.phone.replace(/[^\d]/g, "").length < 10) {
-      errors.phone = "Valid phone is required";
+      errors.phone = "Valid 10-digit phone is required";
     }
     if (!newAddr.addressLine.trim()) errors.addressLine = "Address is required";
     if (!newAddr.city.trim()) errors.city = "City is required";
     if (!newAddr.state.trim()) errors.state = "State is required";
     if (!newAddr.pinCode.trim() || !/^\d{6}$/.test(newAddr.pinCode.trim())) {
-      errors.pinCode = "6-digit pincode is required";
+      errors.pinCode = "6-digit PIN code is required";
     }
 
     if (Object.keys(errors).length > 0) {
@@ -135,49 +225,254 @@ export default function CheckoutPage() {
       return;
     }
 
-    const created: Address = {
-      id: `addr-${Date.now()}`,
-      ...newAddr
-    };
+    let updatedList: Address[];
+    if (editingAddrId) {
+      // Update existing address
+      updatedList = addresses.map((a) => (a.id === editingAddrId ? { ...a, ...newAddr } : a));
+      setEditingAddrId(null);
+    } else {
+      // Create new address
+      const created: Address = {
+        id: `addr-${Date.now()}`,
+        ...newAddr,
+      };
+      updatedList = [...addresses, created];
+      setSelectedAddressId(created.id);
+    }
 
-    setAddresses((prev) => [...prev, created]);
-    setSelectedAddressId(created.id);
+    setAddresses(updatedList);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(SAVED_ADDRESSES_KEY, JSON.stringify(updatedList));
+    }
+
     setShowAddForm(false);
+    const session = getCustomerSession();
     setNewAddr({
-      name: "",
+      name: session?.name || "",
       label: "HOME",
-      phone: "",
+      phone: session?.mobile || "",
       addressLine: "",
       city: "",
       state: "",
-      pinCode: ""
+      pinCode: "",
     });
     setFormErrors({});
   };
 
-  const handlePlaceOrder = () => {
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const loadRazorpayScript = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if (typeof window === "undefined") return resolve(false);
+      if ((window as any).Razorpay) return resolve(true);
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handlePlaceOrder = async () => {
+    if (isProcessing) return;
+
     const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
     if (!selectedAddress) {
       alert("Please select or add a delivery address.");
       return;
     }
 
-    localStorage.setItem("last_placed_order", JSON.stringify({
-      items: cartItems,
-      total: finalTotal,
-      shipping: {
+    const session = getCustomerSession();
+    const customerEmail = session?.email || "customer@rnvalves.com";
+    const customerPhone = selectedAddress.phone || session?.mobile || "9999999999";
+    const customerName = selectedAddress.name || session?.name || "Customer";
+
+    const generatedOrderId = `RN-ORD-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    const orderPayload = {
+      id: generatedOrderId,
+      customerName,
+      customerPhone,
+      customerEmail,
+      items: cartItems.map((item) => ({
+        id: item.id,
+        name: item.name,
+        code: item.id,
+        color: item.color || "Standard",
+        price: item.price,
+        quantity: item.quantity,
+        image: item.image || "",
+      })),
+      totalAmount: finalTotal,
+      paymentMethod: paymentMethod === "online" ? "Online Payment" : "Cash on Delivery",
+      paymentStatus: paymentMethod === "online" ? "Paid" : "Pending",
+      status: "Pending",
+      shippingAddress: {
         firstName: selectedAddress.name,
         lastName: `(${selectedAddress.label})`,
+        phone: selectedAddress.phone,
+        email: customerEmail,
         address: selectedAddress.addressLine,
         city: selectedAddress.city,
         state: selectedAddress.state,
         pinCode: selectedAddress.pinCode,
-        phone: selectedAddress.phone,
-        email: "customer@rnvalves.com"
-      }
-    }));
+      },
+      transportNotes: orderNote || "",
+      orderDate: new Date().toLocaleString("en-IN", {
+        dateStyle: "short",
+        timeStyle: "short",
+      }),
+      deliveryEstimate: `${minDeliveryDate} - ${maxDeliveryDate}`,
+    };
 
-    router.push("/order-success");
+    if (paymentMethod === "online") {
+      setIsProcessing(true);
+      try {
+        const loaded = await loadRazorpayScript();
+        if (!loaded) {
+          alert("Unable to load Razorpay payment gateway. Please check your internet connection.");
+          setIsProcessing(false);
+          return;
+        }
+
+        const res = await fetch("/api/payment/razorpay/create-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount: finalTotal,
+            receipt: generatedOrderId,
+            notes: {
+              customer_name: customerName,
+              customer_phone: customerPhone,
+              order_id: generatedOrderId,
+            },
+          }),
+        });
+
+        const orderData = await res.json();
+        if (!res.ok) {
+          throw new Error(orderData.error || "Failed to initialize Razorpay payment");
+        }
+
+        const options = {
+          key: orderData.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_live_suYcAnCphr9CQ8",
+          amount: orderData.amount,
+          currency: orderData.currency || "INR",
+          name: "RN Valves & Faucets",
+          description: `Order ${generatedOrderId} - ${cartItems.length} item(s)`,
+          image: "/images/logo.png",
+          order_id: orderData.orderId,
+          handler: async function (response: any) {
+            try {
+              const verifyRes = await fetch("/api/payment/razorpay/verify", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  orderData: {
+                    ...orderPayload,
+                    id: generatedOrderId,
+                  },
+                }),
+              });
+
+              const verifyResult = await verifyRes.json();
+              if (verifyRes.ok && verifyResult.success) {
+                localStorage.setItem(
+                  "last_placed_order",
+                  JSON.stringify({
+                    items: cartItems,
+                    total: finalTotal,
+                    paymentMethod: "Online Payment",
+                    paymentStatus: "Paid",
+                    orderId: generatedOrderId,
+                    paymentId: response.razorpay_payment_id,
+                    orderNote,
+                    shipping: orderPayload.shippingAddress,
+                  })
+                );
+                saveCartItems([]);
+                router.push("/order-success");
+              } else {
+                alert(verifyResult.error || "Payment verification failed. Please contact support.");
+              }
+            } catch (err: any) {
+              console.error("Payment verification error:", err);
+              alert("Payment verification error: " + (err.message || "Please contact support"));
+            } finally {
+              setIsProcessing(false);
+            }
+          },
+          prefill: {
+            name: customerName,
+            contact: customerPhone,
+            email: customerEmail,
+          },
+          notes: {
+            address: `${selectedAddress.addressLine}, ${selectedAddress.city}, ${selectedAddress.state} - ${selectedAddress.pinCode}`,
+            account_bank: "IDFC FIRST Bank",
+          },
+          theme: {
+            color: "#dc2626",
+          },
+          modal: {
+            ondismiss: function () {
+              setIsProcessing(false);
+            },
+          },
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.on("payment.failed", function (response: any) {
+          alert(`Payment failed: ${response.error?.description || "Transaction declined"}`);
+          setIsProcessing(false);
+        });
+        rzp.open();
+      } catch (error: any) {
+        console.error("Online payment error:", error);
+        alert(error.message || "Failed to start payment. Please try again or choose Cash on Delivery.");
+        setIsProcessing(false);
+      }
+    } else {
+      // Cash on Delivery Flow
+      setIsProcessing(true);
+      try {
+        const res = await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(orderPayload),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || "Failed to place COD order");
+        }
+
+        localStorage.setItem(
+          "last_placed_order",
+          JSON.stringify({
+            items: cartItems,
+            total: finalTotal,
+            paymentMethod: "Cash on Delivery",
+            paymentStatus: "Pending",
+            orderId: generatedOrderId,
+            orderNote,
+            shipping: orderPayload.shippingAddress,
+          })
+        );
+
+        saveCartItems([]);
+        router.push("/order-success");
+      } catch (err: any) {
+        console.error("COD order error:", err);
+        alert(err.message || "Failed to place order. Please try again.");
+      } finally {
+        setIsProcessing(false);
+      }
+    }
   };
 
   const formatPrice = (price: number) => {
@@ -188,8 +483,14 @@ export default function CheckoutPage() {
 
   // Pricing calculations
   const totalMRP = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const discountAmount = isCouponApplied ? Math.round(totalMRP * 0.05) : 0;
-  const finalTotal = totalMRP - discountAmount;
+  const calculatedDiscount =
+    discountFixedAmount > 0
+      ? discountFixedAmount
+      : discountPercent > 0
+      ? Math.round(totalMRP * (discountPercent / 100))
+      : 0;
+  const discountAmount = isCouponApplied ? calculatedDiscount : 0;
+  const finalTotal = Math.max(0, totalMRP - discountAmount);
   const progressToDiscount = Math.max(0, 1500 - totalMRP);
 
   if (!isMounted) {
@@ -201,695 +502,389 @@ export default function CheckoutPage() {
       style={{
         minHeight: "100vh",
         width: "100%",
-        background: "#F4F5F7",
+        background: "#FFFFFF",
         overflowX: "hidden",
       }}
     >
       <Header />
 
-      <section
-        data-header-theme="light"
-        style={{
-          width: "100vw",
-          padding: "120px clamp(16px, 4vw, 60px) 40px",
-          boxSizing: "border-box",
-          fontFamily: "system-ui, -apple-system, sans-serif",
-          background: "#F4F5F7",
-        }}
-      >
-        <div style={{ maxWidth: "1340px", margin: "0 auto", width: "100%" }}>
-          
-          <div className="checkout-container">
-            <style>{`
-              .checkout-container {
-                display: grid;
-                grid-template-columns: 1.75fr 1fr;
-                gap: 36px;
-                align-items: start;
-              }
-              .left-pane {
-                display: flex;
-                flex-direction: column;
-                gap: 28px;
-              }
-              .section-card {
-                border: 1px solid #E2E8F0;
-                background: #FFFFFF;
-                border-radius: 4px;
-                overflow: hidden;
-              }
-              .section-header {
-                background: #F7F7F7;
-                padding: 14px 20px;
-                font-size: 13px;
-                font-weight: 700;
-                color: #2D3748;
-                text-transform: uppercase;
-                letter-spacing: 0.04em;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                border-bottom: 1px solid #E2E8F0;
-              }
-              .address-list {
-                display: flex;
-                flex-direction: column;
-              }
-              .address-card {
-                padding: 24px 24px 0 24px;
-                border-bottom: 1px solid #E2E8F0;
-                display: grid;
-                grid-template-columns: 36px 1fr;
-                align-items: start;
-                cursor: pointer;
-                background: #FFFFFF;
-                transition: background-color 0.2s;
-              }
-              .address-card:hover {
-                background: #FAFBFD;
-              }
-              .address-radio {
-                margin-top: 5px;
-                width: 18px;
-                height: 18px;
-                accent-color: #00AEEF;
-              }
-              .address-details {
-                display: flex;
-                flex-direction: column;
-                gap: 6px;
-              }
-              .address-title-row {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                font-size: 14px;
-                font-weight: 700;
-                color: #2D3748;
-              }
-              .address-tag {
-                background: #EAF7FF;
-                color: #00AEEF;
-                font-size: 11px;
-                font-weight: 700;
-                padding: 2px 8px;
-                border-radius: 3px;
-              }
-              .address-text {
-                font-size: 13.5px;
-                color: #4A5568;
-                line-height: 1.5;
-                margin-bottom: 16px;
-              }
-              .address-edit-panel {
-                grid-column: 1 / span 2;
-                border-top: 1px solid #E2E8F0;
-                padding: 10px;
-                text-align: center;
-                font-size: 12px;
-                font-weight: 600;
-                color: #718096;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 6px;
-                background: #FDFDFD;
-                cursor: pointer;
-                transition: background-color 0.2s, color 0.2s;
-              }
-              .address-edit-panel:hover {
-                background: #F7F7F7;
-                color: #000000;
-              }
-              .add-address-btn {
-                background: transparent;
-                border: none;
-                padding: 18px 24px;
-                font-size: 13.5px;
-                font-weight: 700;
-                color: #2D3748;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                cursor: pointer;
-                text-align: left;
-                width: 100%;
-                transition: background-color 0.2s;
-              }
-              .add-address-btn:hover {
-                background: #FAFBFD;
-              }
-              .delivery-estimate-bar {
-                background: #FFFFFF;
-                padding: 16px 20px;
-                font-size: 13px;
-                font-weight: 600;
-                color: #4A5568;
-                border-bottom: 1px solid #E2E8F0;
-                display: flex;
-                flex-wrap: wrap;
-                gap: 8px;
-              }
-              .delivery-estimate-bar span.date-accent {
-                color: #05B851;
-                font-weight: 700;
-              }
-              .checkout-product-card {
-                padding: 24px 20px;
-                display: grid;
-                grid-template-columns: 1fr 100px;
-                gap: 20px;
-                align-items: center;
-                border-bottom: 1px solid #E2E8F0;
-                background: #FFFFFF;
-              }
-              .checkout-product-card:last-child {
-                border-bottom: none;
-              }
-              .checkout-product-info {
-                display: flex;
-                flex-direction: column;
-                gap: 6px;
-              }
-              .checkout-product-title {
-                font-size: 14.5px;
-                font-weight: 600;
-                color: #1A202C;
-                line-height: 1.4;
-                margin: 0;
-              }
-              .checkout-product-price {
-                font-size: 15px;
-                font-weight: 700;
-                color: #111111;
-              }
-              .checkout-product-badges {
-                display: flex;
-                gap: 8px;
-                flex-wrap: wrap;
-                margin-top: 4px;
-              }
-              .checkout-badge {
-                border: 1px solid #E2E8F0;
-                background: #FFFFFF;
-                font-size: 11.5px;
-                font-weight: 600;
-                color: #4A5568;
-                padding: 4px 10px;
-                border-radius: 4px;
-              }
-              .checkout-product-image {
-                width: 80px;
-                height: 80px;
-                object-fit: contain;
-                border: 1px solid #E2E8F0;
-                padding: 4px;
-                background: #FFFFFF;
-                justify-self: end;
-              }
-              
-              /* Address creation form */
-              .address-form {
-                padding: 24px;
-                background: #FCFCFD;
-                border-top: 1px solid #E2E8F0;
-                display: flex;
-                flex-direction: column;
-                gap: 16px;
-              }
-              .address-form-title {
-                font-size: 15px;
-                font-weight: 700;
-                color: #2D3748;
-                margin: 0 0 4px;
-              }
-              .form-row {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 16px;
-              }
-              .form-group {
-                display: flex;
-                flex-direction: column;
-                gap: 6px;
-              }
-              .form-label {
-                font-size: 12px;
-                font-weight: 700;
-                color: #4A5568;
-              }
-              .form-input {
-                border: 1px solid #D1D5DB;
-                border-radius: 4px;
-                padding: 10px 12px;
-                font-size: 13.5px;
-                outline: none;
-                background: #FFFFFF;
-                font-family: inherit;
-              }
-              .form-input:focus {
-                border-color: #00AEEF;
-              }
-              .form-input.error {
-                border-color: #EF4444;
-              }
-              .form-error {
-                font-size: 11.5px;
-                color: #EF4444;
-              }
-              .form-submit-row {
-                display: flex;
-                gap: 12px;
-                margin-top: 8px;
-              }
-              .form-btn-submit {
-                background: #00AEEF;
-                color: #FFFFFF;
-                border: none;
-                padding: 10px 24px;
-                font-weight: 700;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 13.5px;
-              }
-              .form-btn-cancel {
-                background: transparent;
-                border: 1px solid #CCCCCC;
-                color: #4A5568;
-                padding: 10px 20px;
-                font-weight: 600;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 13.5px;
-              }
+      {/* Global & Responsive Checkout Styles */}
+      <style jsx global>{`
+        .checkout-page-section {
+          width: 100vw;
+          padding: 130px clamp(16px, 5vw, 80px) 70px;
+          box-sizing: border-box;
+          font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+          background-color: #ffffff;
+        }
+        @media (max-width: 768px) {
+          .checkout-page-section {
+            padding: 100px 16px 50px;
+          }
+        }
 
-              /* Sidebar elements */
-              .sidebar-pane {
-                display: flex;
-                flex-direction: column;
-                gap: 20px;
-              }
-              .note-textarea {
-                width: 100%;
-                height: 76px;
-                border: 1px solid #E2E8F0;
-                background: #FFFFFF;
-                border-radius: 4px;
-                padding: 12px;
-                font-size: 13.5px;
-                outline: none;
-                resize: none;
-                font-family: inherit;
-                color: #2D3748;
-              }
-              .note-textarea::placeholder {
-                color: #A0AEC0;
-              }
-              
-              /* Promo boxes */
-              .promo-bar-1 {
-                background: #A31F24;
-                color: #FFFFFF;
-                font-size: 13px;
-                font-weight: 700;
-                padding: 14px 18px;
-                border-radius: 4px;
-                text-align: center;
-                line-height: 1.4;
-              }
-              .promo-bar-2 {
-                background: #D1E7DD;
-                color: #0F5132;
-                font-size: 13px;
-                font-weight: 700;
-                padding: 14px 18px;
-                border-radius: 4px;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-              }
-              .promo-bar-3 {
-                background: #00AEEF;
-                color: #FFFFFF;
-                font-size: 13.5px;
-                font-weight: 700;
-                padding: 12px 18px;
-                border-radius: 4px;
-                text-align: center;
-              }
-              .promo-badge-yellow {
-                background: #FFD43B;
-                color: #1A202C;
-                font-size: 11px;
-                font-weight: 800;
-                padding: 3px 8px;
-                border-radius: 2px;
-                letter-spacing: 0.05em;
-              }
-              .coupon-apply-box {
-                border: 1px solid #E2E8F0;
-                background: #FFFFFF;
-                border-radius: 4px;
-                display: flex;
-                overflow: hidden;
-              }
-              .coupon-input {
-                flex: 1;
-                border: none;
-                padding: 14px 16px;
-                font-size: 14px;
-                font-weight: 700;
-                outline: none;
-                color: #2D3748;
-                text-transform: uppercase;
-              }
-              .coupon-apply-btn {
-                background: #00AEEF;
-                color: #FFFFFF;
-                border: none;
-                padding: 0 24px;
-                font-size: 13.5px;
-                font-weight: 800;
-                cursor: pointer;
-                transition: background-color 0.2s;
-              }
-              .coupon-apply-btn:hover {
-                background: #009CD6;
-              }
-              .coupon-apply-btn.applied {
-                background: #EF4444;
-              }
-              .coupon-apply-btn.applied:hover {
-                background: #DC2626;
-              }
+        .checkout-main-grid {
+          display: grid;
+          grid-template-columns: 1.65fr 1fr;
+          gap: 40px;
+          align-items: start;
+        }
+        @media (max-width: 1024px) {
+          .checkout-main-grid {
+            grid-template-columns: 1fr;
+            gap: 32px;
+          }
+        }
 
-              /* Price summary card */
-              .price-summary-card {
-                border: 1px solid #E2E8F0;
-                border-radius: 4px;
-                padding: 24px;
-                background: #FFFFFF;
-                display: flex;
-                flex-direction: column;
-                gap: 16px;
-              }
-              .summary-row {
-                display: flex;
-                justify-content: space-between;
-                font-size: 13.5px;
-                color: #4A5568;
-              }
-              .summary-row.total {
-                border-top: 1px solid #E2E8F0;
-                padding-top: 16px;
-                font-size: 15px;
-                font-weight: 700;
-                color: #1A202C;
-              }
-              .discount-text {
-                color: #05B851;
-                font-weight: 600;
-              }
-              
-              /* Payment choices */
-              .payment-choices {
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-                border-top: 1px solid #E2E8F0;
-                padding-top: 16px;
-              }
-              .payment-choice-label {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                font-size: 13.5px;
-                font-weight: 700;
-                color: #2D3748;
-                cursor: pointer;
-              }
-              .payment-choice-radio {
-                accent-color: #000000;
-                width: 16px;
-                height: 16px;
-              }
-              .payment-icons {
-                display: flex;
-                gap: 4px;
-                align-items: center;
-                margin-left: auto;
-              }
-              .payment-icon-img {
-                height: 16px;
-                width: auto;
-              }
+        .checkout-card {
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
 
-              /* Free shipping box */
-              .free-shipping-box {
-                background: #D1E7DD;
-                color: #0F5132;
-                font-size: 13px;
-                font-weight: 700;
-                padding: 12px 16px;
-                border-radius: 4px;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-              }
+        .checkout-card-header {
+          padding: 16px 22px;
+          font-size: 13px;
+          font-weight: 800;
+          color: #0f172a;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          border-bottom: 1px solid #f1f5f9;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background-color: #fafafa;
+        }
 
-              /* Bottom sticky bar for price & place order */
-              .order-submit-panel {
-                border: 1px solid #EAEAEA;
-                border-radius: 4px;
-                padding: 20px;
-                background: #FFFFFF;
-                display: grid;
-                grid-template-columns: 1fr auto;
-                align-items: center;
-                gap: 16px;
-              }
-              .order-total-label {
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
-              }
-              .order-total-price {
-                font-size: 20px;
-                font-weight: 800;
-                color: #1A202C;
-              }
-              .order-total-lbl {
-                font-size: 12px;
-                font-weight: 600;
-                color: #718096;
-              }
-              .place-order-btn {
-                background: #05B851;
-                color: #FFFFFF;
-                border: none;
-                padding: 16px 48px;
-                font-size: 14.5px;
-                font-weight: 700;
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-                border-radius: 4px;
-                cursor: pointer;
-                transition: background-color 0.2s;
-              }
-              .place-order-btn:hover {
-                background: #049F44;
-              }
+        .address-item-card {
+          padding: 20px 22px;
+          border-bottom: 1px solid #f1f5f9;
+          display: flex;
+          gap: 16px;
+          align-items: flex-start;
+          cursor: pointer;
+          transition: background-color 0.15s ease;
+        }
+        .address-item-card:hover {
+          background-color: #f8fafc;
+        }
+        .address-item-card.selected {
+          background-color: #f8fafc;
+        }
 
-              @media (max-width: 980px) {
-                .checkout-container {
-                  grid-template-columns: 1fr;
-                  gap: 32px;
-                }
-              }
-              @media (max-width: 600px) {
-                .form-row {
-                  grid-template-columns: 1fr;
-                }
-                .order-submit-panel {
-                  grid-template-columns: 1fr;
-                  text-align: center;
-                }
-                .place-order-btn {
-                  width: 100%;
-                }
-              }
-            `}</style>
+        .custom-radio-circle {
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          border: 2px solid #cbd5e1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-top: 2px;
+          flex-shrink: 0;
+          transition: all 0.2s ease;
+        }
+        .custom-radio-circle.active {
+          border-color: #111111;
+          background-color: #111111;
+        }
+        .custom-radio-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background-color: #ffffff;
+        }
 
-            {/* Left Column: Delivery Address & Shipment */}
-            <div className="left-pane">
-              
-              {/* Delivery Address Card */}
-              <div className="section-card">
-                <div className="section-header">
+        .checkout-input-field {
+          width: 100%;
+          padding: 10px 14px;
+          border-radius: 8px;
+          border: 1px solid #d1d5db;
+          font-family: 'Manrope', system-ui, sans-serif;
+          font-size: 13.5px;
+          outline: none;
+          background-color: #ffffff;
+          color: #111111;
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
+          box-sizing: border-box;
+        }
+        .checkout-input-field:focus {
+          border-color: #111111;
+          box-shadow: 0 0 0 1px #111111;
+        }
+        .checkout-input-field.error {
+          border-color: #ef4444;
+        }
+
+        .checkout-btn-primary {
+          background-color: #111111;
+          color: #ffffff;
+          border: none;
+          padding: 14px 28px;
+          font-family: 'Manrope', system-ui, sans-serif;
+          font-size: 14px;
+          font-weight: 700;
+          letter-spacing: 0.02em;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: background-color 0.2s ease, transform 0.1s ease;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          width: 100%;
+        }
+        .checkout-btn-primary:hover {
+          background-color: #262626;
+        }
+        .checkout-btn-primary:active {
+          transform: scale(0.99);
+        }
+
+        .payment-method-card {
+          border: 1.5px solid #e2e8f0;
+          border-radius: 10px;
+          padding: 14px 16px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          background-color: #ffffff;
+        }
+        .payment-method-card:hover {
+          border-color: #94a3b8;
+        }
+        .payment-method-card.active {
+          border-color: #111111;
+          background-color: #f8fafc;
+        }
+      `}</style>
+
+      <section data-header-theme="light" className="checkout-page-section">
+        <div style={{ maxWidth: "1320px", margin: "0 auto", width: "100%" }}>
+          {/* Breadcrumbs */}
+          <nav
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              fontSize: "13px",
+              color: "#888888",
+              marginBottom: "32px",
+            }}
+          >
+            <Link href="/" style={{ color: "#888888", textDecoration: "none" }}>
+              Home
+            </Link>
+            <span>&gt;</span>
+            <Link href="/cart" style={{ color: "#888888", textDecoration: "none" }}>
+              Your Cart
+            </Link>
+            <span>&gt;</span>
+            <span style={{ color: "#111111", fontWeight: 600 }}>Checkout</span>
+          </nav>
+
+          {/* Page Title */}
+          <div style={{ marginBottom: "36px" }}>
+            <h1
+              style={{
+                fontSize: "clamp(26px, 3.2vw, 36px)",
+                fontWeight: 600,
+                color: "#111111",
+                margin: "0 0 6px 0",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              Secure Checkout
+            </h1>
+            <p style={{ margin: 0, fontSize: "14px", color: "#64748b" }}>
+              Review your delivery details and choose a payment method to complete your order.
+            </p>
+          </div>
+
+          <div className="checkout-main-grid">
+            {/* ════════ LEFT COLUMN: Addresses & Order Items ════════ */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
+              {/* ── 1. Delivery Address Card ── */}
+              <div className="checkout-card">
+                <div className="checkout-card-header">
                   <span>Delivery Address</span>
                   <button
                     type="button"
-                    onClick={() => setShowAddForm(true)}
+                    onClick={() => {
+                      setEditingAddrId(null);
+                      setNewAddr({
+                        name: "",
+                        label: "HOME",
+                        phone: "",
+                        addressLine: "",
+                        city: "",
+                        state: "",
+                        pinCode: "",
+                      });
+                      setShowAddForm(!showAddForm);
+                    }}
                     style={{
-                      background: "#FFFFFF",
-                      border: "1px solid #CCCCCC",
-                      borderRadius: "4px",
-                      padding: "5px 10px",
-                      fontSize: "11px",
+                      background: "none",
+                      border: "none",
+                      color: "#111111",
+                      fontSize: "12.5px",
                       fontWeight: 700,
-                      color: "#4A5568",
-                      display: "flex",
+                      cursor: "pointer",
+                      display: "inline-flex",
                       alignItems: "center",
                       gap: "4px",
-                      cursor: "pointer"
+                      textTransform: "none",
+                      letterSpacing: "normal",
                     }}
                   >
-                    <Plus size={11} /> ADD ADDRESS
+                    <Plus size={15} />
+                    <span>{showAddForm ? "Close Form" : "Add Address"}</span>
                   </button>
                 </div>
 
-                <div className="address-list">
-                  {addresses.map((addr) => (
-                    <div
-                      key={addr.id}
-                      className="address-card"
-                      onClick={() => setSelectedAddressId(addr.id)}
-                    >
-                      <input
-                        type="radio"
-                        name="delivery_address"
-                        checked={selectedAddressId === addr.id}
-                        onChange={() => setSelectedAddressId(addr.id)}
-                        className="address-radio"
-                      />
-                      <div className="address-details">
-                        <div className="address-title-row">
-                          <span>{addr.name}</span>
-                          <span className="address-tag">{addr.label}</span>
-                          <span style={{ fontSize: "14px", fontWeight: 700 }}>{addr.phone}</span>
-                        </div>
-                        <div className="address-text">
-                          {addr.addressLine}, {addr.city}, {addr.state} Pincode - {addr.pinCode}
-                        </div>
-                      </div>
-                      
-                      <div className="address-edit-panel">
-                        <Pencil size={11} />
-                        <span>EDIT</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Add new Address Trigger */}
-                {!showAddForm && (
-                  <button type="button" className="add-address-btn" onClick={() => setShowAddForm(true)}>
-                    <Plus size={16} />
-                    <span>ADD NEW ADDRESS</span>
-                  </button>
-                )}
-
-                {/* Inline Address Creation Form */}
+                {/* Add / Edit Address Form */}
                 {showAddForm && (
-                  <form onSubmit={handleAddAddressSubmit} className="address-form">
-                    <h3 className="address-form-title">Create Address</h3>
-                    
-                    <div className="form-group">
-                      <label className="form-label">Full Name</label>
-                      <input
-                        type="text"
-                        value={newAddr.name}
-                        onChange={(e) => setNewAddr((prev) => ({ ...prev, name: e.target.value }))}
-                        className={`form-input ${formErrors.name ? "error" : ""}`}
-                        placeholder="John Doe"
-                      />
-                      {formErrors.name && <span className="form-error">{formErrors.name}</span>}
-                    </div>
+                  <form
+                    onSubmit={handleAddressFormSubmit}
+                    style={{
+                      padding: "24px",
+                      backgroundColor: "#fafafa",
+                      borderBottom: "1px solid #e5e7eb",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "16px",
+                    }}
+                  >
+                    <h4 style={{ margin: 0, fontSize: "14px", fontWeight: 700, color: "#111111" }}>
+                      {editingAddrId ? "Edit Delivery Address" : "Add New Delivery Address"}
+                    </h4>
 
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label className="form-label">Mobile Number</label>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#374151", marginBottom: "4px" }}>
+                          Full Name *
+                        </label>
+                        <input
+                          type="text"
+                          value={newAddr.name}
+                          onChange={(e) => setNewAddr((prev) => ({ ...prev, name: e.target.value }))}
+                          className={`checkout-input-field ${formErrors.name ? "error" : ""}`}
+                          placeholder="e.g. John Doe"
+                        />
+                        {formErrors.name && <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "2px", display: "block" }}>{formErrors.name}</span>}
+                      </div>
+
+                      <div>
+                        <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#374151", marginBottom: "4px" }}>
+                          Phone Number *
+                        </label>
                         <input
                           type="tel"
                           value={newAddr.phone}
                           onChange={(e) => setNewAddr((prev) => ({ ...prev, phone: e.target.value }))}
-                          className={`form-input ${formErrors.phone ? "error" : ""}`}
-                          placeholder="10-digit phone"
+                          className={`checkout-input-field ${formErrors.phone ? "error" : ""}`}
+                          placeholder="10-digit mobile"
                         />
-                        {formErrors.phone && <span className="form-error">{formErrors.phone}</span>}
-                      </div>
-
-                      <div className="form-group">
-                        <label className="form-label">Address Tag</label>
-                        <input
-                          type="text"
-                          value={newAddr.label}
-                          onChange={(e) => setNewAddr((prev) => ({ ...prev, label: e.target.value.toUpperCase() }))}
-                          className="form-input"
-                          placeholder="HOME, OFFICE, etc."
-                        />
+                        {formErrors.phone && <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "2px", display: "block" }}>{formErrors.phone}</span>}
                       </div>
                     </div>
 
-                    <div className="form-group">
-                      <label className="form-label">Street Address / Locality</label>
+                    <div>
+                      <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#374151", marginBottom: "4px" }}>
+                        Street Address / Flat / Building *
+                      </label>
                       <input
                         type="text"
                         value={newAddr.addressLine}
                         onChange={(e) => setNewAddr((prev) => ({ ...prev, addressLine: e.target.value }))}
-                        className={`form-input ${formErrors.addressLine ? "error" : ""}`}
-                        placeholder="House no, Building, Area"
+                        className={`checkout-input-field ${formErrors.addressLine ? "error" : ""}`}
+                        placeholder="House / Flat no, Street, Landmark"
                       />
-                      {formErrors.addressLine && <span className="form-error">{formErrors.addressLine}</span>}
+                      {formErrors.addressLine && <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "2px", display: "block" }}>{formErrors.addressLine}</span>}
                     </div>
 
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label className="form-label">City</label>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#374151", marginBottom: "4px" }}>
+                          City *
+                        </label>
                         <input
                           type="text"
                           value={newAddr.city}
                           onChange={(e) => setNewAddr((prev) => ({ ...prev, city: e.target.value }))}
-                          className={`form-input ${formErrors.city ? "error" : ""}`}
+                          className={`checkout-input-field ${formErrors.city ? "error" : ""}`}
+                          placeholder="City"
                         />
-                        {formErrors.city && <span className="form-error">{formErrors.city}</span>}
+                        {formErrors.city && <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "2px", display: "block" }}>{formErrors.city}</span>}
                       </div>
 
-                      <div className="form-group">
-                        <label className="form-label">State</label>
+                      <div>
+                        <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#374151", marginBottom: "4px" }}>
+                          State *
+                        </label>
                         <input
                           type="text"
                           value={newAddr.state}
                           onChange={(e) => setNewAddr((prev) => ({ ...prev, state: e.target.value }))}
-                          className={`form-input ${formErrors.state ? "error" : ""}`}
+                          className={`checkout-input-field ${formErrors.state ? "error" : ""}`}
+                          placeholder="State"
                         />
-                        {formErrors.state && <span className="form-error">{formErrors.state}</span>}
+                        {formErrors.state && <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "2px", display: "block" }}>{formErrors.state}</span>}
+                      </div>
+
+                      <div>
+                        <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#374151", marginBottom: "4px" }}>
+                          PIN Code *
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={6}
+                          value={newAddr.pinCode}
+                          onChange={(e) => setNewAddr((prev) => ({ ...prev, pinCode: e.target.value }))}
+                          className={`checkout-input-field ${formErrors.pinCode ? "error" : ""}`}
+                          placeholder="6-digit PIN"
+                        />
+                        {formErrors.pinCode && <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "2px", display: "block" }}>{formErrors.pinCode}</span>}
                       </div>
                     </div>
 
-                    <div className="form-group" style={{ maxWidth: "50%" }}>
-                      <label className="form-label">Pin Code</label>
-                      <input
-                        type="text"
-                        maxLength={6}
-                        value={newAddr.pinCode}
-                        onChange={(e) => setNewAddr((prev) => ({ ...prev, pinCode: e.target.value }))}
-                        className={`form-input ${formErrors.pinCode ? "error" : ""}`}
-                        placeholder="6-digit PIN"
-                      />
-                      {formErrors.pinCode && <span className="form-error">{formErrors.pinCode}</span>}
-                    </div>
-
-                    <div className="form-submit-row">
-                      <button type="submit" className="form-btn-submit">
-                        Save Address
+                    <div style={{ display: "flex", gap: "12px", marginTop: "6px" }}>
+                      <button
+                        type="submit"
+                        style={{
+                          backgroundColor: "#111111",
+                          color: "#ffffff",
+                          border: "none",
+                          padding: "10px 22px",
+                          borderRadius: "6px",
+                          fontSize: "13px",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {editingAddrId ? "Save Changes" : "Save Address"}
                       </button>
                       <button
                         type="button"
-                        className="form-btn-cancel"
                         onClick={() => {
                           setShowAddForm(false);
+                          setEditingAddrId(null);
                           setFormErrors({});
+                        }}
+                        style={{
+                          backgroundColor: "transparent",
+                          color: "#475569",
+                          border: "1px solid #d1d5db",
+                          padding: "10px 18px",
+                          borderRadius: "6px",
+                          fontSize: "13px",
+                          fontWeight: 600,
+                          cursor: "pointer",
                         }}
                       >
                         Cancel
@@ -897,195 +892,457 @@ export default function CheckoutPage() {
                     </div>
                   </form>
                 )}
+
+                {/* Addresses List */}
+                <div>
+                  {addresses.length === 0 && !showAddForm && (
+                    <div style={{ textAlign: "center", padding: "28px 16px", color: "#64748b" }}>
+                      <MapPin size={28} style={{ margin: "0 auto 8px", color: "#94a3b8" }} />
+                      <p style={{ margin: "0 0 6px", fontSize: "13.5px", fontWeight: 700, color: "#1e293b" }}>
+                        No delivery address saved yet
+                      </p>
+                      <p style={{ margin: "0 0 14px", fontSize: "12.5px" }}>
+                        Please add a delivery address to complete your order.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setShowAddForm(true)}
+                        className="checkout-btn-secondary"
+                        style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
+                      >
+                        <Plus size={14} />
+                        <span>Add New Address</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {addresses.map((addr) => {
+                    const isSelected = selectedAddressId === addr.id;
+                    return (
+                      <div
+                        key={addr.id}
+                        onClick={() => setSelectedAddressId(addr.id)}
+                        className={`address-item-card ${isSelected ? "selected" : ""}`}
+                      >
+                        <div className={`custom-radio-circle ${isSelected ? "active" : ""}`}>
+                          {isSelected && <div className="custom-radio-dot" />}
+                        </div>
+
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "4px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                              <span style={{ fontSize: "14px", fontWeight: 700, color: "#111111" }}>
+                                {addr.name}
+                              </span>
+                              <span
+                                style={{
+                                  backgroundColor: "#1e293b",
+                                  color: "#ffffff",
+                                  fontSize: "10.5px",
+                                  fontWeight: 700,
+                                  padding: "2px 7px",
+                                  borderRadius: "4px",
+                                  letterSpacing: "0.03em",
+                                }}
+                              >
+                                {addr.label}
+                              </span>
+                              <span style={{ fontSize: "13px", fontWeight: 500, color: "#64748b" }}>
+                                {addr.phone}
+                              </span>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditAddress(addr);
+                              }}
+                              style={{
+                                background: "none",
+                                border: "none",
+                                color: "#0284c7",
+                                fontSize: "12px",
+                                fontWeight: 600,
+                                cursor: "pointer",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                padding: 0,
+                              }}
+                            >
+                              <Pencil size={12} />
+                              <span>Edit</span>
+                            </button>
+                          </div>
+
+                          <p style={{ margin: 0, fontSize: "13px", color: "#475569", lineHeight: 1.5 }}>
+                            {addr.addressLine}, {addr.city}, {addr.state} —{" "}
+                            <strong style={{ color: "#111111", fontWeight: 600 }}>{addr.pinCode}</strong>
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
-              {/* Estimated Delivery Section */}
-              <div className="section-card">
-                <div className="section-header">
+              {/* ── 2. Estimated Delivery & Order Items Preview ── */}
+              <div className="checkout-card">
+                <div className="checkout-card-header">
                   <span>Estimated Delivery</span>
                 </div>
-                
-                <div className="delivery-estimate-bar">
-                  <span>Shipment : By Min - </span>
-                  <span className="date-accent">{minDeliveryDate}</span>
-                  <span> Max - </span>
-                  <span className="date-accent">{maxDeliveryDate}</span>
+
+                {/* Delivery Estimate Bar */}
+                <div
+                  style={{
+                    padding: "14px 22px",
+                    backgroundColor: "#f8fafc",
+                    borderBottom: "1px solid #e5e7eb",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    fontSize: "13px",
+                    color: "#334155",
+                    fontWeight: 500,
+                  }}
+                >
+                  <Truck size={16} style={{ color: "#059669" }} />
+                  <span>
+                    Expected Delivery: By{" "}
+                    <strong style={{ color: "#059669", fontWeight: 700 }}>{minDeliveryDate}</strong> –{" "}
+                    <strong style={{ color: "#059669", fontWeight: 700 }}>{maxDeliveryDate}</strong>
+                  </span>
                 </div>
 
-                <div className="checkout-products-list">
-                  {cartItems.map((item) => (
-                    <div key={`${item.id}-${item.color}`} className="checkout-product-card">
-                      
-                      <div className="checkout-product-info">
-                        <h3 className="checkout-product-title">{item.name}</h3>
-                        <div className="checkout-product-price">
-                          ₹{formatPrice(item.price)}
+                {/* Products List in Cart */}
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  {cartItems.map((item, idx) => (
+                    <div
+                      key={`${item.id}-${item.color}-${idx}`}
+                      style={{
+                        padding: "18px 22px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "16px",
+                        borderBottom: idx === cartItems.length - 1 ? "none" : "1px solid #f1f5f9",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "16px", minWidth: 0 }}>
+                        <div
+                          style={{
+                            width: "68px",
+                            height: "68px",
+                            borderRadius: "8px",
+                            backgroundColor: "#f8fafc",
+                            border: "1px solid #e2e8f0",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            overflow: "hidden",
+                            flexShrink: 0,
+                            padding: "4px",
+                          }}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={item.image || "/api/media/website/catalogue/products/default/image.webp"}
+                            alt={item.name}
+                            style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                          />
                         </div>
-                        <div className="checkout-product-badges">
-                          <span className="checkout-badge">Size: {item.size || "Standard"}</span>
-                          {item.color && item.color !== "Standard" && (
-                            <span className="checkout-badge">Color: {item.color}</span>
-                          )}
-                          <span className="checkout-badge">Qty: {item.quantity}</span>
+
+                        <div style={{ minWidth: 0 }}>
+                          <h4
+                            style={{
+                              margin: "0 0 4px 0",
+                              fontSize: "14px",
+                              fontWeight: 600,
+                              color: "#111111",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {item.name}
+                          </h4>
+
+                          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", fontSize: "11.5px", color: "#64748b" }}>
+                            {item.size && <span>Size: <strong style={{ color: "#334155" }}>{item.size}</strong></span>}
+                            {item.color && item.color !== "Standard" && (
+                              <span>Color: <strong style={{ color: "#334155" }}>{item.color}</strong></span>
+                            )}
+                            <span>Qty: <strong style={{ color: "#334155" }}>{item.quantity}</strong></span>
+                          </div>
                         </div>
                       </div>
 
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={item.image} alt={item.name} className="checkout-product-image" />
+                      <div style={{ fontSize: "16px", fontWeight: 700, color: "#111111", flexShrink: 0 }}>
+                        ₹{formatPrice(item.price * item.quantity)}
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
-
             </div>
 
-            {/* Right Column: Order Summary, Note, Coupon, Prices */}
-            <div className="sidebar-pane">
-              
-              {/* Note input */}
-              <textarea
-                placeholder="Note (Opt.)"
-                value={orderNote}
-                onChange={(e) => setOrderNote(e.target.value)}
-                className="note-textarea"
-              />
+            {/* ════════ RIGHT COLUMN: Coupon, Notes, Summary & Payment ════════ */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              {/* Order Note */}
+              <div className="checkout-card" style={{ padding: "16px" }}>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#374151", marginBottom: "6px" }}>
+                  Order Notes (Optional)
+                </label>
+                <textarea
+                  placeholder="Any special instructions for packaging or delivery..."
+                  value={orderNote}
+                  onChange={(e) => setOrderNote(e.target.value)}
+                  style={{
+                    width: "100%",
+                    height: "64px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "6px",
+                    padding: "10px",
+                    fontSize: "13px",
+                    fontFamily: "'Manrope', system-ui, sans-serif",
+                    color: "#111111",
+                    outline: "none",
+                    resize: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
 
-              {/* Promo Bars */}
+              {/* Promo Banner */}
               {progressToDiscount > 0 ? (
-                <div className="promo-bar-1">
-                  Add products worth ₹ {formatPrice(progressToDiscount)} more to unlock a discount of 10%!
+                <div
+                  style={{
+                    backgroundColor: "#fef3c7",
+                    border: "1px solid #fde68a",
+                    borderRadius: "8px",
+                    padding: "12px 16px",
+                    fontSize: "12.5px",
+                    fontWeight: 600,
+                    color: "#92400e",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <Tag size={15} />
+                  <span>Add products worth ₹{formatPrice(progressToDiscount)} more to unlock 10% OFF!</span>
                 </div>
               ) : (
-                <div className="promo-bar-1" style={{ background: "#05B851" }}>
-                  🎉 You have unlocked a 10% discount on your order!
+                <div
+                  style={{
+                    backgroundColor: "#ecfdf5",
+                    border: "1px solid #a7f3d0",
+                    borderRadius: "8px",
+                    padding: "12px 16px",
+                    fontSize: "12.5px",
+                    fontWeight: 600,
+                    color: "#065f46",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <Check size={15} />
+                  <span>🎉 You have unlocked a 10% discount on your order!</span>
                 </div>
               )}
 
-              <div className="promo-bar-2">
-                <span>You are eligible 5 % OFF</span>
-                <span className="promo-badge-yellow">RN05OFF</span>
+              {/* Coupon Code Input Box */}
+              <div className="checkout-card" style={{ padding: "16px" }}>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#374151", marginBottom: "6px" }}>
+                  Have a Coupon Code?
+                </label>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <input
+                    type="text"
+                    placeholder="e.g. RN05OFF"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value)}
+                    disabled={isCouponApplied}
+                    style={{
+                      flex: 1,
+                      padding: "10px 12px",
+                      borderRadius: "6px",
+                      border: "1px solid #d1d5db",
+                      fontFamily: "'Manrope', system-ui, sans-serif",
+                      fontSize: "13px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.04em",
+                      fontWeight: 600,
+                      outline: "none",
+                      backgroundColor: isCouponApplied ? "#f1f5f9" : "#ffffff",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyCoupon}
+                    style={{
+                      backgroundColor: isCouponApplied ? "#ef4444" : "#111111",
+                      color: "#ffffff",
+                      border: "none",
+                      padding: "10px 18px",
+                      borderRadius: "6px",
+                      fontFamily: "'Manrope', system-ui, sans-serif",
+                      fontSize: "12.5px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      transition: "background-color 0.2s ease",
+                    }}
+                  >
+                    {isCouponApplied ? "REMOVE" : "APPLY"}
+                  </button>
+                </div>
               </div>
 
-              <div className="promo-bar-3">
-                Get Discount with using coupon code!
-              </div>
-
-              {/* Coupon Box */}
-              <div className="coupon-apply-box">
-                <input
-                  type="text"
-                  placeholder="Enter Coupon Code"
-                  value={couponCode}
-                  onChange={(e) => setCouponCode(e.target.value)}
-                  className="coupon-input"
-                  disabled={isCouponApplied}
-                />
-                <button
-                  type="button"
-                  className={`coupon-apply-btn ${isCouponApplied ? "applied" : ""}`}
-                  onClick={handleApplyCoupon}
+              {/* Price Summary & Payment Selection */}
+              <div className="checkout-card" style={{ padding: "20px" }}>
+                <h3
+                  style={{
+                    margin: "0 0 16px 0",
+                    fontSize: "13px",
+                    fontWeight: 800,
+                    letterSpacing: "0.04em",
+                    color: "#0f172a",
+                    textTransform: "uppercase",
+                    borderBottom: "1px solid #f1f5f9",
+                    paddingBottom: "12px",
+                  }}
                 >
-                  {isCouponApplied ? "REMOVE" : "APPLY"}
-                </button>
-              </div>
+                  Price Summary
+                </h3>
 
-              {/* Price Summary Panel */}
-              <div className="price-summary-card">
-                <div style={{ fontSize: "14px", fontWeight: 700, color: "#1A202C", borderBottom: "1px solid #E2E8F0", paddingBottom: "12px" }}>
-                  PRICE SUMMARY
-                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "13.5px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", color: "#475569" }}>
+                    <span>Total MRP (Inc. of Taxes)</span>
+                    <span style={{ fontWeight: 600, color: "#111111" }}>₹{formatPrice(totalMRP)}.00</span>
+                  </div>
 
-                <div className="summary-row">
-                  <span>Total MRP (Inc. of Taxes)</span>
-                  <span>₹{formatPrice(totalMRP)}.00</span>
-                </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", color: "#475569" }}>
+                    <span>Shipping Fee</span>
+                    <span style={{ fontWeight: 700, color: "#059669" }}>FREE</span>
+                  </div>
 
-                <div className="summary-row">
-                  <span>Shipping Fee</span>
-                  <span>₹0.00</span>
-                </div>
-
-                <div className="summary-row">
-                  <span>Cart Discount</span>
-                  <span className="discount-text">- ₹{formatPrice(discountAmount)}.00</span>
-                </div>
-
-                <div className="summary-row total">
-                  <span>Sub Total</span>
-                  <span>₹{formatPrice(finalTotal)}.00</span>
-                </div>
-
-                {/* Payment choices */}
-                <div className="payment-choices">
-                  <label className="payment-choice-label">
-                    <input
-                      type="radio"
-                      name="payment_choice"
-                      value="online"
-                      checked={paymentMethod === "online"}
-                      onChange={() => setPaymentMethod("online")}
-                      className="payment-choice-radio"
-                    />
-                    <span>Online Pay</span>
-                    <div className="payment-icons">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="https://hindware.com/images/payment-icons.png" alt="cards" className="payment-icon-img" onError={(e) => {
-                        e.currentTarget.style.display = "none";
-                      }} />
+                  {discountAmount > 0 && (
+                    <div style={{ display: "flex", justifyContent: "space-between", color: "#059669" }}>
+                      <span>Coupon Discount</span>
+                      <span style={{ fontWeight: 700 }}>- ₹{formatPrice(discountAmount)}.00</span>
                     </div>
-                  </label>
+                  )}
 
-                  <label className="payment-choice-label">
-                    <input
-                      type="radio"
-                      name="payment_choice"
-                      value="cod"
-                      checked={paymentMethod === "cod"}
-                      onChange={() => setPaymentMethod("cod")}
-                      className="payment-choice-radio"
-                    />
-                    <span>Cash On Delivery</span>
-                    <Truck size={14} style={{ color: "#718096" }} />
-                  </label>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      borderTop: "1px solid #e2e8f0",
+                      paddingTop: "12px",
+                      marginTop: "6px",
+                      fontSize: "16px",
+                      fontWeight: 800,
+                      color: "#111111",
+                    }}
+                  >
+                    <span>Sub Total</span>
+                    <span>₹{formatPrice(finalTotal)}.00</span>
+                  </div>
                 </div>
-              </div>
 
-              {/* Free shipping message banner */}
-              <div className="free-shipping-box">
-                <Check size={14} />
-                <span>Congratulations! You&apos;ve unlocked FREE shipping!</span>
-              </div>
+                {/* Payment Methods */}
+                <div style={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <span style={{ fontSize: "12px", fontWeight: 700, color: "#374151" }}>
+                    Select Payment Method
+                  </span>
 
-              {/* Sticky total / submit block */}
-              <div className="order-submit-panel">
-                <div className="order-total-label">
-                  <span className="order-total-lbl">Total Amount</span>
-                  <span className="order-total-price">₹{formatPrice(finalTotal)}.00</span>
+                  <div
+                    onClick={() => setPaymentMethod("online")}
+                    className={`payment-method-card ${paymentMethod === "online" ? "active" : ""}`}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <div className={`custom-radio-circle ${paymentMethod === "online" ? "active" : ""}`}>
+                        {paymentMethod === "online" && <div className="custom-radio-dot" />}
+                      </div>
+                      <div>
+                        <span style={{ fontSize: "13.5px", fontWeight: 700, color: "#111111" }}>
+                          Online Payment
+                        </span>
+                        <p style={{ margin: "2px 0 0 0", fontSize: "11px", color: "#64748b" }}>
+                          UPI, Credit/Debit Cards, NetBanking
+                        </p>
+                      </div>
+                    </div>
+                    <CreditCard size={18} style={{ color: "#64748b" }} />
+                  </div>
+
+                  <div
+                    onClick={() => setPaymentMethod("cod")}
+                    className={`payment-method-card ${paymentMethod === "cod" ? "active" : ""}`}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <div className={`custom-radio-circle ${paymentMethod === "cod" ? "active" : ""}`}>
+                        {paymentMethod === "cod" && <div className="custom-radio-dot" />}
+                      </div>
+                      <div>
+                        <span style={{ fontSize: "13.5px", fontWeight: 700, color: "#111111" }}>
+                          Cash on Delivery
+                        </span>
+                        <p style={{ margin: "2px 0 0 0", fontSize: "11px", color: "#64748b" }}>
+                          Pay via cash or UPI upon delivery
+                        </p>
+                      </div>
+                    </div>
+                    <Banknote size={18} style={{ color: "#64748b" }} />
+                  </div>
                 </div>
+
+                {/* Place Order CTA Button */}
                 <button
                   type="button"
-                  className="place-order-btn"
+                  disabled={isProcessing}
                   onClick={handlePlaceOrder}
+                  className="checkout-btn-primary"
+                  style={{
+                    marginTop: "24px",
+                    opacity: isProcessing ? 0.75 : 1,
+                    cursor: isProcessing ? "not-allowed" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "10px",
+                  }}
                 >
-                  PLACE ORDER
+                  {isProcessing ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      <span>PROCESSING {paymentMethod === "online" ? "PAYMENT" : "ORDER"}...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck size={18} />
+                      <span>
+                        {paymentMethod === "online" ? "PROCEED TO PAY" : "PLACE ORDER"} (₹{formatPrice(finalTotal)})
+                      </span>
+                    </>
+                  )}
                 </button>
               </div>
-
             </div>
-
           </div>
-
         </div>
       </section>
 
-      {/* Yellow Bottom sticky/info strip */}
+      {/* Luxury Bottom Support / Dealer Strip */}
       <div
         style={{
           width: "100%",
-          background: "#FFFBEB",
-          borderTop: "1px solid #FEF3C7",
-          borderBottom: "1px solid #FEF3C7",
-          padding: "20px 24px",
+          backgroundColor: "#f8fafc",
+          borderTop: "1px solid #e2e8f0",
+          borderBottom: "1px solid #e2e8f0",
+          padding: "24px",
           boxSizing: "border-box",
         }}
       >
@@ -1098,26 +1355,26 @@ export default function CheckoutPage() {
             justifyContent: "space-around",
             alignItems: "center",
             gap: "20px",
-            fontFamily: "system-ui, sans-serif",
-            fontSize: "14px",
+            fontFamily: "'Manrope', system-ui, sans-serif",
+            fontSize: "13px",
             fontWeight: 700,
-            color: "#1E293B",
+            color: "#0f172a",
           }}
         >
           <a href="#" style={{ display: "flex", alignItems: "center", gap: "8px", textDecoration: "none", color: "inherit" }}>
-            <MapPin size={18} style={{ color: "#D97706" }} />
+            <MapPin size={17} style={{ color: "#0284c7" }} />
             <span>Dealer Locator</span>
           </a>
           <a href="#" style={{ display: "flex", alignItems: "center", gap: "8px", textDecoration: "none", color: "inherit" }}>
-            <Phone size={18} style={{ color: "#D97706" }} />
+            <Phone size={17} style={{ color: "#0284c7" }} />
             <span>Talk to an Expert</span>
           </a>
           <a href="#" style={{ display: "flex", alignItems: "center", gap: "8px", textDecoration: "none", color: "inherit" }}>
-            <Download size={18} style={{ color: "#D97706" }} />
+            <Download size={17} style={{ color: "#0284c7" }} />
             <span>Download Catalogue</span>
           </a>
           <a href="#" style={{ display: "flex", alignItems: "center", gap: "8px", textDecoration: "none", color: "inherit" }}>
-            <Headset size={18} style={{ color: "#D97706" }} />
+            <Headset size={17} style={{ color: "#0284c7" }} />
             <span>Customer Service Request</span>
           </a>
         </div>

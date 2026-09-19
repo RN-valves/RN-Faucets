@@ -10,7 +10,7 @@ if (typeof window !== "undefined") {
 }
 
 const PRODUCT_IMAGE_URL =
-  "https://hindware.com/_next/image?url=https%3A%2F%2Fhindwarestg.blob.core.windows.net%2Fcontainer1%2Fproducts%2FBathroom-1756100455419-1756463985636.webp&w=3840&q=75";
+  "/api/media/website/catalogue/categories/cat-cp-faucets/banner.webp";
 
 interface ProductShowcaseProps {
   data?: {

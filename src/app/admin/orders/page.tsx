@@ -71,6 +71,13 @@ interface OrderData {
   dispatchDate?: string;
   vehicleNumber?: string;
   transportNotes?: string;
+  // Razorpay & Shipping Integration
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  shippingProvider?: string;
+  shiprocketOrderId?: string | number;
+  shipwayOrderId?: string | number;
+  awbCode?: string;
   orderDate: string;
   deliveryEstimate?: string;
   createdAt?: string;
@@ -94,6 +101,9 @@ export default function AdminOrdersPage() {
   // Modal inspection & tracking state
   const [selectedOrder, setSelectedOrder] = useState<OrderData | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isShippingShiprocket, setIsShippingShiprocket] = useState(false);
+  const [isShippingShipway, setIsShippingShipway] = useState(false);
+
   const [transportForm, setTransportForm] = useState({
     status: "Shipped" as OrderData["status"],
     paymentStatus: "Paid" as OrderData["paymentStatus"],
@@ -183,6 +193,58 @@ export default function AdminOrdersPage() {
       console.error("Failed to save transport details:", err);
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleShipWithShiprocket = async () => {
+    if (!selectedOrder) return;
+    setIsShippingShiprocket(true);
+    try {
+      const res = await fetch("/api/shipping/shiprocket", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: selectedOrder.id }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert("Order successfully registered & dispatched with Shiprocket!");
+        if (data.order) {
+          setSelectedOrder(data.order);
+        }
+        fetchOrders();
+      } else {
+        alert("Shiprocket error: " + (data.error || "Failed to dispatch"));
+      }
+    } catch (err: any) {
+      alert("Failed to connect to Shiprocket API: " + err.message);
+    } finally {
+      setIsShippingShiprocket(false);
+    }
+  };
+
+  const handleShipWithShipway = async () => {
+    if (!selectedOrder) return;
+    setIsShippingShipway(true);
+    try {
+      const res = await fetch("/api/shipping/shipway", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: selectedOrder.id }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert("Order successfully synced & dispatched with Shipway!");
+        if (data.order) {
+          setSelectedOrder(data.order);
+        }
+        fetchOrders();
+      } else {
+        alert("Shipway error: " + (data.error || "Failed to dispatch"));
+      }
+    } catch (err: any) {
+      alert("Failed to connect to Shipway API: " + err.message);
+    } finally {
+      setIsShippingShipway(false);
     }
   };
 
@@ -470,6 +532,36 @@ export default function AdminOrdersPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* Payment & Logistics Status Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-indigo-50/70 border border-indigo-100 rounded-xl text-xs">
+              <div className="space-y-0.5">
+                <p className="font-semibold text-indigo-900">Payment: <span className="font-bold">{selectedOrder.paymentMethod}</span> ({selectedOrder.paymentStatus})</p>
+                {selectedOrder.razorpayPaymentId && (
+                  <p className="text-[11px] font-mono text-indigo-700">Razorpay ID: {selectedOrder.razorpayPaymentId}</p>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={isShippingShiprocket}
+                  onClick={handleShipWithShiprocket}
+                  className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg shadow-sm transition disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  <Truck size={14} />
+                  {isShippingShiprocket ? "Dispatching..." : "Ship with Shiprocket"}
+                </button>
+                <button
+                  type="button"
+                  disabled={isShippingShipway}
+                  onClick={handleShipWithShipway}
+                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-sm transition disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  <Package size={14} />
+                  {isShippingShipway ? "Syncing..." : "Ship with Shipway"}
+                </button>
               </div>
             </div>
 

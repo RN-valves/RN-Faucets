@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Subcategory from "@/models/Subcategory";
+import Product from "@/models/Product";
 
 export async function GET(request: Request) {
   try {
@@ -20,7 +21,25 @@ export async function GET(request: Request) {
     }
 
     const subcategories = await Subcategory.find(filter).sort({ displayOrder: 1, createdAt: -1 }).lean();
-    return NextResponse.json(subcategories);
+
+    const counts = await Product.aggregate([
+      { $group: { _id: "$subcategoryName", count: { $sum: 1 } } },
+    ]);
+    const countMap = new Map<string, number>();
+    counts.forEach((c) => {
+      if (c._id) countMap.set(c._id.toString().toLowerCase().trim(), c.count);
+    });
+
+    const subcategoriesWithCount = subcategories.map((sub: any) => {
+      const nameKey = (sub.name || "").toLowerCase().trim();
+      const count = countMap.get(nameKey) || 0;
+      return {
+        ...sub,
+        productCount: count,
+      };
+    });
+
+    return NextResponse.json(subcategoriesWithCount);
   } catch (error) {
     console.error("GET /api/subcategories error:", error);
     return NextResponse.json({ error: "Failed to fetch subcategories" }, { status: 500 });

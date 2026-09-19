@@ -21,63 +21,6 @@ interface ProductItem {
   image: string;
 }
 
-const BASE_PRODUCTS: ProductItem[] = [
-  {
-    id: 0,
-    name: "Obsidian Deck Mounted Faucet",
-    price: "₹18,490",
-    sku: "HW-FAU-OBS-01",
-    image:
-      "https://hindware.com/_next/image?url=https%3A%2F%2Fhindwarestg.blob.core.windows.net%2Fcontainer1%2Fproducts%2F894ffe93-b067-44c2-b45d-455047b4448b.png&w=1200&q=75",
-  },
-  {
-    id: 1,
-    name: "Rainfall Overhead Shower",
-    price: "₹24,990",
-    sku: "HW-SHW-RF-02",
-    image:
-      "https://hindware.com/_next/image?url=https%3A%2F%2Fhindwarestg.blob.core.windows.net%2Fcontainer1%2Fproducts%2F00fb3464-ede4-477a-a0a5-1f00cf80aac3.png&w=1200&q=75",
-  },
-  {
-    id: 2,
-    name: "Aura Wall Hung Closet",
-    price: "₹32,750",
-    sku: "HW-WC-AUR-03",
-    image:
-      "https://hindware.com/_next/image?url=https%3A%2F%2Fhindwarestg.blob.core.windows.net%2Fcontainer1%2Fproducts%2Fffce0ec1-9d9b-42a0-af1d-7e179eed4aa3.png&w=1200&q=75",
-  },
-  {
-    id: 3,
-    name: "Smart Kitchen Chimney",
-    price: "₹28,999",
-    sku: "HW-APP-CHM-04",
-    image:
-      "https://hindware.com/_next/image?url=https%3A%2F%2Fhindwarestg.blob.core.windows.net%2Fcontainer1%2Fproducts%2Fdb1b8c16-b65b-4293-bc97-c6f1b510b42d.webp&w=1200&q=75",
-  },
-  {
-    id: 4,
-    name: "Optimus iPro BLDC Cooler",
-    price: "₹21,490",
-    sku: "HW-CLR-OPT-05",
-    image:
-      "https://hindware.com/_next/image?url=https%3A%2F%2Fhindwarestg.blob.core.windows.net%2Fcontainer1%2Fproducts%2FWebsite-Homepage-Banners-640x990px-optimus-iPro-BLDC-Blk-1761904192697-1762151279642.webp&w=1920&q=75",
-  },
-  {
-    id: 5,
-    name: "Ceramic Counter Wash Basin",
-    price: "₹12,890",
-    sku: "HW-BAS-CER-06",
-    image:
-      "https://hindware.com/_next/image?url=https%3A%2F%2Fhindwarestg.blob.core.windows.net%2Fcontainer1%2Fproducts%2Fe6628fa2-ac78-4b19-a704-4b441cd6ddaa.png&w=1200&q=75",
-  },
-];
-
-const DISPLAY_ITEMS: ProductItem[] = [
-  ...BASE_PRODUCTS,
-  ...BASE_PRODUCTS.map((c) => ({ ...c, id: c.id + 6 })),
-  ...BASE_PRODUCTS.map((c) => ({ ...c, id: c.id + 12 })),
-];
-
 const CARD_BG =
   "linear-gradient(180deg, #FFFFFF 0%, #E8E8E8 35%, #9A9A9A 70%, #1A1A1A 100%)";
 
@@ -258,15 +201,61 @@ interface BestSellerCategoriesSectionProps {
 }
 
 export default function BestSellerCategoriesSection({ data }: BestSellerCategoriesSectionProps) {
+  const [dbProducts, setDbProducts] = useState<ProductItem[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/products")
+      .then((res) => res.json())
+      .then((resData) => {
+        const items = resData.products || resData;
+        if (Array.isArray(items)) {
+          const active = items.filter(
+            (p: any) =>
+              p.status !== "Inactive" &&
+              p.isVisibleWebsite !== false &&
+              p.isVisible !== false
+          );
+          const mapped: ProductItem[] = active.slice(0, 12).map((p: any, idx: number) => {
+            const priceNum = Number(p.inSelling ?? p.price ?? 0);
+            const formattedPrice = priceNum > 0 ? `₹${priceNum.toLocaleString("en-IN")}` : "₹1,490";
+            const sku = p.skuCode || p.code || p.article || `RN-${p.id || idx}`;
+            const image = p.image || (Array.isArray(p.gallery) && p.gallery[0]) || "/api/media/website/catalogue/products/default/image.webp";
+            return {
+              id: idx,
+              name: p.name,
+              price: formattedPrice,
+              sku: sku,
+              image: image,
+            };
+          });
+          setDbProducts(mapped);
+        }
+        setIsLoaded(true);
+      })
+      .catch((err) => {
+        console.error("Failed to load products for BestSellerCategoriesSection:", err);
+        setIsLoaded(true);
+      });
+  }, []);
+
   if (data?.visible === false) return null;
 
-  const validProducts = data?.products?.filter((p) => Boolean(p.image));
-  const productsList = validProducts && validProducts.length > 0 ? validProducts : BASE_PRODUCTS;
-  const productsSequence = [
+  const validPropsProducts = data?.products?.filter((p) => Boolean(p.image));
+  const productsList =
+    dbProducts.length > 0
+      ? dbProducts
+      : validPropsProducts && validPropsProducts.length > 0
+      ? validPropsProducts
+      : [];
+
+  if (isLoaded && productsList.length === 0) return null;
+
+  const productsSequence = productsList.length > 0 ? [
     ...productsList,
     ...productsList.map((p, i) => ({ ...p, id: (p.id || i) + productsList.length })),
     ...productsList.map((p, i) => ({ ...p, id: (p.id || i) + productsList.length * 2 })),
-  ];
+  ] : [];
 
   const sectionTitle =
     data?.title &&

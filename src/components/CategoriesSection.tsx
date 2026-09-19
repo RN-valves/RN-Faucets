@@ -30,44 +30,7 @@ const SEC_H = 540;
 const GAP = 48;
 const STEP = SEC_W + GAP;
 
-const FALLBACK_CATEGORIES: CategoryItem[] = [
-  {
-    id: 0,
-    name: "CP Faucets",
-    subtitle: "Precision engineering with timeless style",
-    href: "/faucets",
-    slug: "cp-faucets",
-    image:
-      "https://hindware.com/_next/image?url=https%3A%2F%2Fhindwarestg.blob.core.windows.net%2Fcontainer1%2Fproducts%2F894ffe93-b067-44c2-b45d-455047b4448b.png&w=1200&q=75",
-  },
-  {
-    id: 1,
-    name: "Showers",
-    subtitle: "Indulgent shower experiences for a premium lifestyle",
-    href: "/faucets",
-    slug: "showers",
-    image:
-      "https://hindware.com/_next/image?url=https%3A%2F%2Fhindwarestg.blob.core.windows.net%2Fcontainer1%2Fproducts%2F00fb3464-ede4-477a-a0a5-1f00cf80aac3.png&w=1200&q=75",
-  },
-  {
-    id: 2,
-    name: "PTMT Accessories",
-    subtitle: "Unbreakable, corrosion-free PTMT polymer bath fittings",
-    href: "/faucets",
-    slug: "ptmt-accessories",
-    image:
-      "https://hindware.com/_next/image?url=https%3A%2F%2Fhindwarestg.blob.core.windows.net%2Fcontainer1%2Fproducts%2Fe6628fa2-ac78-4b19-a704-4b441cd6ddaa.png&w=1200&q=75",
-  },
-  {
-    id: 3,
-    name: "Bathroom Accessories",
-    subtitle: "Stainless steel and brass luxury bath hardware",
-    href: "/faucets",
-    slug: "bathroom-accessories",
-    image:
-      "https://hindware.com/_next/image?url=https%3A%2F%2Fhindwarestg.blob.core.windows.net%2Fproducts%2Fffce0ec1-9d9b-42a0-af1d-7e179eed4aa3.png&w=1200&q=75",
-  },
-];
+const DEFAULT_CATEGORY_PLACEHOLDER = "/api/media/website/catalogue/products/default/image.webp";
 
 /* ─── Progress ring indicators ─── */
 const RING_SIZE = 38;
@@ -251,7 +214,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
             subtitle: cat.description || cat.title || `Explore ${cat.name} luxury collection`,
             slug: cat.slug,
             href: `/${cat.slug}`,
-            image: cat.image || cat.banner || FALLBACK_CATEGORIES[index % FALLBACK_CATEGORIES.length].image,
+            image: cat.image || cat.banner || DEFAULT_CATEGORY_PLACEHOLDER,
           }));
           setDbCategories(mapped);
         }
@@ -267,19 +230,19 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
 
   const validPropsCategories = data?.categories?.filter((c: any) => Boolean(c.image) && c.status !== "Inactive" && c.isVisibleWebsite !== false);
   const categoriesList =
-    isLoaded && dbCategories.length > 0
+    dbCategories.length > 0
       ? dbCategories
       : validPropsCategories && validPropsCategories.length > 0
       ? validPropsCategories
-      : dbCategories.length > 0
-      ? dbCategories
-      : FALLBACK_CATEGORIES;
+      : [];
 
-  const displaySequence = [
+  if (isLoaded && categoriesList.length === 0) return null;
+
+  const displaySequence = categoriesList.length > 0 ? [
     ...categoriesList,
     ...categoriesList.map((c, i) => ({ ...c, id: (c.id || i) + categoriesList.length })),
     ...categoriesList.map((c, i) => ({ ...c, id: (c.id || i) + categoriesList.length * 2 })),
-  ];
+  ] : [];
 
   const [virtualIndex, setVirtualIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);

@@ -7,218 +7,110 @@ import { getCartItems } from "@/utils/cart";
 import { getCustomerSession, clearCustomerSession, CustomerSession } from "@/utils/customerAuth";
 import { getAdminAuth, logoutAdmin } from "@/utils/adminStore";
 
-interface CatalogueFeatureCard {
-  categoryId: string;
-  title: string;
-  subtitle: string;
-  imagePrompt: string;
-}
-
-interface CatalogueQuickLink {
-  id: string;
-  title: string;
-  imagePrompt: string;
-}
-
 const USER_MENU_LINKS = [
   "About Us",
   "Catalogues",
-  "Find Dealers",
   "Become A Channel Partner",
-  "Customer Portal",
   "Blogs",
-  "Events",
-  "Our Projects",
   "Contact Us",
-  "Career",
-  "Newsletter",
-  "Digital Gallery",
 ] as const;
 
 const USER_MENU_ROUTES: Partial<Record<(typeof USER_MENU_LINKS)[number], string>> = {
   "About Us": "/about-us",
+  "Become A Channel Partner": "/business-user-registration",
+  "Blogs": "/blogs",
+  "Contact Us": "/contact-us",
 };
 
-const CATALOGUE_FEATURE_CARDS: readonly CatalogueFeatureCard[] = [
-  {
-    categoryId: "ptmt-accessories",
-    title: "Virtu Pine Collection",
-    subtitle: "Premium design, perfect flow.",
-    imagePrompt:
-      "premium white polymer faucet on a matte white basin, teal luxury bathroom wall, soft daylight, editorial product photography, clean composition, realistic materials, water design brochure aesthetic",
-  },
-  {
-    categoryId: "ptmt-accessories",
-    title: "Lagoon Pine Collection",
-    subtitle: "Inspired by nature, built to last.",
-    imagePrompt:
-      "sleek white polymer faucet beside a large window with calm sea view, premium sink styling, airy luxury bathroom interior, realistic editorial catalogue photography, soft natural light",
-  },
-  {
-    categoryId: "ptmt-accessories",
-    title: "Lagoon Regal Collection",
-    subtitle: "Regal look, royal experience.",
-    imagePrompt:
-      "matte black angular faucet on a sculpted basin, moody luxury bathroom, dark stone backdrop, warm reflective lighting, premium editorial catalogue photo, realistic high-end interior styling",
-  },
-  {
-    categoryId: "jet-spray",
-    title: "Virtu Regal Collection",
-    subtitle: "Elegant design, everyday luxury.",
-    imagePrompt:
-      "black square-spout faucet on modern sink, charcoal textured wall, subtle greenery, premium bathroom brochure photography, realistic materials, cinematic but clean lighting",
-  },
-  {
-    categoryId: "jet-spray",
-    title: "G20 Pine Collection",
-    subtitle: "Smooth performance, timeless style.",
-    imagePrompt:
-      "curved white faucet with flowing water on a minimal basin, beige textured wall, warm soft daylight, sophisticated catalogue photography, realistic faucet finish and bathroom props",
-  },
-  {
-    categoryId: "jet-spray",
-    title: "G20 Regal Collection",
-    subtitle: "Durable. Reliable. Remarkable.",
-    imagePrompt:
-      "chrome gooseneck faucet with flowing water, dark premium bathroom setting, polished metal reflections, realistic editorial product image, luxury sanitary brochure aesthetic",
-  },
-  {
-    categoryId: "exposed-shower",
-    title: "Aqua Arc Shower Suite",
-    subtitle: "Balanced spray, clean architectural form.",
-    imagePrompt:
-      "premium exposed shower set with diverter panel, polished chrome finish, deep navy luxury bathroom backdrop, realistic editorial sanitaryware photography, refined reflections",
-  },
-  {
-    categoryId: "exposed-shower",
-    title: "Hydra Panel Collection",
-    subtitle: "Statement hardware with hotel-grade comfort.",
-    imagePrompt:
-      "sleek shower panel system with hand shower and diverter controls, moody spa bathroom, realistic chrome textures, premium catalogue lighting",
-  },
-  {
-    categoryId: "exposed-shower",
-    title: "Rainline Trim Set",
-    subtitle: "Immersive flow for modern bath spaces.",
-    imagePrompt:
-      "luxury rain shower with exposed diverter set, charcoal stone wall, realistic metal reflections, high-end brochure photography",
-  },
-  {
-    categoryId: "single-lever",
-    title: "MonoSense Mixer Series",
-    subtitle: "Minimal control, precise everyday use.",
-    imagePrompt:
-      "single lever mixer faucet in premium chrome, modern vanity setup, dark editorial backdrop, realistic product photography, luxury bathroom catalogue",
-  },
-  {
-    categoryId: "single-lever",
-    title: "Sensor Flow Collection",
-    subtitle: "Touchless convenience with premium styling.",
-    imagePrompt:
-      "sensor faucet and mixer pair, matte dark background, realistic chrome finish, sophisticated sanitary brochure aesthetic",
-  },
-  {
-    categoryId: "single-lever",
-    title: "Studio Lever Range",
-    subtitle: "Sharp silhouette, smooth water control.",
-    imagePrompt:
-      "sleek single lever faucet collection on luxury basin counter, soft spotlighting, realistic reflections, editorial catalogue composition",
-  },
-  {
-    categoryId: "cistern-seat-cover",
-    title: "PureSeat Cistern Set",
-    subtitle: "Clean lines with dependable comfort.",
-    imagePrompt:
-      "modern cistern and seat cover in premium white ceramic bathroom, soft daylight, realistic sanitaryware brochure image, elegant showroom look",
-  },
-  {
-    categoryId: "cistern-seat-cover",
-    title: "SilentFlush Collection",
-    subtitle: "Refined utility for contemporary homes.",
-    imagePrompt:
-      "white seat cover and cistern set in a minimal luxury bathroom, realistic materials, calm neutral palette, catalogue photography",
-  },
-  {
-    categoryId: "cistern-seat-cover",
-    title: "Nova Comfort Series",
-    subtitle: "Durable essentials, elevated finish.",
-    imagePrompt:
-      "premium cistern system and toilet seat cover, clean showroom setup, realistic sanitaryware product photo, soft architectural light",
-  },
-  {
-    categoryId: "bathroom-accessories",
-    title: "Aura Accessory Line",
-    subtitle: "Refined details that finish the space.",
-    imagePrompt:
-      "bathroom accessories set with towel ring, robe hook and soap dish, polished chrome, dark luxury backdrop, realistic editorial product shot",
-  },
-  {
-    categoryId: "bathroom-accessories",
-    title: "Edge Utility Series",
-    subtitle: "Elegant support for daily rituals.",
-    imagePrompt:
-      "premium bathroom accessory collection mounted on textured wall, realistic chrome reflections, high-end bathroom catalogue aesthetic",
-  },
-  {
-    categoryId: "bathroom-accessories",
-    title: "Contour Hardware Set",
-    subtitle: "Complete accents with a modern tone.",
-    imagePrompt:
-      "chrome bathroom accessories lineup in studio lighting, dark navy background, realistic brochure photography, luxury fittings brand style",
-  },
-] as const;
-
-const CATALOGUE_QUICK_LINKS: readonly CatalogueQuickLink[] = [
-  {
-    id: "ptmt-accessories",
-    title: "PTMT Accessories, Garden Pipes & Waste Pipe",
-    imagePrompt:
-      "collection of premium plumbing accessories and garden pipes, dark luxury studio backdrop, metallic highlights, realistic product lineup, catalogue photography",
-  },
-  {
-    id: "jet-spray",
-    title: "Jet Spray, Health Faucets & Hygiene",
-    imagePrompt:
-      "premium chrome jet spray and health faucet set, dark gradient background, realistic reflections, elegant brochure product shot",
-  },
-  {
-    id: "exposed-shower",
-    title: "Exposed Shower Set & Diverter Panel",
-    imagePrompt:
-      "luxury shower set with diverter panel, premium chrome finish, dark navy background, realistic editorial product photography",
-  },
-  {
-    id: "single-lever",
-    title: "Single Lever Mixer & Sensor Faucets",
-    imagePrompt:
-      "single lever mixer and sensor faucet collection, dark premium studio lighting, realistic chrome products, high-end catalogue photo",
-  },
-  {
-    id: "cistern-seat-cover",
-    title: "Cistern & Seat Cover",
-    imagePrompt:
-      "modern white cistern and seat cover set, premium showroom lighting, clean minimal background, realistic sanitaryware product photography",
-  },
-  {
-    id: "bathroom-accessories",
-    title: "Bathroom Accessories",
-    imagePrompt:
-      "bathroom accessories set including towel ring and soap holder, chrome finishes, dark luxury backdrop, realistic brochure photography",
-  },
-] as const;
-
-function createAiImageUrl(prompt: string, imageSize: string) {
-  return `https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=${encodeURIComponent(prompt)}&image_size=${imageSize}`;
+interface DynamicCategory {
+  _id?: string;
+  id: string;
+  name: string;
+  slug: string;
+  image?: string;
+  banner?: string;
+  icon?: string;
+  description?: string;
 }
 
-function CatalogueDashboard() {
-  const [activeCatalogueCategory, setActiveCatalogueCategory] = useState<string>(
-    CATALOGUE_QUICK_LINKS[0]?.id ?? "",
-  );
+interface DynamicSubcategory {
+  _id?: string;
+  id: string;
+  categoryId: string;
+  categoryName?: string;
+  name: string;
+  slug: string;
+  image?: string;
+  banner?: string;
+  description?: string;
+}
 
-  const activeQuickLink =
-    CATALOGUE_QUICK_LINKS.find((item) => item.id === activeCatalogueCategory) ?? CATALOGUE_QUICK_LINKS[0];
-  const visibleCards = CATALOGUE_FEATURE_CARDS.filter((card) => card.categoryId === activeCatalogueCategory);
+function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
+  const router = useRouter();
+  const [categories, setCategories] = useState<DynamicCategory[]>([]);
+  const [subcategories, setSubcategories] = useState<DynamicSubcategory[]>([]);
+  const [activeCategoryId, setActiveCategoryId] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadCatalogueData() {
+      try {
+        setLoading(true);
+        const [catRes, subRes] = await Promise.all([
+          fetch("/api/categories"),
+          fetch("/api/subcategories"),
+        ]);
+
+        const cats = catRes.ok ? await catRes.json() : [];
+        const subs = subRes.ok ? await subRes.json() : [];
+
+        if (Array.isArray(cats) && cats.length > 0) {
+          setCategories(cats);
+          setActiveCategoryId(cats[0].id || (cats[0] as any)._id || cats[0].slug);
+        }
+        if (Array.isArray(subs) && subs.length > 0) {
+          setSubcategories(subs);
+        }
+      } catch (err) {
+        console.error("Failed to load dynamic catalogue dashboard data:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadCatalogueData();
+  }, []);
+
+  const activeCategory =
+    categories.find(
+      (c) =>
+        c.id === activeCategoryId ||
+        (c as any)._id === activeCategoryId ||
+        c.slug === activeCategoryId
+    ) || categories[0];
+
+  // Match subcategories for current category
+  const activeSubcategories = subcategories.filter((sub) => {
+    if (!activeCategory) return false;
+    const catId = activeCategory.id || (activeCategory as any)._id;
+    return (
+      String(sub.categoryId) === String(catId) ||
+      (sub.categoryName &&
+        activeCategory.name &&
+        sub.categoryName.toLowerCase().trim() === activeCategory.name.toLowerCase().trim())
+    );
+  });
+
+  const getCardImage = (imgSrc?: string, fallbackIdx: number = 0) => {
+    if (imgSrc && imgSrc.trim() && !imgSrc.includes("coresg-normal.trae.ai")) {
+      return imgSrc;
+    }
+    return "/api/media/website/catalogue/products/default/image.webp";
+  };
+
+  const handleNavigate = (path: string) => {
+    if (onClose) onClose();
+    router.push(path);
+  };
 
   return (
     <div
@@ -234,6 +126,7 @@ function CatalogueDashboard() {
         gap: "28px",
       }}
     >
+      {/* ── Left / Center Content ── */}
       <div
         style={{
           flex: 1,
@@ -241,27 +134,38 @@ function CatalogueDashboard() {
           display: "flex",
           flexDirection: "column",
           gap: "18px",
+          height: "calc(100vh - 56px)",
+          overflowY: "auto",
+          paddingRight: "8px",
         }}
       >
+        {/* Active Category Title Pill */}
         <div
+          onClick={() => activeCategory && handleNavigate(`/faucets/${activeCategory.slug || activeCategory.id}`)}
           style={{
             display: "inline-flex",
             alignItems: "center",
             alignSelf: "flex-start",
-            padding: "10px 18px",
+            padding: "10px 20px",
             borderRadius: "14px",
             background: "linear-gradient(90deg, rgba(17,42,73,0.95) 0%, rgba(17,171,118,0.96) 100%)",
             color: "#f5fbff",
-            fontFamily: "'Inter', 'Helvetica Neue', Helvetica, sans-serif",
-            fontSize: "15px",
+            fontFamily: "'Inter', 'Helvetica Neue', Helvetica, 'Manrope', sans-serif",
+            fontSize: "14.5px",
             fontWeight: 600,
             letterSpacing: "-0.01em",
             boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
+            cursor: "pointer",
+            transition: "transform 0.2s ease",
           }}
+          onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.02)")}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
         >
-          {activeQuickLink?.title ?? "Catalogue Collection"}
+          <span>{activeCategory?.name ?? "Catalogue Collection"}</span>
+          <ChevronRight size={16} style={{ marginLeft: "6px", opacity: 0.9 }} />
         </div>
 
+        {/* Dynamic Cards Grid */}
         <div
           style={{
             display: "grid",
@@ -270,164 +174,278 @@ function CatalogueDashboard() {
             minWidth: 0,
           }}
         >
-          {visibleCards.map((card) => (
+          {activeSubcategories.length > 0 ? (
+            activeSubcategories.map((sub, idx) => {
+              const cardImg = getCardImage(sub.image || sub.banner || activeCategory?.image, idx);
+              const targetSlug = sub.slug || sub.id;
+
+              return (
+                <article
+                  key={sub.id || idx}
+                  onClick={() => handleNavigate(`/faucets/${targetSlug}`)}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "44% 1fr",
+                    minHeight: "174px",
+                    overflow: "hidden",
+                    borderRadius: "18px",
+                    border: "1px solid rgba(157, 200, 255, 0.18)",
+                    background:
+                      "linear-gradient(180deg, rgba(17,39,65,0.96) 0%, rgba(5,13,25,0.97) 100%)",
+                    boxShadow: "0 14px 34px rgba(0,0,0,0.24)",
+                    cursor: "pointer",
+                    transition: "transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-3px)";
+                    e.currentTarget.style.borderColor = "rgba(100, 180, 255, 0.6)";
+                    e.currentTarget.style.boxShadow = "0 18px 40px rgba(0, 100, 220, 0.25)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.borderColor = "rgba(157, 200, 255, 0.18)";
+                    e.currentTarget.style.boxShadow = "0 14px 34px rgba(0,0,0,0.24)";
+                  }}
+                >
+                  <div
+                    style={{
+                      height: "100%",
+                      backgroundColor: "#0d1f35",
+                      backgroundImage: `url(${cardImg})`,
+                      backgroundSize: "contain",
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: "center",
+                      padding: "8px",
+                    }}
+                  />
+
+                  <div
+                    style={{
+                      padding: "22px 20px 18px",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      gap: "14px",
+                    }}
+                  >
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      <h3
+                        style={{
+                          margin: 0,
+                          color: "#f8fbff",
+                          fontFamily: "'Inter', 'Helvetica Neue', Helvetica, 'Manrope', sans-serif",
+                          fontSize: "17.5px",
+                          fontWeight: 600,
+                          lineHeight: 1.3,
+                          letterSpacing: "-0.01em",
+                        }}
+                      >
+                        {sub.name}
+                      </h3>
+                      <p
+                        style={{
+                          margin: 0,
+                          color: "rgba(220, 233, 245, 0.8)",
+                          fontFamily: "'Inter', 'Helvetica Neue', Helvetica, 'Manrope', sans-serif",
+                          fontSize: "13px",
+                          fontWeight: 400,
+                          lineHeight: 1.5,
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                        }}
+                      >
+                        {sub.description || "Precision engineered collection for modern luxury."}
+                      </p>
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                      <span
+                        style={{
+                          width: "38px",
+                          height: "38px",
+                          borderRadius: "999px",
+                          border: "1px solid rgba(197, 220, 245, 0.4)",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#f8fbff",
+                          backgroundColor: "rgba(255, 255, 255, 0.05)",
+                          transition: "background 0.2s ease, transform 0.2s ease",
+                        }}
+                      >
+                        <ChevronRight size={17} strokeWidth={1.8} />
+                      </span>
+                    </div>
+                  </div>
+                </article>
+              );
+            })
+          ) : (
+            /* Fallback single collection exploration card if no subcategories exist */
             <article
-              key={card.title}
+              onClick={() => activeCategory && handleNavigate(`/faucets/${activeCategory.slug || activeCategory.id}`)}
               style={{
+                gridColumn: "1 / -1",
                 display: "grid",
-                gridTemplateColumns: "44% 1fr",
-                minHeight: "174px",
+                gridTemplateColumns: "36% 1fr",
+                minHeight: "220px",
                 overflow: "hidden",
                 borderRadius: "18px",
-                border: "1px solid rgba(157, 200, 255, 0.18)",
+                border: "1px solid rgba(157, 200, 255, 0.25)",
                 background:
                   "linear-gradient(180deg, rgba(17,39,65,0.96) 0%, rgba(5,13,25,0.97) 100%)",
                 boxShadow: "0 14px 34px rgba(0,0,0,0.24)",
+                cursor: "pointer",
               }}
             >
               <div
                 style={{
                   height: "100%",
-                  backgroundImage: `url(${createAiImageUrl(card.imagePrompt, "landscape_4_3")})`,
-                  backgroundSize: "cover",
+                  backgroundColor: "#0d1f35",
+                  backgroundImage: `url(${getCardImage(activeCategory?.image, 0)})`,
+                  backgroundSize: "contain",
+                  backgroundRepeat: "no-repeat",
                   backgroundPosition: "center",
+                  padding: "12px",
                 }}
               />
-
               <div
                 style={{
-                  padding: "22px 20px 18px",
+                  padding: "28px 24px",
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "space-between",
-                  gap: "14px",
+                  gap: "16px",
                 }}
               >
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                <div>
                   <h3
                     style={{
-                      margin: 0,
+                      margin: "0 0 10px 0",
                       color: "#f8fbff",
-                      fontFamily: "'Inter', 'Helvetica Neue', Helvetica, sans-serif",
-                      fontSize: "19px",
-                      fontWeight: 500,
-                      lineHeight: 1.28,
-                      letterSpacing: "-0.02em",
+                      fontSize: "20px",
+                      fontWeight: 700,
                     }}
                   >
-                    {card.title}
+                    {activeCategory?.name}
                   </h3>
                   <p
                     style={{
                       margin: 0,
-                      color: "rgba(220, 233, 245, 0.8)",
-                      fontFamily: "'Inter', 'Helvetica Neue', Helvetica, sans-serif",
+                      color: "rgba(220, 233, 245, 0.85)",
                       fontSize: "14px",
-                      fontWeight: 400,
-                      lineHeight: 1.55,
+                      lineHeight: 1.6,
                     }}
                   >
-                    {card.subtitle}
+                    {activeCategory?.description ||
+                      "Browse the complete catalogue range, technical specifications, and available finishes."}
                   </p>
                 </div>
-
-                <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <span
-                    style={{
-                      width: "40px",
-                      height: "40px",
-                      borderRadius: "999px",
-                      border: "1px solid rgba(197, 220, 245, 0.4)",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#f8fbff",
-                    }}
-                  >
-                    <ChevronRight size={18} strokeWidth={1.6} />
-                  </span>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#38bdf8", fontWeight: 700, fontSize: "14px" }}>
+                  <span>Explore Range Products</span>
+                  <ChevronRight size={18} />
                 </div>
               </div>
             </article>
-          ))}
+          )}
         </div>
       </div>
 
+      {/* ── Right Categories Column ── */}
       <aside
         style={{
-          width: "228px",
-          minWidth: "228px",
+          width: "240px",
+          minWidth: "240px",
           display: "flex",
           flexDirection: "column",
           gap: "10px",
+          height: "calc(100vh - 56px)",
+          overflowY: "auto",
+          paddingRight: "4px",
         }}
       >
-        {CATALOGUE_QUICK_LINKS.map((item) => (
-          <button
-            key={item.title}
-            type="button"
-            onClick={() => setActiveCatalogueCategory(item.id)}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "64px 1fr auto",
-              alignItems: "center",
-              gap: "12px",
-              padding: "10px",
-              borderRadius: "16px",
-              border:
-                activeCatalogueCategory === item.id
+        {categories.map((item, idx) => {
+          const isSelected =
+            activeCategoryId === item.id ||
+            activeCategoryId === (item as any)._id ||
+            activeCategoryId === item.slug;
+          const thumbnailImg = getCardImage(item.icon || item.image, idx);
+
+          return (
+            <button
+              key={item.id || idx}
+              type="button"
+              onClick={() => setActiveCategoryId(item.id || (item as any)._id || item.slug)}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "56px 1fr auto",
+                alignItems: "center",
+                gap: "12px",
+                padding: "10px 12px",
+                borderRadius: "16px",
+                border: isSelected
                   ? "1px solid rgba(92, 174, 255, 0.78)"
                   : "1px solid rgba(157, 200, 255, 0.18)",
-              background:
-                activeCatalogueCategory === item.id
+                background: isSelected
                   ? "linear-gradient(180deg, rgba(16,42,75,0.98) 0%, rgba(5,18,33,0.98) 100%)"
                   : "linear-gradient(180deg, rgba(12,28,48,0.96) 0%, rgba(4,12,24,0.98) 100%)",
-              boxShadow:
-                activeCatalogueCategory === item.id
+                boxShadow: isSelected
                   ? "0 12px 28px rgba(28, 109, 196, 0.24)"
                   : "0 10px 26px rgba(0,0,0,0.2)",
-              cursor: "pointer",
-              textAlign: "left",
-              width: "100%",
-              color: "inherit",
-              transition: "border-color 0.24s ease, background 0.24s ease, box-shadow 0.24s ease, transform 0.24s ease",
-            }}
-            onMouseEnter={(event) => {
-              event.currentTarget.style.transform = "translateX(-2px)";
-            }}
-            onMouseLeave={(event) => {
-              event.currentTarget.style.transform = "translateX(0)";
-            }}
-          >
-            <div
-              style={{
-                width: "64px",
-                height: "64px",
-                borderRadius: "12px",
-                backgroundImage: `url(${createAiImageUrl(item.imagePrompt, "square_hd")})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
+                cursor: "pointer",
+                textAlign: "left",
+                width: "100%",
+                color: "inherit",
+                transition: "border-color 0.24s ease, background 0.24s ease, box-shadow 0.24s ease, transform 0.24s ease",
               }}
-            />
-            <p
-              style={{
-                margin: 0,
-                color: activeCatalogueCategory === item.id ? "#ffffff" : "#f4f8fc",
-                fontFamily: "'Inter', 'Helvetica Neue', Helvetica, sans-serif",
-                fontSize: "13px",
-                fontWeight: 500,
-                lineHeight: 1.45,
+              onMouseEnter={(event) => {
+                event.currentTarget.style.transform = "translateX(-2px)";
+              }}
+              onMouseLeave={(event) => {
+                event.currentTarget.style.transform = "translateX(0)";
               }}
             >
-              {item.title}
-            </p>
-            <ChevronRight
-              size={16}
-              strokeWidth={1.6}
-              color={activeCatalogueCategory === item.id ? "#ffffff" : "rgba(248, 251, 255, 0.85)"}
-            />
-          </button>
-        ))}
+              <div
+                style={{
+                  width: "56px",
+                  height: "56px",
+                  borderRadius: "12px",
+                  backgroundColor: "#081322",
+                  backgroundImage: `url(${thumbnailImg})`,
+                  backgroundSize: "contain",
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "center",
+                  flexShrink: 0,
+                  padding: "4px",
+                }}
+              />
+              <p
+                style={{
+                  margin: 0,
+                  color: isSelected ? "#ffffff" : "#f4f8fc",
+                  fontFamily: "'Inter', 'Helvetica Neue', Helvetica, 'Manrope', sans-serif",
+                  fontSize: "12.5px",
+                  fontWeight: 600,
+                  lineHeight: 1.4,
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                }}
+              >
+                {item.name}
+              </p>
+              <ChevronRight
+                size={16}
+                strokeWidth={1.8}
+                color={isSelected ? "#ffffff" : "rgba(248, 251, 255, 0.85)"}
+                style={{ flexShrink: 0 }}
+              />
+            </button>
+          );
+        })}
       </aside>
     </div>
   );
@@ -1178,7 +1196,7 @@ export default function Header({ data }: HeaderProps) {
           </div>
 
           {activeUserMenuLink === "Catalogues" ? (
-            <CatalogueDashboard />
+            <CatalogueDashboard onClose={() => setUserMenuOpen(false)} />
           ) : (
             <div
               style={{

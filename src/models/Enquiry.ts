@@ -3,8 +3,12 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 export interface IEnquiry extends Document {
   id: string;
   customerName: string;
+  companyName?: string;
   email: string;
   phone: string;
+  profession?: string;
+  zipcode?: string;
+  address?: string;
   subject: string;
   message: string;
   date: string;
@@ -15,8 +19,12 @@ const EnquirySchema = new Schema<IEnquiry>(
   {
     id: { type: String, required: true, unique: true },
     customerName: { type: String, required: true },
+    companyName: { type: String, default: "" },
     email: { type: String, required: true },
     phone: { type: String, default: "" },
+    profession: { type: String, default: "" },
+    zipcode: { type: String, default: "" },
+    address: { type: String, default: "" },
     subject: { type: String, default: "" },
     message: { type: String, default: "" },
     date: { type: String, required: true },

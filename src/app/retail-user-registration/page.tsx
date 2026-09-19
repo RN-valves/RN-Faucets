@@ -8,7 +8,7 @@ import FooterSection from "@/components/FooterSection";
 
 import { setCustomerSession } from "@/utils/customerAuth";
 
-const LOGIN_BG = "https://hindware.com/img/registration/login-bg.jpg";
+const LOGIN_BG = "/api/media/website/catalogue/products/default/image.webp";
 
 export default function RetailUserRegistrationPage() {
   const router = useRouter();

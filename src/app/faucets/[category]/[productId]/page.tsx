@@ -22,10 +22,6 @@ import {
 } from "lucide-react";
 import Header from "@/components/Header";
 import FooterSection from "@/components/FooterSection";
-import {
-  getFaucetProductById,
-  getFaucetRangeProducts,
-} from "@/data/faucetProducts";
 import { addToCart } from "@/utils/cart";
 
 const FEATURE_TILES = [
@@ -85,8 +81,6 @@ const SPEC_ICONS = [
   { icon: Truck, label: "Strong Build" },
 ];
 
-type FaucetRangeProduct = ReturnType<typeof getFaucetRangeProducts>[number];
-
 const getFinishSwatchClassName = (name: string) => {
   const lowerName = name.toLowerCase();
 
@@ -117,12 +111,13 @@ function AlsoLikeProductCard({
   item,
   category,
 }: {
-  item: FaucetRangeProduct;
+  item: any;
   category: string;
 }) {
+  const itemKey = item.id || item.code || item.skuCode;
   return (
     <Link
-      href={`/faucets/${category}/${item.id}`}
+      href={`/faucets/${category}/${itemKey}`}
       className="also-like-card"
       aria-label={`View ${item.name}`}
       style={{
@@ -173,7 +168,7 @@ function AlsoLikeProductCard({
               fontWeight: 500,
               lineHeight: 1.4,
               color: "#1a1a1a",
-              margin: "0 0 12px 0",
+              margin: "0 0 8px 0",
               display: "-webkit-box",
               WebkitLineClamp: 2,
               WebkitBoxOrient: "vertical",
@@ -183,6 +178,68 @@ function AlsoLikeProductCard({
           >
             {item.name}
           </h3>
+
+          {/* Size & Article Number info row */}
+          {((item as any).article || (item as any).code || (item as any).size) && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: "6px",
+                marginBottom: "12px",
+                fontFamily: "'Manrope', system-ui, sans-serif",
+                fontSize: "12px",
+                lineHeight: 1.2,
+              }}
+            >
+              {((item as any).article || (item as any).code) ? (
+                <span
+                  style={{
+                    color: "#4b5563",
+                    fontWeight: 500,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                  }}
+                >
+                  <span
+                    style={{
+                      color: "#8c96a3",
+                      fontSize: "11px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.03em",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Art:
+                  </span>
+                  <span style={{ fontWeight: 600, color: "#1f2937" }}>
+                    {(item as any).article || (item as any).code}
+                  </span>
+                </span>
+              ) : (
+                <span />
+              )}
+
+              {(item as any).size && (
+                <span
+                  style={{
+                    color: "#334155",
+                    fontWeight: 600,
+                    fontSize: "11px",
+                    backgroundColor: "rgba(0, 0, 0, 0.05)",
+                    padding: "2px 8px",
+                    borderRadius: "4px",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Size: {(item as any).size}
+                </span>
+              )}
+            </div>
+          )}
 
           <div
             style={{
@@ -202,8 +259,6 @@ function AlsoLikeProductCard({
             >
               ₹{item.price.toLocaleString("en-IN")}/-
             </span>
-
-            <span className={getFinishSwatchClassName(item.name)} aria-hidden="true" />
           </div>
         </div>
       </article>
@@ -249,8 +304,7 @@ export default function FaucetProductPage({
     loadData();
   }, [productId, category]);
 
-  const staticProduct = getFaucetProductById(productId);
-  const rawProduct = dbProduct || staticProduct;
+  const rawProduct = dbProduct;
 
   const product = {
     id: rawProduct?.id || rawProduct?.code || productId,
@@ -351,7 +405,6 @@ export default function FaucetProductPage({
     return false;
   };
 
-  const products = getFaucetRangeProducts();
   const colorVariants = dbVariants.filter((item: any) => isSameProductColorVariant(item, rawProduct));
   const variantProducts = colorVariants.length > 0 ? [product, ...colorVariants] : [];
 
@@ -369,8 +422,8 @@ export default function FaucetProductPage({
   });
   const sizeProducts = Array.from(sizeOptionsMap.values());
   const alsoLikeProducts = useMemo(
-    () => products.filter((item) => item.id !== product.id).slice(0, 12),
-    [products, product.id],
+    () => dbVariants.filter((item: any) => (item.id || item.code || item.skuCode) !== (product.id || product.code)).slice(0, 12),
+    [dbVariants, product.id, product.code],
   );
 
   const alsoLikeTrackRef = useRef<HTMLDivElement | null>(null);

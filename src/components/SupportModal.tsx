@@ -2,7 +2,7 @@
 
 import { useEffect, useState, FormEvent } from "react";
 
-const BANNER_IMG = "https://hindware.com/img/cat-banner.webp";
+const BANNER_IMG = "/api/media/website/catalogue/products/default/image.webp";
 
 const INDIAN_STATES = [
   "Andhra Pradesh",

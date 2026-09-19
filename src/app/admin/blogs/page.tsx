@@ -85,7 +85,7 @@ export default function AdminBlogsPage() {
       title: "",
       category: "Bath Design & Care",
       author: "RN Architectural Team",
-      image: "https://hindware.com/_next/image?url=https%3A%2F%2Fhindwarestg.blob.core.windows.net%2Fcontainer1%2Fproducts%2FBathroom-1756100455419-1756463985636.webp&w=3840&q=75",
+      image: "",
       summary: "",
       content: "",
       status: "Published",

@@ -6,6 +6,8 @@ export interface FaucetProduct {
   originalPrice: number;
   image: string;
   gallery: string[];
+  size?: string;
+  article?: string;
 }
 
 export const EDGE_RANGE_PRODUCTS: FaucetProduct[] = [

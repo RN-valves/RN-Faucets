@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { setAdminAuth, getAdminAuth, logoutAdmin } from "@/utils/adminStore";
 import { setCustomerSession, getCustomerSession, clearCustomerSession } from "@/utils/customerAuth";
 
-const LOGIN_BG = "https://hindware.com/img/registration/login-bg.jpg";
+const LOGIN_BG = "/api/media/website/catalogue/products/default/image.webp";
 
 export default function AuthSplitSection() {
   const router = useRouter();

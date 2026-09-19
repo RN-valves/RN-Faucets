@@ -50,19 +50,18 @@ const PinterestIcon = () => (
 
 const NAV_COLUMN_1 = [
   { label: "About Us", href: "/about-us" },
-  { label: "Blogs", href: "#" },
-  { label: "Tutorials Videos", href: "#" },
-  { label: "Projects", href: "#" },
+  { label: "Blogs", href: "/blogs" },
+  { label: "Catalogues", href: "/catalogues" },
 ];
 const NAV_COLUMN_2 = [
-  { label: "Career", href: "#" },
-  { label: "Events", href: "#" },
-  { label: "Warranty", href: "#" },
-  { label: "Catalogues", href: "#" },
+  { label: "Become a Channel Partner", href: "/business-user-registration" },
+  { label: "Contact Us", href: "/contact-us" },
+  { label: "Warranty Policy", href: "/about-us" },
+  { label: "Tutorials Videos", href: "#" },
 ];
 const NAV_COLUMN_3 = [
-  { label: "Become a Channel Partner", href: "#" },
-  { label: "Contact Us", href: "#" },
+  { label: "Personal Account", href: "/retail-user-registration" },
+  { label: "Business Account", href: "/business-user-registration" },
   { label: "Privacy Policy", href: "#" },
   { label: "Terms & Conditions", href: "#" },
 ];

@@ -61,6 +61,17 @@ export interface IOrder extends Document {
   dispatchDate?: string;
   vehicleNumber?: string;
   transportNotes?: string;
+  // Razorpay Payment Details
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  razorpaySignature?: string;
+  // Shipping Integration Details
+  shippingProvider?: "Shiprocket" | "Shipway" | "Manual" | "Custom";
+  shiprocketOrderId?: string | number;
+  shiprocketShipmentId?: string | number;
+  shipwayOrderId?: string | number;
+  awbCode?: string;
+  trackingUrl?: string;
   orderDate: string;
   deliveryEstimate?: string;
   createdAt?: Date;
@@ -97,6 +108,21 @@ const OrderSchema = new Schema<IOrder>(
     dispatchDate: { type: String, default: "" },
     vehicleNumber: { type: String, default: "" },
     transportNotes: { type: String, default: "" },
+    // Razorpay Payment Details
+    razorpayOrderId: { type: String, default: "" },
+    razorpayPaymentId: { type: String, default: "" },
+    razorpaySignature: { type: String, default: "" },
+    // Shipping Integration Details
+    shippingProvider: {
+      type: String,
+      enum: ["Shiprocket", "Shipway", "Manual", "Custom"],
+      default: "Manual",
+    },
+    shiprocketOrderId: { type: Schema.Types.Mixed, default: null },
+    shiprocketShipmentId: { type: Schema.Types.Mixed, default: null },
+    shipwayOrderId: { type: Schema.Types.Mixed, default: null },
+    awbCode: { type: String, default: "" },
+    trackingUrl: { type: String, default: "" },
     orderDate: { type: String, required: true },
     deliveryEstimate: { type: String },
   },
