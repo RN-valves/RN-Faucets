@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, ArrowRight, Sparkles } from "lucide-react";
+import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 
 export interface CategoryItem {
   id: number | string;
@@ -31,7 +31,6 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
-  const [activeIndex, setActiveIndex] = useState(0);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
@@ -84,18 +83,12 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
 
   if (isLoaded && categoriesList.length === 0) return null;
 
-  // Check scroll position to enable/disable arrow buttons & update active dot
   const updateScrollState = useCallback(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
-
     setCanScrollLeft(el.scrollLeft > 10);
     setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
-
-    const cardWidth = 328; // 304px card + 24px gap
-    const idx = Math.round(el.scrollLeft / cardWidth);
-    setActiveIndex(Math.max(0, Math.min(idx, categoriesList.length - 1)));
-  }, [categoriesList.length]);
+  }, []);
 
   useEffect(() => {
     const el = scrollContainerRef.current;
@@ -111,19 +104,11 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
     };
   }, [updateScrollState]);
 
-  const scrollByCard = (direction: "left" | "right") => {
+  const scrollByAmount = (direction: "left" | "right") => {
     const el = scrollContainerRef.current;
     if (!el) return;
-    const cardStep = 330;
-    const offset = direction === "left" ? -cardStep : cardStep;
+    const offset = direction === "left" ? -360 : 360;
     el.scrollBy({ left: offset, behavior: "smooth" });
-  };
-
-  const scrollToIndex = (index: number) => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    const cardWidth = 328;
-    el.scrollTo({ left: index * cardWidth, behavior: "smooth" });
   };
 
   // Mouse Drag to Scroll handlers
@@ -144,7 +129,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
     if (!el) return;
     e.preventDefault();
     const x = e.pageX - el.offsetLeft;
-    const walk = (x - startXRef.current) * 1.4;
+    const walk = (x - startXRef.current) * 1.3;
     if (Math.abs(walk) > 5) {
       hasMovedRef.current = true;
     }
@@ -161,135 +146,167 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
 
   return (
     <section
-      data-header-theme="light"
-      className="categories-section-wrapper"
+      data-header-theme="dark"
+      className="luxury-categories-section"
       style={{
         width: "100%",
-        backgroundColor: "#FFFFFF",
-        padding: "100px 0 90px",
+        backgroundColor: "#000000",
+        color: "#FFFFFF",
+        padding: "100px 0 130px",
         overflow: "hidden",
         position: "relative",
       }}
-      aria-label="Product Categories"
+      aria-label="Explore Product Categories"
     >
       <style>{`
-        .categories-card {
-          width: 304px;
-          min-width: 304px;
-          background: #FFFFFF;
-          border: 1px solid #E5E7EB;
-          border-radius: 20px;
-          padding: 16px;
-          display: flex;
-          flex-direction: column;
+        .luxury-card {
+          width: 330px;
+          min-width: 330px;
           text-decoration: none;
           color: inherit;
-          transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+          display: flex;
+          flex-direction: column;
           position: relative;
+          transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .categories-card:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
-          border-color: #CBD5E1;
-        }
-
-        .categories-card-img-box {
+        .luxury-card-image-wrap {
           width: 100%;
-          height: 250px;
-          background: radial-gradient(circle at center, #F8FAFC 0%, #EDF2F7 100%);
-          border-radius: 14px;
+          height: 450px;
+          background: linear-gradient(180deg, #1C1E22 0%, #111215 100%);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 4px;
           position: relative;
+          overflow: hidden;
           display: flex;
           align-items: center;
           justify-content: center;
-          overflow: hidden;
-          padding: 20px;
+          padding: 24px;
           box-sizing: border-box;
+          transition: border-color 0.35s ease, box-shadow 0.35s ease;
         }
 
-        .categories-card-img {
-          transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+        .luxury-card:hover .luxury-card-image-wrap {
+          border-color: rgba(255, 255, 255, 0.28);
+          box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
         }
 
-        .categories-card:hover .categories-card-img {
-          transform: scale(1.08);
+        .luxury-card-img {
+          transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .categories-arrow-btn {
-          width: 46px;
-          height: 46px;
-          border-radius: 50%;
-          border: 1px solid #E5E7EB;
+        .luxury-card:hover .luxury-card-img {
+          transform: scale(1.07);
+        }
+
+        .luxury-card-label {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-family: 'Manrope', system-ui, sans-serif;
+          font-size: 15px;
+          font-weight: 500;
+          color: #D1D5DB;
+          margin-top: 16px;
+          transition: color 0.25s ease;
+        }
+
+        .luxury-card:hover .luxury-card-label {
+          color: #FFFFFF;
+        }
+
+        .luxury-card-arrow {
+          transition: transform 0.25s ease;
+          color: #9CA3AF;
+        }
+
+        .luxury-card:hover .luxury-card-arrow {
+          transform: translate(3px, -3px);
+          color: #FFFFFF;
+        }
+
+        .luxury-explore-btn {
+          font-family: 'Manrope', system-ui, sans-serif;
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+          color: #FFFFFF;
+          text-decoration: none;
+          padding: 11px 22px;
+          border: 1px solid rgba(255, 255, 255, 0.35);
+          border-radius: 2px;
+          background: transparent;
+          transition: all 0.25s ease;
+          display: inline-block;
+        }
+
+        .luxury-explore-btn:hover {
           background: #FFFFFF;
-          color: #111827;
+          color: #000000;
+          border-color: #FFFFFF;
+        }
+
+        .luxury-nav-arrow {
+          width: 38px;
+          height: 38px;
+          border-radius: 50%;
+          border: 1px solid rgba(255, 255, 255, 0.25);
+          background: transparent;
+          color: #FFFFFF;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
           transition: all 0.25s ease;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         }
 
-        .categories-arrow-btn:hover:not(:disabled) {
-          background: #111827;
-          color: #FFFFFF;
-          border-color: #111827;
-          transform: scale(1.05);
+        .luxury-nav-arrow:hover:not(:disabled) {
+          background: #FFFFFF;
+          color: #000000;
+          border-color: #FFFFFF;
         }
 
-        .categories-arrow-btn:disabled {
-          opacity: 0.35;
+        .luxury-nav-arrow:disabled {
+          opacity: 0.25;
           cursor: not-allowed;
-          background: #F9FAFB;
         }
 
-        .categories-card-explore {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 13px;
-          font-weight: 700;
-          color: #0077B6;
-          transition: gap 0.25s ease, color 0.25s ease;
-        }
-
-        .categories-card:hover .categories-card-explore {
-          color: #023E8A;
-          gap: 10px;
-        }
-
-        /* Hide scrollbars */
-        .categories-scroll-track {
+        .luxury-track {
           scrollbar-width: none;
           -ms-overflow-style: none;
         }
-        .categories-scroll-track::-webkit-scrollbar {
+        .luxury-track::-webkit-scrollbar {
           display: none;
         }
 
-        @media (max-width: 768px) {
-          .categories-section-wrapper {
-            padding: 60px 0 50px !important;
+        @media (max-width: 900px) {
+          .luxury-categories-section {
+            padding: 70px 0 90px !important;
           }
-          .categories-card {
-            width: 260px !important;
-            min-width: 260px !important;
-            padding: 12px !important;
+          .luxury-card {
+            width: 270px !important;
+            min-width: 270px !important;
+            transform: none !important;
           }
-          .categories-card-img-box {
-            height: 210px !important;
+          .luxury-card-image-wrap {
+            height: 360px !important;
+          }
+          .luxury-heading-line1 {
+            font-size: 24px !important;
+          }
+          .luxury-heading-line2 {
+            font-size: 32px !important;
           }
         }
       `}</style>
 
-      {/* ── TOP HEADER (Clean, Luxury, Full Width Container) ── */}
+      {/* ── TOP HEADER (Dark Editorial Style) ── */}
       <div
         style={{
-          maxWidth: "1440px",
+          maxWidth: "1480px",
           margin: "0 auto",
-          padding: "0 40px",
+          padding: "0 48px",
           boxSizing: "border-box",
         }}
       >
@@ -300,300 +317,146 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
             alignItems: "flex-end",
             flexWrap: "wrap",
             gap: "24px",
-            marginBottom: "44px",
+            marginBottom: "56px",
           }}
         >
-          {/* Heading & Subtitle Block */}
-          <div style={{ maxWidth: "680px" }}>
-            <div
+          {/* Two-Line Clean Editorial Typography matching screenshot */}
+          <div>
+            <span
+              className="luxury-heading-line1"
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "6px 14px",
-                borderRadius: "100px",
-                background: "rgba(0, 119, 182, 0.08)",
-                color: "#0077B6",
-                fontSize: "12px",
-                fontWeight: 800,
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
+                display: "block",
                 fontFamily: "'Manrope', system-ui, sans-serif",
-                marginBottom: "14px",
+                fontSize: "30px",
+                fontWeight: 300,
+                color: "#9CA3AF",
+                letterSpacing: "-0.01em",
+                lineHeight: 1.25,
+                marginBottom: "2px",
               }}
             >
-              <Sparkles size={14} />
-              <span>Curated Collections</span>
-            </div>
+              Redefine Luxury With
+            </span>
 
             <h2
+              className="luxury-heading-line2"
               style={{
                 fontFamily: "'Manrope', system-ui, sans-serif",
-                fontSize: "44px",
-                fontWeight: 800,
-                lineHeight: 1.15,
-                letterSpacing: "-0.03em",
-                color: "#111827",
-                margin: "0 0 14px 0",
-              }}
-            >
-              {data?.title || "Explore Product Categories"}
-            </h2>
-
-            <p
-              style={{
-                fontFamily: "'Manrope', system-ui, sans-serif",
-                fontSize: "17px",
-                fontWeight: 400,
-                color: "#6B7280",
-                lineHeight: 1.6,
+                fontSize: "42px",
+                fontWeight: 600,
+                color: "#FFFFFF",
+                letterSpacing: "-0.02em",
+                lineHeight: 1.2,
                 margin: 0,
               }}
             >
-              {data?.description ||
-                "Top-rated, best-selling products trusted and loved by our customers."}
-            </p>
+              {data?.title && data.title !== "Explore Product Categories"
+                ? data.title
+                : "Premium Bath Fittings"}
+            </h2>
           </div>
 
-          {/* Right Controls: View All + Slider Arrows */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "16px",
-            }}
-          >
-            <Link
-              href="/faucets"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                fontFamily: "'Manrope', system-ui, sans-serif",
-                fontSize: "14px",
-                fontWeight: 700,
-                color: "#111827",
-                textDecoration: "none",
-                padding: "10px 18px",
-                borderRadius: "100px",
-                border: "1px solid #E5E7EB",
-                background: "#FFFFFF",
-                transition: "all 0.25s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "#111827";
-                e.currentTarget.style.background = "#111827";
-                e.currentTarget.style.color = "#FFFFFF";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "#E5E7EB";
-                e.currentTarget.style.background = "#FFFFFF";
-                e.currentTarget.style.color = "#111827";
-              }}
-            >
-              <span>View All Categories</span>
-              <ArrowRight size={15} />
+          {/* Right Controls: EXPLORE ALL Button + Prev/Next Arrows */}
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <Link href="/faucets" className="luxury-explore-btn">
+              EXPLORE ALL
             </Link>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <button
                 type="button"
-                onClick={() => scrollByCard("left")}
+                onClick={() => scrollByAmount("left")}
                 disabled={!canScrollLeft}
-                className="categories-arrow-btn"
-                aria-label="Previous Category"
+                className="luxury-nav-arrow"
+                aria-label="Previous Categories"
               >
-                <ChevronLeft size={20} />
+                <ChevronLeft size={18} />
               </button>
-
               <button
                 type="button"
-                onClick={() => scrollByCard("right")}
+                onClick={() => scrollByAmount("right")}
                 disabled={!canScrollRight}
-                className="categories-arrow-btn"
-                aria-label="Next Category"
+                className="luxury-nav-arrow"
+                aria-label="Next Categories"
               >
-                <ChevronRight size={20} />
+                <ChevronRight size={18} />
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── HORIZONTAL NORMAL CARDS SCROLLER TRACK ── */}
+      {/* ── STAGGERED EDITORIAL LUXURY GALLERY TRACK ── */}
       <div
         ref={scrollContainerRef}
-        className="categories-scroll-track"
+        className="luxury-track"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUpOrLeave}
         onMouseLeave={handleMouseUpOrLeave}
         style={{
           display: "flex",
-          gap: "24px",
+          gap: "36px",
           overflowX: "auto",
-          padding: "10px 40px 30px",
-          scrollSnapType: "x mandatory",
-          scrollBehavior: "smooth",
+          padding: "10px 48px 60px",
           cursor: "grab",
           maxWidth: "100vw",
           boxSizing: "border-box",
+          scrollBehavior: "smooth",
         }}
       >
-        {categoriesList.map((cat, idx) => (
-          <Link
-            key={cat.id || idx}
-            href={cat.href || `/${cat.slug}`}
-            className="categories-card"
-            style={{ scrollSnapAlign: "start" }}
-            onClick={(e) => {
-              if (hasMovedRef.current) {
-                e.preventDefault();
-              }
-            }}
-          >
-            {/* Card Image Box */}
-            <div className="categories-card-img-box">
-              <div
-                className="categories-card-img"
-                style={{
-                  position: "relative",
-                  width: "100%",
-                  height: "100%",
-                }}
-              >
-                <Image
-                  src={cat.image}
-                  alt={cat.name}
-                  fill
-                  sizes="320px"
-                  unoptimized
-                  style={{
-                    objectFit: "contain",
-                    objectPosition: "center",
-                    pointerEvents: "none",
-                  }}
-                />
-              </div>
+        {categoriesList.map((cat, idx) => {
+          // Stagger effect: alternate cards shifted down by 54px just like the reference photo
+          const isStaggered = idx % 2 === 1;
 
-              {cat.productCount && cat.productCount > 0 ? (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "12px",
-                    right: "12px",
-                    background: "rgba(255, 255, 255, 0.92)",
-                    backdropFilter: "blur(6px)",
-                    border: "1px solid rgba(0,0,0,0.06)",
-                    borderRadius: "100px",
-                    padding: "4px 10px",
-                    fontSize: "11px",
-                    fontWeight: 700,
-                    color: "#4B5563",
-                    fontFamily: "'Manrope', system-ui, sans-serif",
-                  }}
-                >
-                  {cat.productCount} Items
-                </div>
-              ) : null}
-            </div>
-
-            {/* Card Content Details */}
-            <div
+          return (
+            <Link
+              key={cat.id || idx}
+              href={cat.href || `/${cat.slug}`}
+              className="luxury-card"
               style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "6px",
-                padding: "16px 4px 4px",
-                flex: 1,
-                justifyContent: "space-between",
+                marginTop: isStaggered ? "54px" : "0px",
+              }}
+              onClick={(e) => {
+                if (hasMovedRef.current) {
+                  e.preventDefault();
+                }
               }}
             >
-              <div>
-                <h3
+              {/* Image Box */}
+              <div className="luxury-card-image-wrap">
+                <div
+                  className="luxury-card-img"
                   style={{
-                    fontFamily: "'Manrope', system-ui, sans-serif",
-                    fontSize: "19px",
-                    fontWeight: 700,
-                    color: "#111827",
-                    letterSpacing: "-0.01em",
-                    margin: "0 0 6px 0",
-                    lineHeight: 1.3,
+                    position: "relative",
+                    width: "100%",
+                    height: "100%",
                   }}
                 >
-                  {cat.name}
-                </h3>
-
-                <p
-                  style={{
-                    fontFamily: "'Manrope', system-ui, sans-serif",
-                    fontSize: "13px",
-                    color: "#6B7280",
-                    margin: 0,
-                    lineHeight: 1.5,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    display: "-webkit-box",
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: "vertical",
-                  }}
-                >
-                  {cat.subtitle}
-                </p>
+                  <Image
+                    src={cat.image}
+                    alt={cat.name}
+                    fill
+                    sizes="360px"
+                    unoptimized
+                    style={{
+                      objectFit: "contain",
+                      objectPosition: "center",
+                      pointerEvents: "none",
+                    }}
+                  />
+                </div>
               </div>
 
-              {/* Footer Explore Link */}
-              <div
-                style={{
-                  paddingTop: "12px",
-                  borderTop: "1px solid #F3F4F6",
-                  marginTop: "8px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <span className="categories-card-explore">
-                  <span>Explore Collection</span>
-                  <ArrowRight size={14} />
-                </span>
+              {/* Title with Diagonal Arrow matching screenshot: "Overhead Showers ↗" */}
+              <div className="luxury-card-label">
+                <span>{cat.name}</span>
+                <ArrowUpRight size={15} className="luxury-card-arrow" />
               </div>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          );
+        })}
       </div>
-
-      {/* ── BOTTOM PAGINATION PILL DOTS ── */}
-      {categoriesList.length > 1 && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            marginTop: "16px",
-          }}
-        >
-          {categoriesList.map((_, dotIdx) => (
-            <button
-              key={`dot-${dotIdx}`}
-              type="button"
-              onClick={() => scrollToIndex(dotIdx)}
-              aria-label={`Go to category ${dotIdx + 1}`}
-              style={{
-                width: activeIndex === dotIdx ? "28px" : "8px",
-                height: "8px",
-                borderRadius: "4px",
-                background: activeIndex === dotIdx ? "#111827" : "#E5E7EB",
-                border: "none",
-                cursor: "pointer",
-                padding: 0,
-                transition: "all 0.3s ease",
-              }}
-            />
-          ))}
-        </div>
-      )}
     </section>
   );
 }
