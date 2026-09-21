@@ -219,10 +219,10 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
     >
       <style>{`
         .luxury-card {
-          width: 280px;
-          min-width: 280px;
-          max-width: 280px;
-          flex: 0 0 280px;
+          width: calc((100vw - 96px - 78px) / 4);
+          min-width: 295px;
+          max-width: 350px;
+          flex: 0 0 calc((100vw - 96px - 78px) / 4);
           text-decoration: none;
           color: inherit;
           display: flex;
@@ -238,19 +238,19 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
 
         /* Staggered Upar - Nicche Wave offsets */
         .luxury-card.stagger-mid {
-          margin-top: 40px;
+          margin-top: 35px;
         }
         .luxury-card.stagger-down {
-          margin-top: 110px;
+          margin-top: 95px;
         }
         .luxury-card.stagger-up {
           margin-top: 0px;
         }
 
-        /* Slender & Tall Height for Luxury Cards */
+        /* Proportional Luxury Cards (Exact proportion from reference image) */
         .luxury-card-image-wrap {
           width: 100%;
-          height: 590px;
+          height: 480px;
           background: #F8FAFC;
           border: 1px solid #E2E8F0;
           border-radius: 0px;
@@ -382,7 +382,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         .luxury-staggered-track {
           display: flex;
           align-items: flex-start;
-          gap: 28px;
+          gap: 26px;
           overflow-x: auto;
           padding: 10px 48px 60px;
           box-sizing: border-box;
@@ -390,7 +390,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           -ms-overflow-style: none;
           scroll-behavior: smooth;
           width: 100%;
-          min-height: 760px;
+          min-height: 670px;
         }
 
         .luxury-staggered-track::-webkit-scrollbar {
@@ -399,24 +399,24 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
 
         @media (max-width: 1024px) {
           .luxury-card {
-            width: 250px !important;
-            min-width: 250px !important;
-            max-width: 250px !important;
-            flex: 0 0 250px !important;
+            width: 270px !important;
+            min-width: 270px !important;
+            max-width: 270px !important;
+            flex: 0 0 270px !important;
           }
           .luxury-card-image-wrap {
-            height: 480px !important;
+            height: 410px !important;
           }
           .luxury-card.stagger-mid {
-            margin-top: 30px !important;
+            margin-top: 25px !important;
           }
           .luxury-card.stagger-down {
-            margin-top: 80px !important;
+            margin-top: 70px !important;
           }
           .luxury-staggered-track {
             padding: 10px 24px 30px !important;
             gap: 20px !important;
-            min-height: 620px !important;
+            min-height: 540px !important;
           }
         }
 
@@ -426,13 +426,13 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
             min-height: auto !important;
           }
           .luxury-card {
-            width: 210px !important;
-            min-width: 210px !important;
-            max-width: 210px !important;
-            flex: 0 0 210px !important;
+            width: 240px !important;
+            min-width: 240px !important;
+            max-width: 240px !important;
+            flex: 0 0 240px !important;
           }
           .luxury-card-image-wrap {
-            height: 380px !important;
+            height: 350px !important;
           }
           .luxury-card.stagger-mid,
           .luxury-card.stagger-down,
