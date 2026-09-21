@@ -220,7 +220,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
       <style>{`
         .luxury-categories-section {
           --track-pad: 48px;
-          --track-gap: 24px;
+          --track-gap: 38px;
         }
 
         .luxury-card {
@@ -246,19 +246,16 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           margin-top: 35px;
         }
         .luxury-card.stagger-down {
-          margin-top: 95px;
+          margin-top: 100px;
         }
         .luxury-card.stagger-up {
           margin-top: 0px;
         }
 
-        /* Proportional Luxury Cards (Exact proportion from reference image) */
+        /* Slender & Taller Luxury Cards with Generous Spacing */
         .luxury-card-image-wrap {
           width: 100%;
-          aspect-ratio: 3 / 4.3;
-          height: auto;
-          max-height: 500px;
-          min-height: 420px;
+          height: 510px;
           background: #F8FAFC;
           border: 1px solid #E2E8F0;
           border-radius: 0px;
@@ -398,7 +395,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           -ms-overflow-style: none;
           scroll-behavior: smooth;
           width: 100%;
-          min-height: 670px;
+          min-height: 690px;
         }
 
         .luxury-staggered-track::-webkit-scrollbar {
@@ -408,27 +405,27 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         @media (max-width: 1024px) {
           .luxury-categories-section {
             --track-pad: 32px;
-            --track-gap: 20px;
+            --track-gap: 24px;
           }
           .luxury-card {
-            width: 270px !important;
-            min-width: 270px !important;
-            max-width: 270px !important;
-            flex: 0 0 270px !important;
+            width: 260px !important;
+            min-width: 260px !important;
+            max-width: 260px !important;
+            flex: 0 0 260px !important;
           }
           .luxury-card-image-wrap {
-            height: 410px !important;
+            height: 430px !important;
           }
           .luxury-card.stagger-mid {
             margin-top: 25px !important;
           }
           .luxury-card.stagger-down {
-            margin-top: 70px !important;
+            margin-top: 75px !important;
           }
           .luxury-staggered-track {
             padding: 10px var(--track-pad) 30px !important;
             gap: var(--track-gap) !important;
-            min-height: 540px !important;
+            min-height: 560px !important;
           }
         }
 
