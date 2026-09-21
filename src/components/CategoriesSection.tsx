@@ -218,11 +218,16 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
       }}
     >
       <style>{`
+        .luxury-categories-section {
+          --track-pad: 48px;
+          --track-gap: 24px;
+        }
+
         .luxury-card {
-          width: calc((100vw - 96px - 78px) / 4);
-          min-width: 295px;
-          max-width: 350px;
-          flex: 0 0 calc((100vw - 96px - 78px) / 4);
+          width: calc((100vw - (2 * var(--track-pad)) - (3 * var(--track-gap)) - 2px) / 4);
+          min-width: calc((100vw - (2 * var(--track-pad)) - (3 * var(--track-gap)) - 2px) / 4);
+          max-width: calc((100vw - (2 * var(--track-pad)) - (3 * var(--track-gap)) - 2px) / 4);
+          flex: 0 0 calc((100vw - (2 * var(--track-pad)) - (3 * var(--track-gap)) - 2px) / 4);
           text-decoration: none;
           color: inherit;
           display: flex;
@@ -250,7 +255,10 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         /* Proportional Luxury Cards (Exact proportion from reference image) */
         .luxury-card-image-wrap {
           width: 100%;
-          height: 480px;
+          aspect-ratio: 3 / 4.3;
+          height: auto;
+          max-height: 500px;
+          min-height: 420px;
           background: #F8FAFC;
           border: 1px solid #E2E8F0;
           border-radius: 0px;
@@ -382,9 +390,9 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         .luxury-staggered-track {
           display: flex;
           align-items: flex-start;
-          gap: 26px;
+          gap: var(--track-gap);
           overflow-x: auto;
-          padding: 10px 48px 60px;
+          padding: 10px var(--track-pad) 60px;
           box-sizing: border-box;
           scrollbar-width: none;
           -ms-overflow-style: none;
@@ -398,6 +406,10 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         }
 
         @media (max-width: 1024px) {
+          .luxury-categories-section {
+            --track-pad: 32px;
+            --track-gap: 20px;
+          }
           .luxury-card {
             width: 270px !important;
             min-width: 270px !important;
@@ -414,8 +426,8 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
             margin-top: 70px !important;
           }
           .luxury-staggered-track {
-            padding: 10px 24px 30px !important;
-            gap: 20px !important;
+            padding: 10px var(--track-pad) 30px !important;
+            gap: var(--track-gap) !important;
             min-height: 540px !important;
           }
         }
@@ -424,6 +436,8 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           .luxury-categories-section {
             padding: 50px 0 60px !important;
             min-height: auto !important;
+            --track-pad: 16px;
+            --track-gap: 16px;
           }
           .luxury-card {
             width: 240px !important;
@@ -440,8 +454,8 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
             margin-top: 0px !important;
           }
           .luxury-staggered-track {
-            padding: 10px 16px 20px !important;
-            gap: 16px !important;
+            padding: 10px var(--track-pad) 20px !important;
+            gap: var(--track-gap) !important;
             min-height: auto !important;
           }
           .luxury-heading-line1 {
@@ -458,7 +472,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         style={{
           width: "100%",
           margin: "0 auto",
-          padding: "0 48px",
+          padding: "0 var(--track-pad, 48px)",
           boxSizing: "border-box",
         }}
       >
