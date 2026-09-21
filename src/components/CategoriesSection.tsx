@@ -107,7 +107,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
   const scrollByAmount = (direction: "left" | "right") => {
     const el = scrollContainerRef.current;
     if (!el) return;
-    const offset = direction === "left" ? -360 : 360;
+    const offset = direction === "left" ? -420 : 420;
     el.scrollBy({ left: offset, behavior: "smooth" });
   };
 
@@ -152,7 +152,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         width: "100%",
         backgroundColor: "#FFFFFF",
         color: "#111827",
-        padding: "100px 0 130px",
+        padding: "100px 0 120px",
         overflow: "hidden",
         position: "relative",
       }}
@@ -160,28 +160,32 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
     >
       <style>{`
         .luxury-card {
-          width: 330px;
-          min-width: 330px;
+          width: 380px;
+          min-width: 380px;
           text-decoration: none;
           color: inherit;
           display: flex;
           flex-direction: column;
           position: relative;
-          transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+          transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .luxury-card:hover {
+          transform: translateY(-6px);
         }
 
         .luxury-card-image-wrap {
           width: 100%;
-          height: 450px;
+          height: 380px;
           background: linear-gradient(180deg, #F8FAFC 0%, #EDF2F7 100%);
           border: 1px solid #E5E7EB;
-          border-radius: 4px;
+          border-radius: 6px;
           position: relative;
           overflow: hidden;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 24px;
+          padding: 28px;
           box-sizing: border-box;
           transition: border-color 0.35s ease, box-shadow 0.35s ease;
         }
@@ -196,7 +200,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         }
 
         .luxury-card:hover .luxury-card-img {
-          transform: scale(1.07);
+          transform: scale(1.08);
         }
 
         .luxury-card-label {
@@ -204,10 +208,10 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           align-items: center;
           gap: 6px;
           font-family: 'Manrope', system-ui, sans-serif;
-          font-size: 15px;
+          font-size: 17px;
           font-weight: 600;
           color: #1F2937;
-          margin-top: 16px;
+          margin-top: 14px;
           transition: color 0.25s ease;
         }
 
@@ -233,7 +237,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           text-transform: uppercase;
           color: #111827;
           text-decoration: none;
-          padding: 11px 22px;
+          padding: 11px 24px;
           border: 1px solid rgba(0, 0, 0, 0.35);
           border-radius: 2px;
           background: transparent;
@@ -248,8 +252,8 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         }
 
         .luxury-nav-arrow {
-          width: 38px;
-          height: 38px;
+          width: 42px;
+          height: 42px;
           border-radius: 50%;
           border: 1px solid #D1D5DB;
           background: transparent;
@@ -272,28 +276,51 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           cursor: not-allowed;
         }
 
-        .luxury-track {
+        .luxury-two-row-track {
+          display: grid;
+          grid-template-rows: repeat(2, auto);
+          grid-auto-flow: column;
+          gap: 36px 32px;
+          overflow-x: auto;
+          padding: 10px 48px 40px;
+          box-sizing: border-box;
           scrollbar-width: none;
           -ms-overflow-style: none;
+          scroll-behavior: smooth;
         }
-        .luxury-track::-webkit-scrollbar {
+
+        .luxury-two-row-track::-webkit-scrollbar {
           display: none;
         }
 
-        @media (max-width: 900px) {
+        @media (max-width: 1024px) {
+          .luxury-card {
+            width: 320px !important;
+            min-width: 320px !important;
+          }
+          .luxury-card-image-wrap {
+            height: 320px !important;
+          }
+          .luxury-two-row-track {
+            padding: 10px 24px 30px !important;
+            gap: 28px 24px !important;
+          }
+        }
+
+        @media (max-width: 768px) {
           .luxury-categories-section {
-            padding: 70px 0 90px !important;
+            padding: 60px 0 80px !important;
           }
           .luxury-card {
             width: 270px !important;
             min-width: 270px !important;
-            transform: none !important;
           }
           .luxury-card-image-wrap {
-            height: 360px !important;
+            height: 270px !important;
+            padding: 18px !important;
           }
           .luxury-heading-line1 {
-            font-size: 24px !important;
+            font-size: 22px !important;
           }
           .luxury-heading-line2 {
             font-size: 32px !important;
@@ -301,10 +328,10 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         }
       `}</style>
 
-      {/* ── TOP HEADER (Clean White Luxury Editorial Style) ── */}
+      {/* ── TOP HEADER (Editorial Style) ── */}
       <div
         style={{
-          maxWidth: "1480px",
+          maxWidth: "1520px",
           margin: "0 auto",
           padding: "0 48px",
           boxSizing: "border-box",
@@ -317,10 +344,10 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
             alignItems: "flex-end",
             flexWrap: "wrap",
             gap: "24px",
-            marginBottom: "56px",
+            marginBottom: "50px",
           }}
         >
-          {/* Two-Line Clean Editorial Typography matching screenshot */}
+          {/* Two-Line Editorial Typography */}
           <div>
             <span
               className="luxury-heading-line1"
@@ -342,7 +369,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
               className="luxury-heading-line2"
               style={{
                 fontFamily: "'Manrope', system-ui, sans-serif",
-                fontSize: "42px",
+                fontSize: "44px",
                 fontWeight: 700,
                 color: "#111827",
                 letterSpacing: "-0.02em",
@@ -370,7 +397,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
                 className="luxury-nav-arrow"
                 aria-label="Previous Categories"
               >
-                <ChevronLeft size={18} />
+                <ChevronLeft size={19} />
               </button>
               <button
                 type="button"
@@ -379,83 +406,69 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
                 className="luxury-nav-arrow"
                 aria-label="Next Categories"
               >
-                <ChevronRight size={18} />
+                <ChevronRight size={19} />
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── STAGGERED EDITORIAL LUXURY GALLERY TRACK ── */}
+      {/* ── 2-ROW BIGGER CARDS DISPLAY TRACK ── */}
       <div
         ref={scrollContainerRef}
-        className="luxury-track"
+        className="luxury-two-row-track"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUpOrLeave}
         onMouseLeave={handleMouseUpOrLeave}
         style={{
-          display: "flex",
-          gap: "36px",
-          overflowX: "auto",
-          padding: "10px 48px 60px",
           cursor: "grab",
           maxWidth: "100vw",
-          boxSizing: "border-box",
-          scrollBehavior: "smooth",
         }}
       >
-        {categoriesList.map((cat, idx) => {
-          // Stagger effect: alternate cards shifted down by 54px just like the reference photo
-          const isStaggered = idx % 2 === 1;
-
-          return (
-            <Link
-              key={cat.id || idx}
-              href={cat.href || `/${cat.slug}`}
-              className="luxury-card"
-              style={{
-                marginTop: isStaggered ? "54px" : "0px",
-              }}
-              onClick={(e) => {
-                if (hasMovedRef.current) {
-                  e.preventDefault();
-                }
-              }}
-            >
-              {/* Image Box */}
-              <div className="luxury-card-image-wrap">
-                <div
-                  className="luxury-card-img"
+        {categoriesList.map((cat, idx) => (
+          <Link
+            key={cat.id || idx}
+            href={cat.href || `/${cat.slug}`}
+            className="luxury-card"
+            onClick={(e) => {
+              if (hasMovedRef.current) {
+                e.preventDefault();
+              }
+            }}
+          >
+            {/* Bigger Image Box */}
+            <div className="luxury-card-image-wrap">
+              <div
+                className="luxury-card-img"
+                style={{
+                  position: "relative",
+                  width: "100%",
+                  height: "100%",
+                }}
+              >
+                <Image
+                  src={cat.image}
+                  alt={cat.name}
+                  fill
+                  sizes="400px"
+                  unoptimized
                   style={{
-                    position: "relative",
-                    width: "100%",
-                    height: "100%",
+                    objectFit: "contain",
+                    objectPosition: "center",
+                    pointerEvents: "none",
                   }}
-                >
-                  <Image
-                    src={cat.image}
-                    alt={cat.name}
-                    fill
-                    sizes="360px"
-                    unoptimized
-                    style={{
-                      objectFit: "contain",
-                      objectPosition: "center",
-                      pointerEvents: "none",
-                    }}
-                  />
-                </div>
+                />
               </div>
+            </div>
 
-              {/* Title with Diagonal Arrow matching screenshot: "Overhead Showers ↗" */}
-              <div className="luxury-card-label">
-                <span>{cat.name}</span>
-                <ArrowUpRight size={15} className="luxury-card-arrow" />
-              </div>
-            </Link>
-          );
-        })}
+            {/* Label Below Image with Diagonal Arrow */}
+            <div className="luxury-card-label">
+              <span>{cat.name}</span>
+              <ArrowUpRight size={17} className="luxury-card-arrow" />
+            </div>
+          </Link>
+        ))}
       </div>
     </section>
   );
