@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import Header from "@/components/Header";
 import FooterSection from "@/components/FooterSection";
@@ -13,266 +12,501 @@ import {
   Building2,
   Compass,
   ArrowRight,
-  Clock,
   ShieldCheck,
-  CheckCircle2,
+  ChevronRight,
+  Clock,
 } from "lucide-react";
 
-const UPCOMING_REGIONS = [
-  {
-    city: "Delhi NCR",
-    state: "Delhi & Haryana",
-    hub: "Chawri Bazar Experience Studio",
-    dealers: "180+ Authorized Dealers",
-    status: "Launching Soon",
-  },
-  {
-    city: "Mumbai & Pune",
-    state: "Maharashtra",
-    hub: "Western India Display Gallery",
-    dealers: "140+ Partner Showrooms",
-    status: "Launching Soon",
-  },
-  {
-    city: "Ahmedabad & Surat",
-    state: "Gujarat",
-    hub: "Gujarat Trade Experience Studio",
-    dealers: "120+ Retail Partners",
-    status: "Launching Soon",
-  },
-  {
-    city: "Bengaluru & Hyderabad",
-    state: "Karnataka & Telangana",
-    hub: "South Regional Display Studio",
-    dealers: "95+ Exclusive Counters",
-    status: "Launching Soon",
-  },
-  {
-    city: "Chandigarh & Ludhiana",
-    state: "Punjab & Haryana",
-    hub: "North Zone Architectural Hub",
-    dealers: "110+ Authorized Stores",
-    status: "Launching Soon",
-  },
-  {
-    city: "Lucknow & Kanpur",
-    state: "Uttar Pradesh",
-    hub: "Central UP Distribution Display",
-    dealers: "160+ Plumbing Counters",
-    status: "Launching Soon",
-  },
-];
-
 export default function UserStoreLocatorPage() {
-  const [inquiryCity, setInquiryCity] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-
-  const handleNotifySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inquiryCity.trim()) return;
-    setSubmitted(true);
-  };
-
   return (
-    <main className="min-h-screen w-full bg-[#FFFFFF] flex flex-col font-sans text-slate-900">
+    <main
+      style={{
+        minHeight: "100vh",
+        width: "100%",
+        background: "#FFFFFF",
+        overflowX: "hidden",
+        fontFamily: "'Manrope', system-ui, -apple-system, sans-serif",
+      }}
+    >
       <Header />
 
-      {/* ── HERO BANNER (Coming Soon) ── */}
+      {/* ── MAIN CONTENT CONTAINER ── */}
       <section
         data-header-theme="light"
-        className="w-full pt-[140px] pb-[80px] px-6 md:px-12 max-w-7xl mx-auto flex flex-col items-center text-center"
+        style={{
+          width: "100%",
+          maxWidth: "1240px",
+          margin: "0 auto",
+          padding: "140px clamp(20px, 5vw, 80px) 90px",
+          boxSizing: "border-box",
+        }}
       >
-        {/* Coming Soon Pill */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-50 border border-amber-200/80 text-amber-800 text-xs font-bold tracking-wider uppercase mb-6 shadow-sm">
-          <Sparkles size={14} className="text-amber-600 animate-pulse" />
-          <span>Interactive Store Locator • Coming Soon</span>
-        </div>
-
-        {/* Heading */}
-        <span className="block font-sans text-lg md:text-xl font-medium text-slate-500 tracking-tight mb-2">
-          Touch, Feel & Experience Pure Craftsmanship
-        </span>
-        <h1 className="text-4xl md:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.12] max-w-4xl mb-6">
-          RN Experience Studios &amp; Authorized Showrooms
-        </h1>
-
-        <p className="text-base md:text-lg text-slate-600 max-w-2xl leading-relaxed mb-10">
-          We are currently integrating live GPS mapping for our nationwide network of over{" "}
-          <strong className="text-slate-900 font-semibold">1,200+ authorized dealers</strong>, flagship experience centers, and trade partners across India.
-        </p>
-
-        {/* Action Buttons for immediate store assistance */}
-        <div className="flex flex-wrap items-center justify-center gap-4 w-full max-w-md">
-          <a
-            href="https://wa.me/918737029643?text=Hi%20RN%20Valves,%20please%20help%20me%20find%20an%20authorized%20store%20near%20my%20city."
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 min-w-[200px] inline-flex items-center justify-center gap-2.5 px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-600/20 transition-all duration-200 transform hover:-translate-y-0.5"
-          >
-            <MessageCircle size={18} />
-            <span>Find Nearby Store on WhatsApp</span>
-          </a>
-
-          <Link
-            href="/contact-us"
-            className="flex-1 min-w-[180px] inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl shadow-md transition-all duration-200 transform hover:-translate-y-0.5"
-          >
-            <span>Request Store Details</span>
-            <ArrowRight size={16} />
+        {/* Breadcrumb */}
+        <nav
+          aria-label="Breadcrumb"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            fontSize: "13px",
+            color: "#888888",
+            marginBottom: "32px",
+          }}
+        >
+          <Link href="/" style={{ color: "#888888", textDecoration: "none", transition: "color 0.2s" }} className="hover:text-slate-900">
+            Home
           </Link>
-        </div>
-      </section>
+          <ChevronRight size={13} />
+          <span style={{ color: "#111111", fontWeight: 600 }}>Store Locator</span>
+        </nav>
 
-      {/* ── STATS / TRUST HIGHLIGHTS ── */}
-      <section className="w-full bg-slate-50 border-y border-slate-200/80 py-12 px-6">
-        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-          <div>
-            <div className="text-3xl md:text-4xl font-extrabold text-slate-900">1,200+</div>
-            <div className="text-xs md:text-sm font-semibold text-slate-500 uppercase tracking-wider mt-1">
-              Authorized Counters
-            </div>
-          </div>
-          <div>
-            <div className="text-3xl md:text-4xl font-extrabold text-slate-900">28+</div>
-            <div className="text-xs md:text-sm font-semibold text-slate-500 uppercase tracking-wider mt-1">
-              States &amp; UTs Covered
-            </div>
-          </div>
-          <div>
-            <div className="text-3xl md:text-4xl font-extrabold text-slate-900">100%</div>
-            <div className="text-xs md:text-sm font-semibold text-slate-500 uppercase tracking-wider mt-1">
-              Genuine Warranty
-            </div>
-          </div>
-          <div>
-            <div className="text-3xl md:text-4xl font-extrabold text-slate-900">24-48h</div>
-            <div className="text-xs md:text-sm font-semibold text-slate-500 uppercase tracking-wider mt-1">
-              On-Site Support
-            </div>
-          </div>
-        </div>
-      </section>
+        {/* Header Title Section */}
+        <div style={{ textAlign: "center", marginBottom: "48px" }}>
+          {/* Subtle Category Tag */}
+          <span
+            style={{
+              display: "inline-block",
+              fontSize: "11px",
+              fontWeight: 800,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              color: "#00AEEF",
+              marginBottom: "10px",
+            }}
+          >
+            Experience Centres &amp; Partner Network
+          </span>
 
-      {/* ── NATIONWIDE NETWORK ROADMAP PREVIEW ── */}
-      <section className="w-full py-16 px-6 md:px-12 max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-          <div>
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
-              <Compass size={15} className="text-sky-600" />
-              <span>Network Rollout</span>
-            </div>
-            <h2 className="text-2xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-              Major Hubs &amp; Experience Studio Network
-            </h2>
-          </div>
-          <p className="text-sm text-slate-500 max-w-md">
-            Our upcoming GPS locator will allow you to enter your pincode, view 3D showroom galleries, and get direct directions to certified RN display points.
+          <h1
+            style={{
+              fontSize: "clamp(32px, 4vw, 46px)",
+              fontWeight: 700,
+              color: "#0F172A",
+              margin: "0 0 14px",
+              letterSpacing: "-0.02em",
+              lineHeight: 1.15,
+            }}
+          >
+            Find a Store
+          </h1>
+
+          <div
+            style={{
+              width: "48px",
+              height: "3.5px",
+              background: "#00AEEF",
+              margin: "0 auto 20px",
+              borderRadius: "2px",
+            }}
+          />
+
+          <p
+            style={{
+              fontSize: "15px",
+              color: "#64748B",
+              margin: "0 auto",
+              maxWidth: "620px",
+              lineHeight: 1.7,
+            }}
+          >
+            Experience RN Valves &amp; Faucets in person. Discover full bath concept displays, live water-flow exhibits, and tailored architectural support.
           </p>
         </div>
 
-        {/* Region Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {UPCOMING_REGIONS.map((region) => (
+        {/* ── COMING SOON LUXURY HERO CARD ── */}
+        <div
+          style={{
+            position: "relative",
+            background: "linear-gradient(145deg, #091726 0%, #0F2742 55%, #0A1D33 100%)",
+            borderRadius: "24px",
+            overflow: "hidden",
+            padding: "clamp(40px, 6vw, 70px) clamp(24px, 5vw, 60px)",
+            color: "#FFFFFF",
+            boxShadow: "0 20px 40px -15px rgba(10, 29, 51, 0.25)",
+            marginBottom: "50px",
+          }}
+        >
+          {/* Subtle luxury ambient glow effect */}
+          <div
+            style={{
+              position: "absolute",
+              top: "-80px",
+              right: "-80px",
+              width: "280px",
+              height: "280px",
+              borderRadius: "50%",
+              background: "radial-gradient(circle, rgba(0, 174, 239, 0.25) 0%, rgba(0, 174, 239, 0) 70%)",
+              pointerEvents: "none",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              bottom: "-100px",
+              left: "-100px",
+              width: "320px",
+              height: "320px",
+              borderRadius: "50%",
+              background: "radial-gradient(circle, rgba(0, 174, 239, 0.15) 0%, rgba(0, 174, 239, 0) 70%)",
+              pointerEvents: "none",
+            }}
+          />
+
+          <div
+            style={{
+              position: "relative",
+              zIndex: 2,
+              maxWidth: "680px",
+              margin: "0 auto",
+              textAlign: "center",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            {/* Sleek Coming Soon Pill */}
             <div
-              key={region.city}
-              className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between relative overflow-hidden group"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "6px 16px",
+                borderRadius: "999px",
+                background: "rgba(0, 174, 239, 0.12)",
+                border: "1px solid rgba(0, 174, 239, 0.35)",
+                color: "#38BDF8",
+                fontSize: "12px",
+                fontWeight: 700,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                marginBottom: "24px",
+              }}
             >
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                    <Clock size={12} />
-                    {region.status}
-                  </span>
-                  <span className="text-xs font-bold text-slate-400 font-mono">
-                    {region.state}
-                  </span>
-                </div>
-
-                <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2 group-hover:text-sky-700 transition">
-                  <MapPin size={18} className="text-sky-600 flex-shrink-0" />
-                  {region.city}
-                </h3>
-
-                <div className="space-y-1 text-xs text-slate-600">
-                  <div className="flex items-center gap-2">
-                    <Building2 size={14} className="text-slate-400 flex-shrink-0" />
-                    <span className="font-semibold text-slate-800">{region.hub}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck size={14} className="text-emerald-600 flex-shrink-0" />
-                    <span>{region.dealers}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500">
-                  Live GPS Mapping
-                </span>
-                <a
-                  href={`https://wa.me/918737029643?text=Hi%20RN%20Valves,%20I%20want%20to%20visit%20an%20authorized%20store%20in%20${encodeURIComponent(region.city)}.`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs font-bold text-slate-900 hover:text-emerald-700 transition"
-                >
-                  <span>Locate via WhatsApp</span>
-                  <ArrowRight size={13} />
-                </a>
-              </div>
+              <Sparkles size={14} className="text-[#38BDF8] animate-pulse" />
+              <span>Interactive GPS Locator • Coming Soon</span>
             </div>
-          ))}
-        </div>
-      </section>
 
-      {/* ── NOTIFICATION & INQUIRY FORM BOX ── */}
-      <section className="w-full py-16 px-6 bg-slate-900 text-white">
-        <div className="max-w-4xl mx-auto text-center space-y-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 text-slate-300 text-xs font-bold tracking-wider uppercase border border-white/10">
-            <MapPin size={13} className="text-sky-400" />
-            <span>Looking for an Immediate Dealer?</span>
+            {/* Headline */}
+            <h2
+              style={{
+                fontSize: "clamp(24px, 3.2vw, 36px)",
+                fontWeight: 700,
+                color: "#FFFFFF",
+                letterSpacing: "-0.01em",
+                lineHeight: 1.25,
+                marginBottom: "16px",
+              }}
+            >
+              Nationwide Store Locator is Underway
+            </h2>
+
+            {/* Editorial copy */}
+            <p
+              style={{
+                fontSize: "15px",
+                lineHeight: 1.7,
+                color: "#94A3B8",
+                marginBottom: "32px",
+              }}
+            >
+              We are currently integrating real-time geolocation mapping, live showroom inventory status, and certified dealer contact listings across India.
+            </p>
+
+            {/* Quick action buttons */}
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "14px",
+                width: "100%",
+              }}
+            >
+              <a
+                href="https://wa.me/918737029643?text=Hi%20RN%20Valves,%20please%20help%20me%20find%20an%20authorized%20store%20near%20my%20city."
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "10px",
+                  padding: "13px 26px",
+                  borderRadius: "10px",
+                  background: "#10B981",
+                  color: "#FFFFFF",
+                  fontWeight: 700,
+                  fontSize: "13.5px",
+                  textDecoration: "none",
+                  boxShadow: "0 8px 20px rgba(16, 185, 129, 0.3)",
+                  transition: "all 0.2s ease",
+                }}
+                className="hover:bg-emerald-600 hover:-translate-y-0.5"
+              >
+                <MessageCircle size={17} />
+                <span>Locate via WhatsApp</span>
+              </a>
+
+              <Link
+                href="/contact-us"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                  padding: "13px 24px",
+                  borderRadius: "10px",
+                  background: "rgba(255, 255, 255, 0.08)",
+                  border: "1px solid rgba(255, 255, 255, 0.18)",
+                  color: "#FFFFFF",
+                  fontWeight: 600,
+                  fontSize: "13.5px",
+                  textDecoration: "none",
+                  transition: "all 0.2s ease",
+                }}
+                className="hover:bg-white/15 hover:-translate-y-0.5"
+              >
+                <span>Speak with Our Team</span>
+                <ArrowRight size={15} />
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* ── 3 EDITORIAL LUXURY PILLARS ── */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+            gap: "24px",
+            marginBottom: "50px",
+          }}
+        >
+          {/* Card 1 */}
+          <div
+            style={{
+              background: "#F8FAFC",
+              border: "1px solid #E2E8F0",
+              borderRadius: "16px",
+              padding: "32px 28px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "14px",
+              boxShadow: "0 2px 6px rgba(0, 0, 0, 0.02)",
+            }}
+          >
+            <div
+              style={{
+                width: "42px",
+                height: "42px",
+                borderRadius: "10px",
+                background: "rgba(0, 174, 239, 0.1)",
+                color: "#00AEEF",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Building2 size={20} />
+            </div>
+            <h3
+              style={{
+                fontSize: "18px",
+                fontWeight: 700,
+                color: "#0F172A",
+                margin: 0,
+                letterSpacing: "-0.01em",
+              }}
+            >
+              Architectural Showrooms
+            </h3>
+            <p style={{ fontSize: "14px", color: "#64748B", lineHeight: 1.65, margin: 0 }}>
+              Curated display spaces showcasing the entire RN collection of faucets, showers, vanity solutions, and precision health faucets.
+            </p>
           </div>
 
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">
-            Need Showroom Location in Your City Right Now?
-          </h2>
-
-          <p className="text-sm md:text-base text-slate-400 max-w-xl mx-auto leading-relaxed">
-            Send us your city or pincode. Our customer executive will immediately share the address and phone number of the nearest authorized dealer.
-          </p>
-
-          {!submitted ? (
-            <form onSubmit={handleNotifySubmit} className="max-w-md mx-auto flex flex-col sm:flex-row gap-3 pt-2">
-              <input
-                type="text"
-                required
-                value={inquiryCity}
-                onChange={(e) => setInquiryCity(e.target.value)}
-                placeholder="Enter your City or Pincode (e.g. Pune / 110006)..."
-                className="flex-1 px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-400"
-              />
-              <button
-                type="submit"
-                className="px-6 py-3 bg-white hover:bg-slate-100 text-slate-950 font-bold text-sm rounded-xl transition shadow"
-              >
-                Send Request
-              </button>
-            </form>
-          ) : (
-            <div className="max-w-md mx-auto p-4 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-200 text-sm flex items-center justify-center gap-2">
-              <CheckCircle2 size={18} className="text-emerald-400" />
-              <span>Thank you! We received your request for <strong>{inquiryCity}</strong>. Our team will contact you.</span>
+          {/* Card 2 */}
+          <div
+            style={{
+              background: "#F8FAFC",
+              border: "1px solid #E2E8F0",
+              borderRadius: "16px",
+              padding: "32px 28px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "14px",
+              boxShadow: "0 2px 6px rgba(0, 0, 0, 0.02)",
+            }}
+          >
+            <div
+              style={{
+                width: "42px",
+                height: "42px",
+                borderRadius: "10px",
+                background: "rgba(0, 174, 239, 0.1)",
+                color: "#00AEEF",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Compass size={20} />
             </div>
-          )}
+            <h3
+              style={{
+                fontSize: "18px",
+                fontWeight: 700,
+                color: "#0F172A",
+                margin: 0,
+                letterSpacing: "-0.01em",
+              }}
+            >
+              Live Water-Flow Experience
+            </h3>
+            <p style={{ fontSize: "14px", color: "#64748B", lineHeight: 1.65, margin: 0 }}>
+              Test flow dynamics, thermostatic control, water conservation aerators, and touch-feel finish durability before purchasing.
+            </p>
+          </div>
 
-          <div className="pt-6 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400">
-            <span className="flex items-center gap-1.5">
-              <Phone size={14} className="text-sky-400" />
-              Customer Helpline: <strong className="text-white">+91 87370 29643</strong>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <MessageCircle size={14} className="text-emerald-400" />
-              WhatsApp Support: <strong className="text-white">+91 87370 29643</strong>
-            </span>
+          {/* Card 3 */}
+          <div
+            style={{
+              background: "#F8FAFC",
+              border: "1px solid #E2E8F0",
+              borderRadius: "16px",
+              padding: "32px 28px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "14px",
+              boxShadow: "0 2px 6px rgba(0, 0, 0, 0.02)",
+            }}
+          >
+            <div
+              style={{
+                width: "42px",
+                height: "42px",
+                borderRadius: "10px",
+                background: "rgba(0, 174, 239, 0.1)",
+                color: "#00AEEF",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <ShieldCheck size={20} />
+            </div>
+            <h3
+              style={{
+                fontSize: "18px",
+                fontWeight: 700,
+                color: "#0F172A",
+                margin: 0,
+                letterSpacing: "-0.01em",
+              }}
+            >
+              Certified Authenticity
+            </h3>
+            <p style={{ fontSize: "14px", color: "#64748B", lineHeight: 1.65, margin: 0 }}>
+              Official brand warranty, genuine spare parts, and direct manufacturer service backing through all authorized retail partners.
+            </p>
+          </div>
+        </div>
+
+        {/* ── CONCIERGE ASSISTANCE STRIP ── */}
+        <div
+          style={{
+            background: "#FFFFFF",
+            border: "1px solid #E2E8F0",
+            borderRadius: "18px",
+            padding: "32px 36px",
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "24px",
+            boxShadow: "0 4px 14px rgba(0, 0, 0, 0.03)",
+          }}
+        >
+          <div style={{ maxWidth: "560px" }}>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                fontSize: "11px",
+                fontWeight: 800,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "#00AEEF",
+                marginBottom: "6px",
+              }}
+            >
+              <Clock size={13} />
+              <span>Immediate Assistance</span>
+            </div>
+            <h3
+              style={{
+                fontSize: "20px",
+                fontWeight: 700,
+                color: "#0F172A",
+                margin: "0 0 6px",
+                letterSpacing: "-0.01em",
+              }}
+            >
+              Need a store address right now?
+            </h3>
+            <p style={{ fontSize: "14px", color: "#64748B", lineHeight: 1.6, margin: 0 }}>
+              Share your location with our team, and we will direct you to the nearest authorized showroom or dealer counter.
+            </p>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+            <a
+              href="tel:+918737029643"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "12px 20px",
+                borderRadius: "8px",
+                background: "#0F172A",
+                color: "#FFFFFF",
+                fontSize: "13px",
+                fontWeight: 600,
+                textDecoration: "none",
+                transition: "background 0.2s",
+              }}
+              className="hover:bg-slate-800"
+            >
+              <Phone size={15} />
+              <span>+91 87370 29643</span>
+            </a>
+
+            <a
+              href="https://wa.me/918737029643?text=Hi%20RN%20Valves,%20please%20share%20the%20nearest%20store%20address%20for%20my%20location."
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "12px 20px",
+                borderRadius: "8px",
+                background: "#F1F5F9",
+                border: "1px solid #CBD5E1",
+                color: "#0F172A",
+                fontSize: "13px",
+                fontWeight: 600,
+                textDecoration: "none",
+                transition: "all 0.2s",
+              }}
+              className="hover:bg-slate-200"
+            >
+              <MessageCircle size={15} className="text-emerald-600" />
+              <span>Chat on WhatsApp</span>
+            </a>
           </div>
         </div>
       </section>
