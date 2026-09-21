@@ -119,7 +119,12 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
   const scrollByAmount = (direction: "left" | "right") => {
     const el = scrollContainerRef.current;
     if (!el) return;
-    const offset = direction === "left" ? -380 : 380;
+    const card = el.querySelector(".luxury-card") as HTMLElement | null;
+    const cardWidth = card?.offsetWidth || 320;
+    const gap = 24;
+    // Smoothly scroll by 4 cards (one full viewport)
+    const scrollAmount = (cardWidth + gap) * 4;
+    const offset = direction === "left" ? -scrollAmount : scrollAmount;
     el.scrollBy({ left: offset, behavior: "smooth" });
   };
 
@@ -183,8 +188,10 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
     >
       <style>{`
         .luxury-card {
-          width: 330px;
-          min-width: 330px;
+          width: calc((100vw - 96px - 72px) / 4);
+          min-width: calc((100vw - 96px - 72px) / 4);
+          max-width: calc((100vw - 96px - 72px) / 4);
+          flex: 0 0 calc((100vw - 96px - 72px) / 4);
           text-decoration: none;
           color: inherit;
           display: flex;
@@ -200,10 +207,10 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
 
         /* Staggered Upar - Nicche Wave offsets */
         .luxury-card.stagger-mid {
-          margin-top: 45px;
+          margin-top: 40px;
         }
         .luxury-card.stagger-down {
-          margin-top: 110px;
+          margin-top: 100px;
         }
         .luxury-card.stagger-up {
           margin-top: 0px;
@@ -211,7 +218,9 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
 
         .luxury-card-image-wrap {
           width: 100%;
-          height: 480px;
+          aspect-ratio: 3 / 4.15;
+          max-height: 520px;
+          min-height: 380px;
           background: #0A0A0A;
           border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 0px;
@@ -343,14 +352,14 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         .luxury-staggered-track {
           display: flex;
           align-items: flex-start;
-          gap: 32px;
+          gap: 24px;
           overflow-x: auto;
-          padding: 10px 48px 50px;
+          padding: 10px 48px 60px;
           box-sizing: border-box;
           scrollbar-width: none;
           -ms-overflow-style: none;
           scroll-behavior: smooth;
-          min-height: 640px;
+          width: 100%;
         }
 
         .luxury-staggered-track::-webkit-scrollbar {
@@ -361,9 +370,12 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           .luxury-card {
             width: 290px !important;
             min-width: 290px !important;
+            max-width: 290px !important;
+            flex: 0 0 290px !important;
           }
           .luxury-card-image-wrap {
-            height: 420px !important;
+            aspect-ratio: auto !important;
+            height: 400px !important;
           }
           .luxury-card.stagger-mid {
             margin-top: 30px !important;
@@ -373,8 +385,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           }
           .luxury-staggered-track {
             padding: 10px 24px 30px !important;
-            gap: 24px !important;
-            min-height: 540px !important;
+            gap: 20px !important;
           }
         }
 
@@ -384,11 +395,14 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
             min-height: auto !important;
           }
           .luxury-card {
-            width: 250px !important;
-            min-width: 250px !important;
+            width: 240px !important;
+            min-width: 240px !important;
+            max-width: 240px !important;
+            flex: 0 0 240px !important;
           }
           .luxury-card-image-wrap {
-            height: 350px !important;
+            aspect-ratio: auto !important;
+            height: 330px !important;
           }
           .luxury-card.stagger-mid,
           .luxury-card.stagger-down,
@@ -398,7 +412,6 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           .luxury-staggered-track {
             padding: 10px 16px 20px !important;
             gap: 16px !important;
-            min-height: auto !important;
           }
           .luxury-heading-line1 {
             font-size: 20px !important;
@@ -413,7 +426,6 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
       <div
         style={{
           width: "100%",
-          maxWidth: "1520px",
           margin: "0 auto",
           padding: "0 48px",
           boxSizing: "border-box",
