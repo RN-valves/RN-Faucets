@@ -51,6 +51,11 @@ function DarkProgressDot({
   const rafRef = useRef<number | null>(null);
   const elapsedRef = useRef(0);
   const lastTimeRef = useRef<number | null>(null);
+  const onCompleteRef = useRef(onComplete);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
     if (!isActive) {
@@ -82,7 +87,7 @@ function DarkProgressDot({
         rafRef.current = requestAnimationFrame(updateProgress);
       } else {
         elapsedRef.current = 0;
-        onComplete();
+        onCompleteRef.current();
       }
     };
 
@@ -95,7 +100,7 @@ function DarkProgressDot({
         rafRef.current = null;
       }
     };
-  }, [isActive, isPaused, duration, onComplete]);
+  }, [isActive, isPaused, duration]);
 
   if (!isActive) {
     return (
@@ -220,7 +225,11 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
             const priceNum = Number(p.inSelling ?? p.price ?? 0);
             const formattedPrice = priceNum > 0 ? `₹${priceNum.toLocaleString("en-IN")}` : "₹1,490";
             const sku = p.skuCode || p.code || p.article || `RN-${p.id || idx}`;
-            const image = p.image || (Array.isArray(p.gallery) && p.gallery[0]) || "/api/media/website/catalogue/products/default/image.webp";
+            const rawImage = p.image || (Array.isArray(p.gallery) && p.gallery[0]) || "/api/media/website/catalogue/products/default/image.webp";
+            const image =
+              rawImage && !rawImage.includes("postimg") && !rawImage.includes("postimage")
+                ? rawImage
+                : "/api/media/website/catalogue/products/default/image.webp";
             return {
               id: idx,
               name: p.name,
@@ -273,7 +282,6 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
 
   const router = useRouter();
   const [virtualIndex, setVirtualIndex] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
 
   const sectionRef = useRef<HTMLElement>(null);
   const leftContentRef = useRef<HTMLDivElement>(null);
@@ -427,11 +435,7 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
       ref={sectionRef}
       data-header-theme="light"
       className="best-seller-section"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => {
-        setIsHovered(false);
-        handlePointerUp();
-      }}
+      onMouseLeave={handlePointerUp}
       style={{
         position: "relative",
         width: "100vw",
@@ -634,7 +638,7 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
               <DarkProgressDot
                 key={cat.id || i}
                 isActive={activeCategoryIdx === i}
-                isPaused={isHovered || isDraggingRef.current}
+                isPaused={isDraggingRef.current}
                 duration={4500}
                 onComplete={handleNext}
                 onClick={() => {
