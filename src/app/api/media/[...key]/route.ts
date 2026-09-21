@@ -35,6 +35,9 @@ export async function GET(
       },
     });
   } catch (error: any) {
+    if (error.name === "NoSuchKey" || error.Code === "NoSuchKey" || error.$metadata?.httpStatusCode === 404) {
+      return new NextResponse("Media Asset Not Found", { status: 404 });
+    }
     console.error("GET /api/media error:", error);
     return new NextResponse("Media Asset Not Found", { status: 404 });
   }
