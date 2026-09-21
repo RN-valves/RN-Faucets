@@ -146,12 +146,12 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
 
   return (
     <section
-      data-header-theme="dark"
+      data-header-theme="light"
       className="luxury-categories-section"
       style={{
         width: "100%",
-        backgroundColor: "#000000",
-        color: "#FFFFFF",
+        backgroundColor: "#FFFFFF",
+        color: "#111827",
         padding: "100px 0 130px",
         overflow: "hidden",
         position: "relative",
@@ -173,8 +173,8 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         .luxury-card-image-wrap {
           width: 100%;
           height: 450px;
-          background: linear-gradient(180deg, #1C1E22 0%, #111215 100%);
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: linear-gradient(180deg, #F8FAFC 0%, #EDF2F7 100%);
+          border: 1px solid #E5E7EB;
           border-radius: 4px;
           position: relative;
           overflow: hidden;
@@ -187,8 +187,8 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         }
 
         .luxury-card:hover .luxury-card-image-wrap {
-          border-color: rgba(255, 255, 255, 0.28);
-          box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+          border-color: #9CA3AF;
+          box-shadow: 0 16px 36px rgba(0, 0, 0, 0.08);
         }
 
         .luxury-card-img {
@@ -205,24 +205,24 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           gap: 6px;
           font-family: 'Manrope', system-ui, sans-serif;
           font-size: 15px;
-          font-weight: 500;
-          color: #D1D5DB;
+          font-weight: 600;
+          color: #1F2937;
           margin-top: 16px;
           transition: color 0.25s ease;
         }
 
         .luxury-card:hover .luxury-card-label {
-          color: #FFFFFF;
+          color: #000000;
         }
 
         .luxury-card-arrow {
-          transition: transform 0.25s ease;
-          color: #9CA3AF;
+          transition: transform 0.25s ease, color 0.25s ease;
+          color: #6B7280;
         }
 
         .luxury-card:hover .luxury-card-arrow {
           transform: translate(3px, -3px);
-          color: #FFFFFF;
+          color: #000000;
         }
 
         .luxury-explore-btn {
@@ -231,10 +231,10 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           font-weight: 600;
           letter-spacing: 0.16em;
           text-transform: uppercase;
-          color: #FFFFFF;
+          color: #111827;
           text-decoration: none;
           padding: 11px 22px;
-          border: 1px solid rgba(255, 255, 255, 0.35);
+          border: 1px solid rgba(0, 0, 0, 0.35);
           border-radius: 2px;
           background: transparent;
           transition: all 0.25s ease;
@@ -242,18 +242,18 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         }
 
         .luxury-explore-btn:hover {
-          background: #FFFFFF;
-          color: #000000;
-          border-color: #FFFFFF;
+          background: #111827;
+          color: #FFFFFF;
+          border-color: #111827;
         }
 
         .luxury-nav-arrow {
           width: 38px;
           height: 38px;
           border-radius: 50%;
-          border: 1px solid rgba(255, 255, 255, 0.25);
+          border: 1px solid #D1D5DB;
           background: transparent;
-          color: #FFFFFF;
+          color: #111827;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -262,9 +262,9 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         }
 
         .luxury-nav-arrow:hover:not(:disabled) {
-          background: #FFFFFF;
-          color: #000000;
-          border-color: #FFFFFF;
+          background: #111827;
+          color: #FFFFFF;
+          border-color: #111827;
         }
 
         .luxury-nav-arrow:disabled {
@@ -301,7 +301,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         }
       `}</style>
 
-      {/* ── TOP HEADER (Dark Editorial Style) ── */}
+      {/* ── TOP HEADER (Clean White Luxury Editorial Style) ── */}
       <div
         style={{
           maxWidth: "1480px",
@@ -329,7 +329,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
                 fontFamily: "'Manrope', system-ui, sans-serif",
                 fontSize: "30px",
                 fontWeight: 300,
-                color: "#9CA3AF",
+                color: "#6B7280",
                 letterSpacing: "-0.01em",
                 lineHeight: 1.25,
                 marginBottom: "2px",
@@ -343,8 +343,8 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
               style={{
                 fontFamily: "'Manrope', system-ui, sans-serif",
                 fontSize: "42px",
-                fontWeight: 600,
-                color: "#FFFFFF",
+                fontWeight: 700,
+                color: "#111827",
                 letterSpacing: "-0.02em",
                 lineHeight: 1.2,
                 margin: 0,
