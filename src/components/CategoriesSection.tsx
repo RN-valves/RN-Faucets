@@ -203,12 +203,12 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         minHeight: "100vh",
         backgroundColor: "#FFFFFF",
         color: "#0F172A",
-        padding: "70px 0 90px",
+        padding: "130px 0 80px",
         overflow: "hidden",
         position: "relative",
         display: "flex",
         flexDirection: "column",
-        justifyContent: "center",
+        justifyContent: "flex-start",
         boxSizing: "border-box",
       }}
       aria-label="Explore Product Categories"
@@ -436,7 +436,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
 
         @media (max-width: 768px) {
           .luxury-categories-section {
-            padding: 50px 0 60px !important;
+            padding: 100px 0 60px !important;
             min-height: auto !important;
             --track-pad: 16px;
             --track-gap: 16px;
@@ -519,9 +519,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
                 margin: 0,
               }}
             >
-              {data?.title && data.title !== "Explore Product Categories"
-                ? data.title
-                : "Premium Bath Fittings"}
+              {data?.title || "Explore Product Categories"}
             </h2>
           </div>
 
