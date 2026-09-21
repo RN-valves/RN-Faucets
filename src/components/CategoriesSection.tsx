@@ -11,6 +11,8 @@ export interface CategoryItem {
   subtitle: string;
   image: string;
   hoverImage?: string;
+  homeImage?: string;
+  homeHoverImage?: string;
   href?: string;
   slug?: string;
   productCount?: number;
@@ -57,8 +59,12 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
             subtitle: cat.description || cat.title || `Explore ${cat.name} luxury collection`,
             slug: cat.slug,
             href: `/${cat.slug}`,
-            image: cat.image || DEFAULT_CATEGORY_PLACEHOLDER,
-            hoverImage: cat.hoverImage || (cat.banner && cat.banner !== cat.image ? cat.banner : ""),
+            // Normal Homepage Photo: uses homeImage first, then fallback to thumbnail image
+            image: cat.homeImage || cat.image || DEFAULT_CATEGORY_PLACEHOLDER,
+            // Hover Homepage Photo: exclusively uses homeHoverImage (NEVER fallback to banner)
+            hoverImage: cat.homeHoverImage || "",
+            homeImage: cat.homeImage || "",
+            homeHoverImage: cat.homeHoverImage || "",
             productCount: cat.productCount || 0,
           }));
           setDbCategories(mapped);
@@ -73,9 +79,13 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
 
   if (data?.visible === false) return null;
 
-  const validPropsCategories = data?.categories?.filter(
-    (c: any) => Boolean(c.image) && c.status !== "Inactive" && c.isVisibleWebsite !== false
-  );
+  const validPropsCategories = data?.categories
+    ?.filter((c: any) => Boolean(c.homeImage || c.image) && c.status !== "Inactive" && c.isVisibleWebsite !== false)
+    ?.map((c: any) => ({
+      ...c,
+      image: c.homeImage || c.image || DEFAULT_CATEGORY_PLACEHOLDER,
+      hoverImage: c.homeHoverImage || "",
+    }));
   const categoriesList: CategoryItem[] =
     dbCategories.length > 0
       ? dbCategories

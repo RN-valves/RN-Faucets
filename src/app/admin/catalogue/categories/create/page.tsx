@@ -137,9 +137,10 @@ export default function CreateCategoryPage() {
   const [catContentName, setCatContentName] = useState("");
   const [catPdfCatalogue, setCatPdfCatalogue] = useState("");
   const [catImage, setCatImage] = useState("");
-  const [catHoverImage, setCatHoverImage] = useState("");
   const [catBanner, setCatBanner] = useState("");
   const [catMobileBanner, setCatMobileBanner] = useState("");
+  const [catHomeImage, setCatHomeImage] = useState("");
+  const [catHomeHoverImage, setCatHomeHoverImage] = useState("");
   const [catIcon, setCatIcon] = useState("");
   const [catTax, setCatTax] = useState(18);
   const [catDiscount, setCatDiscount] = useState(0);
@@ -183,9 +184,10 @@ export default function CreateCategoryPage() {
       contentName: catContentName,
       pdfCatalogue: catPdfCatalogue.trim(),
       image: catImage || "/api/media/website/catalogue/categories/default/image.webp",
-      hoverImage: catHoverImage,
       banner: catBanner,
       mobileBanner: catMobileBanner,
+      homeImage: catHomeImage,
+      homeHoverImage: catHomeHoverImage,
       icon: catIcon,
       tax: Number(catTax),
       discount: Number(catDiscount),
@@ -277,9 +279,45 @@ export default function CreateCategoryPage() {
               </div>
             </div>
 
+            {/* HOMEPAGE CARD 2-IMAGE UPLOADER (NORMAL & HOVER) */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px", background: isDark ? "rgba(0, 119, 182, 0.08)" : "#F0F9FF", border: `1.5px solid #0077B6`, borderRadius: "14px", padding: "18px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ fontSize: "14px", fontWeight: 800, color: "#0077B6" }}>
+                    Homepage Category Card (2 Photos: Normal & Hover)
+                  </span>
+                  <span style={{ fontSize: "11px", padding: "3px 10px", background: "rgba(0,119,182,0.12)", color: "#0077B6", borderRadius: "100px", fontWeight: 800 }}>
+                    Homepage Exclusive
+                  </span>
+                </div>
+                <span style={{ fontSize: "11px", color: textMuted, fontWeight: 700 }}>
+                  🛡️ Category Detail Page Banner remains 100% UNTOUCHED
+                </span>
+              </div>
+              <p style={{ margin: 0, fontSize: "12.5px", color: textMuted, lineHeight: 1.5 }}>
+                Upload 2 photos specifically for the Homepage &quot;Explore Product Categories&quot; cards. The <strong>Normal Photo</strong> is shown by default, and the <strong>Hover Photo</strong> is smoothly revealed when a customer hovers over the category card.
+              </p>
+
+              <R2UploadPicker
+                label="1. Normal Photo (Default on Homepage - recommended 600x600px or transparent PNG)"
+                r2Key={`website/catalogue/categories/${catSlug || "new"}/home_normal.webp`}
+                currentUrl={catHomeImage}
+                onUploadSuccess={(url) => setCatHomeImage(url)}
+                onRemove={() => setCatHomeImage("")}
+              />
+
+              <R2UploadPicker
+                label="2. Hover Photo (Revealed on Mouse Hover - recommended 600x600px lifestyle/action shot)"
+                r2Key={`website/catalogue/categories/${catSlug || "new"}/home_hover.webp`}
+                currentUrl={catHomeHoverImage}
+                onUploadSuccess={(url) => setCatHomeHoverImage(url)}
+                onRemove={() => setCatHomeHoverImage("")}
+              />
+            </div>
+
             {/* R2 Image Uploaders */}
             <div style={{ display: "flex", flexDirection: "column", gap: "12px", background: inputBg, border: `1px solid ${border}`, borderRadius: "12px", padding: "16px" }}>
-              <span style={{ fontSize: "13px", fontWeight: 800, color: "#0077B6" }}>Media Assets (Cloudflare R2 Direct Upload)</span>
+              <span style={{ fontSize: "13px", fontWeight: 800, color: "#0077B6" }}>Category Details Page Assets (Cloudflare R2 Direct Upload)</span>
 
               <R2UploadPicker
                 label="Select Category Image (size: 500x500px) *"
@@ -287,14 +325,6 @@ export default function CreateCategoryPage() {
                 currentUrl={catImage}
                 onUploadSuccess={(url) => setCatImage(url)}
                 onRemove={() => setCatImage("")}
-              />
-
-              <R2UploadPicker
-                label="Select Hover Image (Shown on Cursor Hover - size: 500x500px)"
-                r2Key={`website/catalogue/categories/new/hover_image.webp`}
-                currentUrl={catHoverImage}
-                onUploadSuccess={(url) => setCatHoverImage(url)}
-                onRemove={() => setCatHoverImage("")}
               />
 
               <R2UploadPicker

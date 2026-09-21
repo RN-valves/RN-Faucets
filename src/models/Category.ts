@@ -10,9 +10,10 @@ export interface ICategory extends Document {
   description?: string;
   productCount: number;
   image: string;
-  hoverImage?: string;
   banner?: string;
   mobileBanner?: string;
+  homeImage?: string;
+  homeHoverImage?: string;
   icon?: string;
   content_id?: string;
   contentName?: string;
@@ -36,9 +37,10 @@ const CategorySchema = new Schema<ICategory>(
     description: { type: String, default: "" },
     productCount: { type: Number, default: 0 },
     image: { type: String, default: "" },
-    hoverImage: { type: String, default: "" },
     banner: { type: String, default: "" },
     mobileBanner: { type: String, default: "" },
+    homeImage: { type: String, default: "" },
+    homeHoverImage: { type: String, default: "" },
     icon: { type: String, default: "" },
     content_id: { type: String, default: "" },
     contentName: { type: String, default: "" },

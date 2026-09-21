@@ -144,9 +144,10 @@ export default function EditCategoryPage() {
   const [catContentName, setCatContentName] = useState("");
   const [catPdfCatalogue, setCatPdfCatalogue] = useState("");
   const [catImage, setCatImage] = useState("");
-  const [catHoverImage, setCatHoverImage] = useState("");
   const [catBanner, setCatBanner] = useState("");
   const [catMobileBanner, setCatMobileBanner] = useState("");
+  const [catHomeImage, setCatHomeImage] = useState("");
+  const [catHomeHoverImage, setCatHomeHoverImage] = useState("");
   const [catIcon, setCatIcon] = useState("");
   const [catTax, setCatTax] = useState(18);
   const [catDiscount, setCatDiscount] = useState(0);
@@ -187,9 +188,10 @@ export default function EditCategoryPage() {
         setCatContentName(catData.contentName || "");
         setCatPdfCatalogue(catData.pdfCatalogue || "");
         setCatImage(catData.image || "");
-        setCatHoverImage(catData.hoverImage || "");
         setCatBanner(catData.banner || "");
         setCatMobileBanner(catData.mobileBanner || "");
+        setCatHomeImage(catData.homeImage || "");
+        setCatHomeHoverImage(catData.homeHoverImage || "");
         setCatIcon(catData.icon || "");
         setCatTax(catData.tax ?? 18);
         setCatDiscount(catData.discount ?? 0);
@@ -221,9 +223,10 @@ export default function EditCategoryPage() {
       contentName: catContentName,
       pdfCatalogue: catPdfCatalogue.trim(),
       image: catImage,
-      hoverImage: catHoverImage,
       banner: catBanner,
       mobileBanner: catMobileBanner,
+      homeImage: catHomeImage,
+      homeHoverImage: catHomeHoverImage,
       icon: catIcon,
       tax: Number(catTax),
       discount: Number(catDiscount),
@@ -334,12 +337,48 @@ export default function EditCategoryPage() {
               </div>
             </div>
 
-            {/* R2 Image Uploaders */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px", background: inputBg, border: `1px solid ${border}`, borderRadius: "12px", padding: "16px" }}>
-              <span style={{ fontSize: "13px", fontWeight: 800, color: "#0077B6" }}>Media Assets (Cloudflare R2 Direct Upload)</span>
+            {/* Homepage Category Card Media (2 Photos: Normal & Hover) */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px", background: inputBg, border: `2px solid #0077B6`, borderRadius: "12px", padding: "18px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ fontSize: "14px", fontWeight: 800, color: "#0077B6" }}>
+                    Homepage Category Card (2 Photos: Normal & Hover)
+                  </span>
+                  <span style={{ fontSize: "11px", padding: "3px 10px", background: "rgba(0,119,182,0.12)", color: "#0077B6", borderRadius: "100px", fontWeight: 800 }}>
+                    Homepage Exclusive
+                  </span>
+                </div>
+                <span style={{ fontSize: "11px", color: textMuted, fontWeight: 700 }}>
+                  🛡️ Category Detail Page Banner remains 100% UNTOUCHED
+                </span>
+              </div>
+              <p style={{ margin: 0, fontSize: "12.5px", color: textMuted, lineHeight: 1.5 }}>
+                Upload 2 photos specifically for the Homepage "Explore Product Categories" cards. The <strong>Normal Photo</strong> is shown by default, and the <strong>Hover Photo</strong> is smoothly revealed when a customer hovers over the category card.
+              </p>
 
               <R2UploadPicker
-                label="Select Category Image (size: 500x500px)"
+                label="1. Normal Photo (Default on Homepage - recommended 600x600px or transparent PNG)"
+                r2Key={`website/catalogue/categories/${category.id}/home_normal.webp`}
+                currentUrl={catHomeImage}
+                onUploadSuccess={(url) => setCatHomeImage(url)}
+                onRemove={() => setCatHomeImage("")}
+              />
+
+              <R2UploadPicker
+                label="2. Hover Photo (Revealed on Mouse Hover - recommended 600x600px lifestyle/action shot)"
+                r2Key={`website/catalogue/categories/${category.id}/home_hover.webp`}
+                currentUrl={catHomeHoverImage}
+                onUploadSuccess={(url) => setCatHomeHoverImage(url)}
+                onRemove={() => setCatHomeHoverImage("")}
+              />
+            </div>
+
+            {/* R2 Image Uploaders */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", background: inputBg, border: `1px solid ${border}`, borderRadius: "12px", padding: "16px" }}>
+              <span style={{ fontSize: "13px", fontWeight: 800, color: "#0077B6" }}>Category Details Page Assets (Cloudflare R2 Direct Upload)</span>
+
+              <R2UploadPicker
+                label="Select Category Thumbnail Image (size: 500x500px)"
                 r2Key={`website/catalogue/categories/${category.id}/image.webp`}
                 currentUrl={catImage}
                 onUploadSuccess={(url) => setCatImage(url)}
@@ -347,15 +386,7 @@ export default function EditCategoryPage() {
               />
 
               <R2UploadPicker
-                label="Select Hover Image (Second Image on Cursor Hover - size: 500x500px)"
-                r2Key={`website/catalogue/categories/${category.id}/hover_image.webp`}
-                currentUrl={catHoverImage}
-                onUploadSuccess={(url) => setCatHoverImage(url)}
-                onRemove={() => setCatHoverImage("")}
-              />
-
-              <R2UploadPicker
-                label="Select Banner (Opt - size: 1900x400px)"
+                label="Select Category Banner (Used on Category Page Top - size: 1900x400px)"
                 r2Key={`website/catalogue/categories/${category.id}/banner.webp`}
                 currentUrl={catBanner}
                 onUploadSuccess={(url) => setCatBanner(url)}
@@ -363,7 +394,7 @@ export default function EditCategoryPage() {
               />
 
               <R2UploadPicker
-                label="Select Mobile Banner (Opt - size: 414x200px)"
+                label="Select Mobile Banner (size: 414x200px)"
                 r2Key={`website/catalogue/categories/${category.id}/mobile_banner.webp`}
                 currentUrl={catMobileBanner}
                 onUploadSuccess={(url) => setCatMobileBanner(url)}
@@ -371,7 +402,7 @@ export default function EditCategoryPage() {
               />
 
               <R2UploadPicker
-                label="Select Icon (Opt - size: 100x100px)"
+                label="Select Icon (size: 100x100px)"
                 r2Key={`website/catalogue/categories/${category.id}/icon.webp`}
                 currentUrl={catIcon}
                 onUploadSuccess={(url) => setCatIcon(url)}
