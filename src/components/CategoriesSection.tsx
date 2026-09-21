@@ -10,6 +10,7 @@ export interface CategoryItem {
   name: string;
   subtitle: string;
   image: string;
+  hoverImage?: string;
   href?: string;
   slug?: string;
   productCount?: number;
@@ -56,7 +57,8 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
             subtitle: cat.description || cat.title || `Explore ${cat.name} luxury collection`,
             slug: cat.slug,
             href: `/${cat.slug}`,
-            image: cat.image || cat.banner || DEFAULT_CATEGORY_PLACEHOLDER,
+            image: cat.image || DEFAULT_CATEGORY_PLACEHOLDER,
+            hoverImage: cat.hoverImage || (cat.banner && cat.banner !== cat.image ? cat.banner : ""),
             productCount: cat.productCount || 0,
           }));
           setDbCategories(mapped);
@@ -185,7 +187,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 28px;
+          padding: 24px;
           box-sizing: border-box;
           transition: border-color 0.35s ease, box-shadow 0.35s ease;
         }
@@ -195,12 +197,40 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           box-shadow: 0 16px 36px rgba(0, 0, 0, 0.08);
         }
 
-        .luxury-card-img {
-          transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        /* Primary Normal Image */
+        .luxury-img-primary {
+          position: absolute;
+          inset: 0;
+          padding: 24px;
+          box-sizing: border-box;
+          opacity: 1;
+          transition: opacity 0.45s ease-in-out, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .luxury-card:hover .luxury-card-img {
+        .luxury-card.has-hover-img:hover .luxury-img-primary {
+          opacity: 0;
+          transform: scale(1.06);
+        }
+
+        .luxury-card:not(.has-hover-img):hover .luxury-img-primary {
           transform: scale(1.08);
+        }
+
+        /* Secondary Hover Image */
+        .luxury-img-hover {
+          position: absolute;
+          inset: 0;
+          padding: 24px;
+          box-sizing: border-box;
+          opacity: 0;
+          transform: scale(0.97);
+          transition: opacity 0.45s ease-in-out, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+          pointer-events: none;
+        }
+
+        .luxury-card:hover .luxury-img-hover {
+          opacity: 1;
+          transform: scale(1.06);
         }
 
         .luxury-card-label {
@@ -317,7 +347,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           }
           .luxury-card-image-wrap {
             height: 270px !important;
-            padding: 18px !important;
+            padding: 16px !important;
           }
           .luxury-heading-line1 {
             font-size: 22px !important;
@@ -413,7 +443,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         </div>
       </div>
 
-      {/* ── 2-ROW BIGGER CARDS DISPLAY TRACK ── */}
+      {/* ── 2-ROW BIGGER CARDS DISPLAY TRACK (With Image Hover Swap) ── */}
       <div
         ref={scrollContainerRef}
         className="luxury-two-row-track"
@@ -426,49 +456,69 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           maxWidth: "100vw",
         }}
       >
-        {categoriesList.map((cat, idx) => (
-          <Link
-            key={cat.id || idx}
-            href={cat.href || `/${cat.slug}`}
-            className="luxury-card"
-            onClick={(e) => {
-              if (hasMovedRef.current) {
-                e.preventDefault();
-              }
-            }}
-          >
-            {/* Bigger Image Box */}
-            <div className="luxury-card-image-wrap">
-              <div
-                className="luxury-card-img"
-                style={{
-                  position: "relative",
-                  width: "100%",
-                  height: "100%",
-                }}
-              >
-                <Image
-                  src={cat.image}
-                  alt={cat.name}
-                  fill
-                  sizes="400px"
-                  unoptimized
-                  style={{
-                    objectFit: "contain",
-                    objectPosition: "center",
-                    pointerEvents: "none",
-                  }}
-                />
-              </div>
-            </div>
+        {categoriesList.map((cat, idx) => {
+          const hasHoverImg = Boolean(cat.hoverImage && cat.hoverImage !== cat.image);
 
-            {/* Label Below Image with Diagonal Arrow */}
-            <div className="luxury-card-label">
-              <span>{cat.name}</span>
-              <ArrowUpRight size={17} className="luxury-card-arrow" />
-            </div>
-          </Link>
-        ))}
+          return (
+            <Link
+              key={cat.id || idx}
+              href={cat.href || `/${cat.slug}`}
+              className={`luxury-card${hasHoverImg ? " has-hover-img" : ""}`}
+              onClick={(e) => {
+                if (hasMovedRef.current) {
+                  e.preventDefault();
+                }
+              }}
+            >
+              {/* Image Container with Smooth Primary -> Hover Cross-fade */}
+              <div className="luxury-card-image-wrap">
+                {/* 1st Normal Image */}
+                <div className="luxury-img-primary">
+                  <div style={{ position: "relative", width: "100%", height: "100%" }}>
+                    <Image
+                      src={cat.image}
+                      alt={cat.name}
+                      fill
+                      sizes="400px"
+                      unoptimized
+                      style={{
+                        objectFit: "contain",
+                        objectPosition: "center",
+                        pointerEvents: "none",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* 2nd Hover Image (Fades In on Cursor Hover) */}
+                {hasHoverImg && (
+                  <div className="luxury-img-hover">
+                    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+                      <Image
+                        src={cat.hoverImage!}
+                        alt={`${cat.name} hover preview`}
+                        fill
+                        sizes="400px"
+                        unoptimized
+                        style={{
+                          objectFit: "contain",
+                          objectPosition: "center",
+                          pointerEvents: "none",
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Label Below Image with Diagonal Arrow */}
+              <div className="luxury-card-label">
+                <span>{cat.name}</span>
+                <ArrowUpRight size={17} className="luxury-card-arrow" />
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </section>
   );

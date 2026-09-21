@@ -118,6 +118,7 @@ export interface AdminCategory {
   description?: string;
   productCount: number;
   image: string;
+  hoverImage?: string;
   banner?: string;
   mobileBanner?: string;
   icon?: string;

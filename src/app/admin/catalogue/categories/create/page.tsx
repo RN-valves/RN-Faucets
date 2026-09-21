@@ -137,6 +137,7 @@ export default function CreateCategoryPage() {
   const [catContentName, setCatContentName] = useState("");
   const [catPdfCatalogue, setCatPdfCatalogue] = useState("");
   const [catImage, setCatImage] = useState("");
+  const [catHoverImage, setCatHoverImage] = useState("");
   const [catBanner, setCatBanner] = useState("");
   const [catMobileBanner, setCatMobileBanner] = useState("");
   const [catIcon, setCatIcon] = useState("");
@@ -182,6 +183,7 @@ export default function CreateCategoryPage() {
       contentName: catContentName,
       pdfCatalogue: catPdfCatalogue.trim(),
       image: catImage || "/api/media/website/catalogue/categories/default/image.webp",
+      hoverImage: catHoverImage,
       banner: catBanner,
       mobileBanner: catMobileBanner,
       icon: catIcon,
@@ -285,6 +287,14 @@ export default function CreateCategoryPage() {
                 currentUrl={catImage}
                 onUploadSuccess={(url) => setCatImage(url)}
                 onRemove={() => setCatImage("")}
+              />
+
+              <R2UploadPicker
+                label="Select Hover Image (Shown on Cursor Hover - size: 500x500px)"
+                r2Key={`website/catalogue/categories/new/hover_image.webp`}
+                currentUrl={catHoverImage}
+                onUploadSuccess={(url) => setCatHoverImage(url)}
+                onRemove={() => setCatHoverImage("")}
               />
 
               <R2UploadPicker
