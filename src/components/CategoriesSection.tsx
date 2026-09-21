@@ -269,27 +269,6 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           color: #000000;
         }
 
-        .luxury-explore-btn {
-          font-family: 'Manrope', system-ui, sans-serif;
-          font-size: 11px;
-          font-weight: 600;
-          letter-spacing: 0.16em;
-          text-transform: uppercase;
-          color: #111827;
-          text-decoration: none;
-          padding: 11px 24px;
-          border: 1px solid rgba(0, 0, 0, 0.35);
-          border-radius: 2px;
-          background: transparent;
-          transition: all 0.25s ease;
-          display: inline-block;
-        }
-
-        .luxury-explore-btn:hover {
-          background: #111827;
-          color: #FFFFFF;
-          border-color: #111827;
-        }
 
         .luxury-nav-arrow {
           width: 42px;
@@ -423,32 +402,26 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
             </h2>
           </div>
 
-          {/* Right Controls: EXPLORE ALL Button + Prev/Next Arrows */}
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <Link href="/faucets" className="luxury-explore-btn">
-              EXPLORE ALL
-            </Link>
-
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <button
-                type="button"
-                onClick={() => scrollByAmount("left")}
-                disabled={!canScrollLeft}
-                className="luxury-nav-arrow"
-                aria-label="Previous Categories"
-              >
-                <ChevronLeft size={19} />
-              </button>
-              <button
-                type="button"
-                onClick={() => scrollByAmount("right")}
-                disabled={!canScrollRight}
-                className="luxury-nav-arrow"
-                aria-label="Next Categories"
-              >
-                <ChevronRight size={19} />
-              </button>
-            </div>
+          {/* Right Controls: Prev/Next Arrows */}
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <button
+              type="button"
+              onClick={() => scrollByAmount("left")}
+              disabled={!canScrollLeft}
+              className="luxury-nav-arrow"
+              aria-label="Previous Categories"
+            >
+              <ChevronLeft size={19} />
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollByAmount("right")}
+              disabled={!canScrollRight}
+              className="luxury-nav-arrow"
+              aria-label="Next Categories"
+            >
+              <ChevronRight size={19} />
+            </button>
           </div>
         </div>
       </div>
