@@ -87,12 +87,15 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
       image: c.homeImage || c.image || DEFAULT_CATEGORY_PLACEHOLDER,
       hoverImage: c.homeHoverImage || "",
     }));
-  const categoriesList: CategoryItem[] =
+  const baseCategoriesList: CategoryItem[] =
     dbCategories.length > 0
       ? dbCategories
       : validPropsCategories && validPropsCategories.length > 0
       ? validPropsCategories
       : [];
+
+  // Reverse order: last categories appear first, first categories appear last
+  const categoriesList: CategoryItem[] = [...baseCategoriesList].reverse();
 
   if (isLoaded && categoriesList.length === 0) return null;
 
