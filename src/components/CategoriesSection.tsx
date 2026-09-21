@@ -1,187 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger);
-}
+import { ChevronLeft, ChevronRight, ArrowRight, Sparkles } from "lucide-react";
 
 export interface CategoryItem {
-  id: number;
+  id: number | string;
   name: string;
   subtitle: string;
   image: string;
   href?: string;
   slug?: string;
+  productCount?: number;
 }
-
-const PASTEL_GRADIENT =
-  "linear-gradient(135deg, #a8c8ff 0%, #f6d6e6 45%, #ffe8d6 100%)";
-
-const MAIN_W = 500;
-const MAIN_H = 680;
-const SEC_W = 340;
-const SEC_H = 540;
-const GAP = 48;
-const STEP = SEC_W + GAP;
 
 const DEFAULT_CATEGORY_PLACEHOLDER = "/api/media/website/catalogue/products/default/image.webp";
-
-/* ─── Progress ring indicators ─── */
-const RING_SIZE = 38;
-const SVG_VP = 38;
-const GREY_R = 17;
-const ARC_R = 12;
-const ARC_STROKE = 1.5;
-const CIRCUMFERENCE = 2 * Math.PI * ARC_R;
-
-function CategoryProgressRing({
-  isActive,
-  isPaused = false,
-  duration = 4500,
-  onComplete,
-  onClick,
-  label,
-}: {
-  isActive: boolean;
-  isPaused?: boolean;
-  duration?: number;
-  onComplete: () => void;
-  onClick: () => void;
-  label: string;
-}) {
-  const circleRef = useRef<SVGCircleElement>(null);
-  const rafRef = useRef<number | null>(null);
-  const elapsedRef = useRef(0);
-  const lastTimeRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (!isActive) {
-      elapsedRef.current = 0;
-      lastTimeRef.current = null;
-      return;
-    }
-
-    let active = true;
-    lastTimeRef.current = performance.now();
-
-    const updateProgress = (now: number) => {
-      if (!active) return;
-      if (lastTimeRef.current !== null && !isPaused) {
-        elapsedRef.current += now - lastTimeRef.current;
-      }
-      lastTimeRef.current = now;
-
-      const p = Math.min(elapsedRef.current / duration, 1);
-      if (circleRef.current) {
-        circleRef.current.style.strokeDashoffset = String(
-          CIRCUMFERENCE * (1 - p)
-        );
-      }
-      if (p < 1) {
-        rafRef.current = requestAnimationFrame(updateProgress);
-      } else {
-        elapsedRef.current = 0;
-        onComplete();
-      }
-    };
-
-    rafRef.current = requestAnimationFrame(updateProgress);
-
-    return () => {
-      active = false;
-      if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-    };
-  }, [isActive, isPaused, duration, onComplete]);
-
-  if (!isActive) {
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        aria-label={label}
-        style={{
-          padding: 0,
-          background: "transparent",
-          border: "none",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          outline: "none",
-        }}
-      >
-        <div
-          style={{
-            width: "11px",
-            height: "11px",
-            borderRadius: "50%",
-            background: "#D7D7D7",
-            transition: "all 0.35s ease-in-out",
-          }}
-        />
-      </button>
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      style={{
-        padding: 0,
-        background: "transparent",
-        border: "none",
-        cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        outline: "none",
-        width: `${RING_SIZE}px`,
-        height: `${RING_SIZE}px`,
-      }}
-    >
-      <svg
-        width="100%"
-        height="100%"
-        viewBox={`0 0 ${SVG_VP} ${SVG_VP}`}
-        style={{ transform: "rotate(-90deg)", display: "block" }}
-      >
-        <circle
-          cx={SVG_VP / 2}
-          cy={SVG_VP / 2}
-          r={GREY_R}
-          fill="none"
-          stroke="#C8C8C8"
-          strokeWidth={1.5}
-        />
-        <circle
-          ref={circleRef}
-          cx={SVG_VP / 2}
-          cy={SVG_VP / 2}
-          r={ARC_R}
-          fill="none"
-          stroke="#111111"
-          strokeWidth={ARC_STROKE}
-          strokeLinecap="butt"
-          strokeDasharray={CIRCUMFERENCE}
-          strokeDashoffset={CIRCUMFERENCE}
-          style={{ willChange: "stroke-dashoffset" }}
-        />
-      </svg>
-    </button>
-  );
-}
-
 
 interface CategoriesSectionProps {
   data?: {
@@ -195,6 +29,15 @@ interface CategoriesSectionProps {
 export default function CategoriesSection({ data }: CategoriesSectionProps) {
   const [dbCategories, setDbCategories] = useState<CategoryItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const scrollLeftRef = useRef(0);
+  const hasMovedRef = useRef(false);
 
   // Fetch live Category data & dynamic Category Main Images from Database
   useEffect(() => {
@@ -209,12 +52,13 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
               cat.isVisible !== false
           );
           const mapped: CategoryItem[] = activeOnly.map((cat: any, index: number) => ({
-            id: index,
+            id: cat.id || cat._id || index,
             name: cat.name,
             subtitle: cat.description || cat.title || `Explore ${cat.name} luxury collection`,
             slug: cat.slug,
             href: `/${cat.slug}`,
             image: cat.image || cat.banner || DEFAULT_CATEGORY_PLACEHOLDER,
+            productCount: cat.productCount || 0,
           }));
           setDbCategories(mapped);
         }
@@ -228,8 +72,10 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
 
   if (data?.visible === false) return null;
 
-  const validPropsCategories = data?.categories?.filter((c: any) => Boolean(c.image) && c.status !== "Inactive" && c.isVisibleWebsite !== false);
-  const categoriesList =
+  const validPropsCategories = data?.categories?.filter(
+    (c: any) => Boolean(c.image) && c.status !== "Inactive" && c.isVisibleWebsite !== false
+  );
+  const categoriesList: CategoryItem[] =
     dbCategories.length > 0
       ? dbCategories
       : validPropsCategories && validPropsCategories.length > 0
@@ -238,570 +84,516 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
 
   if (isLoaded && categoriesList.length === 0) return null;
 
-  const displaySequence = categoriesList.length > 0 ? [
-    ...categoriesList,
-    ...categoriesList.map((c, i) => ({ ...c, id: (c.id || i) + categoriesList.length })),
-    ...categoriesList.map((c, i) => ({ ...c, id: (c.id || i) + categoriesList.length * 2 })),
-  ] : [];
+  // Check scroll position to enable/disable arrow buttons & update active dot
+  const updateScrollState = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
 
-  const [virtualIndex, setVirtualIndex] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
-  const router = useRouter();
+    setCanScrollLeft(el.scrollLeft > 10);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
 
-  const sectionRef = useRef<HTMLElement>(null);
-  const leftContentRef = useRef<HTMLDivElement>(null);
-  const sliderTrackRef = useRef<HTMLDivElement>(null);
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
-
-  const isDraggingRef = useRef(false);
-  const startXRef = useRef(0);
-  const startTrackXRef = useRef(0);
-  const dragDistanceRef = useRef(0);
-  const lastWheelTimeRef = useRef(0);
-
-  const isMobile = useCallback(() => {
-    return typeof window !== "undefined" && window.innerWidth <= 900;
-  }, []);
-
-  const slideTo = useCallback(
-    (index: number) => {
-      const targetIndex = Math.max(0, index);
-      setVirtualIndex(targetIndex);
-
-      if (!sliderTrackRef.current || isMobile()) return;
-
-      const xOffset = targetIndex * STEP;
-
-      gsap.to(sliderTrackRef.current, {
-        x: -xOffset,
-        duration: 0.75,
-        ease: "power3.out",
-        overwrite: "auto",
-        onComplete: () => {
-          if (categoriesList.length > 0 && targetIndex >= categoriesList.length * 2) {
-            const resetIdx = (targetIndex % categoriesList.length) + categoriesList.length;
-            setVirtualIndex(resetIdx);
-            gsap.set(sliderTrackRef.current, { x: -(resetIdx * STEP) });
-          }
-        },
-      });
-    },
-    [isMobile, categoriesList.length]
-  );
-
-  const handleNext = useCallback(() => {
-    slideTo(virtualIndex + 1);
-  }, [slideTo, virtualIndex]);
-
-  const handlePrev = useCallback(() => {
-    slideTo(Math.max(0, virtualIndex - 1));
-  }, [slideTo, virtualIndex]);
-
-  // ── Drag & Touch Handlers with real-time responsive tracking ──
-  const handlePointerDown = (clientX: number) => {
-    isDraggingRef.current = true;
-    startXRef.current = clientX;
-    dragDistanceRef.current = 0;
-    startTrackXRef.current = -(virtualIndex * STEP);
-  };
-
-  const handlePointerMove = (clientX: number) => {
-    if (!isDraggingRef.current || !sliderTrackRef.current || isMobile()) return;
-    const dx = clientX - startXRef.current;
-    dragDistanceRef.current = dx;
-    // Live spring translation during drag
-    gsap.set(sliderTrackRef.current, { x: startTrackXRef.current + dx });
-  };
-
-  const handlePointerUp = () => {
-    if (!isDraggingRef.current) return;
-    isDraggingRef.current = false;
-
-    const threshold = 45;
-    if (dragDistanceRef.current < -threshold) {
-      slideTo(virtualIndex + 1);
-    } else if (dragDistanceRef.current > threshold) {
-      slideTo(Math.max(0, virtualIndex - 1));
-    } else {
-      // Snap back smoothly
-      slideTo(virtualIndex);
-    }
-  };
-
-  // ── Horizontal wheel gesture only (Never locks vertical page scroll) ──
-  const handleWheel = (e: React.WheelEvent) => {
-    // Only intercept if user is explicitly scrolling sideways (trackpad horizontal swipe or Shift+Wheel)
-    if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && Math.abs(e.deltaX) > 25) {
-      const now = Date.now();
-      if (now - lastWheelTimeRef.current < 350) return;
-      lastWheelTimeRef.current = now;
-
-      if (e.deltaX > 0) {
-        handleNext();
-      } else {
-        handlePrev();
-      }
-    }
-  };
+    const cardWidth = 328; // 304px card + 24px gap
+    const idx = Math.round(el.scrollLeft / cardWidth);
+    setActiveIndex(Math.max(0, Math.min(idx, categoriesList.length - 1)));
+  }, [categoriesList.length]);
 
   useEffect(() => {
-    if (
-      !sectionRef.current ||
-      !leftContentRef.current ||
-      !sliderTrackRef.current
-    )
-      return;
+    const el = scrollContainerRef.current;
+    if (!el) return;
 
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        leftContentRef.current,
-        { x: -80, opacity: 0 },
-        {
-          x: 0,
-          opacity: 1,
-          duration: 1.1,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: "top 75%",
-            toggleActions: "play none none reverse",
-          },
-        }
-      );
+    updateScrollState();
+    el.addEventListener("scroll", updateScrollState, { passive: true });
+    window.addEventListener("resize", updateScrollState);
 
-      const validCards = cardRefs.current.slice(0, 6).filter(Boolean);
-      if (validCards.length > 0) {
-        gsap.fromTo(
-          validCards,
-          { x: 120, opacity: 0 },
-          {
-            x: 0,
-            opacity: 1,
-            duration: 1.1,
-            stagger: 0.15,
-            ease: "power3.out",
-            scrollTrigger: {
-              trigger: sectionRef.current,
-              start: "top 75%",
-              toggleActions: "play none none reverse",
-            },
-          }
-        );
-      }
-    }, sectionRef);
+    return () => {
+      el.removeEventListener("scroll", updateScrollState);
+      window.removeEventListener("resize", updateScrollState);
+    };
+  }, [updateScrollState]);
 
-    return () => ctx.revert();
-  }, []);
+  const scrollByCard = (direction: "left" | "right") => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const cardStep = 330;
+    const offset = direction === "left" ? -cardStep : cardStep;
+    el.scrollBy({ left: offset, behavior: "smooth" });
+  };
 
-  const activeCategoryIdx = categoriesList.length > 0 ? virtualIndex % categoriesList.length : 0;
+  const scrollToIndex = (index: number) => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const cardWidth = 328;
+    el.scrollTo({ left: index * cardWidth, behavior: "smooth" });
+  };
+
+  // Mouse Drag to Scroll handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    isDraggingRef.current = true;
+    hasMovedRef.current = false;
+    startXRef.current = e.pageX - el.offsetLeft;
+    scrollLeftRef.current = el.scrollLeft;
+    el.style.cursor = "grabbing";
+    el.style.userSelect = "none";
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDraggingRef.current) return;
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    e.preventDefault();
+    const x = e.pageX - el.offsetLeft;
+    const walk = (x - startXRef.current) * 1.4;
+    if (Math.abs(walk) > 5) {
+      hasMovedRef.current = true;
+    }
+    el.scrollLeft = scrollLeftRef.current - walk;
+  };
+
+  const handleMouseUpOrLeave = () => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    isDraggingRef.current = false;
+    el.style.cursor = "grab";
+    el.style.removeProperty("user-select");
+  };
 
   return (
     <section
-      ref={sectionRef}
       data-header-theme="light"
-      className="categories-section"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => {
-        setIsHovered(false);
-        handlePointerUp();
-      }}
+      className="categories-section-wrapper"
       style={{
-        position: "relative",
         width: "100%",
-        height: "100vh",
-        minHeight: "720px",
-        background: "#f7f7f7",
-        display: "flex",
-        alignItems: "center",
+        backgroundColor: "#FFFFFF",
+        padding: "100px 0 90px",
         overflow: "hidden",
-        padding: "90px 56px 30px",
-        boxSizing: "border-box",
+        position: "relative",
       }}
-      aria-label="Explore Product Categories"
+      aria-label="Product Categories"
     >
       <style>{`
         .categories-card {
-          border-radius: 0;
-          background: ${PASTEL_GRADIENT};
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
-          overflow: hidden;
-          transition:
-            width 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-            height 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-            transform 0.35s ease,
-            box-shadow 0.35s ease;
-        }
-        .categories-card:hover {
-          transform: translateY(-6px);
-          box-shadow: 0 16px 40px rgba(0, 0, 0, 0.06);
-        }
-        .categories-product-wrap {
-          position: absolute;
-          left: 50%;
-          top: 44%;
-          transform: translate(-50%, -50%);
-          width: 82%;
-          height: 68%;
+          width: 304px;
+          min-width: 304px;
+          background: #FFFFFF;
+          border: 1px solid #E5E7EB;
+          border-radius: 20px;
+          padding: 16px;
           display: flex;
-          alignItems: center;
-          justifyContent: center;
-          z-index: 1;
-          transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-            height 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .categories-card.is-featured .categories-product-wrap {
-          width: 78%;
-          height: 70%;
-        }
-        /* Soft floor reflection under product */
-        .categories-product-wrap::after {
-          content: "";
-          position: absolute;
-          left: 10%;
-          right: 10%;
-          bottom: -4%;
-          height: 16%;
-          background: radial-gradient(
-            ellipse 70% 60% at 50% 40%,
-            rgba(0, 0, 0, 0.08) 0%,
-            rgba(0, 0, 0, 0.03) 45%,
-            transparent 70%
-          );
-          pointer-events: none;
-          z-index: 0;
-          filter: blur(4px);
-        }
-        .categories-product-img {
+          flex-direction: column;
+          text-decoration: none;
+          color: inherit;
+          transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
           position: relative;
-          z-index: 1;
-          filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.08));
-        }
-        .categories-card-title {
-          font-family: 'Manrope', system-ui, sans-serif;
-          font-size: 28px;
-          font-weight: 600;
-          color: #111;
-          text-align: center;
-          letter-spacing: -0.02em;
-          line-height: 1.2;
-          margin: 0;
-          -webkit-font-smoothing: antialiased;
-        }
-        .categories-card.is-featured .categories-card-title {
-          font-size: 28px;
         }
 
-        .category-nav-arrow {
-          width: 42px;
-          height: 42px;
-          border-radius: 50%;
-          background: #ffffff;
-          border: 1px solid #e5e5e5;
+        .categories-card:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+          border-color: #CBD5E1;
+        }
+
+        .categories-card-img-box {
+          width: 100%;
+          height: 250px;
+          background: radial-gradient(circle at center, #F8FAFC 0%, #EDF2F7 100%);
+          border-radius: 14px;
+          position: relative;
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #111111;
+          overflow: hidden;
+          padding: 20px;
+          box-sizing: border-box;
+        }
+
+        .categories-card-img {
+          transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .categories-card:hover .categories-card-img {
+          transform: scale(1.08);
+        }
+
+        .categories-arrow-btn {
+          width: 46px;
+          height: 46px;
+          border-radius: 50%;
+          border: 1px solid #E5E7EB;
+          background: #FFFFFF;
+          color: #111827;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           cursor: pointer;
           transition: all 0.25s ease;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-        }
-        .category-nav-arrow:hover {
-          background: #111111;
-          color: #ffffff;
-          border-color: #111111;
-          transform: scale(1.06);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         }
 
-        @media (max-width: 1200px) {
-          .categories-section {
-            padding: 100px 40px 40px !important;
-          }
-          .categories-left {
-            width: 30% !important;
-            padding-right: 24px !important;
-          }
-          .categories-right {
-            width: 70% !important;
-          }
-          .categories-heading {
-            font-size: 48px !important;
-          }
-          .categories-desc {
-            font-size: 20px !important;
-          }
+        .categories-arrow-btn:hover:not(:disabled) {
+          background: #111827;
+          color: #FFFFFF;
+          border-color: #111827;
+          transform: scale(1.05);
         }
 
-        @media (max-width: 900px) {
-          .categories-section {
-            flex-direction: column !important;
-            height: auto !important;
-            min-height: 100vh;
-            padding: 72px 24px 48px !important;
-            align-items: flex-start !important;
-            overflow: visible !important;
-          }
-          .categories-left {
-            width: 100% !important;
-            height: auto !important;
-            padding-right: 0 !important;
-            margin-bottom: 40px;
-          }
-          .categories-heading {
-            font-size: 40px !important;
-            white-space: normal !important;
-          }
-          .categories-desc {
-            font-size: 18px !important;
-          }
-          .categories-right {
-            width: 100% !important;
-            height: auto !important;
-            overflow-x: auto !important;
-            overflow-y: hidden !important;
-            -webkit-overflow-scrolling: touch;
-            cursor: grab !important;
-            scrollbar-width: none;
-          }
-          .categories-right::-webkit-scrollbar {
-            display: none;
-          }
-          .categories-track {
-            padding-bottom: 12px;
-            transform: none !important;
+        .categories-arrow-btn:disabled {
+          opacity: 0.35;
+          cursor: not-allowed;
+          background: #F9FAFB;
+        }
+
+        .categories-card-explore {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 13px;
+          font-weight: 700;
+          color: #0077B6;
+          transition: gap 0.25s ease, color 0.25s ease;
+        }
+
+        .categories-card:hover .categories-card-explore {
+          color: #023E8A;
+          gap: 10px;
+        }
+
+        /* Hide scrollbars */
+        .categories-scroll-track {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+        .categories-scroll-track::-webkit-scrollbar {
+          display: none;
+        }
+
+        @media (max-width: 768px) {
+          .categories-section-wrapper {
+            padding: 60px 0 50px !important;
           }
           .categories-card {
-            width: 88vw !important;
-            height: calc(88vw * 1.35) !important;
-            max-height: 560px;
+            width: 260px !important;
+            min-width: 260px !important;
+            padding: 12px !important;
           }
-          .categories-card.is-featured {
-            width: 88vw !important;
-            height: calc(88vw * 1.35) !important;
-            max-height: 620px;
-          }
-          .categories-card-title {
-            font-size: 22px !important;
+          .categories-card-img-box {
+            height: 210px !important;
           }
         }
       `}</style>
 
-      {/* ── LEFT CONTENT ── */}
+      {/* ── TOP HEADER (Clean, Luxury, Full Width Container) ── */}
       <div
-        ref={leftContentRef}
-        className="categories-left"
         style={{
-          width: "28%",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          zIndex: 10,
-          paddingRight: "32px",
-          flexShrink: 0,
+          maxWidth: "1440px",
+          margin: "0 auto",
+          padding: "0 40px",
+          boxSizing: "border-box",
         }}
       >
-        <h2
-          className="categories-heading"
-          style={{
-            fontFamily: "'Manrope', system-ui, sans-serif",
-            fontWeight: 700,
-            fontSize: "64px",
-            lineHeight: 0.95,
-            letterSpacing: "-0.04em",
-            color: "#111111",
-            whiteSpace: "pre-line",
-            WebkitFontSmoothing: "antialiased",
-            MozOsxFontSmoothing: "grayscale",
-          }}
-        >
-          {data?.title || "Explore Product\nCategories"}
-        </h2>
-
-        <p
-          className="categories-desc"
-          style={{
-            fontFamily: "'Manrope', system-ui, sans-serif",
-            fontSize: "22px",
-            fontWeight: 400,
-            color: "#555555",
-            maxWidth: "340px",
-            marginTop: "28px",
-            lineHeight: 1.45,
-            WebkitFontSmoothing: "antialiased",
-            MozOsxFontSmoothing: "grayscale",
-          }}
-        >
-          {data?.description || "Top-rated, best-selling products trusted and loved by our customers."}
-        </p>
-
-        {/* Indicators + Arrow Navigation */}
         <div
           style={{
             display: "flex",
-            alignItems: "center",
             justifyContent: "space-between",
-            maxWidth: "340px",
-            marginTop: "44px",
+            alignItems: "flex-end",
+            flexWrap: "wrap",
+            gap: "24px",
+            marginBottom: "44px",
           }}
         >
+          {/* Heading & Subtitle Block */}
+          <div style={{ maxWidth: "680px" }}>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "6px 14px",
+                borderRadius: "100px",
+                background: "rgba(0, 119, 182, 0.08)",
+                color: "#0077B6",
+                fontSize: "12px",
+                fontWeight: 800,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                fontFamily: "'Manrope', system-ui, sans-serif",
+                marginBottom: "14px",
+              }}
+            >
+              <Sparkles size={14} />
+              <span>Curated Collections</span>
+            </div>
+
+            <h2
+              style={{
+                fontFamily: "'Manrope', system-ui, sans-serif",
+                fontSize: "44px",
+                fontWeight: 800,
+                lineHeight: 1.15,
+                letterSpacing: "-0.03em",
+                color: "#111827",
+                margin: "0 0 14px 0",
+              }}
+            >
+              {data?.title || "Explore Product Categories"}
+            </h2>
+
+            <p
+              style={{
+                fontFamily: "'Manrope', system-ui, sans-serif",
+                fontSize: "17px",
+                fontWeight: 400,
+                color: "#6B7280",
+                lineHeight: 1.6,
+                margin: 0,
+              }}
+            >
+              {data?.description ||
+                "Top-rated, best-selling products trusted and loved by our customers."}
+            </p>
+          </div>
+
+          {/* Right Controls: View All + Slider Arrows */}
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "14px",
+              gap: "16px",
             }}
-            role="group"
-            aria-label="Category navigation indicators"
           >
-            {categoriesList.map((cat, i) => (
-              <CategoryProgressRing
-                key={cat.id || i}
-                isActive={activeCategoryIdx === i}
-                isPaused={isHovered || isDraggingRef.current}
-                duration={4500}
-                onComplete={handleNext}
-                onClick={() => {
-                  const currentGroup = Math.floor(
-                    virtualIndex / categoriesList.length
-                  );
-                  slideTo(currentGroup * categoriesList.length + i);
-                }}
-                label={`Show category ${i + 1}: ${cat.name}`}
-              />
-            ))}
-          </div>
+            <Link
+              href="/faucets"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                fontFamily: "'Manrope', system-ui, sans-serif",
+                fontSize: "14px",
+                fontWeight: 700,
+                color: "#111827",
+                textDecoration: "none",
+                padding: "10px 18px",
+                borderRadius: "100px",
+                border: "1px solid #E5E7EB",
+                background: "#FFFFFF",
+                transition: "all 0.25s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "#111827";
+                e.currentTarget.style.background = "#111827";
+                e.currentTarget.style.color = "#FFFFFF";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "#E5E7EB";
+                e.currentTarget.style.background = "#FFFFFF";
+                e.currentTarget.style.color = "#111827";
+              }}
+            >
+              <span>View All Categories</span>
+              <ArrowRight size={15} />
+            </Link>
 
-          {/* Prev / Next Smooth Arrow Controls */}
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <button
-              type="button"
-              onClick={handlePrev}
-              className="category-nav-arrow"
-              aria-label="Previous Category"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <button
-              type="button"
-              onClick={handleNext}
-              className="category-nav-arrow"
-              aria-label="Next Category"
-            >
-              <ChevronRight size={18} />
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <button
+                type="button"
+                onClick={() => scrollByCard("left")}
+                disabled={!canScrollLeft}
+                className="categories-arrow-btn"
+                aria-label="Previous Category"
+              >
+                <ChevronLeft size={20} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => scrollByCard("right")}
+                disabled={!canScrollRight}
+                className="categories-arrow-btn"
+                aria-label="Next Category"
+              >
+                <ChevronRight size={20} />
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ── RIGHT SIDE: Horizontal Category Cards Slider ── */}
+      {/* ── HORIZONTAL NORMAL CARDS SCROLLER TRACK ── */}
       <div
-        className="categories-right"
-        onMouseDown={(e) => handlePointerDown(e.clientX)}
-        onMouseMove={(e) => handlePointerMove(e.clientX)}
-        onMouseUp={handlePointerUp}
-        onTouchStart={(e) => handlePointerDown(e.touches[0].clientX)}
-        onTouchMove={(e) => handlePointerMove(e.touches[0].clientX)}
-        onTouchEnd={handlePointerUp}
-        onWheel={handleWheel}
+        ref={scrollContainerRef}
+        className="categories-scroll-track"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUpOrLeave}
+        onMouseLeave={handleMouseUpOrLeave}
         style={{
-          width: "72%",
-          height: "100%",
           display: "flex",
-          alignItems: "center",
-          overflow: "hidden",
-          position: "relative",
-          cursor: isDraggingRef.current ? "grabbing" : "grab",
-          userSelect: "none",
-          touchAction: "pan-y",
+          gap: "24px",
+          overflowX: "auto",
+          padding: "10px 40px 30px",
+          scrollSnapType: "x mandatory",
+          scrollBehavior: "smooth",
+          cursor: "grab",
+          maxWidth: "100vw",
+          boxSizing: "border-box",
         }}
       >
-        <div
-          ref={sliderTrackRef}
-          className="categories-track"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: `${GAP}px`,
-            willChange: "transform",
-          }}
-        >
-          {displaySequence.map((cat, i) => {
-            const isFeatured = virtualIndex === i;
-            const cardWidth = isFeatured ? MAIN_W : SEC_W;
-            const cardHeight = isFeatured ? MAIN_H : SEC_H;
-
-            return (
+        {categoriesList.map((cat, idx) => (
+          <Link
+            key={cat.id || idx}
+            href={cat.href || `/${cat.slug}`}
+            className="categories-card"
+            style={{ scrollSnapAlign: "start" }}
+            onClick={(e) => {
+              if (hasMovedRef.current) {
+                e.preventDefault();
+              }
+            }}
+          >
+            {/* Card Image Box */}
+            <div className="categories-card-img-box">
               <div
-                key={`${cat.name}-${i}`}
-                ref={(el) => {
-                  cardRefs.current[i] = el;
-                }}
-                onClick={(e) => {
-                  // If dragging was more than 10px, do not trigger click
-                  if (Math.abs(dragDistanceRef.current) > 10) return;
-
-                  if (isFeatured && cat.href) {
-                    router.push(cat.href);
-                  } else {
-                    slideTo(i);
-                  }
-                }}
-                className={`categories-card${isFeatured ? " is-featured" : ""}`}
+                className="categories-card-img"
                 style={{
-                  width: `${cardWidth}px`,
-                  height: `${cardHeight}px`,
                   position: "relative",
-                  flexShrink: 0,
-                  cursor: "pointer",
+                  width: "100%",
+                  height: "100%",
                 }}
               >
-                {/* Centered product image with soft floor reflection */}
-                <div className="categories-product-wrap">
-                  <div
-                    className="categories-product-img"
-                    style={{
-                      position: "relative",
-                      width: "100%",
-                      height: "100%",
-                    }}
-                  >
-                    <Image
-                      src={cat.image}
-                      alt={cat.name}
-                      fill
-                      sizes={`${cardWidth}px`}
-                      unoptimized
-                      style={{
-                        objectFit: "contain",
-                        objectPosition: "center",
-                        pointerEvents: "none",
-                      }}
-                    />
-                  </div>
-                </div>
+                <Image
+                  src={cat.image}
+                  alt={cat.name}
+                  fill
+                  sizes="320px"
+                  unoptimized
+                  style={{
+                    objectFit: "contain",
+                    objectPosition: "center",
+                    pointerEvents: "none",
+                  }}
+                />
+              </div>
 
-                {/* Category title — bottom center, black */}
+              {cat.productCount && cat.productCount > 0 ? (
                 <div
                   style={{
                     position: "absolute",
-                    bottom: isFeatured ? "40px" : "32px",
-                    left: 0,
-                    right: 0,
-                    zIndex: 2,
-                    padding: "0 24px",
-                    display: "flex",
-                    justifyContent: "center",
-                    pointerEvents: "none",
+                    top: "12px",
+                    right: "12px",
+                    background: "rgba(255, 255, 255, 0.92)",
+                    backdropFilter: "blur(6px)",
+                    border: "1px solid rgba(0,0,0,0.06)",
+                    borderRadius: "100px",
+                    padding: "4px 10px",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                    color: "#4B5563",
+                    fontFamily: "'Manrope', system-ui, sans-serif",
                   }}
                 >
-                  <h3 className="categories-card-title">{cat.name}</h3>
+                  {cat.productCount} Items
                 </div>
+              ) : null}
+            </div>
+
+            {/* Card Content Details */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "6px",
+                padding: "16px 4px 4px",
+                flex: 1,
+                justifyContent: "space-between",
+              }}
+            >
+              <div>
+                <h3
+                  style={{
+                    fontFamily: "'Manrope', system-ui, sans-serif",
+                    fontSize: "19px",
+                    fontWeight: 700,
+                    color: "#111827",
+                    letterSpacing: "-0.01em",
+                    margin: "0 0 6px 0",
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {cat.name}
+                </h3>
+
+                <p
+                  style={{
+                    fontFamily: "'Manrope', system-ui, sans-serif",
+                    fontSize: "13px",
+                    color: "#6B7280",
+                    margin: 0,
+                    lineHeight: 1.5,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                  }}
+                >
+                  {cat.subtitle}
+                </p>
               </div>
-            );
-          })}
-        </div>
+
+              {/* Footer Explore Link */}
+              <div
+                style={{
+                  paddingTop: "12px",
+                  borderTop: "1px solid #F3F4F6",
+                  marginTop: "8px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <span className="categories-card-explore">
+                  <span>Explore Collection</span>
+                  <ArrowRight size={14} />
+                </span>
+              </div>
+            </div>
+          </Link>
+        ))}
       </div>
+
+      {/* ── BOTTOM PAGINATION PILL DOTS ── */}
+      {categoriesList.length > 1 && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px",
+            marginTop: "16px",
+          }}
+        >
+          {categoriesList.map((_, dotIdx) => (
+            <button
+              key={`dot-${dotIdx}`}
+              type="button"
+              onClick={() => scrollToIndex(dotIdx)}
+              aria-label={`Go to category ${dotIdx + 1}`}
+              style={{
+                width: activeIndex === dotIdx ? "28px" : "8px",
+                height: "8px",
+                borderRadius: "4px",
+                background: activeIndex === dotIdx ? "#111827" : "#E5E7EB",
+                border: "none",
+                cursor: "pointer",
+                padding: 0,
+                transition: "all 0.3s ease",
+              }}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }
-
