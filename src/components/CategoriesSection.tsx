@@ -189,29 +189,29 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         .luxury-card-image-wrap {
           width: 100%;
           height: 380px;
-          background: linear-gradient(180deg, #F8FAFC 0%, #EDF2F7 100%);
-          border: 1px solid #E5E7EB;
-          border-radius: 6px;
+          background: transparent;
+          border: none;
+          border-radius: 4px;
           position: relative;
           overflow: hidden;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 24px;
+          padding: 0;
           box-sizing: border-box;
-          transition: border-color 0.35s ease, box-shadow 0.35s ease;
+          transition: transform 0.35s ease;
         }
 
         .luxury-card:hover .luxury-card-image-wrap {
-          border-color: #9CA3AF;
-          box-shadow: 0 16px 36px rgba(0, 0, 0, 0.08);
+          border: none;
+          box-shadow: none;
         }
 
         /* Primary Normal Image */
         .luxury-img-primary {
           position: absolute;
           inset: 0;
-          padding: 24px;
+          padding: 0;
           box-sizing: border-box;
           opacity: 1;
           transition: opacity 0.45s ease-in-out, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
@@ -230,7 +230,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         .luxury-img-hover {
           position: absolute;
           inset: 0;
-          padding: 24px;
+          padding: 0;
           box-sizing: border-box;
           opacity: 0;
           transform: scale(0.97);
@@ -336,7 +336,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           }
           .luxury-card-image-wrap {
             height: 270px !important;
-            padding: 16px !important;
+            padding: 0 !important;
           }
           .luxury-heading-line1 {
             font-size: 22px !important;
@@ -465,7 +465,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
                       sizes="400px"
                       unoptimized
                       style={{
-                        objectFit: "contain",
+                        objectFit: "cover",
                         objectPosition: "center",
                         pointerEvents: "none",
                       }}
@@ -484,7 +484,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
                         sizes="400px"
                         unoptimized
                         style={{
-                          objectFit: "contain",
+                          objectFit: "cover",
                           objectPosition: "center",
                           pointerEvents: "none",
                         }}
