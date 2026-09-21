@@ -129,8 +129,8 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
       if (isDraggingRef.current || isHoveredRef.current) return;
 
       const card = el.querySelector(".luxury-card") as HTMLElement | null;
-      const cardWidth = card?.offsetWidth || 320;
-      const gap = 24;
+      const cardWidth = card?.offsetWidth || 300;
+      const gap = parseFloat(window.getComputedStyle(el).gap) || 28;
       const step = cardWidth + gap;
 
       if (el.scrollLeft >= el.scrollWidth - el.clientWidth - 15) {
@@ -138,7 +138,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
       } else {
         el.scrollBy({ left: step, behavior: "smooth" });
       }
-    }, 3200);
+    }, 3500);
 
     return () => clearInterval(interval);
   }, []);
@@ -147,8 +147,8 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
     const el = scrollContainerRef.current;
     if (!el) return;
     const card = el.querySelector(".luxury-card") as HTMLElement | null;
-    const cardWidth = card?.offsetWidth || 320;
-    const gap = 24;
+    const cardWidth = card?.offsetWidth || 300;
+    const gap = parseFloat(window.getComputedStyle(el).gap) || 28;
     // Smoothly scroll by 4 cards (one full viewport set)
     const scrollAmount = (cardWidth + gap) * 4;
     const offset = direction === "left" ? -scrollAmount : scrollAmount;
@@ -222,15 +222,15 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
     >
       <style>{`
         .luxury-categories-section {
-          --track-pad: clamp(24px, 3.5vw, 48px);
-          --track-gap: clamp(18px, 2.2vw, 32px);
+          --track-pad: clamp(32px, 3.5vw, 64px);
+          --track-gap: clamp(24px, 2.5vw, 42px);
         }
 
         .luxury-card {
-          width: clamp(220px, 18vw, 265px);
-          min-width: clamp(220px, 18vw, 265px);
-          max-width: clamp(220px, 18vw, 265px);
-          flex: 0 0 clamp(220px, 18vw, 265px);
+          width: calc((100vw - (2 * var(--track-pad)) - (3 * var(--track-gap))) / 4);
+          min-width: calc((100vw - (2 * var(--track-pad)) - (3 * var(--track-gap))) / 4);
+          max-width: calc((100vw - (2 * var(--track-pad)) - (3 * var(--track-gap))) / 4);
+          flex: 0 0 calc((100vw - (2 * var(--track-pad)) - (3 * var(--track-gap))) / 4);
           text-decoration: none;
           color: inherit;
           display: flex;
@@ -241,26 +241,25 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         }
 
         .luxury-card:hover {
-          transform: translateY(-5px);
+          transform: translateY(-6px);
         }
 
-        /* Staggered Upar - Nicche Wave offsets (compact so whole section fits on screen) */
+        /* Staggered Upar - Nicche Wave offsets */
         .luxury-card.stagger-mid {
-          margin-top: 20px;
+          margin-top: 15px;
         }
         .luxury-card.stagger-down {
-          margin-top: 55px;
+          margin-top: 36px;
         }
         .luxury-card.stagger-up {
           margin-top: 0px;
         }
 
-        /* Compact 2:3 Aspect Ratio Cards */
+        /* Strict 2:3 Aspect Ratio Cards with increased size */
         .luxury-card-image-wrap {
           width: 100%;
           aspect-ratio: 2 / 3;
           height: auto;
-          max-height: clamp(330px, 44vh, 395px);
           background: #F8FAFC;
           border: 1px solid #E2E8F0;
           border-radius: 0px;
@@ -407,50 +406,41 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           display: none;
         }
 
-        @media (max-width: 1024px) {
+        @media (max-width: 1023px) and (min-width: 768px) {
           .luxury-categories-section {
-            --track-pad: 32px;
-            --track-gap: 20px;
+            --track-pad: 28px;
+            --track-gap: 22px;
           }
           .luxury-card {
-            width: 220px !important;
-            min-width: 220px !important;
-            max-width: 220px !important;
-            flex: 0 0 220px !important;
-          }
-          .luxury-card-image-wrap {
-            aspect-ratio: 2 / 3 !important;
-            height: auto !important;
+            width: calc((100vw - (2 * var(--track-pad)) - (2 * var(--track-gap))) / 3) !important;
+            min-width: calc((100vw - (2 * var(--track-pad)) - (2 * var(--track-gap))) / 3) !important;
+            max-width: calc((100vw - (2 * var(--track-pad)) - (2 * var(--track-gap))) / 3) !important;
+            flex: 0 0 calc((100vw - (2 * var(--track-pad)) - (2 * var(--track-gap))) / 3) !important;
           }
           .luxury-card.stagger-mid {
-            margin-top: 15px !important;
+            margin-top: 10px !important;
           }
           .luxury-card.stagger-down {
-            margin-top: 45px !important;
+            margin-top: 25px !important;
           }
           .luxury-staggered-track {
-            padding: 6px var(--track-pad) 20px !important;
+            padding: 8px var(--track-pad) 24px !important;
             gap: var(--track-gap) !important;
-            min-height: auto !important;
           }
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 767px) {
           .luxury-categories-section {
-            padding: 95px 0 40px !important;
+            padding: 95px 0 35px !important;
             min-height: auto !important;
             --track-pad: 16px;
-            --track-gap: 14px;
+            --track-gap: 16px;
           }
           .luxury-card {
-            width: 200px !important;
-            min-width: 200px !important;
-            max-width: 200px !important;
-            flex: 0 0 200px !important;
-          }
-          .luxury-card-image-wrap {
-            aspect-ratio: 2 / 3 !important;
-            height: auto !important;
+            width: clamp(220px, 68vw, 275px) !important;
+            min-width: clamp(220px, 68vw, 275px) !important;
+            max-width: clamp(220px, 68vw, 275px) !important;
+            flex: 0 0 clamp(220px, 68vw, 275px) !important;
           }
           .luxury-card.stagger-mid,
           .luxury-card.stagger-down,
