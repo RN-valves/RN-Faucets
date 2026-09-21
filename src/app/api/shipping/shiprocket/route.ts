@@ -38,7 +38,7 @@ export async function POST(request: Request) {
         units: i.quantity,
         selling_price: i.price,
       })),
-      paymentMethod: order.paymentMethod,
+      paymentMethod: order.paymentMethod === "Cash on Delivery" ? "Cash on Delivery" : "Online Payment",
       totalAmount: order.totalAmount,
       weight: weight || 1.0,
     });

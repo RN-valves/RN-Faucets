@@ -2,6 +2,7 @@
 
 import React from "react";
 import AdminEmptyState from "./AdminEmptyState";
+import AdminShimmer from "./AdminShimmer";
 
 export interface Column<T> {
   header: string;
@@ -83,11 +84,42 @@ export default function AdminDataTable<T>({
 
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan={columns.length} style={{ padding: "40px", textAlign: "center", color: textMuted }}>
-                  Loading data...
-                </td>
-              </tr>
+              Array.from({ length: 6 }).map((_, rowIdx) => (
+                <tr
+                  key={`shimmer-row-${rowIdx}`}
+                  style={{
+                    borderBottom: `1px solid ${border}`,
+                    background: bg,
+                  }}
+                >
+                  {columns.map((col, colIdx) => (
+                    <td
+                      key={`shimmer-col-${colIdx}`}
+                      style={{
+                        padding: "14px 16px",
+                        textAlign: col.align || "left",
+                        width: col.width || "auto",
+                      }}
+                    >
+                      <AdminShimmer
+                        width={
+                          colIdx === 0
+                            ? "45%"
+                            : colIdx === columns.length - 1
+                            ? "70%"
+                            : colIdx % 2 === 0
+                            ? "60%"
+                            : "85%"
+                        }
+                        height={18}
+                        borderRadius={5}
+                        isDark={isDark}
+                        style={col.align === "right" ? { marginLeft: "auto" } : undefined}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))
             ) : data.length === 0 ? (
               <tr>
                 <td colSpan={columns.length}>

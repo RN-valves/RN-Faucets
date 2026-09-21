@@ -1,75 +1,86 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-const BLOGS = [
-  {
-    title: "Designer Wash Basin Trends for Small Bathrooms in 2026",
-    href: "#",
-    image:
-      "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=luxury%20small%20bathroom%20interior%20with%20designer%20white%20wash%20basin%2C%20modern%20chrome%20faucet%2C%20warm%20ambient%20lighting%2C%20premium%20dark%20stone%20wall%2C%20realistic%20editorial%20interior%20photography%2C%20high-end%20home%20design&image_size=landscape_16_9",
-  },
-  {
-    title: "Elegant Bedroom Wall Tile Ideas to Suit Every Style",
-    href: "#",
-    image:
-      "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=contemporary%20luxury%20bedroom%20with%20large%20marble%20accent%20wall%20tiles%2C%20soft%20natural%20light%2C%20floor-to-ceiling%20window%2C%20minimal%20premium%20furniture%2C%20realistic%20interior%20photography&image_size=landscape_16_9",
-  },
-  {
-    title: "Creative Kitchen Chimney Design Ideas for Your Home",
-    href: "#",
-    image:
-      "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=modern%20kitchen%20interior%20with%20sleek%20black%20chimney%20hood%2C%20white%20brick%20wall%2C%20minimal%20cabinetry%2C%20clean%20premium%20appliance%20showcase%2C%20realistic%20interior%20photography&image_size=landscape_16_9",
-  },
-  {
-    title: "Premium Faucet Finishes That Instantly Elevate Your Bathroom",
-    href: "#",
-    image:
-      "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=premium%20bathroom%20countertop%20with%20brushed%20gold%20designer%20faucet%2C%20stone%20sink%2C%20soft%20luxury%20lighting%2C%20high-end%20interior%20editorial%20photography&image_size=landscape_16_9",
-  },
-  {
-    title: "How to Choose Tiles That Make Compact Spaces Feel Bigger",
-    href: "#",
-    image:
-      "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=bright%20compact%20modern%20interior%20with%20large-format%20light%20tiles%2C%20spacious%20feel%2C%20minimal%20furnishings%2C%20realistic%20architectural%20interior%20photography&image_size=landscape_16_9",
-  },
-] as const;
+interface BlogItem {
+  id?: string;
+  _id?: string;
+  title: string;
+  slug?: string;
+  image: string;
+  href?: string;
+}
 
 interface BlogsSectionProps {
   data?: {
     visible?: boolean;
     title?: string;
     viewAllHref?: string;
-    blogs?: Array<{ title: string; image: string; href: string }>;
+    blogs?: Array<{ title: string; image: string; href?: string; slug?: string }>;
   };
 }
 
 export default function BlogsSection({ data }: BlogsSectionProps) {
   if (data?.visible === false) return null;
 
-  const validBlogs = data?.blogs?.filter((b) => Boolean(b.image));
-  const blogsList = validBlogs && validBlogs.length > 0 ? validBlogs : BLOGS;
-  const sectionTitle = data?.title || "Blogs";
-  const viewAllLink = data?.viewAllHref || "#";
-
+  const [dbBlogs, setDbBlogs] = useState<BlogItem[]>([]);
   const [startIndex, setStartIndex] = useState(0);
 
+  useEffect(() => {
+    if (!data?.blogs || data.blogs.length === 0) {
+      fetch("/api/blogs")
+        .then((res) => res.json())
+        .then((json) => {
+          if (Array.isArray(json.blogs)) {
+            const mapped = json.blogs.map((b: any) => ({
+              id: b.id || b._id,
+              title: b.title,
+              slug: b.slug,
+              image: b.image || "/api/media/website/catalogue/products/default/image.webp",
+              href: `/blogs?slug=${encodeURIComponent(b.slug || "")}`,
+            }));
+            setDbBlogs(mapped);
+          }
+        })
+        .catch((err) => console.error("Failed to load blogs for BlogsSection:", err));
+    }
+  }, [data?.blogs]);
+
+  const blogsList: BlogItem[] = useMemo(() => {
+    if (data?.blogs && data.blogs.length > 0) {
+      return data.blogs.filter((b) => Boolean(b.image)).map((b) => ({
+        ...b,
+        href: b.href || (b.slug ? `/blogs?slug=${encodeURIComponent(b.slug)}` : "/blogs"),
+      }));
+    }
+    return dbBlogs;
+  }, [data?.blogs, dbBlogs]);
+
+  const sectionTitle = data?.title || "Blogs";
+  const viewAllLink = data?.viewAllHref && data.viewAllHref !== "#" ? data.viewAllHref : "/blogs";
+
   const visibleBlogs = useMemo(() => {
-    const items = [];
-    for (let i = 0; i < Math.min(3, blogsList.length); i += 1) {
+    if (blogsList.length === 0) return [];
+    const count = Math.min(3, blogsList.length);
+    const items: BlogItem[] = [];
+    for (let i = 0; i < count; i += 1) {
       items.push(blogsList[(startIndex + i) % blogsList.length]);
     }
     return items;
   }, [startIndex, blogsList]);
 
   const goPrev = () => {
-    setStartIndex((prev) => (prev - 1 + BLOGS.length) % BLOGS.length);
+    if (blogsList.length === 0) return;
+    setStartIndex((prev) => (prev - 1 + blogsList.length) % blogsList.length);
   };
 
   const goNext = () => {
-    setStartIndex((prev) => (prev + 1) % BLOGS.length);
+    if (blogsList.length === 0) return;
+    setStartIndex((prev) => (prev + 1) % blogsList.length);
   };
+
+  if (blogsList.length === 0) return null;
 
   return (
     <section
@@ -189,10 +200,10 @@ export default function BlogsSection({ data }: BlogsSectionProps) {
             flex: 1,
           }}
         >
-          Blogs
+          {sectionTitle}
         </h2>
         <a
-          href="#"
+          href={viewAllLink}
           className="blogs-header-link"
           style={{
             color: "#111111",

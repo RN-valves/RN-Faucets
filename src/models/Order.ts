@@ -2,7 +2,7 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 
 const OrderItemSchema = new Schema(
   {
-    id: { type: String, required: true },
+    id: { type: String },
     name: { type: String, required: true },
     code: { type: String },
     color: { type: String, default: "" },
@@ -23,6 +23,7 @@ const ShippingAddressSchema = new Schema(
     city: { type: String, required: true },
     state: { type: String, required: true },
     pinCode: { type: String, required: true },
+    country: { type: String, default: "India" },
   },
   { _id: false }
 );
@@ -33,7 +34,7 @@ export interface IOrder extends Document {
   customerPhone: string;
   customerEmail: string;
   items: {
-    id: string;
+    id?: string;
     name: string;
     code?: string;
     color: string;
@@ -42,7 +43,7 @@ export interface IOrder extends Document {
     image: string;
   }[];
   totalAmount: number;
-  paymentMethod: "Online Payment" | "Cash on Delivery";
+  paymentMethod: "Online Payment" | "Cash on Delivery" | "Store Pickup";
   paymentStatus: "Paid" | "Pending" | "Refunded";
   status: "Pending" | "Processing" | "Shipped" | "Delivered" | "Cancelled";
   shippingAddress: {
@@ -54,6 +55,7 @@ export interface IOrder extends Document {
     city: string;
     state: string;
     pinCode: string;
+    country?: string;
   };
   courierPartner?: string;
   trackingNumber?: string;
@@ -66,7 +68,7 @@ export interface IOrder extends Document {
   razorpayPaymentId?: string;
   razorpaySignature?: string;
   // Shipping Integration Details
-  shippingProvider?: "Shiprocket" | "Shipway" | "Manual" | "Custom";
+  shippingProvider?: "Shiprocket" | "Shipway" | "Manual" | "Custom" | string;
   shiprocketOrderId?: string | number;
   shiprocketShipmentId?: string | number;
   shipwayOrderId?: string | number;
@@ -74,6 +76,16 @@ export interface IOrder extends Document {
   trackingUrl?: string;
   orderDate: string;
   deliveryEstimate?: string;
+  legacyId?: number;
+  uuid?: string;
+  userId?: number;
+  discountCode?: string;
+  discountAmount?: number;
+  shippingAmount?: number;
+  timeline?: any[];
+  transportDetails?: any;
+  invoice?: string;
+  note?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -86,21 +98,9 @@ const OrderSchema = new Schema<IOrder>(
     customerEmail: { type: String, default: "" },
     items: { type: [OrderItemSchema], default: [] },
     totalAmount: { type: Number, required: true },
-    paymentMethod: {
-      type: String,
-      enum: ["Online Payment", "Cash on Delivery"],
-      default: "Online Payment",
-    },
-    paymentStatus: {
-      type: String,
-      enum: ["Paid", "Pending", "Refunded"],
-      default: "Pending",
-    },
-    status: {
-      type: String,
-      enum: ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"],
-      default: "Pending",
-    },
+    paymentMethod: { type: String, default: "Online Payment" },
+    paymentStatus: { type: String, default: "Pending" },
+    status: { type: String, default: "Pending" },
     shippingAddress: { type: ShippingAddressSchema, required: true },
     courierPartner: { type: String, default: "" },
     trackingNumber: { type: String, default: "" },
@@ -108,16 +108,10 @@ const OrderSchema = new Schema<IOrder>(
     dispatchDate: { type: String, default: "" },
     vehicleNumber: { type: String, default: "" },
     transportNotes: { type: String, default: "" },
-    // Razorpay Payment Details
     razorpayOrderId: { type: String, default: "" },
     razorpayPaymentId: { type: String, default: "" },
     razorpaySignature: { type: String, default: "" },
-    // Shipping Integration Details
-    shippingProvider: {
-      type: String,
-      enum: ["Shiprocket", "Shipway", "Manual", "Custom"],
-      default: "Manual",
-    },
+    shippingProvider: { type: String, default: "Manual" },
     shiprocketOrderId: { type: Schema.Types.Mixed, default: null },
     shiprocketShipmentId: { type: Schema.Types.Mixed, default: null },
     shipwayOrderId: { type: Schema.Types.Mixed, default: null },
@@ -125,8 +119,18 @@ const OrderSchema = new Schema<IOrder>(
     trackingUrl: { type: String, default: "" },
     orderDate: { type: String, required: true },
     deliveryEstimate: { type: String },
+    legacyId: { type: Number },
+    uuid: { type: String },
+    userId: { type: Number },
+    discountCode: { type: String },
+    discountAmount: { type: Number },
+    shippingAmount: { type: Number },
+    timeline: { type: Array, default: [] },
+    transportDetails: { type: Schema.Types.Mixed },
+    invoice: { type: String },
+    note: { type: String },
   },
-  { timestamps: true }
+  { timestamps: true, strict: false }
 );
 
 const Order: Model<IOrder> =

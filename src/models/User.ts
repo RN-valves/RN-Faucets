@@ -19,6 +19,11 @@ export interface IUser extends Document {
   permissions: string[];
   remarks?: string;
   password?: string;
+  local_password?: string;
+  legacyId?: number;
+  salesUser?: string;
+  sales_user_id?: number;
+  addresses?: any[];
   emailVerified: boolean;
   createdBy: string;
   createdAt?: Date;
@@ -32,6 +37,11 @@ const UserSchema = new Schema<IUser>(
     email: { type: String, default: "" },
     userCode: { type: String, required: true, unique: true },
     password: { type: String, default: "" },
+    local_password: { type: String, default: "" },
+    legacyId: { type: Number },
+    salesUser: { type: String },
+    sales_user_id: { type: Number },
+    addresses: { type: Array, default: [] },
     userType: {
       type: String,
       enum: ["Customer", "Business", "Admin", "Employee"],
@@ -56,7 +66,7 @@ const UserSchema = new Schema<IUser>(
     emailVerified: { type: Boolean, default: true },
     createdBy: { type: String, default: "Self" },
   },
-  { timestamps: true }
+  { timestamps: true, strict: false }
 );
 
 const User: Model<IUser> =

@@ -249,4 +249,27 @@ body {
   }
 }
 
+/* ── Admin Dashboard Shimmer Loading Animation ── */
+@keyframes rnAdminShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.rn-admin-shimmer-light {
+  background: linear-gradient(90deg, #F3F4F6 0%, #E5E7EB 50%, #F3F4F6 100%);
+  background-size: 200% 100%;
+  animation: rnAdminShimmer 1.5s ease-in-out infinite;
+}
+
+.rn-admin-shimmer-dark {
+  background: linear-gradient(90deg, #161B22 0%, #262C36 50%, #161B22 100%);
+  background-size: 200% 100%;
+  animation: rnAdminShimmer 1.5s ease-in-out infinite;
+}
+
+
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import AdminHeader from "@/components/admin/AdminHeader";
+import AdminShimmer from "@/components/admin/ui/AdminShimmer";
 import {
   getAdminCategories,
   deleteAdminCategory,
@@ -37,6 +38,7 @@ export default function AdminCategoriesListingPage() {
 
   const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [subcategories, setSubcategories] = useState<AdminSubcategory[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Filter & Pagination State
   const [searchQuery, setSearchQuery] = useState("");
@@ -63,11 +65,18 @@ export default function AdminCategoriesListingPage() {
   const shadow = isDark ? "none" : "0 2px 10px rgba(0, 0, 0, 0.04)";
 
   const loadData = async () => {
-    const [cats, subs] = await Promise.all([getAdminCategories(), getAdminSubcategories()]);
-    setCategories(cats);
-    setSubcategories(subs);
-    if (cats.length > 0 && !subCategoryId) {
-      setSubCategoryId(cats[0].id);
+    setLoading(true);
+    try {
+      const [cats, subs] = await Promise.all([getAdminCategories(), getAdminSubcategories()]);
+      setCategories(cats);
+      setSubcategories(subs);
+      if (cats.length > 0 && !subCategoryId) {
+        setSubCategoryId(cats[0].id);
+      }
+    } catch (err) {
+      console.error("Failed to load categories:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -332,7 +341,49 @@ export default function AdminCategoriesListingPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedCategories.length === 0 ? (
+                  {loading ? (
+                    Array.from({ length: 6 }).map((_, idx) => (
+                      <tr key={`shimmer-cat-${idx}`} style={{ borderBottom: `1px solid ${border}` }}>
+                        <td style={{ padding: "14px 20px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                            <AdminShimmer width={44} height={44} borderRadius={8} isDark={isDark} />
+                            <AdminShimmer width={65} height={14} isDark={isDark} />
+                          </div>
+                        </td>
+                        <td style={{ padding: "14px 20px" }}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                            <AdminShimmer width={idx % 2 === 0 ? "70%" : "85%"} height={15} isDark={isDark} />
+                            <AdminShimmer width="45%" height={11} isDark={isDark} />
+                          </div>
+                        </td>
+                        <td style={{ padding: "14px 20px" }}>
+                          <AdminShimmer width={120} height={14} isDark={isDark} />
+                        </td>
+                        <td style={{ padding: "14px 20px" }}>
+                          <AdminShimmer width={40} height={14} isDark={isDark} />
+                        </td>
+                        <td style={{ padding: "14px 20px" }}>
+                          <AdminShimmer width={40} height={14} isDark={isDark} />
+                        </td>
+                        <td style={{ padding: "14px 20px" }}>
+                          <AdminShimmer width={60} height={20} borderRadius={4} isDark={isDark} />
+                        </td>
+                        <td style={{ padding: "14px 20px" }}>
+                          <AdminShimmer width={70} height={24} borderRadius={12} isDark={isDark} />
+                        </td>
+                        <td style={{ padding: "14px 20px" }}>
+                          <AdminShimmer width={70} height={24} borderRadius={12} isDark={isDark} />
+                        </td>
+                        <td style={{ padding: "14px 20px", textAlign: "right" }}>
+                          <div style={{ display: "inline-flex", gap: "8px", justifyContent: "flex-end" }}>
+                            <AdminShimmer width={28} height={28} borderRadius={6} isDark={isDark} />
+                            <AdminShimmer width={28} height={28} borderRadius={6} isDark={isDark} />
+                            <AdminShimmer width={28} height={28} borderRadius={6} isDark={isDark} />
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : paginatedCategories.length === 0 ? (
                     <tr>
                       <td colSpan={9} style={{ padding: "32px", textAlign: "center", color: textMuted }}>
                         No categories found matching criteria.

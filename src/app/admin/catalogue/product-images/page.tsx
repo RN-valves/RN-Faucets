@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import AdminHeader from "@/components/admin/AdminHeader";
+import AdminShimmer from "@/components/admin/ui/AdminShimmer";
 import { useAdminTheme } from "@/app/admin/layout";
 import {
   Plus,
@@ -128,11 +129,37 @@ export default function ProductImagesIndexPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan={7} style={{ padding: "32px", textAlign: "center", color: textMuted }}>
-                    Loading product images...
-                  </td>
-                </tr>
+                Array.from({ length: 6 }).map((_, idx) => (
+                  <tr key={`shimmer-img-${idx}`} style={{ borderBottom: `1px solid ${border}` }}>
+                    <td style={{ padding: "14px 20px" }}>
+                      <AdminShimmer width={50} height={50} borderRadius={8} isDark={isDark} />
+                    </td>
+                    <td style={{ padding: "14px 20px" }}>
+                      <AdminShimmer width={90} height={15} isDark={isDark} />
+                    </td>
+                    <td style={{ padding: "14px 20px" }}>
+                      <AdminShimmer width={60} height={14} isDark={isDark} />
+                    </td>
+                    <td style={{ padding: "14px 20px" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <AdminShimmer width={idx % 2 === 0 ? "80%" : "65%"} height={15} isDark={isDark} />
+                        <AdminShimmer width="35%" height={11} isDark={isDark} />
+                      </div>
+                    </td>
+                    <td style={{ padding: "14px 20px" }}>
+                      <AdminShimmer width={160} height={13} isDark={isDark} />
+                    </td>
+                    <td style={{ padding: "14px 20px" }}>
+                      <AdminShimmer width={65} height={22} borderRadius={11} isDark={isDark} />
+                    </td>
+                    <td style={{ padding: "14px 20px", textAlign: "right" }}>
+                      <div style={{ display: "inline-flex", gap: "8px", justifyContent: "flex-end" }}>
+                        <AdminShimmer width={28} height={28} borderRadius={6} isDark={isDark} />
+                        <AdminShimmer width={28} height={28} borderRadius={6} isDark={isDark} />
+                      </div>
+                    </td>
+                  </tr>
+                ))
               ) : images.length === 0 ? (
                 <tr>
                   <td colSpan={7} style={{ padding: "32px", textAlign: "center", color: textMuted }}>

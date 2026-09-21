@@ -204,7 +204,7 @@ const HomeSettingSchema = new Schema<IHomeSetting>(
     blogsSection: {
       visible: { type: Boolean, default: true },
       title: { type: String, default: "Blogs" },
-      viewAllHref: { type: String, default: "#" },
+      viewAllHref: { type: String, default: "/blogs" },
       blogs: [
         {
           title: { type: String },

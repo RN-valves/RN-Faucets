@@ -1,28 +1,32 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface IDiscount extends Document {
-  id: string;
+  id?: string;
+  legacyId?: number;
   name: string;
-  type: "Amount" | "Percent";
+  code?: string;
+  type: string;
   value: number;
   startValue: number;
   endValue: number;
-  expiredAt: string;
-  status: "Active" | "Inactive";
+  expiredAt?: Date | string;
+  status: "Active" | "Inactive" | "InActive";
 }
 
 const DiscountSchema = new Schema<IDiscount>(
   {
-    id: { type: String, required: true, unique: true },
+    id: { type: String },
+    legacyId: { type: Number },
     name: { type: String, required: true },
-    type: { type: String, enum: ["Amount", "Percent"], default: "Percent" },
+    code: { type: String },
+    type: { type: String, default: "Percentage" },
     value: { type: Number, required: true },
     startValue: { type: Number, default: 0 },
     endValue: { type: Number, default: 999999 },
-    expiredAt: { type: String, required: true },
-    status: { type: String, enum: ["Active", "Inactive"], default: "Active" },
+    expiredAt: { type: Schema.Types.Mixed },
+    status: { type: String, default: "Active" },
   },
-  { timestamps: true }
+  { timestamps: true, strict: false }
 );
 
 const Discount: Model<IDiscount> =

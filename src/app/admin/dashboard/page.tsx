@@ -25,9 +25,11 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import AdminShimmer from "@/components/admin/ui/AdminShimmer";
 
 export default function AdminDashboardPage() {
   const { theme, toggleTheme } = useAdminTheme();
+  const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [enquiries, setEnquiries] = useState<AdminEnquiry[]>([]);
@@ -44,14 +46,21 @@ export default function AdminDashboardPage() {
   const shadow = isDark ? "none" : "0 2px 10px rgba(0, 0, 0, 0.04)";
 
   const loadData = async () => {
-    const [ords, prods, enqs] = await Promise.all([
-      getAdminOrders(),
-      getAdminProducts(),
-      getAdminEnquiries(),
-    ]);
-    setOrders(Array.isArray(ords) ? ords : (ords as any)?.orders || []);
-    setProducts(Array.isArray(prods) ? prods : (prods as any)?.products || []);
-    setEnquiries(Array.isArray(enqs) ? enqs : (enqs as any)?.enquiries || []);
+    setLoading(true);
+    try {
+      const [ords, prods, enqs] = await Promise.all([
+        getAdminOrders(),
+        getAdminProducts(),
+        getAdminEnquiries(),
+      ]);
+      setOrders(Array.isArray(ords) ? ords : (ords as any)?.orders || []);
+      setProducts(Array.isArray(prods) ? prods : (prods as any)?.products || []);
+      setEnquiries(Array.isArray(enqs) ? enqs : (enqs as any)?.enquiries || []);
+    } catch (err) {
+      console.error("Failed to load dashboard data:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -70,11 +79,35 @@ export default function AdminDashboardPage() {
   const safeProducts = Array.isArray(products) ? products : [];
   const safeEnquiries = Array.isArray(enquiries) ? enquiries : [];
 
-  const totalRevenue = safeOrders.reduce((acc, o) => acc + (o.totalAmount || 0), 0);
-  const pendingOrdersCount = safeOrders.filter((o) => o.status === "Pending").length;
-  const processingOrdersCount = safeOrders.filter((o) => o.status === "Processing").length;
-  const shippedOrdersCount = safeOrders.filter((o) => o.status === "Shipped").length;
-  const deliveredOrdersCount = safeOrders.filter((o) => o.status === "Delivered").length;
+  // Filter out corrupted / spam test orders with integer-overflow quantities (e.g. legacy test orders with 2.68e21)
+  const validOrders = safeOrders.filter(
+    (o) =>
+      typeof o.totalAmount === "number" &&
+      isFinite(o.totalAmount) &&
+      o.totalAmount < 10000000 &&
+      o.customerPhone !== "9350285800"
+  );
+
+  // Non-cancelled orders revenue
+  const nonCancelledOrders = validOrders.filter(
+    (o) => !["Cancelled", "CANCELED"].includes(o.status)
+  );
+  const totalRevenue = nonCancelledOrders.reduce((acc, o) => acc + (o.totalAmount || 0), 0);
+
+  // Verified & fulfilled sales (Delivered, Shipped, Processing, matching Laravel PHP logic)
+  const verifiedOrders = validOrders.filter(
+    (o) => !["Cancelled", "CANCELED", "Pending"].includes(o.status)
+  );
+  const verifiedRevenue = verifiedOrders.reduce((acc, o) => acc + (o.totalAmount || 0), 0);
+
+  const pendingOrdersCount = validOrders.filter((o) => o.status === "Pending").length;
+  const processingOrdersCount = validOrders.filter((o) => o.status === "Processing").length;
+  const shippedOrdersCount = validOrders.filter((o) =>
+    ["Shipped", "Out for Pickup", "IN TRANSIT"].includes(o.status)
+  ).length;
+  const deliveredOrdersCount = validOrders.filter((o) =>
+    ["Delivered", "DELIVERED", "RTO Delivered", "RTO DELIVERED"].includes(o.status)
+  ).length;
   const newEnquiriesCount = safeEnquiries.filter((e) => e.status === "New").length;
 
   const formatCurrency = (val: number) => {
@@ -163,14 +196,24 @@ export default function AdminDashboardPage() {
                 <DollarSign size={18} />
               </div>
             </div>
-            <div style={{ fontSize: "28px", fontWeight: 800, color: textMain }}>
-              {formatCurrency(totalRevenue)}
+            <div style={{ fontSize: "28px", fontWeight: 800, color: textMain, minHeight: "38px", display: "flex", alignItems: "center" }}>
+              {loading ? (
+                <AdminShimmer width={150} height={28} borderRadius={6} isDark={isDark} />
+              ) : (
+                formatCurrency(totalRevenue)
+              )}
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12.5px" }}>
-              <span style={{ color: "#059669", fontWeight: 700, display: "flex", alignItems: "center", gap: "2px" }}>
-                <ArrowUpRight size={14} /> +14.2%
-              </span>
-              <span style={{ color: textMuted }}>vs last month</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12.5px", minHeight: "20px" }}>
+              {loading ? (
+                <AdminShimmer width={180} height={14} borderRadius={4} isDark={isDark} />
+              ) : (
+                <>
+                  <span style={{ color: "#059669", fontWeight: 700, display: "flex", alignItems: "center", gap: "2px" }}>
+                    <ArrowUpRight size={14} /> {formatCurrency(verifiedRevenue)}
+                  </span>
+                  <span style={{ color: textMuted }}>verified fulfilled sales</span>
+                </>
+              )}
             </div>
           </div>
 
@@ -206,14 +249,24 @@ export default function AdminDashboardPage() {
                 <ShoppingCart size={18} />
               </div>
             </div>
-            <div style={{ fontSize: "28px", fontWeight: 800, color: textMain }}>
-              {safeOrders.length}
+            <div style={{ fontSize: "28px", fontWeight: 800, color: textMain, minHeight: "38px", display: "flex", alignItems: "center" }}>
+              {loading ? (
+                <AdminShimmer width={80} height={28} borderRadius={6} isDark={isDark} />
+              ) : (
+                validOrders.length
+              )}
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12.5px" }}>
-              <span style={{ color: "#059669", fontWeight: 700, display: "flex", alignItems: "center", gap: "2px" }}>
-                <ArrowUpRight size={14} /> +8.5%
-              </span>
-              <span style={{ color: textMuted }}>active fulfillment</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12.5px", minHeight: "20px" }}>
+              {loading ? (
+                <AdminShimmer width={140} height={14} borderRadius={4} isDark={isDark} />
+              ) : (
+                <>
+                  <span style={{ color: "#059669", fontWeight: 700, display: "flex", alignItems: "center", gap: "2px" }}>
+                    <ArrowUpRight size={14} /> +8.5%
+                  </span>
+                  <span style={{ color: textMuted }}>active fulfillment</span>
+                </>
+              )}
             </div>
           </div>
 
@@ -249,12 +302,22 @@ export default function AdminDashboardPage() {
                 <Package size={18} />
               </div>
             </div>
-            <div style={{ fontSize: "28px", fontWeight: 800, color: textMain }}>
-              {safeProducts.length}
+            <div style={{ fontSize: "28px", fontWeight: 800, color: textMain, minHeight: "38px", display: "flex", alignItems: "center" }}>
+              {loading ? (
+                <AdminShimmer width={100} height={28} borderRadius={6} isDark={isDark} />
+              ) : (
+                safeProducts.length
+              )}
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12.5px" }}>
-              <span style={{ color: "#D97706", fontWeight: 700 }}>RN Edge Range</span>
-              <span style={{ color: textMuted }}>In Stock</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12.5px", minHeight: "20px" }}>
+              {loading ? (
+                <AdminShimmer width={150} height={14} borderRadius={4} isDark={isDark} />
+              ) : (
+                <>
+                  <span style={{ color: "#D97706", fontWeight: 700 }}>RN Edge Range</span>
+                  <span style={{ color: textMuted }}>In Stock</span>
+                </>
+              )}
             </div>
           </div>
 
@@ -290,12 +353,22 @@ export default function AdminDashboardPage() {
                 <MessageSquare size={18} />
               </div>
             </div>
-            <div style={{ fontSize: "28px", fontWeight: 800, color: textMain }}>
-              {newEnquiriesCount} New
+            <div style={{ fontSize: "28px", fontWeight: 800, color: textMain, minHeight: "38px", display: "flex", alignItems: "center" }}>
+              {loading ? (
+                <AdminShimmer width={90} height={28} borderRadius={6} isDark={isDark} />
+              ) : (
+                `${newEnquiriesCount} New`
+              )}
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12.5px" }}>
-              <span style={{ color: "#7C3AED", fontWeight: 700 }}>{safeEnquiries.length} Total Leads</span>
-              <span style={{ color: textMuted }}>received</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12.5px", minHeight: "20px" }}>
+              {loading ? (
+                <AdminShimmer width={140} height={14} borderRadius={4} isDark={isDark} />
+              ) : (
+                <>
+                  <span style={{ color: "#7C3AED", fontWeight: 700 }}>{safeEnquiries.length} Total Leads</span>
+                  <span style={{ color: textMuted }}>received</span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -339,58 +412,73 @@ export default function AdminDashboardPage() {
 
             {/* Custom SVG Line Chart */}
             <div style={{ width: "100%", height: "220px", position: "relative" }}>
-              <svg
-                width="100%"
-                height="100%"
-                viewBox="0 0 500 200"
-                preserveAspectRatio="none"
-                style={{ overflow: "visible" }}
-              >
-                <defs>
-                  <linearGradient id="rnChartGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#0077B6" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="#0077B6" stopOpacity="0.0" />
-                  </linearGradient>
-                </defs>
-                <line x1="0" y1="40" x2="500" y2="40" stroke={border} strokeDasharray="4 4" />
-                <line x1="0" y1="90" x2="500" y2="90" stroke={border} strokeDasharray="4 4" />
-                <line x1="0" y1="140" x2="500" y2="140" stroke={border} strokeDasharray="4 4" />
+              {loading ? (
+                <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "10px 0" }}>
+                  <AdminShimmer width="100%" height={160} borderRadius={8} isDark={isDark} />
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <AdminShimmer width={50} height={12} borderRadius={3} isDark={isDark} />
+                    <AdminShimmer width={50} height={12} borderRadius={3} isDark={isDark} />
+                    <AdminShimmer width={50} height={12} borderRadius={3} isDark={isDark} />
+                    <AdminShimmer width={50} height={12} borderRadius={3} isDark={isDark} />
+                    <AdminShimmer width={70} height={12} borderRadius={3} isDark={isDark} />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <svg
+                    width="100%"
+                    height="100%"
+                    viewBox="0 0 500 200"
+                    preserveAspectRatio="none"
+                    style={{ overflow: "visible" }}
+                  >
+                    <defs>
+                      <linearGradient id="rnChartGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#0077B6" stopOpacity="0.4" />
+                        <stop offset="100%" stopColor="#0077B6" stopOpacity="0.0" />
+                      </linearGradient>
+                    </defs>
+                    <line x1="0" y1="40" x2="500" y2="40" stroke={border} strokeDasharray="4 4" />
+                    <line x1="0" y1="90" x2="500" y2="90" stroke={border} strokeDasharray="4 4" />
+                    <line x1="0" y1="140" x2="500" y2="140" stroke={border} strokeDasharray="4 4" />
 
-                <path
-                  d="M 0,160 Q 70,120 140,140 T 280,70 T 400,100 T 500,30 L 500,190 L 0,190 Z"
-                  fill="url(#rnChartGrad)"
-                />
+                    <path
+                      d="M 0,160 Q 70,120 140,140 T 280,70 T 400,100 T 500,30 L 500,190 L 0,190 Z"
+                      fill="url(#rnChartGrad)"
+                    />
 
-                <path
-                  d="M 0,160 Q 70,120 140,140 T 280,70 T 400,100 T 500,30"
-                  fill="none"
-                  stroke="#0077B6"
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                />
+                    <path
+                      d="M 0,160 Q 70,120 140,140 T 280,70 T 400,100 T 500,30"
+                      fill="none"
+                      stroke="#0077B6"
+                      strokeWidth="3.5"
+                      strokeLinecap="round"
+                    />
 
-                <circle cx="0" cy="160" r="5" fill="#0077B6" />
-                <circle cx="140" cy="140" r="5" fill="#0077B6" />
-                <circle cx="280" cy="70" r="6" fill="#FFFFFF" stroke="#0077B6" strokeWidth="3" />
-                <circle cx="400" cy="100" r="5" fill="#0077B6" />
-                <circle cx="500" cy="30" r="6" fill="#059669" stroke="#FFFFFF" strokeWidth="2" />
-              </svg>
+                    <circle cx="0" cy="160" r="5" fill="#0077B6" />
+                    <circle cx="140" cy="140" r="5" fill="#0077B6" />
+                    <circle cx="280" cy="70" r="6" fill="#FFFFFF" stroke="#0077B6" strokeWidth="3" />
+                    <circle cx="400" cy="100" r="5" fill="#0077B6" />
+                    <circle cx="500" cy="30" r="6" fill="#059669" stroke="#FFFFFF" strokeWidth="2" />
+                  </svg>
 
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: "11px",
-                  color: textMuted,
-                  marginTop: "12px",
-                }}
-              >
-                <span>01 Aug</span>
-                <span>04 Aug</span>
-                <span>07 Aug</span>
-                <span>10 Aug</span>
-                <span>12 Aug (Today)</span>
-              </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      fontSize: "11px",
+                      color: textMuted,
+                      marginTop: "12px",
+                    }}
+                  >
+                    <span>01 Aug</span>
+                    <span>04 Aug</span>
+                    <span>07 Aug</span>
+                    <span>10 Aug</span>
+                    <span>12 Aug (Today)</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -427,8 +515,12 @@ export default function AdminDashboardPage() {
                   <Clock size={16} style={{ color: "#8B5CF6" }} />
                   <span style={{ fontSize: "13px", fontWeight: 700, color: textMain }}>Pending</span>
                 </div>
-                <span style={{ fontSize: "14px", fontWeight: 800, color: textMain }}>
-                  {pendingOrdersCount}
+                <span style={{ fontSize: "14px", fontWeight: 800, color: textMain, minWidth: "32px", display: "inline-flex", justifyContent: "flex-end" }}>
+                  {loading ? (
+                    <AdminShimmer width={32} height={18} borderRadius={4} isDark={isDark} />
+                  ) : (
+                    pendingOrdersCount
+                  )}
                 </span>
               </div>
 
@@ -447,8 +539,12 @@ export default function AdminDashboardPage() {
                   <Package size={16} style={{ color: "#F59E0B" }} />
                   <span style={{ fontSize: "13px", fontWeight: 700, color: textMain }}>Processing</span>
                 </div>
-                <span style={{ fontSize: "14px", fontWeight: 800, color: textMain }}>
-                  {processingOrdersCount}
+                <span style={{ fontSize: "14px", fontWeight: 800, color: textMain, minWidth: "32px", display: "inline-flex", justifyContent: "flex-end" }}>
+                  {loading ? (
+                    <AdminShimmer width={32} height={18} borderRadius={4} isDark={isDark} />
+                  ) : (
+                    processingOrdersCount
+                  )}
                 </span>
               </div>
 
@@ -467,8 +563,12 @@ export default function AdminDashboardPage() {
                   <Truck size={16} style={{ color: "#0284C7" }} />
                   <span style={{ fontSize: "13px", fontWeight: 700, color: textMain }}>Shipped</span>
                 </div>
-                <span style={{ fontSize: "14px", fontWeight: 800, color: textMain }}>
-                  {shippedOrdersCount}
+                <span style={{ fontSize: "14px", fontWeight: 800, color: textMain, minWidth: "32px", display: "inline-flex", justifyContent: "flex-end" }}>
+                  {loading ? (
+                    <AdminShimmer width={32} height={18} borderRadius={4} isDark={isDark} />
+                  ) : (
+                    shippedOrdersCount
+                  )}
                 </span>
               </div>
 
@@ -487,8 +587,12 @@ export default function AdminDashboardPage() {
                   <CheckCircle size={16} style={{ color: "#10B981" }} />
                   <span style={{ fontSize: "13px", fontWeight: 700, color: textMain }}>Delivered</span>
                 </div>
-                <span style={{ fontSize: "14px", fontWeight: 800, color: textMain }}>
-                  {deliveredOrdersCount}
+                <span style={{ fontSize: "14px", fontWeight: 800, color: textMain, minWidth: "32px", display: "inline-flex", justifyContent: "flex-end" }}>
+                  {loading ? (
+                    <AdminShimmer width={32} height={18} borderRadius={4} isDark={isDark} />
+                  ) : (
+                    deliveredOrdersCount
+                  )}
                 </span>
               </div>
             </div>
@@ -554,7 +658,46 @@ export default function AdminDashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {safeOrders.slice(0, 5).map((order) => {
+                {loading ? (
+                  Array.from({ length: 5 }).map((_, idx) => (
+                    <tr key={`shimmer-row-${idx}`} style={{ borderBottom: `1px solid ${border}` }}>
+                      <td style={{ padding: "16px" }}>
+                        <AdminShimmer width={100} height={18} borderRadius={4} isDark={isDark} />
+                      </td>
+                      <td style={{ padding: "16px" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                          <AdminShimmer width={130} height={16} borderRadius={4} isDark={isDark} />
+                          <AdminShimmer width={90} height={12} borderRadius={3} isDark={isDark} />
+                        </div>
+                      </td>
+                      <td style={{ padding: "16px" }}>
+                        <AdminShimmer width={90} height={14} borderRadius={4} isDark={isDark} />
+                      </td>
+                      <td style={{ padding: "16px" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                          <AdminShimmer width={100} height={14} borderRadius={4} isDark={isDark} />
+                          <AdminShimmer width={50} height={12} borderRadius={3} isDark={isDark} />
+                        </div>
+                      </td>
+                      <td style={{ padding: "16px" }}>
+                        <AdminShimmer width={70} height={18} borderRadius={4} isDark={isDark} />
+                      </td>
+                      <td style={{ padding: "16px" }}>
+                        <AdminShimmer width={90} height={28} borderRadius={6} isDark={isDark} />
+                      </td>
+                      <td style={{ padding: "16px", textAlign: "right" }}>
+                        <AdminShimmer width={65} height={28} borderRadius={6} isDark={isDark} style={{ marginLeft: "auto" }} />
+                      </td>
+                    </tr>
+                  ))
+                ) : validOrders.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} style={{ padding: "32px", textAlign: "center", color: textMuted }}>
+                      No recent orders found.
+                    </td>
+                  </tr>
+                ) : (
+                  validOrders.slice(0, 5).map((order) => {
                   const statusStyle = getStatusColor(order.status);
                   return (
                     <tr key={order.id} style={{ borderBottom: `1px solid ${border}`, color: textMain }}>
@@ -631,7 +774,7 @@ export default function AdminDashboardPage() {
                       </td>
                     </tr>
                   );
-                })}
+                }))}
               </tbody>
             </table>
           </div>

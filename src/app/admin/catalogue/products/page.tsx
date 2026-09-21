@@ -12,6 +12,7 @@ import {
   bulkPerformProductAction,
   importProductsJSON,
 } from "@/utils/adminStore";
+import AdminShimmer from "@/components/admin/ui/AdminShimmer";
 import { AdminProduct, AdminCategory } from "@/types/admin";
 import { useAdminTheme } from "@/app/admin/layout";
 import {
@@ -37,6 +38,7 @@ export default function ProductsListingPage() {
 
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [categories, setCategories] = useState<AdminCategory[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Filter & Pagination State
   const [searchQuery, setSearchQuery] = useState("");
@@ -70,9 +72,16 @@ export default function ProductsListingPage() {
   const shadow = isDark ? "none" : "0 2px 10px rgba(0, 0, 0, 0.04)";
 
   const loadData = async () => {
-    const [prods, cats] = await Promise.all([getAdminProducts(), getAdminCategories()]);
-    setProducts(prods);
-    setCategories(cats);
+    setLoading(true);
+    try {
+      const [prods, cats] = await Promise.all([getAdminProducts(), getAdminCategories()]);
+      setProducts(prods);
+      setCategories(cats);
+    } catch (err) {
+      console.error("Failed to load products:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -544,7 +553,52 @@ export default function ProductsListingPage() {
               </tr>
             </thead>
             <tbody>
-              {paginatedProducts.length === 0 ? (
+              {loading ? (
+                Array.from({ length: 8 }).map((_, idx) => (
+                  <tr key={`shimmer-prod-${idx}`} style={{ borderBottom: `1px solid ${border}` }}>
+                    <td style={{ padding: "14px 20px" }}>
+                      <AdminShimmer width={18} height={18} borderRadius={4} isDark={isDark} />
+                    </td>
+                    <td style={{ padding: "14px 20px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <AdminShimmer width={44} height={44} borderRadius={8} isDark={isDark} />
+                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                          <AdminShimmer width={70} height={14} isDark={isDark} />
+                          <AdminShimmer width={45} height={11} isDark={isDark} />
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ padding: "14px 20px" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <AdminShimmer width={idx % 2 === 0 ? "75%" : "60%"} height={15} isDark={isDark} />
+                        <AdminShimmer width="40%" height={12} isDark={isDark} />
+                      </div>
+                    </td>
+                    <td style={{ padding: "14px 20px" }}>
+                      <AdminShimmer width={90} height={14} isDark={isDark} />
+                    </td>
+                    <td style={{ padding: "14px 20px" }}>
+                      <AdminShimmer width={55} height={14} isDark={isDark} />
+                    </td>
+                    <td style={{ padding: "14px 20px" }}>
+                      <AdminShimmer width={55} height={14} isDark={isDark} />
+                    </td>
+                    <td style={{ padding: "14px 20px" }}>
+                      <AdminShimmer width={40} height={14} isDark={isDark} />
+                    </td>
+                    <td style={{ padding: "14px 20px" }}>
+                      <AdminShimmer width={75} height={24} borderRadius={12} isDark={isDark} />
+                    </td>
+                    <td style={{ padding: "14px 20px", textAlign: "right" }}>
+                      <div style={{ display: "inline-flex", gap: "8px", justifyContent: "flex-end" }}>
+                        <AdminShimmer width={30} height={30} borderRadius={6} isDark={isDark} />
+                        <AdminShimmer width={30} height={30} borderRadius={6} isDark={isDark} />
+                        <AdminShimmer width={30} height={30} borderRadius={6} isDark={isDark} />
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : paginatedProducts.length === 0 ? (
                 <tr>
                   <td colSpan={9} style={{ padding: "32px", textAlign: "center", color: textMuted }}>
                     No products found matching criteria.

@@ -450,20 +450,12 @@ export default function CartPage() {
                   Proceed to Checkout
                 </button>
 
-                <button type="button" className="download-btn">
-                  Download Cart Cost
-                </button>
-
                 <div className="action-links">
-                  <a href="#" className="action-link">
+                  <a href="/enquire-now" className="action-link">
                     <Send size={14} />
                     Enquire Now
                   </a>
-                  <a href="#" className="action-link">
-                    <MapPin size={14} />
-                    Store Locator
-                  </a>
-                  <a href="#" className="action-link">
+                  <a href="/contact-us" className="action-link">
                     <Headset size={14} />
                     Support
                   </a>

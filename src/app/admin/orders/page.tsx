@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import AdminHeader from "@/components/admin/AdminHeader";
 import { useAdminTheme } from "@/app/admin/layout";
 import AdminButton from "@/components/admin/ui/AdminButton";
@@ -29,6 +30,9 @@ import {
   FileText,
   SlidersHorizontal,
   ChevronRight,
+  ChevronLeft,
+  Download,
+  ExternalLink,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 
@@ -83,9 +87,59 @@ interface OrderData {
   createdAt?: string;
 }
 
-export default function AdminOrdersPage() {
+interface PaymentItem {
+  _id?: string;
+  id: number;
+  paymentId?: string;
+  orderId?: number | null;
+  customerName: string;
+  payLinkId?: string;
+  shortUrl?: string;
+  mobile: string;
+  email: string;
+  state: string;
+  city: string;
+  zipcode: string;
+  paymentGateway: string;
+  paymentKey?: string;
+  gatewayPaymentId?: string;
+  status: string;
+  paymentData?: string;
+  amount: number;
+  createdAt: string;
+}
+
+function OrdersContent() {
+  const { theme, toggleTheme } = useAdminTheme();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const urlTab = searchParams.get("tab")?.toLowerCase();
+  const [mainTab, setMainTab] = useState<"orders" | "payments">(urlTab === "payments" ? "payments" : "orders");
+
+  // Sync with URL query parameter
+  useEffect(() => {
+    const tabParam = searchParams.get("tab")?.toLowerCase();
+    if (tabParam === "payments" && mainTab !== "payments") {
+      setMainTab("payments");
+    } else if (tabParam !== "payments" && mainTab === "payments" && !tabParam) {
+      setMainTab("orders");
+    }
+  }, [searchParams]);
+
+  const handleMainTabChange = (newTab: string) => {
+    const tab = newTab as "orders" | "payments";
+    setMainTab(tab);
+    if (tab === "payments") {
+      router.replace("/admin/orders?tab=payments");
+    } else {
+      router.replace("/admin/orders");
+    }
+  };
+
+  // --- ORDERS STATE ---
   const [orders, setOrders] = useState<OrderData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingOrders, setLoadingOrders] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusTab, setStatusTab] = useState<"All" | "Pending" | "Processing" | "Shipped" | "Delivered" | "Cancelled">("All");
 
@@ -115,8 +169,24 @@ export default function AdminOrdersPage() {
     transportNotes: "",
   });
 
+  // --- PAYMENTS STATE ---
+  const [payments, setPayments] = useState<PaymentItem[]>([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
+  const [paymentSearch, setPaymentSearch] = useState("");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("");
+  const [paymentPage, setPaymentPage] = useState(1);
+  const [paymentTotal, setPaymentTotal] = useState(0);
+  const [selectedPayment, setSelectedPayment] = useState<PaymentItem | null>(null);
+
+  const isDark = theme === "dark";
+  const cardBg = isDark ? "#0D1117" : "#FFFFFF";
+  const border = isDark ? "#21262D" : "#E5E7EB";
+  const textMain = isDark ? "#F0F6FC" : "#111827";
+  const textMuted = isDark ? "#8B949E" : "#6B7280";
+  const inputBg = isDark ? "#161B22" : "#F9FAFB";
+
   async function fetchOrders() {
-    setLoading(true);
+    setLoadingOrders(true);
     try {
       const params = new URLSearchParams();
       if (searchQuery) params.set("q", searchQuery);
@@ -131,13 +201,45 @@ export default function AdminOrdersPage() {
     } catch (err) {
       console.error("Failed to fetch orders:", err);
     } finally {
-      setLoading(false);
+      setLoadingOrders(false);
+    }
+  }
+
+  async function fetchPayments() {
+    setLoadingPayments(true);
+    try {
+      const params = new URLSearchParams({
+        page: paymentPage.toString(),
+        limit: "50",
+      });
+      if (paymentSearch.trim()) params.set("q", paymentSearch.trim());
+      if (paymentStatusFilter) params.set("status", paymentStatusFilter);
+
+      const res = await fetch(`/api/payments?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setPayments(data.payments || []);
+        setPaymentTotal(data.total || 0);
+      }
+    } catch (err) {
+      console.error("Failed to fetch payments:", err);
+    } finally {
+      setLoadingPayments(false);
     }
   }
 
   useEffect(() => {
     fetchOrders();
-  }, [statusTab]);
+    fetchPayments();
+  }, []);
+
+  useEffect(() => {
+    if (mainTab === "orders") {
+      fetchOrders();
+    } else {
+      fetchPayments();
+    }
+  }, [mainTab, statusTab, searchQuery, paymentPage, paymentSearch, paymentStatusFilter]);
 
   const handleOpenInspect = (ord: OrderData) => {
     setSelectedOrder(ord);
@@ -161,9 +263,6 @@ export default function AdminOrdersPage() {
         body: JSON.stringify({ status: newStatus }),
       });
       if (res.ok) {
-        setOrders((prev) =>
-          prev.map((o) => (o._id === ord._id || o.id === ord.id ? { ...o, status: newStatus } : o))
-        );
         fetchOrders();
       }
     } catch (err) {
@@ -171,84 +270,28 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const handleSaveTransportDetails = async (e: React.FormEvent) => {
+  const handleSaveTransport = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedOrder) return;
     setIsUpdating(true);
-
     try {
       const res = await fetch(`/api/orders/${selectedOrder._id || selectedOrder.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(transportForm),
       });
-
       if (res.ok) {
-        const updated = await res.json();
-        setSelectedOrder(updated);
+        setSelectedOrder(null);
         fetchOrders();
-        alert("Transport & tracking details updated successfully!");
       }
     } catch (err) {
-      console.error("Failed to save transport details:", err);
+      console.error("Failed to update transport:", err);
     } finally {
       setIsUpdating(false);
     }
   };
 
-  const handleShipWithShiprocket = async () => {
-    if (!selectedOrder) return;
-    setIsShippingShiprocket(true);
-    try {
-      const res = await fetch("/api/shipping/shiprocket", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId: selectedOrder.id }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        alert("Order successfully registered & dispatched with Shiprocket!");
-        if (data.order) {
-          setSelectedOrder(data.order);
-        }
-        fetchOrders();
-      } else {
-        alert("Shiprocket error: " + (data.error || "Failed to dispatch"));
-      }
-    } catch (err: any) {
-      alert("Failed to connect to Shiprocket API: " + err.message);
-    } finally {
-      setIsShippingShiprocket(false);
-    }
-  };
-
-  const handleShipWithShipway = async () => {
-    if (!selectedOrder) return;
-    setIsShippingShipway(true);
-    try {
-      const res = await fetch("/api/shipping/shipway", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId: selectedOrder.id }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        alert("Order successfully synced & dispatched with Shipway!");
-        if (data.order) {
-          setSelectedOrder(data.order);
-        }
-        fetchOrders();
-      } else {
-        alert("Shipway error: " + (data.error || "Failed to dispatch"));
-      }
-    } catch (err: any) {
-      alert("Failed to connect to Shipway API: " + err.message);
-    } finally {
-      setIsShippingShipway(false);
-    }
-  };
-
-  const exportToExcel = () => {
+  const exportOrdersToExcel = () => {
     const exportData = orders.map((o) => ({
       "Order ID": o.id,
       "Order Date": o.orderDate,
@@ -273,10 +316,31 @@ export default function AdminOrdersPage() {
     XLSX.writeFile(workbook, `RN_Orders_Master_${Date.now()}.xlsx`);
   };
 
-  const { theme, toggleTheme } = useAdminTheme();
-  const isDark = theme === "dark";
-  const textMain = isDark ? "#FFFFFF" : "#1E293B";
+  const exportPaymentsToExcel = () => {
+    const exportData = payments.map((p) => ({
+      "Payment ID": p.paymentId || `PAY-${p.id}`,
+      "Order ID": p.orderId || "-",
+      "Customer Name": p.customerName,
+      "Mobile": p.mobile,
+      "Email": p.email,
+      "City": p.city,
+      "State": p.state,
+      "Pincode": p.zipcode,
+      "Amount (₹)": p.amount,
+      "Status": p.status,
+      "Gateway": p.paymentGateway,
+      "Pay Link ID": p.payLinkId,
+      "Short URL": p.shortUrl,
+      "Created At": p.createdAt ? new Date(p.createdAt).toLocaleString("en-IN") : "",
+    }));
 
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Payments");
+    XLSX.writeFile(workbook, `RN_Payments_Transactions_${Date.now()}.xlsx`);
+  };
+
+  // Orders Columns
   const orderColumns: Column<OrderData>[] = [
     {
       header: "Order ID & Date",
@@ -299,20 +363,29 @@ export default function AdminOrdersPage() {
       ),
     },
     {
-      header: "Items Summary",
+      header: "Delivery Destination",
       accessor: (o: OrderData) => (
-        <div style={{ fontSize: "12.5px", maxWidth: "260px" }}>
-          <div style={{ fontWeight: 600 }}>{o.items?.[0]?.name || "Item"}</div>
-          {o.items?.length > 1 && <span style={{ fontSize: "11px", opacity: 0.7 }}>+ {o.items.length - 1} more</span>}
+        <div style={{ fontSize: "12px", maxWidth: "200px" }}>
+          <div style={{ fontWeight: 600 }}>{o.shippingAddress?.city}, {o.shippingAddress?.state}</div>
+          <div style={{ opacity: 0.7, fontSize: "11px" }}>PIN: {o.shippingAddress?.pinCode}</div>
         </div>
       ),
     },
     {
       header: "Amount & Payment",
       accessor: (o: OrderData) => (
-        <div style={{ fontSize: "12.5px" }}>
-          <div style={{ fontWeight: 800 }}>₹{o.totalAmount?.toLocaleString("en-IN")}</div>
-          <AdminStatusBadge status={`${o.paymentMethod || "Online"} - ${o.paymentStatus}`} isDark={isDark} />
+        <div>
+          <div style={{ fontWeight: 800 }}>₹{o.totalAmount.toLocaleString("en-IN")}</div>
+          <div style={{ fontSize: "11.5px", display: "flex", alignItems: "center", gap: "4px" }}>
+            <span
+              style={{
+                color: o.paymentStatus === "Paid" ? "#16A34A" : o.paymentStatus === "Refunded" ? "#DC2626" : "#F59E0B",
+                fontWeight: 700,
+              }}
+            >
+              ● {o.paymentStatus}
+            </span>
+          </div>
         </div>
       ),
     },
@@ -323,13 +396,13 @@ export default function AdminOrdersPage() {
           value={o.status}
           onChange={(e) => handleQuickStatusChange(o, e.target.value as any)}
           style={{
-            background: isDark ? "#161B22" : "#F9FAFB",
-            color: textMain,
-            border: isDark ? "1px solid #30363D" : "1px solid #CBD5E1",
+            padding: "5px 10px",
             borderRadius: "6px",
-            padding: "4px 8px",
             fontSize: "12px",
             fontWeight: 700,
+            border: `1px solid ${border}`,
+            background: inputBg,
+            color: textMain,
             cursor: "pointer",
           }}
         >
@@ -373,110 +446,477 @@ export default function AdminOrdersPage() {
     },
   ];
 
+  // Payments Columns
+  const paymentColumns: Column<PaymentItem>[] = [
+    {
+      header: "Payment ID",
+      width: "100px",
+      accessor: (p) => (
+        <div>
+          <span style={{ fontFamily: "monospace", fontWeight: 800, color: "#0077B6" }}>
+            {p.paymentId || `PAY-${p.id}`}
+          </span>
+          {p.orderId && (
+            <div style={{ fontSize: "11px", color: textMuted }}>Ord #{p.orderId}</div>
+          )}
+        </div>
+      ),
+    },
+    {
+      header: "Customer Information",
+      accessor: (p) => (
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+          <span style={{ fontWeight: 700, fontSize: "13.5px", color: textMain }}>{p.customerName}</span>
+          <div style={{ display: "flex", gap: "10px", fontSize: "12px", color: textMuted }}>
+            {p.mobile && <span><Phone size={11} style={{ display: "inline" }} /> {p.mobile}</span>}
+            {p.email && <span><Mail size={11} style={{ display: "inline" }} /> {p.email}</span>}
+          </div>
+        </div>
+      ),
+    },
+    {
+      header: "City / State",
+      width: "160px",
+      accessor: (p) => (
+        <div style={{ fontSize: "12px" }}>
+          <div style={{ fontWeight: 600, color: textMain }}>{p.city || "-"}</div>
+          <div style={{ color: textMuted, fontSize: "11px" }}>{p.state} {p.zipcode ? `(${p.zipcode})` : ""}</div>
+        </div>
+      ),
+    },
+    {
+      header: "Amount (₹)",
+      width: "120px",
+      accessor: (p) => (
+        <span style={{ fontWeight: 800, fontSize: "14px", color: textMain }}>
+          ₹{p.amount ? p.amount.toLocaleString("en-IN") : "0"}
+        </span>
+      ),
+    },
+    {
+      header: "Status",
+      width: "110px",
+      accessor: (p) => {
+        const s = (p.status || "").toLowerCase();
+        let variant: "success" | "warning" | "danger" | "neutral" = "neutral";
+        if (s === "captured" || s === "paid" || s === "success") variant = "success";
+        else if (s === "cancelled" || s === "failed") variant = "danger";
+        else if (s === "pending" || s === "created") variant = "warning";
+        return <AdminStatusBadge status={p.status} variant={variant} isDark={isDark} />;
+      },
+    },
+    {
+      header: "Gateway",
+      width: "110px",
+      accessor: (p) => (
+        <span style={{ fontSize: "12px", fontWeight: 600, color: textMuted }}>
+          {p.paymentGateway || "Razorpay"}
+        </span>
+      ),
+    },
+    {
+      header: "Date & Time",
+      width: "140px",
+      accessor: (p) => (
+        <span style={{ fontSize: "12px", color: textMuted }}>
+          {p.createdAt ? new Date(p.createdAt).toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          }) : "-"}
+        </span>
+      ),
+    },
+    {
+      header: "Actions",
+      align: "right",
+      width: "80px",
+      accessor: (p) => (
+        <AdminButton
+          variant="icon"
+          size="sm"
+          icon={<Eye size={14} style={{ color: "#0077B6" }} />}
+          isDark={isDark}
+          onClick={() => setSelectedPayment(p)}
+          title="Inspect Payment Details"
+        />
+      ),
+    },
+  ];
+
+  const totalPaymentPages = Math.ceil(paymentTotal / 50);
+
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", width: "100%" }}>
       <AdminHeader
-        title="Orders & Transport Tracking Management"
-        subtitle="Track live customer orders, update transport dispatch details, and manage payment statuses."
-        onRefresh={fetchOrders}
+        title={mainTab === "payments" ? "Razorpay Payment Gateway Transactions" : "Orders & Transport Tracking Management"}
+        subtitle={
+          mainTab === "payments"
+            ? "View and inspect live and legacy customer payment transactions, gateway link logs, and payment settlements."
+            : "Track live customer orders, update transport dispatch details, and manage payment statuses."
+        }
+        onRefresh={mainTab === "payments" ? fetchPayments : fetchOrders}
         theme={theme}
         onToggleTheme={toggleTheme}
       />
 
       <main style={{ padding: "28px", maxWidth: "1400px", margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginBottom: "24px" }}>
-          <AdminCard isDark={isDark} style={{ cursor: "pointer" }} onClick={() => setStatusTab("All")}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <span style={{ fontSize: "11.5px", fontWeight: 700, opacity: 0.7, textTransform: "uppercase" }}>All Orders</span>
-                <div style={{ fontSize: "24px", fontWeight: 800, marginTop: "4px" }}>{counts.total}</div>
-              </div>
-              <ShoppingCart size={20} />
-            </div>
-          </AdminCard>
-          <AdminCard isDark={isDark} style={{ cursor: "pointer" }} onClick={() => setStatusTab("Pending")}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <span style={{ fontSize: "11.5px", fontWeight: 700, color: "#F59E0B", textTransform: "uppercase" }}>Pending</span>
-                <div style={{ fontSize: "24px", fontWeight: 800, color: "#F59E0B", marginTop: "4px" }}>{counts.pending}</div>
-              </div>
-              <Clock size={20} />
-            </div>
-          </AdminCard>
-          <AdminCard isDark={isDark} style={{ cursor: "pointer" }} onClick={() => setStatusTab("Processing")}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <span style={{ fontSize: "11.5px", fontWeight: 700, color: "#0EA5E9", textTransform: "uppercase" }}>Processing</span>
-                <div style={{ fontSize: "24px", fontWeight: 800, color: "#0EA5E9", marginTop: "4px" }}>{counts.processing}</div>
-              </div>
-              <Package size={20} />
-            </div>
-          </AdminCard>
-          <AdminCard isDark={isDark} style={{ cursor: "pointer" }} onClick={() => setStatusTab("Shipped")}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <span style={{ fontSize: "11.5px", fontWeight: 700, color: "#4F46E5", textTransform: "uppercase" }}>Shipped</span>
-                <div style={{ fontSize: "24px", fontWeight: 800, color: "#4F46E5", marginTop: "4px" }}>{counts.shipped}</div>
-              </div>
-              <Truck size={20} />
-            </div>
-          </AdminCard>
-          <AdminCard isDark={isDark} style={{ cursor: "pointer" }} onClick={() => setStatusTab("Delivered")}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <span style={{ fontSize: "11.5px", fontWeight: 700, color: "#10B981", textTransform: "uppercase" }}>Delivered</span>
-                <div style={{ fontSize: "24px", fontWeight: 800, color: "#10B981", marginTop: "4px" }}>{counts.delivered}</div>
-              </div>
-              <CheckCircle2 size={20} />
-            </div>
-          </AdminCard>
-        </div>
-
+        {/* Main Tab Switcher: Orders vs Payments */}
         <AdminTabs
           isDark={isDark}
-          activeTab={statusTab}
-          onChange={(t) => setStatusTab(t as any)}
+          activeTab={mainTab}
+          onChange={handleMainTabChange}
           tabs={[
-            { id: "All", label: "All Orders" },
-            { id: "Pending", label: "Pending" },
-            { id: "Processing", label: "Processing" },
-            { id: "Shipped", label: "Shipped" },
-            { id: "Delivered", label: "Delivered" },
-            { id: "Cancelled", label: "Cancelled" },
+            { id: "orders", label: `Customer Orders (${counts.total || orders.length})`, icon: <ShoppingCart size={16} /> },
+            { id: "payments", label: `Payment Transactions (${paymentTotal || 559})`, icon: <CreditCard size={16} /> },
           ]}
           rightAction={
-            <AdminButton variant="secondary" size="md" icon={<FileSpreadsheet size={15} />} isDark={isDark} onClick={exportToExcel}>
-              Export Excel
+            <AdminButton
+              variant="secondary"
+              size="md"
+              icon={<Download size={14} />}
+              isDark={isDark}
+              onClick={mainTab === "payments" ? exportPaymentsToExcel : exportOrdersToExcel}
+            >
+              Export {mainTab === "payments" ? "Payments" : "Orders"} Excel
             </AdminButton>
           }
         />
 
-        <AdminFilterBar
-          isDark={isDark}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          searchPlaceholder="Search by ID, Customer, Courier..."
-          actions={
-            <AdminButton variant="icon" size="md" icon={<RefreshCw size={15} />} isDark={isDark} onClick={fetchOrders} />
-          }
-        />
+        {/* --- ORDERS TAB VIEW --- */}
+        {mainTab === "orders" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            {/* Status KPI Cards */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px" }}>
+              <AdminCard isDark={isDark} style={{ cursor: "pointer" }} onClick={() => setStatusTab("All")}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div>
+                    <span style={{ fontSize: "11.5px", fontWeight: 700, opacity: 0.7, textTransform: "uppercase" }}>All Orders</span>
+                    <div style={{ fontSize: "24px", fontWeight: 800, marginTop: "4px" }}>{counts.total}</div>
+                  </div>
+                  <ShoppingCart size={20} />
+                </div>
+              </AdminCard>
+              <AdminCard isDark={isDark} style={{ cursor: "pointer" }} onClick={() => setStatusTab("Pending")}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div>
+                    <span style={{ fontSize: "11.5px", fontWeight: 700, color: "#F59E0B", textTransform: "uppercase" }}>Pending</span>
+                    <div style={{ fontSize: "24px", fontWeight: 800, color: "#F59E0B", marginTop: "4px" }}>{counts.pending}</div>
+                  </div>
+                  <Clock size={20} />
+                </div>
+              </AdminCard>
+              <AdminCard isDark={isDark} style={{ cursor: "pointer" }} onClick={() => setStatusTab("Processing")}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div>
+                    <span style={{ fontSize: "11.5px", fontWeight: 700, color: "#0EA5E9", textTransform: "uppercase" }}>Processing</span>
+                    <div style={{ fontSize: "24px", fontWeight: 800, color: "#0EA5E9", marginTop: "4px" }}>{counts.processing}</div>
+                  </div>
+                  <Package size={20} />
+                </div>
+              </AdminCard>
+              <AdminCard isDark={isDark} style={{ cursor: "pointer" }} onClick={() => setStatusTab("Shipped")}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div>
+                    <span style={{ fontSize: "11.5px", fontWeight: 700, color: "#4F46E5", textTransform: "uppercase" }}>Shipped</span>
+                    <div style={{ fontSize: "24px", fontWeight: 800, color: "#4F46E5", marginTop: "4px" }}>{counts.shipped}</div>
+                  </div>
+                  <Truck size={20} />
+                </div>
+              </AdminCard>
+              <AdminCard isDark={isDark} style={{ cursor: "pointer" }} onClick={() => setStatusTab("Delivered")}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div>
+                    <span style={{ fontSize: "11.5px", fontWeight: 700, color: "#16A34A", textTransform: "uppercase" }}>Delivered</span>
+                    <div style={{ fontSize: "24px", fontWeight: 800, color: "#16A34A", marginTop: "4px" }}>{counts.delivered}</div>
+                  </div>
+                  <CheckCircle2 size={20} />
+                </div>
+              </AdminCard>
+            </div>
 
-        <AdminDataTable
-          isDark={isDark}
-          loading={loading}
-          columns={orderColumns}
-          data={orders}
-          keyExtractor={(o) => o._id}
-        />
+            {/* Filter Bar */}
+            <AdminFilterBar
+              isDark={isDark}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              searchPlaceholder="Search orders by customer name, phone, email, or order ID..."
+              actions={
+                <AdminButton
+                  variant="icon"
+                  size="md"
+                  icon={<RefreshCw size={15} />}
+                  isDark={isDark}
+                  onClick={fetchOrders}
+                  title="Refresh Orders"
+                />
+              }
+            />
+
+            {/* Orders Table */}
+            <AdminDataTable
+              isDark={isDark}
+              loading={loadingOrders}
+              columns={orderColumns}
+              data={orders}
+              keyExtractor={(o) => o._id || o.id}
+            />
+          </div>
+        )}
+
+        {/* --- PAYMENTS TAB VIEW --- */}
+        {mainTab === "payments" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            {/* Summary Row */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
+              <AdminCard isDark={isDark}>
+                <span style={{ fontSize: "11.5px", fontWeight: 700, opacity: 0.7, textTransform: "uppercase" }}>Total Payments</span>
+                <div style={{ fontSize: "24px", fontWeight: 800, marginTop: "4px", color: "#0077B6" }}>{paymentTotal}</div>
+              </AdminCard>
+              <AdminCard isDark={isDark}>
+                <span style={{ fontSize: "11.5px", fontWeight: 700, opacity: 0.7, textTransform: "uppercase" }}>Gateway Provider</span>
+                <div style={{ fontSize: "20px", fontWeight: 800, marginTop: "4px", color: textMain }}>Razorpay Standard</div>
+              </AdminCard>
+              <AdminCard isDark={isDark}>
+                <span style={{ fontSize: "11.5px", fontWeight: 700, opacity: 0.7, textTransform: "uppercase" }}>Bank Settlement</span>
+                <div style={{ fontSize: "20px", fontWeight: 800, marginTop: "4px", color: "#16A34A" }}>IDFC First Bank</div>
+              </AdminCard>
+            </div>
+
+            {/* Filter / Search Bar */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                background: cardBg,
+                border: `1px solid ${border}`,
+                borderRadius: "10px",
+                padding: "10px 16px",
+              }}
+            >
+              <Search size={16} style={{ color: textMuted }} />
+              <input
+                type="text"
+                value={paymentSearch}
+                onChange={(e) => {
+                  setPaymentSearch(e.target.value);
+                  setPaymentPage(1);
+                }}
+                placeholder="Search payments by customer name, phone, email, city, or ID..."
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  outline: "none",
+                  color: textMain,
+                  fontSize: "14px",
+                  flex: 1,
+                }}
+              />
+              <select
+                value={paymentStatusFilter}
+                onChange={(e) => {
+                  setPaymentStatusFilter(e.target.value);
+                  setPaymentPage(1);
+                }}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: "6px",
+                  border: `1px solid ${border}`,
+                  background: inputBg,
+                  color: textMain,
+                  fontSize: "12px",
+                  cursor: "pointer",
+                }}
+              >
+                <option value="">All Statuses</option>
+                <option value="captured">Captured / Success</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="pending">Pending</option>
+              </select>
+            </div>
+
+            {/* Payments Table */}
+            <AdminDataTable
+              isDark={isDark}
+              loading={loadingPayments}
+              columns={paymentColumns}
+              data={payments}
+              keyExtractor={(p) => p.id.toString()}
+            />
+
+            {/* Payments Pagination */}
+            {totalPaymentPages > 1 && (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "14px 20px",
+                  background: cardBg,
+                  border: `1px solid ${border}`,
+                  borderRadius: "10px",
+                }}
+              >
+                <span style={{ fontSize: "13px", color: textMuted }}>
+                  Showing {(paymentPage - 1) * 50 + 1} - {Math.min(paymentPage * 50, paymentTotal)} of {paymentTotal} payments
+                </span>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <button
+                    type="button"
+                    disabled={paymentPage <= 1}
+                    onClick={() => setPaymentPage((p) => Math.max(1, p - 1))}
+                    style={{
+                      padding: "6px 14px",
+                      borderRadius: "6px",
+                      border: `1px solid ${border}`,
+                      background: inputBg,
+                      color: paymentPage <= 1 ? textMuted : textMain,
+                      cursor: paymentPage <= 1 ? "not-allowed" : "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      fontSize: "12px",
+                    }}
+                  >
+                    <ChevronLeft size={14} /> Previous
+                  </button>
+
+                  <span style={{ fontSize: "13px", fontWeight: 700, color: textMain, padding: "0 8px" }}>
+                    Page {paymentPage} of {totalPaymentPages}
+                  </span>
+
+                  <button
+                    type="button"
+                    disabled={paymentPage >= totalPaymentPages}
+                    onClick={() => setPaymentPage((p) => Math.min(totalPaymentPages, p + 1))}
+                    style={{
+                      padding: "6px 14px",
+                      borderRadius: "6px",
+                      border: `1px solid ${border}`,
+                      background: inputBg,
+                      color: paymentPage >= totalPaymentPages ? textMuted : textMain,
+                      cursor: paymentPage >= totalPaymentPages ? "not-allowed" : "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      fontSize: "12px",
+                    }}
+                  >
+                    Next <ChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </main>
 
+      {/* --- INSPECT PAYMENT MODAL --- */}
+      {selectedPayment && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 100,
+            padding: "20px",
+          }}
+        >
+          <div
+            style={{
+              background: cardBg,
+              border: `1px solid ${border}`,
+              borderRadius: "16px",
+              padding: "28px",
+              width: "100%",
+              maxWidth: "580px",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
+              <h3 style={{ margin: 0, color: textMain }}>
+                Payment Transaction #{selectedPayment.id}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setSelectedPayment(null)}
+                style={{ background: "transparent", border: "none", fontSize: "18px", color: textMuted, cursor: "pointer" }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "13px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${border}` }}>
+                <span style={{ color: textMuted }}>Amount:</span>
+                <span style={{ fontWeight: 800, fontSize: "16px", color: textMain }}>₹{selectedPayment.amount.toLocaleString("en-IN")}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${border}` }}>
+                <span style={{ color: textMuted }}>Status:</span>
+                <AdminStatusBadge status={selectedPayment.status} variant={selectedPayment.status === "captured" ? "success" : "warning"} isDark={isDark} />
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${border}` }}>
+                <span style={{ color: textMuted }}>Customer:</span>
+                <span style={{ fontWeight: 700, color: textMain }}>{selectedPayment.customerName}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${border}` }}>
+                <span style={{ color: textMuted }}>Contact:</span>
+                <span style={{ color: textMain }}>{selectedPayment.mobile} | {selectedPayment.email}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${border}` }}>
+                <span style={{ color: textMuted }}>Destination:</span>
+                <span style={{ color: textMain }}>{selectedPayment.city}, {selectedPayment.state} {selectedPayment.zipcode}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${border}` }}>
+                <span style={{ color: textMuted }}>Gateway & Key:</span>
+                <span style={{ fontFamily: "monospace", color: textMain }}>{selectedPayment.paymentGateway} ({selectedPayment.paymentKey || "Live IDFC"})</span>
+              </div>
+              {selectedPayment.payLinkId && (
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${border}` }}>
+                  <span style={{ color: textMuted }}>Pay Link ID:</span>
+                  <span style={{ fontFamily: "monospace", color: textMain }}>{selectedPayment.payLinkId}</span>
+                </div>
+              )}
+              {selectedPayment.shortUrl && (
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}>
+                  <span style={{ color: textMuted }}>Payment Link URL:</span>
+                  <a href={selectedPayment.shortUrl} target="_blank" rel="noreferrer" style={{ color: "#0077B6", display: "flex", alignItems: "center", gap: "4px" }}>
+                    {selectedPayment.shortUrl} <ExternalLink size={12} />
+                  </a>
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "20px" }}>
+              <button
+                type="button"
+                onClick={() => setSelectedPayment(null)}
+                style={{ padding: "8px 18px", borderRadius: "8px", border: `1px solid ${border}`, background: inputBg, color: textMain, cursor: "pointer" }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- INSPECT ORDER MODAL --- */}
       {selectedOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-5 relative border border-slate-200 max-h-[92vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 relative border border-slate-200 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div>
-                <h3 className="text-lg font-bold text-slate-900">Order: {selectedOrder.id}</h3>
-                <p className="text-xs text-slate-500 font-mono">Date: {selectedOrder.orderDate}</p>
+                <h3 className="text-lg font-bold text-slate-900">
+                  Order Dispatch & Transport: {selectedOrder.id}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Customer: {selectedOrder.customerName} ({selectedOrder.customerPhone})
+                </p>
               </div>
               <button
                 type="button"
@@ -487,190 +927,55 @@ export default function AdminOrdersPage() {
               </button>
             </div>
 
-            {/* Customer & Shipping Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
-              <div className="space-y-1">
-                <p className="font-semibold text-slate-500 uppercase tracking-wider">Customer Contact</p>
-                <p className="font-bold text-sm text-slate-900">{selectedOrder.customerName}</p>
-                <p className="text-slate-700 flex items-center gap-1">
-                  <Phone size={12} className="text-slate-400" />
-                  {selectedOrder.customerPhone}
-                </p>
-                {selectedOrder.customerEmail && (
-                  <p className="text-slate-700 flex items-center gap-1">
-                    <Mail size={12} className="text-slate-400" />
-                    {selectedOrder.customerEmail}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-1">
-                <p className="font-semibold text-slate-500 uppercase tracking-wider">Delivery Shipping Address</p>
-                <p className="text-slate-800 leading-relaxed">
-                  {selectedOrder.shippingAddress?.address}, {selectedOrder.shippingAddress?.city}, {selectedOrder.shippingAddress?.state} - <strong>{selectedOrder.shippingAddress?.pinCode}</strong>
-                </p>
-              </div>
-            </div>
-
-            {/* Purchased Items List */}
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase mb-2">Purchased Items ({selectedOrder.items?.length})</p>
-              <div className="space-y-2 border border-slate-200 rounded-xl p-3 bg-white">
-                {selectedOrder.items?.map((it, idx) => (
-                  <div key={idx} className="flex items-center justify-between text-xs pb-2 border-b border-slate-100 last:border-b-0 last:pb-0">
-                    <div className="flex items-center gap-3">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={it.image} alt={it.name} className="w-10 h-10 object-contain border border-slate-200 rounded p-1 bg-slate-50" />
-                      <div>
-                        <p className="font-bold text-slate-900">{it.name}</p>
-                        <p className="text-slate-500">Color: {it.color || "Standard"} • SKU: {it.code || it.id}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-slate-900">₹{(it.price * it.quantity).toLocaleString("en-IN")}</p>
-                      <p className="text-slate-500">₹{it.price} x {it.quantity}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Payment & Logistics Status Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-indigo-50/70 border border-indigo-100 rounded-xl text-xs">
-              <div className="space-y-0.5">
-                <p className="font-semibold text-indigo-900">Payment: <span className="font-bold">{selectedOrder.paymentMethod}</span> ({selectedOrder.paymentStatus})</p>
-                {selectedOrder.razorpayPaymentId && (
-                  <p className="text-[11px] font-mono text-indigo-700">Razorpay ID: {selectedOrder.razorpayPaymentId}</p>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  disabled={isShippingShiprocket}
-                  onClick={handleShipWithShiprocket}
-                  className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg shadow-sm transition disabled:opacity-50 flex items-center gap-1.5"
-                >
-                  <Truck size={14} />
-                  {isShippingShiprocket ? "Dispatching..." : "Ship with Shiprocket"}
-                </button>
-                <button
-                  type="button"
-                  disabled={isShippingShipway}
-                  onClick={handleShipWithShipway}
-                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-sm transition disabled:opacity-50 flex items-center gap-1.5"
-                >
-                  <Package size={14} />
-                  {isShippingShipway ? "Syncing..." : "Ship with Shipway"}
-                </button>
-              </div>
-            </div>
-
-            {/* Transport & Dispatch Tracking Form */}
-            <form onSubmit={handleSaveTransportDetails} className="space-y-4 pt-2 border-t border-slate-200">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                  <Truck size={18} className="text-indigo-600" />
-                  Order Transport & Dispatch Tracking Details
-                </h4>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 text-xs">
+            <form onSubmit={handleSaveTransport} className="space-y-4 text-sm">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-600 mb-1">Order Workflow Status</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Order Status</label>
                   <select
                     value={transportForm.status}
                     onChange={(e) => setTransportForm({ ...transportForm, status: e.target.value as any })}
-                    className="w-full p-2 border border-slate-200 rounded-lg bg-white font-semibold text-xs"
+                    className="w-full p-2 border border-slate-200 rounded-lg text-xs"
                   >
-                    <option value="Pending">⏳ Pending</option>
-                    <option value="Processing">📦 Processing</option>
-                    <option value="Shipped">🚚 Shipped / In Transit</option>
-                    <option value="Delivered">✅ Delivered</option>
-                    <option value="Cancelled">❌ Cancelled</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Processing">Processing</option>
+                    <option value="Shipped">Shipped</option>
+                    <option value="Delivered">Delivered</option>
+                    <option value="Cancelled">Cancelled</option>
                   </select>
                 </div>
-
                 <div>
-                  <label className="block font-semibold text-slate-600 mb-1">Payment Status</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Payment Status</label>
                   <select
                     value={transportForm.paymentStatus}
                     onChange={(e) => setTransportForm({ ...transportForm, paymentStatus: e.target.value as any })}
-                    className="w-full p-2 border border-slate-200 rounded-lg bg-white font-semibold text-xs"
+                    className="w-full p-2 border border-slate-200 rounded-lg text-xs"
                   >
-                    <option value="Paid">Paid</option>
                     <option value="Pending">Pending</option>
+                    <option value="Paid">Paid</option>
                     <option value="Refunded">Refunded</option>
                   </select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-600 mb-1">Courier / Transport Partner</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Courier / Transport Partner</label>
                   <input
                     type="text"
-                    placeholder="e.g. VRL Logistics, BlueDart, Safexpress, Delhivery"
                     value={transportForm.courierPartner}
                     onChange={(e) => setTransportForm({ ...transportForm, courierPartner: e.target.value })}
                     className="w-full p-2 border border-slate-200 rounded-lg text-xs"
                   />
                 </div>
-
                 <div>
-                  <label className="block font-semibold text-slate-600 mb-1">AWB / Tracking Number</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Tracking Number / AWB</label>
                   <input
                     type="text"
-                    placeholder="e.g. VRL-89471928"
                     value={transportForm.trackingNumber}
                     onChange={(e) => setTransportForm({ ...transportForm, trackingNumber: e.target.value })}
                     className="w-full p-2 border border-slate-200 rounded-lg text-xs font-mono"
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3 text-xs">
-                <div>
-                  <label className="block font-semibold text-slate-600 mb-1">Lorry Receipt (LR) No.</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. LR-481920"
-                    value={transportForm.lrNumber}
-                    onChange={(e) => setTransportForm({ ...transportForm, lrNumber: e.target.value })}
-                    className="w-full p-2 border border-slate-200 rounded-lg text-xs font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-600 mb-1">Vehicle No.</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. DL 01 AB 1234"
-                    value={transportForm.vehicleNumber}
-                    onChange={(e) => setTransportForm({ ...transportForm, vehicleNumber: e.target.value })}
-                    className="w-full p-2 border border-slate-200 rounded-lg text-xs font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-600 mb-1">Dispatch Date</label>
-                  <input
-                    type="date"
-                    value={transportForm.dispatchDate}
-                    onChange={(e) => setTransportForm({ ...transportForm, dispatchDate: e.target.value })}
-                    className="w-full p-2 border border-slate-200 rounded-lg text-xs"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Special Transport / Handling Notes</label>
-                <textarea
-                  rows={2}
-                  value={transportForm.transportNotes}
-                  onChange={(e) => setTransportForm({ ...transportForm, transportNotes: e.target.value })}
-                  placeholder="e.g. Handle with care - Glass/Ceramic items fragile. Dispatch via Express Cargo."
-                  className="w-full p-2 border border-slate-200 rounded-lg text-xs"
-                />
               </div>
 
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
@@ -686,7 +991,7 @@ export default function AdminOrdersPage() {
                   disabled={isUpdating}
                   className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-lg shadow-sm transition disabled:opacity-50"
                 >
-                  {isUpdating ? "Saving Transport Details..." : "Save Transport & Dispatch Details"}
+                  {isUpdating ? "Saving Transport Details..." : "Save Details"}
                 </button>
               </div>
             </form>
@@ -694,5 +999,13 @@ export default function AdminOrdersPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AdminOrdersPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: "40px", textAlign: "center" }}>Loading Orders & Payments...</div>}>
+      <OrdersContent />
+    </Suspense>
   );
 }

@@ -18,7 +18,7 @@ const AttributeItemSchema = new Schema<IAttributeItem>(
     icon: { type: String, default: "" },
     status: { type: String, enum: ["Active", "Inactive"], default: "Active" },
   },
-  { timestamps: true }
+  { timestamps: true, collection: "attributes", strict: false }
 );
 
 const AttributeItem: Model<IAttributeItem> =

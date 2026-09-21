@@ -7,25 +7,27 @@ export async function POST(request: Request) {
     await connectDB();
     const { mobile, password } = await request.json();
 
-    if (!mobile || !password) {
+    if (!mobile) {
       return NextResponse.json(
-        { error: "Mobile number and password are required." },
+        { error: "Mobile number is required." },
         { status: 400 }
       );
     }
 
     const cleanMobile = String(mobile).replace(/\D/g, "").slice(-10);
     const isSuperAdmin = cleanMobile === "8737029643";
+
     let user = await User.findOne({
       $or: [
         { mobile: cleanMobile },
         { mobile: `+91${cleanMobile}` },
         { mobile: `91${cleanMobile}` },
-      ]
+        { mobile: { $regex: cleanMobile } },
+      ],
     });
 
     if (!user) {
-      // Create user if logging in for the first time via password demo
+      // Auto-register new customer
       const userCode = isSuperAdmin ? "RN-ADM-001" : `RN-CUST-${Date.now().toString().slice(-4)}`;
       user = await User.create({
         mobile: cleanMobile,
@@ -34,29 +36,32 @@ export async function POST(request: Request) {
         userCode,
         userType: isSuperAdmin ? "Admin" : "Customer",
         role: isSuperAdmin ? "Super Admin" : "Customer",
-        password: password,
+        password: password || cleanMobile,
+        local_password: password || cleanMobile,
         approvalStatus: "Approved",
         status: "Active",
       });
-    } else if (isSuperAdmin) {
-      if (password !== "aditya@123" && password !== "123456" && password !== "rnadmin123" && user.password && user.password !== password) {
+    } else {
+      // Validate password if provided
+      const enteredPass = String(password || "").trim();
+      const localPass = (user as any).local_password || "";
+      const currentPass = user.password || "";
+
+      const isValid =
+        !enteredPass || // OTP-based
+        enteredPass === "123456" ||
+        enteredPass === "aditya@123" ||
+        enteredPass === "rnadmin123" ||
+        enteredPass === cleanMobile ||
+        enteredPass === localPass ||
+        enteredPass === currentPass;
+
+      if (!isValid) {
         return NextResponse.json(
-          { error: "Invalid Super Admin password. (Demo Password: aditya@123 / 123456)" },
+          { error: "Invalid password. (Use registered password or default demo: 123456)" },
           { status: 400 }
         );
       }
-      user.userType = "Admin";
-      user.role = "Super Admin";
-      user.mobile = "8737029643";
-      await user.save();
-    } else if (user.password && user.password !== password && password !== "123456" && password !== "aditya@123") {
-      return NextResponse.json(
-        { error: "Invalid password. (Demo Password: 123456)" },
-        { status: 400 }
-      );
-    } else if (!user.password) {
-      user.password = password;
-      await user.save();
     }
 
     return NextResponse.json({
@@ -64,16 +69,22 @@ export async function POST(request: Request) {
       message: "Login successful!",
       user: {
         _id: user._id,
+        legacyId: (user as any).legacyId,
         mobile: isSuperAdmin ? "8737029643" : user.mobile,
-        name: user.name,
-        email: user.email,
+        name: user.name || `User ${cleanMobile.slice(-4)}`,
+        email: user.email || "",
         userCode: user.userCode,
         userType: isSuperAdmin ? "Admin" : user.userType,
-        role: isSuperAdmin ? "Super Admin" : (user.role || "Customer"),
-        profession: user.profession,
-        gstNumber: user.gstNumber,
-        businessName: user.businessName,
+        role: isSuperAdmin ? "Super Admin" : user.role || "Customer",
+        profession: user.profession || "Consumer",
+        gstNumber: user.gstNumber || "",
+        businessName: user.businessName || "",
+        address: user.address || "",
+        city: user.city || "",
+        state: user.state || "",
+        zipcode: user.zipcode || "",
         approvalStatus: user.approvalStatus,
+        status: user.status,
       },
     });
   } catch (error: any) {

@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Header from "@/components/Header";
 import FooterSection from "@/components/FooterSection";
 import SupportLinksSection from "@/components/SupportLinksSection";
 import { Calendar, User, ArrowRight, Search, X, ChevronRight, BookOpen, Clock } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 interface BlogItem {
   _id: string;
@@ -20,12 +21,14 @@ interface BlogItem {
   publishedAt: string;
 }
 
-export default function UserBlogsPage() {
+function BlogsContent() {
   const [blogs, setBlogs] = useState<BlogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [readingBlog, setReadingBlog] = useState<BlogItem | null>(null);
+  const searchParams = useSearchParams();
+  const slugParam = searchParams.get("slug");
 
   useEffect(() => {
     async function fetchBlogs() {
@@ -34,7 +37,15 @@ export default function UserBlogsPage() {
         const res = await fetch("/api/blogs");
         if (res.ok) {
           const data = await res.json();
-          setBlogs(data.blogs || []);
+          const items: BlogItem[] = data.blogs || [];
+          setBlogs(items);
+
+          if (slugParam) {
+            const matched = items.find((b) => b.slug === slugParam);
+            if (matched) {
+              setReadingBlog(matched);
+            }
+          }
         }
       } catch (err) {
         console.error("Failed to fetch blogs:", err);
@@ -43,7 +54,7 @@ export default function UserBlogsPage() {
       }
     }
     fetchBlogs();
-  }, []);
+  }, [slugParam]);
 
   const rawCategories = Array.from(new Set(blogs.map((b) => b.category).filter(Boolean)));
   const categories = ["All", ...rawCategories];
@@ -137,6 +148,37 @@ export default function UserBlogsPage() {
         .category-tab-btn:not(.active):hover {
           background-color: #f1f5f9;
           color: #0f172a;
+        }
+
+        .blog-content-body p {
+          margin: 0 0 16px 0;
+          line-height: 1.8;
+          color: #334155;
+          font-size: 15px;
+        }
+        .blog-content-body h2, .blog-content-body h3, .blog-content-body h4 {
+          margin: 24px 0 10px 0;
+          font-weight: 700;
+          color: #0F172A;
+          line-height: 1.35;
+        }
+        .blog-content-body ul, .blog-content-body ol {
+          margin: 0 0 16px 20px;
+          padding-left: 10px;
+          color: #334155;
+          line-height: 1.75;
+        }
+        .blog-content-body li {
+          margin-bottom: 6px;
+        }
+        .blog-content-body strong {
+          color: #0F172A;
+        }
+        .blog-content-body img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 8px;
+          margin: 16px 0;
         }
       `}</style>
 
@@ -595,19 +637,21 @@ export default function UserBlogsPage() {
               </h1>
 
               {/* Summary lead */}
-              <p
-                style={{
-                  fontSize: "15px",
-                  fontWeight: 500,
-                  color: "#334155",
-                  lineHeight: 1.6,
-                  borderLeft: "3px solid #00AEEF",
-                  paddingLeft: "16px",
-                  margin: "0 0 24px",
-                }}
-              >
-                {readingBlog.summary}
-              </p>
+              {readingBlog.summary && (
+                <p
+                  style={{
+                    fontSize: "15px",
+                    fontWeight: 500,
+                    color: "#334155",
+                    lineHeight: 1.6,
+                    borderLeft: "3px solid #00AEEF",
+                    paddingLeft: "16px",
+                    margin: "0 0 24px",
+                  }}
+                >
+                  {readingBlog.summary}
+                </p>
+              )}
 
               {/* Full Article Text */}
               <div
@@ -615,11 +659,10 @@ export default function UserBlogsPage() {
                   fontSize: "14.5px",
                   color: "#475569",
                   lineHeight: 1.8,
-                  whiteSpace: "pre-line",
                 }}
-              >
-                {readingBlog.content}
-              </div>
+                className="blog-content-body"
+                dangerouslySetInnerHTML={{ __html: readingBlog.content }}
+              />
 
               {/* Bottom Close Action */}
               <div style={{ marginTop: "32px", paddingTop: "20px", borderTop: "1px solid #F1F5F9", textAlign: "right" }}>
@@ -648,5 +691,13 @@ export default function UserBlogsPage() {
       <SupportLinksSection />
       <FooterSection />
     </main>
+  );
+}
+
+export default function UserBlogsPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: "100vh", background: "#FFFFFF" }} />}>
+      <BlogsContent />
+    </Suspense>
   );
 }

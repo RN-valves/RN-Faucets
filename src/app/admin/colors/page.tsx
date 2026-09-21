@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import AdminHeader from "@/components/admin/AdminHeader";
+import AdminShimmer from "@/components/admin/ui/AdminShimmer";
 import { useAdminTheme } from "@/app/admin/layout";
 import {
   AdminColorItem,
@@ -497,20 +498,34 @@ export default function AdminColorsPage() {
 
               <tbody>
                 {loading ? (
-                  <tr>
-                    <td
-                      colSpan={6}
-                      style={{
-                        padding: "48px",
-                        textAlign: "center",
-                        color: textMuted,
-                        fontSize: "14px",
-                      }}
-                    >
-                      <RefreshCw size={24} className="animate-spin" style={{ margin: "0 auto 8px" }} />
-                      <span>Loading colors...</span>
-                    </td>
-                  </tr>
+                  Array.from({ length: 6 }).map((_, idx) => (
+                    <tr key={`shimmer-color-${idx}`} style={{ borderBottom: `1px solid ${border}` }}>
+                      <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                        <AdminShimmer width={16} height={16} borderRadius={4} isDark={isDark} />
+                      </td>
+                      <td style={{ padding: "12px 16px" }}>
+                        <AdminShimmer width={70} height={15} isDark={isDark} />
+                      </td>
+                      <td style={{ padding: "12px 16px" }}>
+                        <AdminShimmer width={85} height={13} isDark={isDark} />
+                      </td>
+                      <td style={{ padding: "12px 16px" }}>
+                        <AdminShimmer width={idx % 2 === 0 ? "50%" : "35%"} height={15} isDark={isDark} />
+                      </td>
+                      <td style={{ padding: "12px 16px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <AdminShimmer width={24} height={24} borderRadius="50%" isDark={isDark} />
+                          <AdminShimmer width={60} height={13} isDark={isDark} />
+                        </div>
+                      </td>
+                      <td style={{ padding: "12px 16px", textAlign: "right" }}>
+                        <div style={{ display: "inline-flex", gap: "8px", justifyContent: "flex-end" }}>
+                          <AdminShimmer width={26} height={26} borderRadius={4} isDark={isDark} />
+                          <AdminShimmer width={26} height={26} borderRadius={4} isDark={isDark} />
+                        </div>
+                      </td>
+                    </tr>
+                  ))
                 ) : colors.length === 0 ? (
                   <tr>
                     <td

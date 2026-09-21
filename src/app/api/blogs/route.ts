@@ -2,43 +2,11 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Blog from "@/models/Blog";
 
-const DEFAULT_MOCK_BLOGS = [
-  {
-    id: "blog-101",
-    title: "10 Tips for Choosing the Perfect Faucet for Modern Bathrooms",
-    slug: "tips-choosing-perfect-faucet",
-    author: "RN Architectural Team",
-    category: "Bathroom Design Guide",
-    image: "/api/media/website/catalogue/products/default/image.webp",
-    summary: "Discover essential factors like water pressure, cartridge durability, and finish selection when upgrading bath fittings.",
-    content: "When selecting faucets for modern homes, cartridge quality and brass composition play a pivotal role...",
-    status: "Published",
-    publishedAt: "2026-08-20",
-  },
-  {
-    id: "blog-102",
-    title: "How Glossy Chrome vs Matte Black Finishes Transform Space Aesthetics",
-    slug: "chrome-vs-matte-black-finishes",
-    author: "Design Studio",
-    category: "Finish Trends",
-    image: "/api/media/website/catalogue/products/default/image.webp",
-    summary: "Compare classic reflective chrome with bold contemporary matte black finishes for luxury vanity counters.",
-    content: "Matte black finishes create dramatic contrast, while high-lustre chrome brings timeless illumination...",
-    status: "Published",
-    publishedAt: "2026-08-15",
-  },
-];
-
 export async function GET(request: Request) {
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
     const q = searchParams.get("q") || "";
-
-    const count = await Blog.countDocuments();
-    if (count === 0) {
-      await Blog.insertMany(DEFAULT_MOCK_BLOGS);
-    }
 
     const query: any = {};
     if (q) {

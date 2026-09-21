@@ -58,12 +58,13 @@ export default function AdminSidebar({
     subcategory: 121,
     products: 7341,
     productImages: 13976,
-    customers: 891,
+    customers: 960,
+    customer_network: 960,
     enquiries: 471,
     orders: 696,
-    payments: 515,
+    payments: 559,
     careers: 0,
-    blogs: 38,
+    blogs: 46,
     news: 5,
     countries: 1,
     states: 37,
@@ -115,7 +116,12 @@ export default function AdminSidebar({
         getAdminAttributes(),
         getAdminSizes(),
         getAdminColors(),
-      ]).then(([prods, cats, subs, pdfs, ords, enqs, attrs, sizeRes, colorRes]) => {
+        fetch("/api/customers").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+        fetch("/api/bullets?sub=product&limit=1").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+        fetch("/api/news").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+        fetch("/api/blogs").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+        fetch("/api/payments?limit=1").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      ]).then(([prods, cats, subs, pdfs, ords, enqs, attrs, sizeRes, colorRes, custData, bulletData, newsData, blogData, paymentData]) => {
         if (!isMounted) return;
         setCounts((prev) => ({
           ...prev,
@@ -125,10 +131,16 @@ export default function AdminSidebar({
           catalogue: pdfs.length || prev.catalogue,
           orders: ords.length || prev.orders,
           enquiries: enqs.length || prev.enquiries,
+          customers: custData?.counts?.total || custData?.users?.length || prev.customers,
+          customer_network: custData?.counts?.total || custData?.users?.length || prev.customers,
           size: typeof sizeRes?.total === "number" ? sizeRes.total : prev.size,
           color: typeof colorRes?.total === "number" ? colorRes.total : prev.color,
           brands: attrs.filter((a) => a.type === "Brand").length || prev.brands,
           materials: attrs.filter((a) => a.type === "Material").length || prev.materials,
+          bullets: typeof bulletData?.total === "number" ? bulletData.total : prev.bullets,
+          news: typeof newsData?.total === "number" ? newsData.total : prev.news,
+          blogs: typeof blogData?.total === "number" ? blogData.total : prev.blogs,
+          payments: typeof paymentData?.total === "number" ? paymentData.total : prev.payments,
         }));
       });
     };
@@ -329,7 +341,13 @@ export default function AdminSidebar({
           // Single Link Row
           const active = isRouteActive(item);
           const Icon = item.icon;
-          const badgeValue = item.id && counts[item.id] !== undefined ? counts[item.id] : item.badge;
+          const badgeKey = item.countKey || item.id;
+          const badgeValue =
+            badgeKey && counts[badgeKey] !== undefined
+              ? counts[badgeKey]
+              : item.id && counts[item.id] !== undefined
+              ? counts[item.id]
+              : item.badge;
 
           return (
             <Link

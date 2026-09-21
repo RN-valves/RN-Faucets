@@ -30,6 +30,7 @@ export interface SidebarNavItem {
   href?: string;
   icon?: React.ElementType;
   badge?: string | number;
+  countKey?: string;
   sectionHeader?: string;
   children?: SidebarSubItem[];
 }
@@ -107,7 +108,8 @@ export const adminNavigationConfig: SidebarNavItem[] = [
     label: "Customer Network",
     href: "/admin/customers",
     icon: Users,
-    badge: 891,
+    countKey: "customers",
+    badge: 960,
   },
   {
     id: "enquiries",
@@ -142,14 +144,16 @@ export const adminNavigationConfig: SidebarNavItem[] = [
     label: "Blogs",
     href: "/admin/blogs",
     icon: BookOpen,
-    badge: 38,
+    badge: 46,
+    countKey: "blogs",
   },
   {
     id: "news",
     label: "News",
-    href: "/admin/blogs?tab=news",
+    href: "/admin/news",
     icon: Newspaper,
     badge: 5,
+    countKey: "news",
   },
   {
     id: "bullet_points",
