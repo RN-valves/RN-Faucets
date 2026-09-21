@@ -252,10 +252,11 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           margin-top: 0px;
         }
 
-        /* Slender & Taller Luxury Cards with Generous Spacing */
+        /* Strict 2:3 Aspect Ratio Cards */
         .luxury-card-image-wrap {
           width: 100%;
-          height: 510px;
+          aspect-ratio: 2 / 3;
+          height: auto;
           background: #F8FAFC;
           border: 1px solid #E2E8F0;
           border-radius: 0px;
@@ -414,7 +415,8 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
             flex: 0 0 260px !important;
           }
           .luxury-card-image-wrap {
-            height: 430px !important;
+            aspect-ratio: 2 / 3 !important;
+            height: auto !important;
           }
           .luxury-card.stagger-mid {
             margin-top: 25px !important;
@@ -425,7 +427,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           .luxury-staggered-track {
             padding: 10px var(--track-pad) 30px !important;
             gap: var(--track-gap) !important;
-            min-height: 560px !important;
+            min-height: 520px !important;
           }
         }
 
@@ -437,13 +439,14 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
             --track-gap: 16px;
           }
           .luxury-card {
-            width: 240px !important;
-            min-width: 240px !important;
-            max-width: 240px !important;
-            flex: 0 0 240px !important;
+            width: 230px !important;
+            min-width: 230px !important;
+            max-width: 230px !important;
+            flex: 0 0 230px !important;
           }
           .luxury-card-image-wrap {
-            height: 350px !important;
+            aspect-ratio: 2 / 3 !important;
+            height: auto !important;
           }
           .luxury-card.stagger-mid,
           .luxury-card.stagger-down,
