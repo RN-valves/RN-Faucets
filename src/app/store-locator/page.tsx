@@ -224,7 +224,7 @@ export default function UserStoreLocatorPage() {
               }}
             >
               <a
-                href="https://wa.me/918737029643?text=Hi%20RN%20Valves,%20please%20help%20me%20find%20an%20authorized%20store%20near%20my%20city."
+                href="https://api.whatsapp.com/send?phone=919811103377&text=Hello,%20I%20am%20a%20visitor%20from%20your%20website%20and%20would%20like%20to%20chat%20with%20you."
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
@@ -464,7 +464,7 @@ export default function UserStoreLocatorPage() {
 
           <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
             <a
-              href="tel:+918737029643"
+              href="tel:+919811103377"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -481,11 +481,11 @@ export default function UserStoreLocatorPage() {
               className="hover:bg-slate-800"
             >
               <Phone size={15} />
-              <span>+91 87370 29643</span>
+              <span>+91 98111 03377</span>
             </a>
 
             <a
-              href="https://wa.me/918737029643?text=Hi%20RN%20Valves,%20please%20share%20the%20nearest%20store%20address%20for%20my%20location."
+              href="https://api.whatsapp.com/send?phone=919811103377&text=Hello,%20I%20am%20a%20visitor%20from%20your%20website%20and%20would%20like%20to%20chat%20with%20you."
               target="_blank"
               rel="noopener noreferrer"
               style={{
