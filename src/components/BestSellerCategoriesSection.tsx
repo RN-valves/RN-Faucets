@@ -261,37 +261,57 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
           const seenCategories = new Set<string>();
           const uniqueCategoryProducts: any[] = [];
 
-          // 1. Pick top/best product for each distinct category from sortedCategories
-          for (const cat of sortedCategories) {
-            const catName = cat.name || cat.title || "";
-            const catId = cat.id || cat._id || "";
-            const prod = active.find(
-              (p: any) =>
-                (p.category && p.category.toLowerCase().trim() === catName.toLowerCase().trim()) ||
-                (p.categoryId && String(p.categoryId) === String(catId))
-            );
-            if (prod && !uniqueCategoryProducts.some((x: any) => x.id === prod.id || x._id === prod._id)) {
-              uniqueCategoryProducts.push({
-                ...prod,
-                categoryDisplay: catName,
-              });
-              if (prod.category) seenCategories.add(prod.category.toLowerCase().trim());
-              seenCategories.add(catName.toLowerCase().trim());
+          // 1. Pick a RANDOM product for each active category from database
+          if (Array.isArray(catData) && catData.length > 0) {
+            for (const cat of catData) {
+              const catName = cat.name || cat.title || "";
+              const catId = cat.id || cat._id || "";
+              const matching = active.filter(
+                (p: any) =>
+                  (p.category && p.category.toLowerCase().trim() === catName.toLowerCase().trim()) ||
+                  (p.categoryId && String(p.categoryId) === String(catId))
+              );
+
+              if (matching.length > 0) {
+                // Pick random product from this category
+                const randomProd = matching[Math.floor(Math.random() * matching.length)];
+                if (!uniqueCategoryProducts.some((x: any) => x.id === randomProd.id || x._id === randomProd._id)) {
+                  uniqueCategoryProducts.push({
+                    ...randomProd,
+                    categoryDisplay: catName,
+                  });
+                  if (randomProd.category) seenCategories.add(randomProd.category.toLowerCase().trim());
+                  seenCategories.add(catName.toLowerCase().trim());
+                }
+              }
             }
           }
 
-          // 2. Pick 1 product for any remaining active categories not covered above
+          // 2. For any remaining active categories not matched above, pick 1 random product
           for (const p of active) {
             const catKey = (p.category || "Other").toLowerCase().trim();
             if (!seenCategories.has(catKey)) {
+              const matching = active.filter(
+                (item: any) => (item.category || "Other").toLowerCase().trim() === catKey
+              );
+              const randomProd = matching[Math.floor(Math.random() * matching.length)];
               seenCategories.add(catKey);
-              if (!uniqueCategoryProducts.some((x: any) => x.id === p.id || x._id === p._id)) {
+              if (!uniqueCategoryProducts.some((x: any) => x.id === randomProd.id || x._id === randomProd._id)) {
                 uniqueCategoryProducts.push({
-                  ...p,
+                  ...randomProd,
                   categoryDisplay: p.category || "Bath Fittings",
                 });
               }
             }
+          }
+
+          // 3. Randomize / shuffle the order of categories on every visit / refresh
+          for (let i = uniqueCategoryProducts.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [uniqueCategoryProducts[i], uniqueCategoryProducts[j]] = [
+              uniqueCategoryProducts[j],
+              uniqueCategoryProducts[i],
+            ];
           }
 
           const finalProducts =
