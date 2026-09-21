@@ -42,6 +42,7 @@ function R2UploadPicker({
   accept?: string;
 }) {
   const [uploading, setUploading] = useState(false);
+  const [uploadProgressText, setUploadProgressText] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isVideoUrl = (url: string) => {
@@ -61,6 +62,13 @@ function R2UploadPicker({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+    if (file.size > 500 * 1024 * 1024) {
+      alert(`File size (${sizeMB} MB) is too large. Maximum supported size is 500 MB.`);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
     const ext = file.name.split(".").pop()?.toLowerCase() || "";
     const isVideo = file.type.startsWith("video/") || ["mp4", "webm", "mov", "m4v"].includes(ext);
     const detectedType = isVideo ? "video" : "image";
@@ -78,13 +86,15 @@ function R2UploadPicker({
     }
 
     setUploading(true);
+    setUploadProgressText(`Uploading ${sizeMB} MB...`);
     const res = await uploadFileToR2(file, targetKey);
     setUploading(false);
+    setUploadProgressText("");
 
     if (res.success && res.url) {
       onUploadSuccess(res.url, detectedType);
     } else {
-      alert(`Failed to upload file to Cloudflare R2: ${res.error || "Please try again."}`);
+      alert(`Failed to upload file to Cloudflare R2:\n\n${res.error || "Please try again."}`);
     }
 
     if (fileInputRef.current) {
@@ -150,7 +160,7 @@ function R2UploadPicker({
               cursor: uploading ? "not-allowed" : "pointer",
             }}
           >
-            <Upload size={14} /> {uploading ? "Uploading..." : currentUrl ? "Change Media" : "Upload File"}
+            <Upload size={14} /> {uploading ? (uploadProgressText || "Uploading...") : currentUrl ? "Change Media" : "Upload File"}
           </button>
 
           {currentUrl && onRemove && (

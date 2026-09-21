@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { uploadToR2, deleteFromR2 } from "@/lib/r2";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 export async function POST(req: Request) {
   try {
@@ -10,17 +10,24 @@ export async function POST(req: Request) {
     const file = formData.get("file") as File | null;
     const key = formData.get("key") as string | null;
 
-    if (!file || !key) {
+    if (!file) {
       return NextResponse.json(
-        { success: false, error: "File and Key are required for R2 upload" },
+        { success: false, error: "No file was received in upload request" },
+        { status: 400 }
+      );
+    }
+    if (!key) {
+      return NextResponse.json(
+        { success: false, error: "Media storage key is missing" },
         { status: 400 }
       );
     }
 
-    // Limit to 100MB for video/media uploads
-    if (file.size > 100 * 1024 * 1024) {
+    // Allow high-res videos up to 500MB
+    if (file.size > 500 * 1024 * 1024) {
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
       return NextResponse.json(
-        { success: false, error: "File size exceeds the 100MB limit" },
+        { success: false, error: `File size (${sizeMB} MB) exceeds the 500MB limit` },
         { status: 400 }
       );
     }
