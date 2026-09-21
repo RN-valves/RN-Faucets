@@ -119,7 +119,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
   const scrollByAmount = (direction: "left" | "right") => {
     const el = scrollContainerRef.current;
     if (!el) return;
-    const offset = direction === "left" ? -360 : 360;
+    const offset = direction === "left" ? -380 : 380;
     el.scrollBy({ left: offset, behavior: "smooth" });
   };
 
@@ -156,17 +156,28 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
     el.style.removeProperty("user-select");
   };
 
+  // Staggered "upar - nicche" margin formula matching reference image
+  const getCardOffsetClass = (index: number) => {
+    if (index === 0) return "stagger-mid";
+    return index % 2 === 1 ? "stagger-down" : "stagger-up";
+  };
+
   return (
     <section
       data-header-theme="dark"
       className="luxury-categories-section"
       style={{
         width: "100%",
+        minHeight: "100vh",
         backgroundColor: "#000000",
         color: "#FFFFFF",
-        padding: "90px 0 110px",
+        padding: "60px 0 80px",
         overflow: "hidden",
         position: "relative",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        boxSizing: "border-box",
       }}
       aria-label="Explore Product Categories"
     >
@@ -184,12 +195,23 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         }
 
         .luxury-card:hover {
-          transform: translateY(-4px);
+          transform: translateY(-6px);
+        }
+
+        /* Staggered Upar - Nicche Wave offsets */
+        .luxury-card.stagger-mid {
+          margin-top: 45px;
+        }
+        .luxury-card.stagger-down {
+          margin-top: 110px;
+        }
+        .luxury-card.stagger-up {
+          margin-top: 0px;
         }
 
         .luxury-card-image-wrap {
           width: 100%;
-          height: 440px;
+          height: 480px;
           background: #0A0A0A;
           border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 0px;
@@ -204,8 +226,8 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         }
 
         .luxury-card:hover .luxury-card-image-wrap {
-          border-color: rgba(255, 255, 255, 0.85);
-          box-shadow: 0 0 24px rgba(255, 255, 255, 0.08);
+          border-color: rgba(255, 255, 255, 0.9);
+          box-shadow: 0 0 25px rgba(255, 255, 255, 0.1);
         }
 
         /* Primary Normal Image */
@@ -247,12 +269,12 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         .luxury-card-label {
           display: flex;
           align-items: center;
-          gap: 7px;
+          gap: 6px;
           font-family: 'Manrope', system-ui, sans-serif;
           font-size: 15px;
           font-weight: 500;
           color: #D1D5DB;
-          margin-top: 15px;
+          margin-top: 14px;
           letter-spacing: 0.01em;
           transition: color 0.25s ease;
         }
@@ -271,11 +293,33 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           color: #FFFFFF;
         }
 
+        .luxury-explore-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 8px 18px;
+          border: 1px solid rgba(255, 255, 255, 0.8);
+          background: transparent;
+          color: #FFFFFF;
+          font-family: 'Manrope', system-ui, sans-serif;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          text-decoration: none;
+          transition: all 0.25s ease;
+        }
+
+        .luxury-explore-btn:hover {
+          background: #FFFFFF;
+          color: #000000;
+        }
+
         .luxury-nav-arrow {
-          width: 44px;
-          height: 44px;
+          width: 38px;
+          height: 38px;
           border-radius: 50%;
-          border: 1px solid rgba(255, 255, 255, 0.22);
+          border: 1px solid rgba(255, 255, 255, 0.25);
           background: transparent;
           color: #FFFFFF;
           display: flex;
@@ -296,62 +340,79 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           cursor: not-allowed;
         }
 
-        .luxury-single-row-track {
+        .luxury-staggered-track {
           display: flex;
-          gap: 28px;
+          align-items: flex-start;
+          gap: 32px;
           overflow-x: auto;
-          padding: 10px 48px 30px;
+          padding: 10px 48px 50px;
           box-sizing: border-box;
           scrollbar-width: none;
           -ms-overflow-style: none;
           scroll-behavior: smooth;
+          min-height: 640px;
         }
 
-        .luxury-single-row-track::-webkit-scrollbar {
+        .luxury-staggered-track::-webkit-scrollbar {
           display: none;
         }
 
         @media (max-width: 1024px) {
           .luxury-card {
-            width: 280px !important;
-            min-width: 280px !important;
+            width: 290px !important;
+            min-width: 290px !important;
           }
           .luxury-card-image-wrap {
-            height: 380px !important;
+            height: 420px !important;
           }
-          .luxury-single-row-track {
-            padding: 10px 24px 20px !important;
-            gap: 20px !important;
+          .luxury-card.stagger-mid {
+            margin-top: 30px !important;
+          }
+          .luxury-card.stagger-down {
+            margin-top: 70px !important;
+          }
+          .luxury-staggered-track {
+            padding: 10px 24px 30px !important;
+            gap: 24px !important;
+            min-height: 540px !important;
           }
         }
 
         @media (max-width: 768px) {
           .luxury-categories-section {
-            padding: 60px 0 80px !important;
+            padding: 50px 0 60px !important;
+            min-height: auto !important;
           }
           .luxury-card {
-            width: 240px !important;
-            min-width: 240px !important;
+            width: 250px !important;
+            min-width: 250px !important;
           }
           .luxury-card-image-wrap {
-            height: 330px !important;
+            height: 350px !important;
           }
-          .luxury-single-row-track {
+          .luxury-card.stagger-mid,
+          .luxury-card.stagger-down,
+          .luxury-card.stagger-up {
+            margin-top: 0px !important;
+          }
+          .luxury-staggered-track {
             padding: 10px 16px 20px !important;
             gap: 16px !important;
+            min-height: auto !important;
           }
           .luxury-heading-line1 {
             font-size: 20px !important;
           }
           .luxury-heading-line2 {
-            font-size: 30px !important;
+            font-size: 28px !important;
           }
         }
       `}</style>
 
-      {/* ── TOP HEADER (Editorial Style) ── */}
+      {/* ── TOP HEADER (Editorial Style + EXPLORE ALL button) ── */}
       <div
         style={{
+          width: "100%",
           maxWidth: "1520px",
           margin: "0 auto",
           padding: "0 48px",
@@ -365,7 +426,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
             alignItems: "flex-end",
             flexWrap: "wrap",
             gap: "24px",
-            marginBottom: "44px",
+            marginBottom: "20px",
           }}
         >
           {/* Two-Line Editorial Typography */}
@@ -375,7 +436,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
               style={{
                 display: "block",
                 fontFamily: "'Manrope', system-ui, sans-serif",
-                fontSize: "26px",
+                fontSize: "24px",
                 fontWeight: 300,
                 color: "#9CA3AF",
                 letterSpacing: "-0.01em",
@@ -390,8 +451,8 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
               className="luxury-heading-line2"
               style={{
                 fontFamily: "'Manrope', system-ui, sans-serif",
-                fontSize: "42px",
-                fontWeight: 700,
+                fontSize: "36px",
+                fontWeight: 600,
                 color: "#FFFFFF",
                 letterSpacing: "-0.02em",
                 lineHeight: 1.2,
@@ -404,34 +465,40 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
             </h2>
           </div>
 
-          {/* Right Controls: Prev/Next Arrows */}
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <button
-              type="button"
-              onClick={() => scrollByAmount("left")}
-              disabled={!canScrollLeft}
-              className="luxury-nav-arrow"
-              aria-label="Previous Categories"
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollByAmount("right")}
-              disabled={!canScrollRight}
-              className="luxury-nav-arrow"
-              aria-label="Next Categories"
-            >
-              <ChevronRight size={20} />
-            </button>
+          {/* Right Controls: EXPLORE ALL button + Minimal Arrows */}
+          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <Link href="/catalogues" className="luxury-explore-btn">
+              EXPLORE ALL
+            </Link>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <button
+                type="button"
+                onClick={() => scrollByAmount("left")}
+                disabled={!canScrollLeft}
+                className="luxury-nav-arrow"
+                aria-label="Previous Categories"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollByAmount("right")}
+                disabled={!canScrollRight}
+                className="luxury-nav-arrow"
+                aria-label="Next Categories"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ── HORIZONTAL PORTRAIT CARDS TRACK (With Image Hover Swap & Outline) ── */}
+      {/* ── FULL SCREEN STAGGERED "UPAR - NICCHE" CARDS TRACK ── */}
       <div
         ref={scrollContainerRef}
-        className="luxury-single-row-track"
+        className="luxury-staggered-track"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUpOrLeave}
@@ -443,12 +510,13 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
       >
         {categoriesList.map((cat, idx) => {
           const hasHoverImg = Boolean(cat.hoverImage && cat.hoverImage !== cat.image);
+          const offsetClass = getCardOffsetClass(idx);
 
           return (
             <Link
               key={cat.id || idx}
               href={cat.href || `/${cat.slug}`}
-              className={`luxury-card${hasHoverImg ? " has-hover-img" : ""}`}
+              className={`luxury-card ${offsetClass}${hasHoverImg ? " has-hover-img" : ""}`}
               onClick={(e) => {
                 if (hasMovedRef.current) {
                   e.preventDefault();
@@ -496,10 +564,10 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
                 )}
               </div>
 
-              {/* Label Below Image with Diagonal Arrow (Left Aligned, exactly like reference) */}
+              {/* Label Below Image with Diagonal Arrow (Staggers up/down with the card naturally) */}
               <div className="luxury-card-label">
                 <span>{cat.name}</span>
-                <ArrowUpRight size={16} className="luxury-card-arrow" />
+                <ArrowUpRight size={15} className="luxury-card-arrow" />
               </div>
             </Link>
           );
