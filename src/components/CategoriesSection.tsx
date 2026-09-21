@@ -119,7 +119,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
   const scrollByAmount = (direction: "left" | "right") => {
     const el = scrollContainerRef.current;
     if (!el) return;
-    const offset = direction === "left" ? -420 : 420;
+    const offset = direction === "left" ? -360 : 360;
     el.scrollBy({ left: offset, behavior: "smooth" });
   };
 
@@ -158,13 +158,13 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
 
   return (
     <section
-      data-header-theme="light"
+      data-header-theme="dark"
       className="luxury-categories-section"
       style={{
         width: "100%",
-        backgroundColor: "#FFFFFF",
-        color: "#111827",
-        padding: "100px 0 120px",
+        backgroundColor: "#000000",
+        color: "#FFFFFF",
+        padding: "90px 0 110px",
         overflow: "hidden",
         position: "relative",
       }}
@@ -172,26 +172,27 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
     >
       <style>{`
         .luxury-card {
-          width: 380px;
-          min-width: 380px;
+          width: 330px;
+          min-width: 330px;
           text-decoration: none;
           color: inherit;
           display: flex;
           flex-direction: column;
           position: relative;
+          cursor: pointer;
           transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .luxury-card:hover {
-          transform: translateY(-6px);
+          transform: translateY(-4px);
         }
 
         .luxury-card-image-wrap {
           width: 100%;
-          height: 380px;
-          background: transparent;
-          border: none;
-          border-radius: 4px;
+          height: 440px;
+          background: #0A0A0A;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 0px;
           position: relative;
           overflow: hidden;
           display: flex;
@@ -199,12 +200,12 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           justify-content: center;
           padding: 0;
           box-sizing: border-box;
-          transition: transform 0.35s ease;
+          transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
 
         .luxury-card:hover .luxury-card-image-wrap {
-          border: none;
-          box-shadow: none;
+          border-color: rgba(255, 255, 255, 0.85);
+          box-shadow: 0 0 24px rgba(255, 255, 255, 0.08);
         }
 
         /* Primary Normal Image */
@@ -214,16 +215,16 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           padding: 0;
           box-sizing: border-box;
           opacity: 1;
-          transition: opacity 0.45s ease-in-out, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+          transition: opacity 0.5s ease-in-out, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .luxury-card.has-hover-img:hover .luxury-img-primary {
           opacity: 0;
-          transform: scale(1.06);
+          transform: scale(1.04);
         }
 
         .luxury-card:not(.has-hover-img):hover .luxury-img-primary {
-          transform: scale(1.08);
+          transform: scale(1.05);
         }
 
         /* Secondary Hover Image */
@@ -233,50 +234,50 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           padding: 0;
           box-sizing: border-box;
           opacity: 0;
-          transform: scale(0.97);
-          transition: opacity 0.45s ease-in-out, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+          transform: scale(0.98);
+          transition: opacity 0.5s ease-in-out, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
           pointer-events: none;
         }
 
         .luxury-card:hover .luxury-img-hover {
           opacity: 1;
-          transform: scale(1.06);
+          transform: scale(1.04);
         }
 
         .luxury-card-label {
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 7px;
           font-family: 'Manrope', system-ui, sans-serif;
-          font-size: 17px;
-          font-weight: 600;
-          color: #1F2937;
-          margin-top: 14px;
+          font-size: 15px;
+          font-weight: 500;
+          color: #D1D5DB;
+          margin-top: 15px;
+          letter-spacing: 0.01em;
           transition: color 0.25s ease;
         }
 
         .luxury-card:hover .luxury-card-label {
-          color: #000000;
+          color: #FFFFFF;
         }
 
         .luxury-card-arrow {
           transition: transform 0.25s ease, color 0.25s ease;
-          color: #6B7280;
+          color: #9CA3AF;
         }
 
         .luxury-card:hover .luxury-card-arrow {
           transform: translate(3px, -3px);
-          color: #000000;
+          color: #FFFFFF;
         }
 
-
         .luxury-nav-arrow {
-          width: 42px;
-          height: 42px;
+          width: 44px;
+          height: 44px;
           border-radius: 50%;
-          border: 1px solid #D1D5DB;
+          border: 1px solid rgba(255, 255, 255, 0.22);
           background: transparent;
-          color: #111827;
+          color: #FFFFFF;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -285,9 +286,9 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         }
 
         .luxury-nav-arrow:hover:not(:disabled) {
-          background: #111827;
-          color: #FFFFFF;
-          border-color: #111827;
+          background: #FFFFFF;
+          color: #000000;
+          border-color: #FFFFFF;
         }
 
         .luxury-nav-arrow:disabled {
@@ -295,34 +296,32 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           cursor: not-allowed;
         }
 
-        .luxury-two-row-track {
-          display: grid;
-          grid-template-rows: repeat(2, auto);
-          grid-auto-flow: column;
-          gap: 36px 32px;
+        .luxury-single-row-track {
+          display: flex;
+          gap: 28px;
           overflow-x: auto;
-          padding: 10px 48px 40px;
+          padding: 10px 48px 30px;
           box-sizing: border-box;
           scrollbar-width: none;
           -ms-overflow-style: none;
           scroll-behavior: smooth;
         }
 
-        .luxury-two-row-track::-webkit-scrollbar {
+        .luxury-single-row-track::-webkit-scrollbar {
           display: none;
         }
 
         @media (max-width: 1024px) {
           .luxury-card {
-            width: 320px !important;
-            min-width: 320px !important;
+            width: 280px !important;
+            min-width: 280px !important;
           }
           .luxury-card-image-wrap {
-            height: 320px !important;
+            height: 380px !important;
           }
-          .luxury-two-row-track {
-            padding: 10px 24px 30px !important;
-            gap: 28px 24px !important;
+          .luxury-single-row-track {
+            padding: 10px 24px 20px !important;
+            gap: 20px !important;
           }
         }
 
@@ -331,18 +330,21 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
             padding: 60px 0 80px !important;
           }
           .luxury-card {
-            width: 270px !important;
-            min-width: 270px !important;
+            width: 240px !important;
+            min-width: 240px !important;
           }
           .luxury-card-image-wrap {
-            height: 270px !important;
-            padding: 0 !important;
+            height: 330px !important;
+          }
+          .luxury-single-row-track {
+            padding: 10px 16px 20px !important;
+            gap: 16px !important;
           }
           .luxury-heading-line1 {
-            font-size: 22px !important;
+            font-size: 20px !important;
           }
           .luxury-heading-line2 {
-            font-size: 32px !important;
+            font-size: 30px !important;
           }
         }
       `}</style>
@@ -363,7 +365,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
             alignItems: "flex-end",
             flexWrap: "wrap",
             gap: "24px",
-            marginBottom: "50px",
+            marginBottom: "44px",
           }}
         >
           {/* Two-Line Editorial Typography */}
@@ -373,12 +375,12 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
               style={{
                 display: "block",
                 fontFamily: "'Manrope', system-ui, sans-serif",
-                fontSize: "30px",
+                fontSize: "26px",
                 fontWeight: 300,
-                color: "#6B7280",
+                color: "#9CA3AF",
                 letterSpacing: "-0.01em",
                 lineHeight: 1.25,
-                marginBottom: "2px",
+                marginBottom: "4px",
               }}
             >
               Redefine Luxury With
@@ -388,9 +390,9 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
               className="luxury-heading-line2"
               style={{
                 fontFamily: "'Manrope', system-ui, sans-serif",
-                fontSize: "44px",
+                fontSize: "42px",
                 fontWeight: 700,
-                color: "#111827",
+                color: "#FFFFFF",
                 letterSpacing: "-0.02em",
                 lineHeight: 1.2,
                 margin: 0,
@@ -403,7 +405,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           </div>
 
           {/* Right Controls: Prev/Next Arrows */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <button
               type="button"
               onClick={() => scrollByAmount("left")}
@@ -411,7 +413,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
               className="luxury-nav-arrow"
               aria-label="Previous Categories"
             >
-              <ChevronLeft size={19} />
+              <ChevronLeft size={20} />
             </button>
             <button
               type="button"
@@ -420,16 +422,16 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
               className="luxury-nav-arrow"
               aria-label="Next Categories"
             >
-              <ChevronRight size={19} />
+              <ChevronRight size={20} />
             </button>
           </div>
         </div>
       </div>
 
-      {/* ── 2-ROW BIGGER CARDS DISPLAY TRACK (With Image Hover Swap) ── */}
+      {/* ── HORIZONTAL PORTRAIT CARDS TRACK (With Image Hover Swap & Outline) ── */}
       <div
         ref={scrollContainerRef}
-        className="luxury-two-row-track"
+        className="luxury-single-row-track"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUpOrLeave}
@@ -453,7 +455,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
                 }
               }}
             >
-              {/* Image Container with Smooth Primary -> Hover Cross-fade */}
+              {/* Image Container with Smooth Primary -> Hover Cross-fade & White Border Outline on Hover */}
               <div className="luxury-card-image-wrap">
                 {/* 1st Normal Image */}
                 <div className="luxury-img-primary">
@@ -473,7 +475,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
                   </div>
                 </div>
 
-                {/* 2nd Hover Image (Fades In on Cursor Hover) */}
+                {/* 2nd Hover Image (Smoothly Fades In on Cursor Hover) */}
                 {hasHoverImg && (
                   <div className="luxury-img-hover">
                     <div style={{ position: "relative", width: "100%", height: "100%" }}>
@@ -494,10 +496,10 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
                 )}
               </div>
 
-              {/* Label Below Image with Diagonal Arrow */}
+              {/* Label Below Image with Diagonal Arrow (Left Aligned, exactly like reference) */}
               <div className="luxury-card-label">
                 <span>{cat.name}</span>
-                <ArrowUpRight size={17} className="luxury-card-arrow" />
+                <ArrowUpRight size={16} className="luxury-card-arrow" />
               </div>
             </Link>
           );
