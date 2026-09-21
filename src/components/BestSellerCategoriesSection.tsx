@@ -19,6 +19,7 @@ interface ProductItem {
   price: string;
   sku: string;
   image: string;
+  category?: string;
 }
 
 const CARD_BG =
@@ -210,9 +211,11 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    fetch("/api/products")
-      .then((res) => res.json())
-      .then((resData) => {
+    Promise.all([
+      fetch("/api/products").then((res) => res.json()),
+      fetch("/api/categories").then((res) => res.json()).catch(() => []),
+    ])
+      .then(([resData, catData]) => {
         const items = resData.products || resData;
         if (Array.isArray(items)) {
           const active = items.filter(
@@ -221,11 +224,87 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
               p.isVisibleWebsite !== false &&
               p.isVisible !== false
           );
-          const mapped: ProductItem[] = active.slice(0, 12).map((p: any, idx: number) => {
+
+          // Priority ordering for categories
+          const priority = [
+            "cp faucet",
+            "faucet",
+            "shower",
+            "spray",
+            "health",
+            "mixer",
+            "diverter",
+            "polymer",
+            "ptmt",
+            "valve",
+            "cistern",
+            "accessori",
+          ];
+
+          const getCategoryScore = (name: string) => {
+            const lower = (name || "").toLowerCase();
+            for (let i = 0; i < priority.length; i++) {
+              if (lower.includes(priority[i])) return i;
+            }
+            return 99;
+          };
+
+          // Sort active categories by luxury priority
+          const sortedCategories = Array.isArray(catData)
+            ? [...catData].sort((a: any, b: any) => {
+                const scoreA = getCategoryScore(a.name || a.title);
+                const scoreB = getCategoryScore(b.name || b.title);
+                return scoreA - scoreB;
+              })
+            : [];
+
+          const seenCategories = new Set<string>();
+          const uniqueCategoryProducts: any[] = [];
+
+          // 1. Pick top/best product for each distinct category from sortedCategories
+          for (const cat of sortedCategories) {
+            const catName = cat.name || cat.title || "";
+            const catId = cat.id || cat._id || "";
+            const prod = active.find(
+              (p: any) =>
+                (p.category && p.category.toLowerCase().trim() === catName.toLowerCase().trim()) ||
+                (p.categoryId && String(p.categoryId) === String(catId))
+            );
+            if (prod && !uniqueCategoryProducts.some((x: any) => x.id === prod.id || x._id === prod._id)) {
+              uniqueCategoryProducts.push({
+                ...prod,
+                categoryDisplay: catName,
+              });
+              if (prod.category) seenCategories.add(prod.category.toLowerCase().trim());
+              seenCategories.add(catName.toLowerCase().trim());
+            }
+          }
+
+          // 2. Pick 1 product for any remaining active categories not covered above
+          for (const p of active) {
+            const catKey = (p.category || "Other").toLowerCase().trim();
+            if (!seenCategories.has(catKey)) {
+              seenCategories.add(catKey);
+              if (!uniqueCategoryProducts.some((x: any) => x.id === p.id || x._id === p._id)) {
+                uniqueCategoryProducts.push({
+                  ...p,
+                  categoryDisplay: p.category || "Bath Fittings",
+                });
+              }
+            }
+          }
+
+          const finalProducts =
+            uniqueCategoryProducts.length >= 6
+              ? uniqueCategoryProducts
+              : active.slice(0, 12);
+
+          const mapped: ProductItem[] = finalProducts.slice(0, 12).map((p: any, idx: number) => {
             const priceNum = Number(p.inSelling ?? p.price ?? 0);
             const formattedPrice = priceNum > 0 ? `₹${priceNum.toLocaleString("en-IN")}` : "₹1,490";
             const sku = p.skuCode || p.code || p.article || `RN-${p.id || idx}`;
-            const rawImage = p.image || (Array.isArray(p.gallery) && p.gallery[0]) || "/api/media/website/catalogue/products/default/image.webp";
+            const rawImage =
+              p.image || (Array.isArray(p.gallery) && p.gallery[0]) || "/api/media/website/catalogue/products/default/image.webp";
             const image =
               rawImage && !rawImage.includes("postimg") && !rawImage.includes("postimage")
                 ? rawImage
@@ -233,6 +312,7 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
             return {
               id: idx,
               name: p.name,
+              category: p.categoryDisplay || p.category || "Bath Fittings",
               price: formattedPrice,
               sku: sku,
               image: image,
@@ -782,19 +862,47 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
                     boxSizing: "border-box",
                   }}
                 >
-                  <span
+                  <div
                     style={{
-                      fontFamily: "'Manrope', system-ui, sans-serif",
-                      fontSize: isFeatured ? "11px" : "10px",
-                      fontWeight: 500,
-                      letterSpacing: "0.14em",
-                      textTransform: "uppercase",
-                      color: "rgba(255,255,255,0.5)",
-                      WebkitFontSmoothing: "antialiased",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "8px",
+                      flexWrap: "wrap",
                     }}
                   >
-                    SKU {product.sku}
-                  </span>
+                    {product.category && (
+                      <span
+                        style={{
+                          fontFamily: "'Manrope', system-ui, sans-serif",
+                          fontSize: isFeatured ? "11px" : "10px",
+                          fontWeight: 700,
+                          letterSpacing: "0.10em",
+                          textTransform: "uppercase",
+                          color: "#FFFFFF",
+                          background: "rgba(255, 255, 255, 0.16)",
+                          padding: "2px 8px",
+                          borderRadius: "4px",
+                          WebkitFontSmoothing: "antialiased",
+                        }}
+                      >
+                        {product.category}
+                      </span>
+                    )}
+                    <span
+                      style={{
+                        fontFamily: "'Manrope', system-ui, sans-serif",
+                        fontSize: isFeatured ? "11px" : "10px",
+                        fontWeight: 500,
+                        letterSpacing: "0.14em",
+                        textTransform: "uppercase",
+                        color: "rgba(255,255,255,0.5)",
+                        WebkitFontSmoothing: "antialiased",
+                      }}
+                    >
+                      SKU {product.sku}
+                    </span>
+                  </div>
 
                   <h3
                     style={{
