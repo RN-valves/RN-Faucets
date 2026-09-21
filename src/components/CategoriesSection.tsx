@@ -203,7 +203,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         minHeight: "100vh",
         backgroundColor: "#FFFFFF",
         color: "#0F172A",
-        padding: "130px 0 80px",
+        padding: "clamp(90px, 12vh, 105px) 0 clamp(20px, 3vh, 35px)",
         overflow: "hidden",
         position: "relative",
         display: "flex",
@@ -222,15 +222,15 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
     >
       <style>{`
         .luxury-categories-section {
-          --track-pad: 48px;
-          --track-gap: 38px;
+          --track-pad: clamp(24px, 3.5vw, 48px);
+          --track-gap: clamp(18px, 2.2vw, 32px);
         }
 
         .luxury-card {
-          width: calc((100vw - (2 * var(--track-pad)) - (3 * var(--track-gap)) - 2px) / 4);
-          min-width: calc((100vw - (2 * var(--track-pad)) - (3 * var(--track-gap)) - 2px) / 4);
-          max-width: calc((100vw - (2 * var(--track-pad)) - (3 * var(--track-gap)) - 2px) / 4);
-          flex: 0 0 calc((100vw - (2 * var(--track-pad)) - (3 * var(--track-gap)) - 2px) / 4);
+          width: clamp(220px, 18vw, 265px);
+          min-width: clamp(220px, 18vw, 265px);
+          max-width: clamp(220px, 18vw, 265px);
+          flex: 0 0 clamp(220px, 18vw, 265px);
           text-decoration: none;
           color: inherit;
           display: flex;
@@ -241,25 +241,26 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         }
 
         .luxury-card:hover {
-          transform: translateY(-6px);
+          transform: translateY(-5px);
         }
 
-        /* Staggered Upar - Nicche Wave offsets */
+        /* Staggered Upar - Nicche Wave offsets (compact so whole section fits on screen) */
         .luxury-card.stagger-mid {
-          margin-top: 35px;
+          margin-top: 20px;
         }
         .luxury-card.stagger-down {
-          margin-top: 100px;
+          margin-top: 55px;
         }
         .luxury-card.stagger-up {
           margin-top: 0px;
         }
 
-        /* Strict 2:3 Aspect Ratio Cards */
+        /* Compact 2:3 Aspect Ratio Cards */
         .luxury-card-image-wrap {
           width: 100%;
           aspect-ratio: 2 / 3;
           height: auto;
+          max-height: clamp(330px, 44vh, 395px);
           background: #F8FAFC;
           border: 1px solid #E2E8F0;
           border-radius: 0px;
@@ -393,13 +394,13 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
           align-items: flex-start;
           gap: var(--track-gap);
           overflow-x: auto;
-          padding: 10px var(--track-pad) 60px;
+          padding: 6px var(--track-pad) 25px;
           box-sizing: border-box;
           scrollbar-width: none;
           -ms-overflow-style: none;
           scroll-behavior: smooth;
           width: 100%;
-          min-height: 690px;
+          min-height: auto;
         }
 
         .luxury-staggered-track::-webkit-scrollbar {
@@ -409,43 +410,43 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
         @media (max-width: 1024px) {
           .luxury-categories-section {
             --track-pad: 32px;
-            --track-gap: 24px;
+            --track-gap: 20px;
           }
           .luxury-card {
-            width: 260px !important;
-            min-width: 260px !important;
-            max-width: 260px !important;
-            flex: 0 0 260px !important;
+            width: 220px !important;
+            min-width: 220px !important;
+            max-width: 220px !important;
+            flex: 0 0 220px !important;
           }
           .luxury-card-image-wrap {
             aspect-ratio: 2 / 3 !important;
             height: auto !important;
           }
           .luxury-card.stagger-mid {
-            margin-top: 25px !important;
+            margin-top: 15px !important;
           }
           .luxury-card.stagger-down {
-            margin-top: 75px !important;
+            margin-top: 45px !important;
           }
           .luxury-staggered-track {
-            padding: 10px var(--track-pad) 30px !important;
+            padding: 6px var(--track-pad) 20px !important;
             gap: var(--track-gap) !important;
-            min-height: 520px !important;
+            min-height: auto !important;
           }
         }
 
         @media (max-width: 768px) {
           .luxury-categories-section {
-            padding: 100px 0 60px !important;
+            padding: 95px 0 40px !important;
             min-height: auto !important;
             --track-pad: 16px;
-            --track-gap: 16px;
+            --track-gap: 14px;
           }
           .luxury-card {
-            width: 230px !important;
-            min-width: 230px !important;
-            max-width: 230px !important;
-            flex: 0 0 230px !important;
+            width: 200px !important;
+            min-width: 200px !important;
+            max-width: 200px !important;
+            flex: 0 0 200px !important;
           }
           .luxury-card-image-wrap {
             aspect-ratio: 2 / 3 !important;
@@ -457,15 +458,15 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
             margin-top: 0px !important;
           }
           .luxury-staggered-track {
-            padding: 10px var(--track-pad) 20px !important;
+            padding: 6px var(--track-pad) 15px !important;
             gap: var(--track-gap) !important;
             min-height: auto !important;
           }
           .luxury-heading-line1 {
-            font-size: 20px !important;
+            font-size: 16px !important;
           }
           .luxury-heading-line2 {
-            font-size: 28px !important;
+            font-size: 22px !important;
           }
         }
       `}</style>
@@ -485,8 +486,8 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
             justifyContent: "space-between",
             alignItems: "flex-end",
             flexWrap: "wrap",
-            gap: "24px",
-            marginBottom: "20px",
+            gap: "16px",
+            marginBottom: "clamp(10px, 1.8vh, 16px)",
           }}
         >
           {/* Two-Line Editorial Typography */}
@@ -496,12 +497,12 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
               style={{
                 display: "block",
                 fontFamily: "'Manrope', system-ui, sans-serif",
-                fontSize: "24px",
+                fontSize: "clamp(15px, 1.5vw, 19px)",
                 fontWeight: 300,
                 color: "#64748B",
                 letterSpacing: "-0.01em",
                 lineHeight: 1.25,
-                marginBottom: "4px",
+                marginBottom: "2px",
               }}
             >
               Redefine Luxury With
@@ -511,7 +512,7 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
               className="luxury-heading-line2"
               style={{
                 fontFamily: "'Manrope', system-ui, sans-serif",
-                fontSize: "36px",
+                fontSize: "clamp(24px, 2.3vw, 32px)",
                 fontWeight: 600,
                 color: "#0F172A",
                 letterSpacing: "-0.02em",
