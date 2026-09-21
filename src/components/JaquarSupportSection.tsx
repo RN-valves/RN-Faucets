@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type CSSProperties } from "react";
+import Link from "next/link";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -13,7 +14,7 @@ const SUPPORT_CARDS = [
     title: "Store Locator",
     description: "Purchase our products from RN Faucets authorized dealers only.",
     cta: "Find a Store",
-    href: "#",
+    href: "/store-locator",
     image:
       "https://www.jaquar.com/Themes/Jaquar2025_V1/Content/images/store-loacter-img_2026.webp",
     overlay:
@@ -23,7 +24,7 @@ const SUPPORT_CARDS = [
     title: "RN Care",
     description: "Expert support. Trusted Service. Industry leading warranty.",
     cta: "Let's Connect",
-    href: "#",
+    href: "/contact-us",
     image:
       "https://www.jaquar.com/Themes/Jaquar2025_V1/Content/images/jaquar-care_2026.webp",
     overlay:
@@ -222,28 +223,40 @@ export default function JaquarSupportSection({ data }: JaquarSupportSectionProps
       `}</style>
 
       <div className="jaquar-support-grid">
-        {cardsList.map((card, index) => (
-          <a
-            key={card.title}
-            ref={(node) => {
-              cardsRef.current[index] = node;
-            }}
-            href={card.href}
-            className="jaquar-support-card"
-            style={
-              {
-                "--card-image": `url("${card.image}")`,
-                "--card-overlay": card.overlay,
-              } as CSSProperties
-            }
-          >
-            <div className="jaquar-support-content">
-              <h2 className="jaquar-support-title">{card.title}</h2>
-              <p className="jaquar-support-description">{card.description}</p>
-              <span className="jaquar-support-button">{card.cta}</span>
-            </div>
-          </a>
-        ))}
+        {cardsList.map((card, index) => {
+          const isConnect =
+            card.cta?.toLowerCase().includes("connect") ||
+            card.title?.toLowerCase().includes("care");
+          const targetHref =
+            card.href && card.href !== "#"
+              ? card.href
+              : isConnect
+              ? "/contact-us"
+              : "/store-locator";
+
+          return (
+            <Link
+              key={card.title}
+              ref={(node) => {
+                cardsRef.current[index] = node as unknown as HTMLAnchorElement;
+              }}
+              href={targetHref}
+              className="jaquar-support-card"
+              style={
+                {
+                  "--card-image": `url("${card.image}")`,
+                  "--card-overlay": card.overlay,
+                } as CSSProperties
+              }
+            >
+              <div className="jaquar-support-content">
+                <h2 className="jaquar-support-title">{card.title}</h2>
+                <p className="jaquar-support-description">{card.description}</p>
+                <span className="jaquar-support-button">{card.cta}</span>
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </section>
   );
