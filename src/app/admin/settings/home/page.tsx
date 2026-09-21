@@ -37,27 +37,62 @@ function R2UploadPicker({
   label: string;
   r2Key: string;
   currentUrl: string;
-  onUploadSuccess: (newUrl: string) => void;
+  onUploadSuccess: (newUrl: string, detectedType?: "image" | "video") => void;
   onRemove?: () => void;
   accept?: string;
 }) {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const isVideoUrl = (url: string) => {
+    if (!url) return false;
+    const clean = url.split("?")[0].toLowerCase();
+    return (
+      clean.endsWith(".mp4") ||
+      clean.endsWith(".webm") ||
+      clean.endsWith(".mov") ||
+      clean.endsWith(".m4v") ||
+      clean.includes("/reels/") ||
+      clean.includes("/video")
+    );
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const ext = file.name.split(".").pop()?.toLowerCase() || "";
+    const isVideo = file.type.startsWith("video/") || ["mp4", "webm", "mov", "m4v"].includes(ext);
+    const detectedType = isVideo ? "video" : "image";
+
+    // Adjust target key extension based on actual file type
+    let targetKey = r2Key;
+    if (isVideo) {
+      const videoExt = ["mp4", "webm", "mov"].includes(ext) ? ext : "mp4";
+      targetKey = targetKey.replace(/\.(webp|jpg|jpeg|png|gif)$/i, `.${videoExt}`);
+      if (!/\.[a-zA-Z0-9]+$/.test(targetKey)) {
+        targetKey = `${targetKey}.${videoExt}`;
+      }
+    } else {
+      targetKey = targetKey.replace(/\.(mp4|webm|mov|m4v)$/i, ".webp");
+    }
+
     setUploading(true);
-    const res = await uploadFileToR2(file, r2Key);
+    const res = await uploadFileToR2(file, targetKey);
     setUploading(false);
 
     if (res.success && res.url) {
-      onUploadSuccess(res.url);
+      onUploadSuccess(res.url, detectedType);
     } else {
-      alert("Failed to upload file to Cloudflare R2.");
+      alert(`Failed to upload file to Cloudflare R2: ${res.error || "Please try again."}`);
+    }
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
+
+  const isVideo = isVideoUrl(currentUrl);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -69,20 +104,32 @@ function R2UploadPicker({
       <div style={{ display: "flex", alignItems: "center", gap: "12px", background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: "8px", padding: "10px" }}>
         {/* Media Preview */}
         {currentUrl ? (
-          <div style={{ width: "54px", height: "54px", borderRadius: "6px", overflow: "hidden", border: "1px solid #D1D5DB", flexShrink: 0, position: "relative", background: "#111827", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {currentUrl.endsWith(".mp4") || currentUrl.includes("/reels/") ? (
-              <video src={currentUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <div style={{ width: "60px", height: "60px", borderRadius: "6px", overflow: "hidden", border: "1px solid #D1D5DB", flexShrink: 0, position: "relative", background: "#111827", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {isVideo ? (
+              <video
+                src={currentUrl}
+                muted
+                autoPlay
+                loop
+                playsInline
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
             ) : (
               <img src={currentUrl} alt={label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             )}
+            {isVideo && (
+              <span style={{ position: "absolute", bottom: 2, right: 2, background: "rgba(0,0,0,0.75)", color: "#38bdf8", fontSize: "8px", padding: "1px 3px", borderRadius: "2px", fontWeight: 800 }}>
+                VIDEO
+              </span>
+            )}
           </div>
         ) : (
-          <div style={{ width: "54px", height: "54px", borderRadius: "6px", border: "1px dashed #9CA3AF", display: "flex", alignItems: "center", justifyContent: "center", color: "#9CA3AF", flexShrink: 0 }}>
+          <div style={{ width: "60px", height: "60px", borderRadius: "6px", border: "1px dashed #9CA3AF", display: "flex", alignItems: "center", justifyContent: "center", color: "#9CA3AF", flexShrink: 0 }}>
             <ImageIcon size={20} />
           </div>
         )}
 
-        <div style={{ flex: 1, display: "flex", gap: "8px", alignItems: "center" }}>
+        <div style={{ flex: 1, display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
           <input ref={fileInputRef} type="file" accept={accept} onChange={handleFileChange} style={{ display: "none" }} />
 
           <button
@@ -103,7 +150,7 @@ function R2UploadPicker({
               cursor: uploading ? "not-allowed" : "pointer",
             }}
           >
-            <Upload size={14} /> {uploading ? "Uploading..." : currentUrl ? "Change Image" : "Upload File"}
+            <Upload size={14} /> {uploading ? "Uploading..." : currentUrl ? "Change Media" : "Upload File"}
           </button>
 
           {currentUrl && onRemove && (
@@ -114,18 +161,40 @@ function R2UploadPicker({
                 onRemove();
               }}
               style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
                 padding: "7px 12px",
                 borderRadius: "6px",
-                border: "1px solid #EF4444",
-                background: "transparent",
-                color: "#EF4444",
-                fontWeight: 700,
+                border: "1px solid #FECACA",
+                background: "#FEF2F2",
+                color: "#DC2626",
+                fontWeight: 600,
                 fontSize: "12px",
                 cursor: "pointer",
               }}
             >
-              Remove
+              <Trash2 size={13} /> Remove
             </button>
+          )}
+
+          {currentUrl && (
+            <a
+              href={currentUrl}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                fontSize: "11px",
+                color: "#6B7280",
+                textDecoration: "none",
+                marginLeft: "auto",
+              }}
+            >
+              <ExternalLink size={12} /> View Media
+            </a>
           )}
         </div>
       </div>
@@ -352,13 +421,49 @@ export default function AdminHomeSettingPage() {
 
             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
               {settings.hero?.map((slide: any, index: number) => {
-                const slideId = slide.id || index + 1;
-                const r2Key = `website/home/hero/${slideId}.webp`;
+                const slideId = slide.id !== undefined ? slide.id : index + 1;
+                const isVideo =
+                  slide.type === "video" ||
+                  Boolean(
+                    slide.src &&
+                      (slide.src.split("?")[0].endsWith(".mp4") ||
+                        slide.src.split("?")[0].endsWith(".webm") ||
+                        slide.src.split("?")[0].endsWith(".mov"))
+                  );
+                const r2Key = isVideo
+                  ? `website/home/hero/${slideId}.mp4`
+                  : `website/home/hero/${slideId}.webp`;
 
                 return (
                   <div key={slideId} style={{ border: `1px solid ${border}`, borderRadius: "10px", padding: "18px", background: inputBg, display: "flex", flexDirection: "column", gap: "14px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontWeight: 800, color: "#0077B6", fontSize: "13px" }}>Hero Slide #{index + 1} (ID: {slideId})</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                        <span style={{ fontWeight: 800, color: "#0077B6", fontSize: "13px" }}>Hero Slide #{index + 1} (ID: {slideId})</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <span style={{ fontSize: "11px", color: textMuted, fontWeight: 600 }}>Media Type:</span>
+                          <select
+                            value={slide.type || (isVideo ? "video" : "image")}
+                            onChange={(e) => {
+                              const updated = [...settings.hero];
+                              updated[index].type = e.target.value;
+                              setSettings({ ...settings, hero: updated });
+                            }}
+                            style={{
+                              padding: "3px 8px",
+                              borderRadius: "4px",
+                              border: `1px solid ${border}`,
+                              fontSize: "11px",
+                              fontWeight: 700,
+                              background: (slide.type === "video" || isVideo) ? "#7C3AED" : "#0284C7",
+                              color: "#FFF",
+                              cursor: "pointer",
+                            }}
+                          >
+                            <option value="image">Image Slide</option>
+                            <option value="video">Video Slide (MP4 / WebM)</option>
+                          </select>
+                        </div>
+                      </div>
                       <button
                         type="button"
                         onClick={() => {
@@ -393,12 +498,16 @@ export default function AdminHomeSettingPage() {
                     </div>
 
                     <R2UploadPicker
-                      label="Slide Media Asset (Image / MP4 Video)"
+                      label={`Slide Media Asset (${slide.type === "video" || isVideo ? "MP4 / WebM Video" : "Image / WebP"})`}
                       r2Key={r2Key}
                       currentUrl={slide.src}
-                      onUploadSuccess={(url) => {
+                      accept={slide.type === "video" || isVideo ? "video/*" : "image/*,video/*"}
+                      onUploadSuccess={(url, detectedType) => {
                         const updated = [...settings.hero];
                         updated[index].src = url;
+                        if (detectedType) {
+                          updated[index].type = detectedType;
+                        }
                         setSettings({ ...settings, hero: updated });
                       }}
                       onRemove={() => {

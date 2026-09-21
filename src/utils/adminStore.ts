@@ -668,7 +668,7 @@ export const updateAdminHomeSetting = async (payload: any): Promise<boolean> => 
   }
 };
 
-export const uploadFileToR2 = async (file: File, key: string): Promise<{ success: boolean; url?: string; key?: string }> => {
+export const uploadFileToR2 = async (file: File, key: string): Promise<{ success: boolean; url?: string; key?: string; error?: string }> => {
   try {
     const formData = new FormData();
     formData.append("file", file);
@@ -678,10 +678,13 @@ export const uploadFileToR2 = async (file: File, key: string): Promise<{ success
       method: "POST",
       body: formData,
     });
-    if (!res.ok) throw new Error("Upload failed");
-    return res.json();
-  } catch {
-    return { success: false };
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      return { success: false, error: data?.error || `Upload failed (Status ${res.status})` };
+    }
+    return data || { success: false, error: "Empty response from upload API" };
+  } catch (err: any) {
+    return { success: false, error: err?.message || "Network error during upload" };
   }
 };
 

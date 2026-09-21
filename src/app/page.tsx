@@ -258,12 +258,25 @@ export default function Home() {
     }, 300);
   }, []);
 
+  const isVideoSlide = (item: any) => {
+    if (!item || !item.src) return false;
+    if (item.type === "video") return true;
+    const clean = item.src.split("?")[0].toLowerCase();
+    return (
+      clean.endsWith(".mp4") ||
+      clean.endsWith(".webm") ||
+      clean.endsWith(".mov") ||
+      clean.endsWith(".m4v") ||
+      clean.includes("/video")
+    );
+  };
+
   /* ── React to active index changes ── */
   useEffect(() => {
     const item = heroSequence[activeIdx] || heroSequence[0];
     if (!item) return;
 
-    if (item.type === "video") {
+    if (isVideoSlide(item)) {
       const vid = videoRef.current;
       if (vid) {
         vid.currentTime = 0;
@@ -336,7 +349,7 @@ export default function Home() {
       >
         {/* ── Background layers ── */}
         {heroSequence.map((item, i) => (
-          item.type === "video" ? (
+          isVideoSlide(item) ? (
             <video
               key={item.id || i}
               ref={activeIdx === i ? videoRef : undefined}
