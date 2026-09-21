@@ -50,8 +50,13 @@ const CategorySchema = new Schema<ICategory>(
     tax: { type: Number, default: 18 },
     pdfCatalogue: { type: String, default: "" },
   },
-  { timestamps: true }
+  { timestamps: true, strict: false }
 );
+
+// Delete cached model in Next.js memory so schema updates are always applied
+if (mongoose.models && mongoose.models.Category) {
+  delete (mongoose.models as any).Category;
+}
 
 const Category: Model<ICategory> =
   mongoose.models.Category || mongoose.model<ICategory>("Category", CategorySchema);

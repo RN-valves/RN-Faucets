@@ -43,28 +43,34 @@ function R2UploadPicker({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setUploading(true);
-    const res = await uploadFileToR2(file, r2Key);
-    setUploading(false);
-
-    if (res.success && res.url) {
-      onUploadSuccess(res.url);
-    } else {
-      alert("Failed to upload image to Cloudflare R2.");
+    try {
+      setUploading(true);
+      const res = await uploadFileToR2(file, r2Key);
+      if (res.success && res.url) {
+        onUploadSuccess(res.url);
+      } else {
+        alert("Failed to upload image to Cloudflare R2.");
+      }
+    } catch (err: any) {
+      console.error("Upload error:", err);
+      alert("Failed to upload image to Cloudflare R2: " + (err?.message || "Unknown error"));
+    } finally {
+      setUploading(false);
+      if (e.target) e.target.value = "";
     }
   };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-      <label style={{ fontSize: "12px", fontWeight: 700, color: "#111827", display: "flex", justifyContent: "space-between" }}>
+      <label style={{ fontSize: "12px", fontWeight: 700, display: "flex", justifyContent: "space-between" }}>
         <span>{label}</span>
         <span style={{ fontSize: "10px", color: "#6B7280", fontFamily: "monospace" }}>R2: {r2Key}</span>
       </label>
 
       <div style={{ display: "flex", alignItems: "center", gap: "10px", background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: "8px", padding: "8px" }}>
         {currentUrl ? (
-          <div style={{ width: "48px", height: "48px", borderRadius: "6px", overflow: "hidden", border: "1px solid #D1D5DB", flexShrink: 0, position: "relative", background: "#111827" }}>
-            <img src={currentUrl} alt={label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <div style={{ width: "48px", height: "48px", borderRadius: "6px", overflow: "hidden", border: "1px solid #D1D5DB", flexShrink: 0, position: "relative", background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <img src={currentUrl} alt={label} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
           </div>
         ) : (
           <div style={{ width: "48px", height: "48px", borderRadius: "6px", border: "1px dashed #9CA3AF", display: "flex", alignItems: "center", justifyContent: "center", color: "#9CA3AF", flexShrink: 0 }}>

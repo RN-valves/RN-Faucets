@@ -320,6 +320,42 @@ export default function CategoryDetailPage() {
 
           {/* Right Column: Media Previews */}
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            {/* Homepage Category Card (2 Photos: Normal & Hover) */}
+            <div style={{ background: cardBg, border: `2px solid #0077B6`, borderRadius: "16px", padding: "16px", boxShadow: shadow }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+                <h4 style={{ margin: 0, fontSize: "14px", fontWeight: 800, color: "#0077B6" }}>
+                  Homepage Category Card
+                </h4>
+                <span style={{ fontSize: "10px", padding: "2px 8px", background: "rgba(0,119,182,0.12)", color: "#0077B6", borderRadius: "100px", fontWeight: 800 }}>
+                  Homepage
+                </span>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                <div>
+                  <span style={{ fontSize: "11px", fontWeight: 700, color: textMuted, display: "block", marginBottom: "4px" }}>
+                    1. Normal Photo
+                  </span>
+                  {category.homeImage ? (
+                    <img src={category.homeImage} alt="Homepage Normal" style={{ width: "100%", height: "110px", objectFit: "contain", borderRadius: "8px", border: `1px solid ${border}`, background: inputBg, padding: "4px" }} />
+                  ) : (
+                    <div style={{ height: "110px", background: inputBg, borderRadius: "8px", border: `1px dashed ${border}`, display: "flex", alignItems: "center", justifyContent: "center", color: textMuted, fontSize: "11px", textAlign: "center", padding: "6px" }}>Not Set</div>
+                  )}
+                </div>
+
+                <div>
+                  <span style={{ fontSize: "11px", fontWeight: 700, color: textMuted, display: "block", marginBottom: "4px" }}>
+                    2. Hover Photo
+                  </span>
+                  {category.homeHoverImage ? (
+                    <img src={category.homeHoverImage} alt="Homepage Hover" style={{ width: "100%", height: "110px", objectFit: "contain", borderRadius: "8px", border: `1px solid ${border}`, background: inputBg, padding: "4px" }} />
+                  ) : (
+                    <div style={{ height: "110px", background: inputBg, borderRadius: "8px", border: `1px dashed ${border}`, display: "flex", alignItems: "center", justifyContent: "center", color: textMuted, fontSize: "11px", textAlign: "center", padding: "6px" }}>Not Set</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Category Main Image */}
             <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: "16px", padding: "16px", boxShadow: shadow }}>
               <h4 style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: 800, color: textMain, textAlign: "center" }}>

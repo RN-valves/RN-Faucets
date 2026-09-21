@@ -36,10 +36,12 @@ export async function PUT(
       body.slug = body.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-");
     }
 
+    delete body._id;
+
     const updated = await Category.findOneAndUpdate(
       { $or: [{ id }, { slug: id }] },
-      body,
-      { new: true }
+      { $set: body },
+      { new: true, runValidators: false }
     );
     if (!updated) return NextResponse.json({ error: "Category not found" }, { status: 404 });
     return NextResponse.json(updated);
