@@ -43,18 +43,20 @@ const NAV_COL_1 = [
   { label: "About Us", href: "/about-us" },
   { label: "Blogs", href: "/blogs" },
   { label: "Catalogues", href: "/catalogues" },
+  { label: "Our CSR", href: "/corporate-social-responsibility" },
 ];
 const NAV_COL_2 = [
-  { label: "Become a Channel Partner", href: "/business-user-registration" },
+  { label: "Become our Dealer", href: "/business-user-registration" },
+  { label: "Our Certification", href: "/certificates" },
   { label: "Contact Us", href: "/contact-us" },
   { label: "Warranty Policy", href: "/about-us" },
-  { label: "Tutorials Videos", href: "#" },
 ];
 const NAV_COL_3 = [
   { label: "Personal Account", href: "/retail-user-registration" },
   { label: "Business Account", href: "/business-user-registration" },
-  { label: "Privacy Policy", href: "#" },
-  { label: "Terms & Conditions", href: "#" },
+  { label: "Privacy Policy", href: "/privacy-policy" },
+  { label: "Return & Refund Policy", href: "/return-refund-policy" },
+  { label: "Terms & Conditions", href: "/terms-conditions" },
 ];
 const SOCIALS = [
   { Icon: InstagramIcon, label: "Instagram", href: "https://instagram.com" },

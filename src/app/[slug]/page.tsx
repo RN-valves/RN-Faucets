@@ -187,16 +187,24 @@ export default function DynamicCategoryPage({ params }: { params: Promise<{ slug
             marginBottom: "32px",
             fontFamily: "'Manrope', system-ui, sans-serif",
             fontSize: "13px",
-            color: "#666666",
+            color: "#64748B",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
           }}
         >
-          <Link href="/" style={{ color: "#777777", textDecoration: "none" }}>
+          <Link
+            href="/"
+            style={{
+              color: "#64748B",
+              textDecoration: "none",
+              transition: "color 0.2s ease",
+            }}
+          >
             Home
-          </Link>{" "}
-          <span style={{ margin: "0 6px" }}>&gt;</span>{" "}
-          <span style={{ color: "#777777" }}>Bathware</span>{" "}
-          <span style={{ margin: "0 6px" }}>&gt;</span>{" "}
-          <span style={{ color: "#111111", fontWeight: 500 }}>{categoryName}</span>
+          </Link>
+          <span style={{ color: "#CBD5E1" }}>/</span>
+          <span style={{ color: "#0F172A", fontWeight: 600 }}>{categoryName}</span>
         </nav>
 
         {/* Page Title */}

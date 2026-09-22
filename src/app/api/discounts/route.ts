@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
+import { escapeRegex } from "@/lib/security";
 import Discount from "@/models/Discount";
 
 const DEFAULT_MOCK_DISCOUNTS = [
@@ -59,7 +60,7 @@ export async function GET(request: Request) {
 
     const query: any = {};
     if (q) {
-      query.name = { $regex: q, $options: "i" };
+      query.name = { $regex: escapeRegex(q), $options: "i" };
     }
     if (status !== "All") {
       query.status = status;

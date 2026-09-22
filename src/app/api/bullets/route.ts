@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
+import { escapeRegex } from "@/lib/security";
 import mongoose from "mongoose";
 
 export async function GET(request: Request) {
@@ -22,8 +23,9 @@ export async function GET(request: Request) {
 
     const query: Record<string, any> = {};
     if (q) {
+      const safeQ = escapeRegex(q);
       query.$or = [
-        { name: { $regex: q, $options: "i" } },
+        { name: { $regex: safeQ, $options: "i" } },
       ];
       if (!isNaN(Number(q))) {
         query.$or.push({ id: Number(q) });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback, type MutableRefObject } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo, type MutableRefObject } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -41,18 +41,10 @@ const REELS = [
   },
 ];
 
-const CARD_W = 262;
-const CARD_H = 432;
-const GAP = 8;
-const LOOP_SETS = 3;
-const INITIAL_RENDERED_INDEX = REELS.length;
-const LOOP_REELS = Array.from({ length: LOOP_SETS }, (_, setIndex) =>
-  REELS.map((reel, reelIndex) => ({
-    ...reel,
-    key: `${setIndex}-${reel.video}`,
-    reelIndex,
-  }))
-).flat();
+const CARD_W = 232;
+const CARD_H = 418;
+const GAP = 18;
+const LOOP_SETS = 5;
 
 const SOCIALS = [
   {
@@ -135,8 +127,11 @@ function ReelCard({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
-  const cardRef = useRef<HTMLElement>(null);
   const rafRef = useRef<number | null>(null);
+  const isEndingRef = useRef(false);
+  const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isScalingDown, setIsScalingDown] = useState(false);
 
   const stopProgress = useCallback(() => {
     if (rafRef.current !== null) {
@@ -155,37 +150,71 @@ function ReelCard({
     rafRef.current = requestAnimationFrame(updateProgressFrame);
   }, []);
 
+  const clearFallback = useCallback(() => {
+    if (fallbackTimerRef.current) {
+      clearTimeout(fallbackTimerRef.current);
+      fallbackTimerRef.current = null;
+    }
+  }, []);
+
+  // When video playback completes, scale down in place with smooth transition, then trigger next card
+  const handleCompleteAndNext = useCallback(() => {
+    if (isEndingRef.current) return;
+    isEndingRef.current = true;
+    clearFallback();
+    stopProgress();
+    setIsPlaying(false);
+    setIsScalingDown(true); // Triggers scale(1) in place
+
+    // Allow 360ms smooth transition to finish before advancing to next card
+    setTimeout(() => {
+      isEndingRef.current = false;
+      setIsScalingDown(false);
+      onEnded();
+    }, 360);
+  }, [clearFallback, onEnded, stopProgress]);
+
   const playActiveVideo = useCallback(() => {
     const el = videoRef.current;
     if (!el) return;
 
+    el.currentTime = 0;
     const playPromise = el.play();
     if (playPromise !== undefined) {
       playPromise
         .then(() => {
+          setIsPlaying(true);
           stopProgress();
           rafRef.current = requestAnimationFrame(updateProgress);
-        })
-        .catch(() => {});
-    }
-  }, [stopProgress, updateProgress]);
 
-  /* Active plays + zooms in; inactive pauses + zooms out */
+          clearFallback();
+          const durationSec =
+            el.duration && !isNaN(el.duration) && el.duration > 0
+              ? el.duration
+              : 12;
+          fallbackTimerRef.current = setTimeout(() => {
+            handleCompleteAndNext();
+          }, (durationSec + 0.5) * 1000);
+        })
+        .catch(() => {
+          clearFallback();
+          fallbackTimerRef.current = setTimeout(() => {
+            handleCompleteAndNext();
+          }, 7000);
+        });
+    }
+  }, [clearFallback, handleCompleteAndNext, stopProgress, updateProgress]);
+
   useEffect(() => {
     const el = videoRef.current;
-    const card = cardRef.current;
-    if (!el || !card) return;
+    if (!el) return;
 
     if (isActive) {
-      gsap.fromTo(
-        card,
-        { scale: 0.96 },
-        { scale: 1, duration: 0.55, ease: "power3.out" }
-      );
+      isEndingRef.current = false;
+      setIsScalingDown(false);
       el.defaultMuted = true;
       el.muted = true;
       el.playsInline = true;
-      el.currentTime = 0;
 
       const handleCanPlay = () => {
         if (videoRef.current && isActive) {
@@ -200,26 +229,26 @@ function ReelCard({
       return () => {
         el.removeEventListener("loadeddata", handleCanPlay);
         el.removeEventListener("canplay", handleCanPlay);
+        clearFallback();
         stopProgress();
       };
     } else {
-      gsap.to(card, {
-        scale: 1,
-        duration: 0.35,
-        ease: "power3.out",
-      });
+      setIsPlaying(false);
+      setIsScalingDown(false);
       el.pause();
       el.currentTime = 0;
+      clearFallback();
       stopProgress();
     }
 
-    return () => stopProgress();
-  }, [isActive, playActiveVideo, stopProgress]);
+    return () => {
+      clearFallback();
+      stopProgress();
+    };
+  }, [clearFallback, isActive, playActiveVideo, stopProgress]);
 
   const handleClick = () => {
-    // Ignore click if user was dragging the track
     if (didDragRef.current) return;
-
     if (isActive) {
       window.open(instagram, "_blank", "noopener,noreferrer");
     } else {
@@ -227,9 +256,10 @@ function ReelCard({
     }
   };
 
+  const isZoomed = isActive && !isScalingDown;
+
   return (
     <article
-      ref={cardRef}
       className={`insta-reel-card${isActive ? " is-active" : ""}`}
       onClick={handleClick}
       role="link"
@@ -244,19 +274,24 @@ function ReelCard({
       style={{
         width: `${CARD_W}px`,
         height: `${CARD_H}px`,
-        borderRadius: "4px",
+        borderRadius: "10px",
         overflow: "hidden",
-        background: "#000",
+        background: "#000000",
         cursor: "pointer",
         flexShrink: 0,
         position: "relative",
         transformOrigin: "center center",
-        border: "1px solid rgba(255,255,255,0.72)",
-        transition: "transform 0.45s ease, box-shadow 0.45s ease, border-color 0.3s ease",
-        boxShadow: isActive
-          ? "0 18px 42px rgba(0,0,0,0.36)"
-          : "0 8px 24px rgba(0,0,0,0.18)",
-        zIndex: isActive ? 2 : 1,
+        transform: isZoomed ? "scale(1.08)" : "scale(1)",
+        transition:
+          "transform 360ms cubic-bezier(0.25, 1, 0.5, 1), box-shadow 360ms ease, border-color 360ms ease, opacity 360ms ease",
+        border: isZoomed
+          ? "2px solid rgba(255,255,255,0.95)"
+          : "1px solid rgba(255,255,255,0.2)",
+        boxShadow: isZoomed
+          ? "0 20px 48px rgba(0,0,0,0.7), 0 0 32px rgba(255,255,255,0.18)"
+          : "0 6px 20px rgba(0,0,0,0.3)",
+        opacity: isZoomed ? 1 : 0.88,
+        zIndex: isZoomed ? 10 : 1,
       }}
     >
       <video
@@ -267,7 +302,7 @@ function ReelCard({
         playsInline
         preload="metadata"
         loop={false}
-        onEnded={onEnded}
+        onEnded={handleCompleteAndNext}
         className="w-full h-full object-cover"
         style={{
           width: "100%",
@@ -282,26 +317,32 @@ function ReelCard({
         style={{
           position: "absolute",
           inset: 0,
-          background: "linear-gradient(180deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.12) 55%, rgba(0,0,0,0.42) 100%)",
+          background:
+            "linear-gradient(180deg, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.48) 100%)",
           pointerEvents: "none",
         }}
       />
 
+      {/* Center play icon (fades out when playing) */}
       <div
         style={{
           position: "absolute",
           inset: "50% auto auto 50%",
-          transform: "translate(-50%, -50%)",
-          width: "44px",
-          height: "44px",
+          transform: `translate(-50%, -50%) scale(${
+            isPlaying && isZoomed ? 0.75 : 1
+          })`,
+          width: "48px",
+          height: "48px",
           borderRadius: "50%",
-          background: "rgba(255,255,255,0.16)",
-          border: "1px solid rgba(255,255,255,0.4)",
+          background: "rgba(0,0,0,0.45)",
+          border: "1.5px solid rgba(255,255,255,0.55)",
           backdropFilter: "blur(8px)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           pointerEvents: "none",
+          opacity: isPlaying && isZoomed ? 0 : 1,
+          transition: "opacity 0.3s ease, transform 0.3s ease",
         }}
       >
         <div
@@ -316,6 +357,7 @@ function ReelCard({
         />
       </div>
 
+      {/* Instagram badge in corner */}
       <div
         style={{
           position: "absolute",
@@ -329,29 +371,38 @@ function ReelCard({
           alignItems: "center",
           justifyContent: "center",
           color: "#FFFFFF",
-          background: "rgba(0,0,0,0.16)",
+          background: "rgba(0,0,0,0.2)",
           pointerEvents: "none",
         }}
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden>
-          <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="1.8" />
+          <rect
+            x="3"
+            y="3"
+            width="18"
+            height="18"
+            rx="5"
+            stroke="currentColor"
+            strokeWidth="1.8"
+          />
           <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.8" />
           <circle cx="17.2" cy="6.8" r="1.1" fill="currentColor" />
         </svg>
       </div>
 
+      {/* Sleek bottom progress bar */}
       <div
         style={{
           position: "absolute",
-          left: "16px",
-          right: "16px",
+          left: "14px",
+          right: "14px",
           bottom: "10px",
           height: "2px",
-          background: "rgba(255,255,255,0.18)",
+          background: "rgba(255,255,255,0.2)",
           borderRadius: "999px",
           overflow: "hidden",
           pointerEvents: "none",
-          opacity: isActive ? 1 : 0,
+          opacity: isZoomed ? 1 : 0,
           transition: "opacity 0.3s ease",
         }}
       >
@@ -386,229 +437,191 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
   const profileLink = data?.profileUrl || INSTAGRAM_PROFILE;
   const sectionTitle = data?.title || "Stay inspired with us on Instagram";
 
-  const [activeRenderedIndex, setActiveRenderedIndex] = useState(INITIAL_RENDERED_INDEX);
+  const numReels = reelsList.length;
+
+  // Duplicate reels to allow infinite looping forward and backward
+  const loopReels = useMemo(() => {
+    return Array.from({ length: LOOP_SETS }, (_, setIndex) =>
+      reelsList.map((reel, reelIndex) => ({
+        ...reel,
+        key: `${setIndex}-${reel.video}-${reelIndex}`,
+        reelIndex,
+      }))
+    ).flat();
+  }, [reelsList]);
+
+  // Responsive visible count: 4-5 cards on desktop
+  const [visibleCount, setVisibleCount] = useState(4);
+  const visibleCountRef = useRef(4);
+
+  // Start in middle set so user can scroll left or right seamlessly
+  const initialStartIndex = numReels * 2;
+  const [startIdx, setStartIdx] = useState(initialStartIndex);
+  const [activeCardIndex, setActiveCardIndex] = useState(initialStartIndex);
+
+  const startIdxRef = useRef(initialStartIndex);
+  const activeCardIndexRef = useRef(initialStartIndex);
   const sectionRef = useRef<HTMLElement>(null);
   const leftRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
-  const scrollingRef = useRef(false);
   const pausedRef = useRef(false);
-  const activeIndexRef = useRef(INITIAL_RENDERED_INDEX);
-  const autoTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isDraggingRef = useRef(false);
   const didDragRef = useRef(false);
   const dragStartXRef = useRef(0);
   const dragScrollLeftRef = useRef(0);
   const [isGrabbing, setIsGrabbing] = useState(false);
 
-  const syncActiveRenderedIndex = useCallback((index: number) => {
-    activeIndexRef.current = index;
-    setActiveRenderedIndex((prev) => (prev === index ? prev : index));
+  useEffect(() => {
+    startIdxRef.current = startIdx;
+  }, [startIdx]);
+
+  useEffect(() => {
+    activeCardIndexRef.current = activeCardIndex;
+  }, [activeCardIndex]);
+
+  useEffect(() => {
+    visibleCountRef.current = visibleCount;
+  }, [visibleCount]);
+
+  // Compute how many cards fit in the visible area (4 to 5 cards on desktop)
+  const updateVisibleCount = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const w = window.innerWidth;
+    let count = 4;
+    if (w >= 1600) count = 5;
+    else if (w >= 1024) count = 4;
+    else if (w >= 768) count = 3;
+    else if (w >= 520) count = 2;
+    else count = 1;
+
+    setVisibleCount(count);
+    visibleCountRef.current = count;
   }, []);
 
   useEffect(() => {
-    activeIndexRef.current = activeRenderedIndex;
-  }, [activeRenderedIndex]);
+    updateVisibleCount();
+    window.addEventListener("resize", updateVisibleCount);
+    return () => window.removeEventListener("resize", updateVisibleCount);
+  }, [updateVisibleCount]);
 
-  const normalizeRenderedIndex = useCallback((index: number) => {
-    const logicalIndex = ((index % REELS.length) + REELS.length) % REELS.length;
-    return INITIAL_RENDERED_INDEX + logicalIndex;
-  }, []);
-
-  const rebaseTrackPosition = useCallback(
-    (index: number) => {
-      const track = trackRef.current;
-      if (!track) return index;
-
-      const normalizedIndex = normalizeRenderedIndex(index);
-      if (normalizedIndex === index) return index;
-
-      const wraps = track.querySelectorAll<HTMLElement>(".insta-reel-wrap");
-      const target = wraps[normalizedIndex];
-      if (!target) return index;
-
-      gsap.killTweensOf(track);
-      track.scrollLeft = Math.max(0, target.offsetLeft - 8);
-      return normalizedIndex;
-    },
-    [normalizeRenderedIndex]
-  );
-
-  const scrollToIndex = useCallback(
-    (index: number, immediate = false) => {
+  // Smooth scroll to a target start index (set)
+  const scrollToSet = useCallback(
+    (targetStart: number) => {
       const track = trackRef.current;
       if (!track) return;
 
-      const wraps = track.querySelectorAll<HTMLElement>(".insta-reel-wrap");
-      const target = wraps[index];
-      if (!target) return;
+      const targetScroll = targetStart * (CARD_W + GAP);
 
-      scrollingRef.current = !immediate;
+      // Transition on scroll: sequential zoom+autoplay cycle restarts from the first visible card in the new set
+      startIdxRef.current = targetStart;
+      setStartIdx(targetStart);
+      activeCardIndexRef.current = targetStart;
+      setActiveCardIndex(targetStart);
 
-      // Align active card near the left of the track (first position feel)
-      const left = Math.max(0, target.offsetLeft - 8);
-
-      const finalize = () => {
-        const rebasedIndex = rebaseTrackPosition(index);
-        if (rebasedIndex !== index) {
-          syncActiveRenderedIndex(rebasedIndex);
-        }
-        scrollingRef.current = false;
-      };
-
-      if (immediate) {
-        gsap.killTweensOf(track);
-        track.scrollLeft = left;
-        finalize();
-        return;
-      }
-
+      gsap.killTweensOf(track);
       gsap.to(track, {
-        scrollLeft: left,
-        duration: 0.85,
-        ease: "power3.out",
-        onComplete: finalize,
+        scrollLeft: targetScroll,
+        duration: 0.65,
+        ease: "power2.out",
+        onComplete: () => {
+          // Transparent rebase if scrolled into outer loop sets
+          const len = reelsList.length;
+          if (targetStart >= len * 3) {
+            const rebased = targetStart - len;
+            startIdxRef.current = rebased;
+            setStartIdx(rebased);
+            activeCardIndexRef.current = rebased;
+            setActiveCardIndex(rebased);
+            track.scrollLeft = rebased * (CARD_W + GAP);
+          } else if (targetStart < len) {
+            const rebased = targetStart + len;
+            startIdxRef.current = rebased;
+            setStartIdx(rebased);
+            activeCardIndexRef.current = rebased;
+            setActiveCardIndex(rebased);
+            track.scrollLeft = rebased * (CARD_W + GAP);
+          }
+        },
       });
     },
-    [rebaseTrackPosition, syncActiveRenderedIndex]
+    [reelsList.length]
   );
 
-  const goNext = useCallback(() => {
+  // Navigation Arrows: scroll to next/previous set of cards
+  const handleNextSet = useCallback(() => {
+    const nextStart = startIdxRef.current + visibleCountRef.current;
+    scrollToSet(nextStart);
+  }, [scrollToSet]);
+
+  const handlePrevSet = useCallback(() => {
+    const prevStart = startIdxRef.current - visibleCountRef.current;
+    scrollToSet(prevStart);
+  }, [scrollToSet]);
+
+  // In-place sequential zoom + autoplay cycle:
+  // Cards stay fixed in their positions — no horizontal movement or shifting during the effect.
+  // When a card finishes playing and scales down, advance to next card in the visible set.
+  const handleCardEnded = useCallback((endedIndex: number) => {
+    if (endedIndex !== activeCardIndexRef.current) return;
     if (pausedRef.current) return;
-    const next = activeIndexRef.current + 1;
-    syncActiveRenderedIndex(next);
-    scrollToIndex(next);
-  }, [scrollToIndex, syncActiveRenderedIndex]);
 
-  const goPrev = useCallback(() => {
-    const prev = activeIndexRef.current - 1;
-    syncActiveRenderedIndex(prev);
-    scrollToIndex(prev);
-  }, [scrollToIndex, syncActiveRenderedIndex]);
+    const currentStart = startIdxRef.current;
+    const count = visibleCountRef.current;
+    const currentOffset = endedIndex - currentStart;
 
-  /* ── Auto-scroll every 5s while section is in view ── */
-  const startAutoScroll = useCallback(() => {
-    if (autoTimerRef.current) clearInterval(autoTimerRef.current);
-    autoTimerRef.current = setInterval(() => {
-      goNext();
-    }, 5000);
-  }, [goNext]);
+    // Advance to next card in visible set (loops back to 0 within the visible set)
+    const nextOffset = (currentOffset + 1) % count;
+    const nextIndex = currentStart + nextOffset;
 
-  const stopAutoScroll = useCallback(() => {
-    if (autoTimerRef.current) {
-      clearInterval(autoTimerRef.current);
-      autoTimerRef.current = null;
-    }
+    activeCardIndexRef.current = nextIndex;
+    setActiveCardIndex(nextIndex);
   }, []);
 
-  useEffect(() => {
-    const section = sectionRef.current;
-    if (!section) return;
+  // Card click: if already active -> open instagram, if inactive -> zoom & play it in place
+  const handleCardSelect = useCallback(
+    (clickedIndex: number, instagramUrl: string) => {
+      if (didDragRef.current) return;
 
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          pausedRef.current = false;
-          startAutoScroll();
-        } else {
-          pausedRef.current = true;
-          stopAutoScroll();
-        }
-      },
-      { threshold: 0.35 }
-    );
+      if (activeCardIndexRef.current === clickedIndex) {
+        window.open(instagramUrl, "_blank", "noopener,noreferrer");
+      } else {
+        activeCardIndexRef.current = clickedIndex;
+        setActiveCardIndex(clickedIndex);
+      }
+    },
+    []
+  );
 
-    io.observe(section);
-    return () => {
-      io.disconnect();
-      stopAutoScroll();
-    };
-  }, [startAutoScroll, stopAutoScroll]);
-
-  /* Pause auto-scroll on hover / touch; resume on leave */
-  useEffect(() => {
-    const track = trackRef.current;
-    if (!track) return;
-
-    const pause = () => {
-      pausedRef.current = true;
-      stopAutoScroll();
-    };
-    const resume = () => {
-      pausedRef.current = false;
-      startAutoScroll();
-    };
-
-    track.addEventListener("mouseenter", pause);
-    track.addEventListener("mouseleave", resume);
-    track.addEventListener("touchstart", pause, { passive: true });
-    track.addEventListener("touchend", resume);
-
-    return () => {
-      track.removeEventListener("mouseenter", pause);
-      track.removeEventListener("mouseleave", resume);
-      track.removeEventListener("touchstart", pause);
-      track.removeEventListener("touchend", resume);
-    };
-  }, [startAutoScroll, stopAutoScroll]);
-
-  /* Detect which card is first while user manually scrolls */
-  useEffect(() => {
-    const track = trackRef.current;
-    if (!track) return;
-
-    const onScroll = () => {
-      if (scrollingRef.current) return;
-
-      const wraps = track.querySelectorAll<HTMLElement>(".insta-reel-wrap");
-      const focusX = track.scrollLeft + 40;
-
-      let bestIdx = 0;
-      let bestDist = Infinity;
-
-      wraps.forEach((wrap, i) => {
-        const dist = Math.abs(wrap.offsetLeft - focusX);
-        if (dist < bestDist) {
-          bestDist = dist;
-          bestIdx = i;
-        }
-      });
-
-      const rebasedIndex = isDraggingRef.current ? bestIdx : rebaseTrackPosition(bestIdx);
-      syncActiveRenderedIndex(rebasedIndex);
-    };
-
-    track.addEventListener("scroll", onScroll, { passive: true });
-    return () => track.removeEventListener("scroll", onScroll);
-  }, [rebaseTrackPosition, syncActiveRenderedIndex]);
-
+  // Initialize track scroll position on mount
   useEffect(() => {
     const track = trackRef.current;
     if (!track) return;
 
     const init = window.requestAnimationFrame(() => {
-      syncActiveRenderedIndex(INITIAL_RENDERED_INDEX);
-      scrollToIndex(INITIAL_RENDERED_INDEX, true);
+      track.scrollLeft = initialStartIndex * (CARD_W + GAP);
+      setStartIdx(initialStartIndex);
+      setActiveCardIndex(initialStartIndex);
     });
 
     return () => window.cancelAnimationFrame(init);
-  }, [scrollToIndex, syncActiveRenderedIndex]);
+  }, [initialStartIndex]);
 
-  /* When section enters viewport — play first card zoomed */
+  // Entrance animations
   useEffect(() => {
     if (!sectionRef.current || !leftRef.current || !trackRef.current) return;
 
     const ctx = gsap.context(() => {
       gsap.fromTo(
         leftRef.current,
-        { x: -80, opacity: 0 },
+        { x: -50, opacity: 0 },
         {
           x: 0,
           opacity: 1,
-          duration: 1.1,
+          duration: 1.0,
           ease: "power3.out",
           scrollTrigger: {
             trigger: sectionRef.current,
-            start: "top 75%",
+            start: "top 80%",
             toggleActions: "play none none reverse",
           },
         }
@@ -618,22 +631,17 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
       if (cards && cards.length > 0) {
         gsap.fromTo(
           cards,
-          { x: 120, opacity: 0 },
+          { opacity: 0, y: 30 },
           {
-            x: 0,
             opacity: 1,
-            duration: 1.1,
-            stagger: 0.15,
+            y: 0,
+            duration: 0.9,
+            stagger: 0.08,
             ease: "power3.out",
-            clearProps: "transform",
             scrollTrigger: {
               trigger: sectionRef.current,
-              start: "top 75%",
+              start: "top 80%",
               toggleActions: "play none none reverse",
-              onEnter: () => {
-                syncActiveRenderedIndex(INITIAL_RENDERED_INDEX);
-                scrollToIndex(INITIAL_RENDERED_INDEX);
-              },
             },
           }
         );
@@ -641,44 +649,30 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
     }, sectionRef);
 
     return () => ctx.revert();
-  }, [scrollToIndex, syncActiveRenderedIndex]);
+  }, []);
 
-  /* Reset auto-scroll timer when user picks a card / video ends early */
-  const handleSelect = useCallback(
-    (i: number) => {
-      syncActiveRenderedIndex(i);
-      scrollToIndex(i);
-      stopAutoScroll();
-      startAutoScroll();
-    },
-    [scrollToIndex, startAutoScroll, stopAutoScroll, syncActiveRenderedIndex]
-  );
+  // Pause when section is scrolled out of viewport
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
 
-  const handleEnded = useCallback(() => {
-    goNext();
-    stopAutoScroll();
-    startAutoScroll();
-  }, [goNext, startAutoScroll, stopAutoScroll]);
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        pausedRef.current = !entry.isIntersecting;
+      },
+      { threshold: 0.3 }
+    );
 
-  const handleArrowNavigation = useCallback(
-    (direction: "prev" | "next") => {
-      stopAutoScroll();
-      if (direction === "prev") {
-        goPrev();
-      } else {
-        const next = activeIndexRef.current + 1;
-        syncActiveRenderedIndex(next);
-        scrollToIndex(next);
-      }
-      startAutoScroll();
-    },
-    [goPrev, scrollToIndex, startAutoScroll, stopAutoScroll, syncActiveRenderedIndex]
-  );
+    io.observe(section);
+    return () => io.disconnect();
+  }, []);
 
-  /* ── Mouse wheel → horizontal scroll (non-passive for preventDefault) ── */
+  // Wheel horizontal scroll
   useEffect(() => {
     const track = trackRef.current;
     if (!track) return;
+
+    let wheelTimer: ReturnType<typeof setTimeout> | null = null;
 
     const onWheel = (e: WheelEvent) => {
       const delta =
@@ -687,15 +681,23 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
 
       e.preventDefault();
       gsap.killTweensOf(track);
-      scrollingRef.current = false;
       track.scrollLeft += delta;
+
+      if (wheelTimer) clearTimeout(wheelTimer);
+      wheelTimer = setTimeout(() => {
+        const nearest = Math.round(track.scrollLeft / (CARD_W + GAP));
+        scrollToSet(nearest);
+      }, 150);
     };
 
     track.addEventListener("wheel", onWheel, { passive: false });
-    return () => track.removeEventListener("wheel", onWheel);
-  }, []);
+    return () => {
+      track.removeEventListener("wheel", onWheel);
+      if (wheelTimer) clearTimeout(wheelTimer);
+    };
+  }, [scrollToSet]);
 
-  /* ── Mouse drag scroll ── */
+  // Drag scroll
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     const track = trackRef.current;
     if (!track) return;
@@ -706,7 +708,6 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
     dragScrollLeftRef.current = track.scrollLeft;
     setIsGrabbing(true);
     gsap.killTweensOf(track);
-    scrollingRef.current = false;
   }, []);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
@@ -724,40 +725,22 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
     isDraggingRef.current = false;
     setIsGrabbing(false);
 
-    // Snap to nearest card after drag
     const track = trackRef.current;
     if (track && didDragRef.current) {
-      const wraps = track.querySelectorAll<HTMLElement>(".insta-reel-wrap");
-      const focusX = track.scrollLeft + 40;
-      let bestIdx = 0;
-      let bestDist = Infinity;
-
-      wraps.forEach((wrap, i) => {
-        const dist = Math.abs(wrap.offsetLeft - focusX);
-        if (dist < bestDist) {
-          bestDist = dist;
-          bestIdx = i;
-        }
-      });
-
-      const rebasedIndex = rebaseTrackPosition(bestIdx);
-      syncActiveRenderedIndex(rebasedIndex);
-      scrollToIndex(rebasedIndex);
+      const nearest = Math.round(track.scrollLeft / (CARD_W + GAP));
+      scrollToSet(nearest);
     }
 
-    // Allow clicks again after drag settles
     window.setTimeout(() => {
       didDragRef.current = false;
     }, 50);
-  }, [rebaseTrackPosition, scrollToIndex, syncActiveRenderedIndex]);
+  }, [scrollToSet]);
 
   const handleMouseLeaveTrack = useCallback(() => {
     if (isDraggingRef.current) {
       handleMouseUp();
     }
-    pausedRef.current = false;
-    startAutoScroll();
-  }, [handleMouseUp, startAutoScroll]);
+  }, [handleMouseUp]);
 
   return (
     <section
@@ -766,12 +749,13 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
       className="insta-reels-section"
       style={{
         position: "relative",
-        width: "100vw",
+        width: "100%",
+        maxWidth: "100vw",
         minHeight: "auto",
         background: "#000000",
         display: "flex",
         alignItems: "center",
-        padding: "110px 0 62px 54px",
+        padding: "70px 0 70px 54px",
         boxSizing: "border-box",
         overflow: "hidden",
       }}
@@ -787,7 +771,8 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
           color: #000000 !important;
         }
         .insta-arrow-btn:hover {
-          transform: translateY(-50%) scale(1.05);
+          transform: translateY(-50%) scale(1.08) !important;
+          background: #FFFFFF !important;
         }
         .insta-reels-track {
           scrollbar-width: none;
@@ -796,47 +781,39 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
         .insta-reels-track::-webkit-scrollbar {
           display: none;
         }
-        @media (max-width: 1100px) {
+        @media (max-width: 1200px) {
           .insta-reels-section {
-            padding: 48px 0 48px 28px !important;
+            padding: 56px 0 56px 32px !important;
           }
           .insta-reels-left {
             width: 280px !important;
-            margin-right: 28px !important;
+            margin-right: 32px !important;
           }
           .insta-reels-heading {
-            font-size: 42px !important;
+            font-size: 40px !important;
           }
         }
-        @media (max-width: 800px) {
+        @media (max-width: 860px) {
           .insta-reels-section {
             flex-direction: column !important;
             align-items: flex-start !important;
             min-height: auto !important;
-            padding: 44px 0 44px !important;
+            padding: 44px 20px !important;
           }
           .insta-reels-left {
             width: 100% !important;
             max-width: 100% !important;
             margin-right: 0 !important;
-            padding: 0 24px !important;
+            padding: 0 !important;
             margin-bottom: 28px !important;
           }
           .insta-reels-heading {
             font-size: 32px !important;
-            max-width: 280px !important;
+            max-width: 320px !important;
           }
           .insta-reels-stage {
             width: 100% !important;
-          }
-          .insta-reels-track {
-            padding: 0 24px 8px !important;
-            gap: 8px !important;
-          }
-          .insta-reel-card {
-            width: 220px !important;
-            height: 360px !important;
-            border-radius: 4px !important;
+            max-width: 100% !important;
           }
           .insta-arrow-btn {
             display: none !important;
@@ -844,13 +821,14 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
         }
       `}</style>
 
+      {/* Left Column: Heading + Follow + Socials */}
       <div
         ref={leftRef}
         className="insta-reels-left"
         style={{
-          width: "360px",
+          width: "320px",
           flexShrink: 0,
-          marginRight: "48px",
+          marginRight: "40px",
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
@@ -862,21 +840,21 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
           style={{
             fontFamily: "'Manrope', Helvetica, Arial, sans-serif",
             fontWeight: 400,
-            fontSize: "56px",
-            lineHeight: 1.08,
+            fontSize: "48px",
+            lineHeight: 1.1,
             letterSpacing: "-0.03em",
             color: "#FFFFFF",
-            margin: "0 0 30px",
-            maxWidth: "340px",
+            margin: "0 0 28px",
+            maxWidth: "320px",
             WebkitFontSmoothing: "antialiased",
             MozOsxFontSmoothing: "grayscale",
           }}
         >
-          Stay inspired with us on Instagram
+          {sectionTitle}
         </h2>
 
         <a
-          href={INSTAGRAM_PROFILE}
+          href={profileLink}
           target="_blank"
           rel="noopener noreferrer"
           className="insta-follow-btn"
@@ -900,7 +878,15 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
           }}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="1.6" />
+            <rect
+              x="3"
+              y="3"
+              width="18"
+              height="18"
+              rx="5"
+              stroke="currentColor"
+              strokeWidth="1.6"
+            />
             <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.6" />
             <circle cx="17.2" cy="6.8" r="1.1" fill="currentColor" />
           </svg>
@@ -912,7 +898,7 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
             display: "flex",
             alignItems: "center",
             gap: "14px",
-            marginTop: "50px",
+            marginTop: "44px",
           }}
           role="group"
           aria-label="Social media links"
@@ -945,111 +931,144 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
         </div>
       </div>
 
+      {/* Right Column: Carousel Stage */}
       <div
         className="insta-reels-stage"
         style={{
           position: "relative",
           flex: 1,
           minWidth: 0,
-          paddingRight: "16px",
+          display: "flex",
+          alignItems: "center",
         }}
       >
+        {/* Left Navigation Arrow */}
         <button
           type="button"
-          aria-label="Previous reel"
+          aria-label="Previous set of reels"
           className="insta-arrow-btn"
-          onClick={() => handleArrowNavigation("prev")}
+          onClick={handlePrevSet}
           style={{
             position: "absolute",
-            left: "-18px",
+            left: "-22px",
             top: "50%",
             transform: "translateY(-50%)",
-            width: "40px",
-            height: "40px",
+            width: "44px",
+            height: "44px",
             borderRadius: "50%",
-            border: "1px solid rgba(0,0,0,0.08)",
-            background: "#F2F2F2",
-            color: "#4A4A4A",
+            border: "1px solid rgba(255,255,255,0.25)",
+            background: "#FFFFFF",
+            color: "#111111",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            zIndex: 5,
-            boxShadow: "0 8px 20px rgba(0,0,0,0.24)",
+            zIndex: 25,
+            boxShadow: "0 10px 25px rgba(0,0,0,0.5)",
             cursor: "pointer",
-            transition: "transform 0.2s ease",
+            transition: "transform 0.2s ease, background 0.2s ease",
           }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path d="M14.5 6.5L9 12l5.5 5.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path
+              d="M15 18l-6-6 6-6"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </button>
 
+        {/* Viewport wrapper: Displays 4-5 cards without cutting off scale(1.08) vertically */}
         <div
-          ref={trackRef}
-          className="insta-reels-track"
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseLeaveTrack}
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: `${GAP}px`,
-            overflowX: "auto",
-            overflowY: "hidden",
-            minWidth: 0,
-            padding: "0 34px 0 0",
-            WebkitOverflowScrolling: "touch",
-            scrollSnapType: "x mandatory",
-            cursor: isGrabbing ? "grabbing" : "grab",
-            userSelect: "none",
+            width: `${visibleCount * CARD_W + (visibleCount - 1) * GAP}px`,
+            maxWidth: "100%",
+            overflow: "hidden",
+            padding: "24px 0",
+            margin: "-24px 0",
           }}
         >
-          {LOOP_REELS.map((reel, i) => (
-            <div
-              key={reel.key}
-              className="insta-reel-wrap"
-              style={{ scrollSnapAlign: "start" }}
-            >
-              <ReelCard
-                video={reel.video}
-                instagram={reel.instagram}
-                isActive={activeRenderedIndex === i}
-                onEnded={handleEnded}
-                onSelect={() => handleSelect(i)}
-                didDragRef={didDragRef}
-              />
-            </div>
-          ))}
+          <div
+            ref={trackRef}
+            className="insta-reels-track"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseLeaveTrack}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: `${GAP}px`,
+              overflowX: "scroll",
+              overflowY: "visible",
+              scrollbarWidth: "none",
+              cursor: isGrabbing ? "grabbing" : "grab",
+              userSelect: "none",
+              padding: "20px 0",
+              margin: "-20px 0",
+            }}
+          >
+            {loopReels.map((reel, i) => (
+              <div
+                key={reel.key}
+                className="insta-reel-wrap"
+                style={{
+                  width: `${CARD_W}px`,
+                  height: `${CARD_H}px`,
+                  flexShrink: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <ReelCard
+                  video={reel.video}
+                  instagram={reel.instagram}
+                  isActive={activeCardIndex === i}
+                  onEnded={() => handleCardEnded(i)}
+                  onSelect={() => handleCardSelect(i, reel.instagram)}
+                  didDragRef={didDragRef}
+                />
+              </div>
+            ))}
+          </div>
         </div>
 
+        {/* Right Navigation Arrow */}
         <button
           type="button"
-          aria-label="Next reel"
+          aria-label="Next set of reels"
           className="insta-arrow-btn"
-          onClick={() => handleArrowNavigation("next")}
+          onClick={handleNextSet}
           style={{
             position: "absolute",
-            right: "2px",
+            right: "-22px",
             top: "50%",
             transform: "translateY(-50%)",
-            width: "40px",
-            height: "40px",
+            width: "44px",
+            height: "44px",
             borderRadius: "50%",
-            border: "1px solid rgba(0,0,0,0.08)",
-            background: "#F2F2F2",
-            color: "#4A4A4A",
+            border: "1px solid rgba(255,255,255,0.25)",
+            background: "#FFFFFF",
+            color: "#111111",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            zIndex: 5,
-            boxShadow: "0 8px 20px rgba(0,0,0,0.24)",
+            zIndex: 25,
+            boxShadow: "0 10px 25px rgba(0,0,0,0.5)",
             cursor: "pointer",
-            transition: "transform 0.2s ease",
+            transition: "transform 0.2s ease, background 0.2s ease",
           }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path d="M9.5 6.5L15 12l-5.5 5.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path
+              d="M9 18l6-6-6-6"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </button>
       </div>

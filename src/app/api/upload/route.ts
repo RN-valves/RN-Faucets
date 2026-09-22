@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { uploadToR2, deleteFromR2 } from "@/lib/r2";
+import { validateMediaUpload, sanitizeStorageKey, validateAdminAuth } from "@/lib/security";
+import { apiSuccess, apiError, handleApiError } from "@/lib/api-response";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -8,37 +10,32 @@ export async function POST(req: Request) {
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
-    const key = formData.get("key") as string | null;
+    const rawKey = formData.get("key") as string | null;
 
     if (!file) {
-      return NextResponse.json(
-        { success: false, error: "No file was received in upload request" },
-        { status: 400 }
-      );
+      return apiError("No file was received in upload request.", { status: 400 });
     }
+    if (!rawKey) {
+      return apiError("Media storage key is missing.", { status: 400 });
+    }
+
+    const key = sanitizeStorageKey(rawKey);
     if (!key) {
-      return NextResponse.json(
-        { success: false, error: "Media storage key is missing" },
-        { status: 400 }
-      );
+      return apiError("Invalid storage key format.", { status: 400 });
     }
 
-    // Allow high-res videos up to 500MB
-    if (file.size > 500 * 1024 * 1024) {
-      const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-      return NextResponse.json(
-        { success: false, error: `File size (${sizeMB} MB) exceeds the 500MB limit` },
-        { status: 400 }
-      );
+    // Strict media type & file extension validation
+    const validation = validateMediaUpload(file.name, file.type, file.size);
+    if (!validation.valid) {
+      return apiError(validation.error || "File validation failed.", { status: 400 });
     }
 
+    const isVideo = validation.mediaType === "video";
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Detect MIME type and extension accurately
+    // Detect accurate MIME type
     const ext = file.name.split(".").pop()?.toLowerCase() || "";
-    const isVideo = file.type?.startsWith("video/") || ["mp4", "webm", "mov", "m4v", "mkv"].includes(ext);
-
     let contentType = file.type;
     if (!contentType || contentType === "application/octet-stream") {
       if (ext === "mp4" || ext === "m4v") contentType = "video/mp4";
@@ -51,44 +48,55 @@ export async function POST(req: Request) {
       else contentType = isVideo ? "video/mp4" : "image/webp";
     }
 
-    // Sanitize key extension based on media type
+    if (ext === "svg" || file.type?.includes("svg")) {
+      contentType = "image/svg+xml";
+    }
+
+    // Sanitize extension matching
     let finalKey = key;
     if (isVideo) {
       const videoExt = ["mp4", "webm", "mov"].includes(ext) ? ext : "mp4";
-      finalKey = finalKey.replace(/\.(webp|jpg|jpeg|png|gif)$/i, `.${videoExt}`);
+      finalKey = finalKey.replace(/\.(webp|jpg|jpeg|png|gif|svg)$/i, `.${videoExt}`);
       if (!/\.[a-zA-Z0-9]+$/.test(finalKey)) {
         finalKey = `${finalKey}.${videoExt}`;
+      }
+    } else if (ext === "svg" || file.type?.includes("svg")) {
+      finalKey = finalKey.replace(/\.(webp|jpg|jpeg|png|gif|mp4|webm|mov|m4v)$/i, ".svg");
+      if (!/\.svg$/i.test(finalKey)) {
+        finalKey = `${finalKey}.svg`;
       }
     }
 
     const result = await uploadToR2(finalKey, buffer, contentType);
 
-    return NextResponse.json({
-      success: true,
+    return apiSuccess({
       key: result.key,
       url: result.publicUrl,
       mediaType: isVideo ? "video" : "image",
     });
   } catch (error: any) {
-    console.error("POST /api/upload error:", error);
-    return NextResponse.json(
-      { success: false, error: error.message || "Failed to upload to Cloudflare R2" },
-      { status: 500 }
-    );
+    return handleApiError(error, "POST /api/upload");
   }
 }
 
 export async function DELETE(req: Request) {
   try {
-    const { key } = await req.json();
-    if (!key) {
-      return NextResponse.json({ success: false, error: "Key required" }, { status: 400 });
+    // Require admin authorization to delete media assets
+    const isAdmin = validateAdminAuth(req);
+    if (!isAdmin) {
+      return apiError("Unauthorized: Only administrators can delete media assets.", { status: 403 });
     }
 
+    const body = await req.json().catch(() => ({}));
+    const rawKey = body.key;
+    if (!rawKey) {
+      return apiError("Media storage key is required.", { status: 400 });
+    }
+
+    const key = sanitizeStorageKey(rawKey);
     await deleteFromR2(key);
-    return NextResponse.json({ success: true, message: "R2 object deleted" });
+    return apiSuccess({ message: "Media object deleted successfully." });
   } catch (error: any) {
-    console.error("DELETE /api/upload error:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return handleApiError(error, "DELETE /api/upload");
   }
 }

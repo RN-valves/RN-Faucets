@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Building2, ChevronDown, ChevronRight } from "lucide-react";
 import Header from "@/components/Header";
 import FooterSection from "@/components/FooterSection";
 
 import { setCustomerSession } from "@/utils/customerAuth";
 
-const LOGIN_BG = "/api/media/website/catalogue/products/default/image.webp";
+const LOGIN_BG = "/uploads/auth/login-bg.jpg";
 
 export default function RetailUserRegistrationPage() {
   const router = useRouter();
@@ -17,11 +18,13 @@ export default function RetailUserRegistrationPage() {
   const [email, setEmail] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName || mobile.length < 10 || !email || !agreed) return;
 
+    setErrorMsg("");
     setLoading(true);
     try {
       const res = await fetch("/api/auth/verify-otp", {
@@ -41,23 +44,13 @@ export default function RetailUserRegistrationPage() {
         if (typeof window !== "undefined") {
           localStorage.setItem("rn_user_session", JSON.stringify(data.user));
         }
-        const cleanP = String(mobile).replace(/\D/g, "").slice(-10);
-        if (cleanP === "8737029643" || data.user?.userType === "Admin" || data.user?.role === "Super Admin") {
-          localStorage.setItem(
-            "rn_admin_session",
-            JSON.stringify({
-              email: data.user?.email || "admin.aditya@rnvalves.com",
-              name: data.user?.name || "Super Admin (Aditya)",
-              role: "Super Admin",
-            })
-          );
-          window.location.href = "/admin/dashboard";
-        } else {
-          router.push("/account/orders");
-        }
+        router.push("/account/orders");
+      } else {
+        setErrorMsg(data.error || "Registration failed. Please try again.");
       }
     } catch (err) {
       console.error(err);
+      setErrorMsg("Network error. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -263,23 +256,41 @@ export default function RetailUserRegistrationPage() {
                   />
                   <span>
                     I have gone through the{" "}
-                    <button
-                      type="button"
+                    <Link
+                      href="/privacy-policy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
                       style={{
-                        border: "none",
-                        background: "transparent",
-                        padding: 0,
-                        color: "#1d1d1d",
+                        color: "#00AEEF",
                         textDecoration: "underline",
                         cursor: "pointer",
                         fontSize: "12.5px",
+                        fontWeight: 600,
                       }}
                     >
                       Privacy Policy
-                    </button>{" "}
+                    </Link>{" "}
                     and give my consent.
                   </span>
                 </label>
+
+                {errorMsg && (
+                  <div
+                    style={{
+                      marginTop: "16px",
+                      padding: "10px 14px",
+                      background: "#fff1f0",
+                      border: "1px solid #ffa39e",
+                      borderRadius: "6px",
+                      color: "#cf1322",
+                      fontSize: "13px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {errorMsg}
+                  </div>
+                )}
 
                 <button
                   type="button"

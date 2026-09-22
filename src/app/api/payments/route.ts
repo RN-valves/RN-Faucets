@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
+import { escapeRegex } from "@/lib/security";
 import mongoose from "mongoose";
 
 export async function GET(request: Request) {
@@ -22,13 +23,14 @@ export async function GET(request: Request) {
       query.status = status;
     }
     if (q) {
+      const safeQ = escapeRegex(q);
       query.$or = [
-        { customerName: { $regex: q, $options: "i" } },
-        { mobile: { $regex: q, $options: "i" } },
-        { email: { $regex: q, $options: "i" } },
-        { city: { $regex: q, $options: "i" } },
-        { state: { $regex: q, $options: "i" } },
-        { payLinkId: { $regex: q, $options: "i" } },
+        { customerName: { $regex: safeQ, $options: "i" } },
+        { mobile: { $regex: safeQ, $options: "i" } },
+        { email: { $regex: safeQ, $options: "i" } },
+        { city: { $regex: safeQ, $options: "i" } },
+        { state: { $regex: safeQ, $options: "i" } },
+        { payLinkId: { $regex: safeQ, $options: "i" } },
       ];
       if (!isNaN(Number(q))) {
         query.$or.push({ id: Number(q) }, { orderId: Number(q) });

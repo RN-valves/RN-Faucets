@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
+import { escapeRegex } from "@/lib/security";
 import User from "@/models/User";
 import Order from "@/models/Order";
 import RemarkLog from "@/models/RemarkLog";
@@ -14,11 +15,11 @@ export async function GET(
 
     let user: any = null;
     if (id.match(/^[0-9a-fA-F]{24}$/)) {
-      user = await User.findById(id).lean();
+      user = await User.findById(id).select("-password -local_password").lean();
     } else if (!isNaN(Number(id))) {
-      user = await User.findOne({ legacyId: Number(id) }).lean();
+      user = await User.findOne({ legacyId: Number(id) }).select("-password -local_password").lean();
     } else {
-      user = await User.findOne({ $or: [{ userCode: id }, { uuid: id }] }).lean();
+      user = await User.findOne({ $or: [{ userCode: id }, { uuid: id }] }).select("-password -local_password").lean();
     }
 
     if (!user) {
@@ -27,10 +28,11 @@ export async function GET(
 
     // Fetch related orders
     const cleanMobile = (user.mobile || "").replace(/[^\d]/g, "").slice(-10);
+    const safeMobile = escapeRegex(cleanMobile);
     const orderQuery: any = {
       $or: [
         ...(user.legacyId ? [{ userId: user.legacyId }] : []),
-        ...(cleanMobile ? [{ customerPhone: { $regex: cleanMobile } }] : []),
+        ...(safeMobile ? [{ customerPhone: { $regex: safeMobile } }] : []),
       ],
     };
     const orders = await Order.find(orderQuery).sort({ createdAt: -1 }).lean();
@@ -39,7 +41,7 @@ export async function GET(
     const remarkQuery: any = {
       $or: [
         ...(user.legacyId ? [{ logableId: user.legacyId }] : []),
-        ...(cleanMobile ? [{ customerMobile: { $regex: cleanMobile } }] : []),
+        ...(safeMobile ? [{ customerMobile: { $regex: safeMobile } }] : []),
       ],
     };
     const remarkLogs = await RemarkLog.find(remarkQuery).sort({ createdAt: -1 }).lean();
@@ -68,13 +70,16 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
+    // Prevent overwriting sensitive fields via customer profile update
+    const { password, local_password, role, isAdmin, isSuperAdmin, ...safeBody } = body;
+
     let updatedUser: any = null;
     if (id.match(/^[0-9a-fA-F]{24}$/)) {
-      updatedUser = await User.findByIdAndUpdate(id, body, { new: true }).lean();
+      updatedUser = await User.findByIdAndUpdate(id, safeBody, { new: true }).select("-password -local_password").lean();
     } else if (!isNaN(Number(id))) {
-      updatedUser = await User.findOneAndUpdate({ legacyId: Number(id) }, body, { new: true }).lean();
+      updatedUser = await User.findOneAndUpdate({ legacyId: Number(id) }, safeBody, { new: true }).select("-password -local_password").lean();
     } else {
-      updatedUser = await User.findOneAndUpdate({ $or: [{ userCode: id }, { uuid: id }] }, body, { new: true }).lean();
+      updatedUser = await User.findOneAndUpdate({ $or: [{ userCode: id }, { uuid: id }] }, safeBody, { new: true }).select("-password -local_password").lean();
     }
 
     if (!updatedUser) {

@@ -173,8 +173,9 @@ export const adminNavigationConfig: SidebarNavItem[] = [
     icon: Settings,
     children: [
       { id: "website_home", label: "Website Home Setting", href: "/admin/settings/home" },
-      { id: "pages", label: "Pages", href: "/admin/settings?tab=pages" },
+      { id: "website_photos", label: "Website Photos & Assets", href: "/admin/settings/photos" },
       { id: "about_us", label: "About Us", href: "/admin/settings/about" },
+      { id: "pages", label: "Pages", href: "/admin/settings?tab=pages" },
       { id: "faqs", label: "FAQs", href: "/admin/settings?tab=faqs" },
     ],
   },

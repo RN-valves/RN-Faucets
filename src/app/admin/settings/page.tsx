@@ -68,14 +68,27 @@ export default function AdminSettingsPage() {
           fontFamily: "'Manrope', system-ui, sans-serif",
         }}
       >
-        <div style={{ background: isDark ? "#1F6FEB1A" : "#E0F2FE", border: "1px solid #0077B6", borderRadius: "10px", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ background: isDark ? "#1F6FEB1A" : "#E0F2FE", border: "1px solid #0077B6", borderRadius: "10px", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
           <div>
-            <div style={{ fontWeight: 800, color: "#0077B6", fontSize: "15px" }}>Website Home Setting Module Available</div>
+            <div style={{ fontWeight: 800, color: "#0077B6", fontSize: "15px" }}>Website Photos & Assets Manager</div>
+            <div style={{ fontSize: "13px", color: textMuted, marginTop: "2px" }}>Update customer login banners, dealer registration photos, logos, and fallback placeholders.</div>
+          </div>
+          <button
+            onClick={() => router.push("/admin/settings/photos")}
+            style={{ padding: "8px 18px", borderRadius: "8px", border: "none", background: "#0077B6", color: "#FFFFFF", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}
+          >
+            Manage Photos & Assets →
+          </button>
+        </div>
+
+        <div style={{ background: isDark ? "rgba(255,255,255,0.03)" : "#F9FAFB", border: `1px solid ${border}`, borderRadius: "10px", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+          <div>
+            <div style={{ fontWeight: 800, color: textMain, fontSize: "15px" }}>Website Home Setting Module</div>
             <div style={{ fontSize: "13px", color: textMuted, marginTop: "2px" }}>Manage Hero carousel, space showcase, product categories, best sellers, and footer settings.</div>
           </div>
           <button
             onClick={() => router.push("/admin/settings/home")}
-            style={{ padding: "8px 18px", borderRadius: "8px", border: "none", background: "#0077B6", color: "#FFFFFF", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}
+            style={{ padding: "8px 18px", borderRadius: "8px", border: `1px solid ${border}`, background: isDark ? "#21262D" : "#FFFFFF", color: textMain, fontWeight: 700, cursor: "pointer", fontSize: "13px" }}
           >
             Open Home Setting →
           </button>

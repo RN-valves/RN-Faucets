@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { r2Client, R2_BUCKET } from "@/lib/r2";
+import { sanitizeStorageKey } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,14 @@ export async function GET(
 ) {
   try {
     const { key: keyParts } = await params;
-    const key = keyParts.join("/");
+
+    // Security check: reject if any path segment contains traversal
+    if (!keyParts || !Array.isArray(keyParts) || keyParts.some((p) => p.includes("..") || p.includes("\0"))) {
+      return new NextResponse("Invalid Media Key", { status: 400 });
+    }
+
+    const rawKey = keyParts.join("/");
+    const key = sanitizeStorageKey(rawKey);
 
     if (!key) {
       return new NextResponse("Media Key is required", { status: 400 });
@@ -30,24 +38,35 @@ export async function GET(
       return new NextResponse("Media Asset Not Found", { status: 404 });
     }
 
-    // Infer content type from key extension if R2 MIME is generic or mismatched
+    // Determine accurate content type
     const lowerKey = key.toLowerCase();
     let contentType = response.ContentType || "application/octet-stream";
 
-    if (lowerKey.endsWith(".mp4") || lowerKey.endsWith(".m4v")) {
-      contentType = "video/mp4";
-    } else if (lowerKey.endsWith(".webm")) {
-      contentType = "video/webm";
-    } else if (lowerKey.endsWith(".mov")) {
-      contentType = "video/quicktime";
-    } else if (lowerKey.endsWith(".webp")) {
-      contentType = "image/webp";
-    } else if (lowerKey.endsWith(".png")) {
-      contentType = "image/png";
-    } else if (lowerKey.endsWith(".jpg") || lowerKey.endsWith(".jpeg")) {
-      contentType = "image/jpeg";
-    } else if (lowerKey.endsWith(".svg")) {
+    if (
+      response.ContentType === "image/svg+xml" ||
+      response.ContentType?.startsWith("image/svg") ||
+      lowerKey.endsWith(".svg")
+    ) {
       contentType = "image/svg+xml";
+    } else if (
+      !response.ContentType ||
+      response.ContentType === "application/octet-stream" ||
+      response.ContentType === "binary/octet-stream" ||
+      response.ContentType === "text/plain"
+    ) {
+      if (lowerKey.endsWith(".mp4") || lowerKey.endsWith(".m4v")) {
+        contentType = "video/mp4";
+      } else if (lowerKey.endsWith(".webm")) {
+        contentType = "video/webm";
+      } else if (lowerKey.endsWith(".mov")) {
+        contentType = "video/quicktime";
+      } else if (lowerKey.endsWith(".webp")) {
+        contentType = "image/webp";
+      } else if (lowerKey.endsWith(".png")) {
+        contentType = "image/png";
+      } else if (lowerKey.endsWith(".jpg") || lowerKey.endsWith(".jpeg")) {
+        contentType = "image/jpeg";
+      }
     }
 
     const headers = new Headers();
@@ -84,7 +103,9 @@ export async function GET(
     ) {
       return new NextResponse("Media Asset Not Found", { status: 404 });
     }
-    console.error("GET /api/media error:", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("GET /api/media error:", error);
+    }
     return new NextResponse("Media Asset Not Found", { status: 404 });
   }
 }

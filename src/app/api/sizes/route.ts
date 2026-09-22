@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
+import { escapeRegex } from "@/lib/security";
 import Size from "@/models/Size";
 
 export async function GET(request: Request) {
@@ -15,9 +16,10 @@ export async function GET(request: Request) {
 
     const filter: Record<string, unknown> = {};
     if (search.trim()) {
+      const safeSearch = escapeRegex(search.trim());
       filter.$or = [
-        { name: { $regex: search.trim(), $options: "i" } },
-        { code: { $regex: search.trim(), $options: "i" } },
+        { name: { $regex: safeSearch, $options: "i" } },
+        { code: { $regex: safeSearch, $options: "i" } },
       ];
     }
 

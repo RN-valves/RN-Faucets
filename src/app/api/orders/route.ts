@@ -1,38 +1,43 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Order from "@/models/Order";
+import { escapeRegex, sanitizeString, sanitizeObject, validateAdminAuth } from "@/lib/security";
+import { apiSuccess, apiError, handleApiError } from "@/lib/api-response";
 
 export async function GET(request: Request) {
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
-    const q = searchParams.get("q") || "";
-    const phone = searchParams.get("phone") || "";
-    const email = searchParams.get("email") || "";
-    const status = searchParams.get("status") || "All";
+    const q = sanitizeString(searchParams.get("q") || "", 80);
+    const phone = sanitizeString(searchParams.get("phone") || "", 30);
+    const email = sanitizeString(searchParams.get("email") || "", 100);
+    const status = sanitizeString(searchParams.get("status") || "All", 30);
 
     const query: any = {};
 
     if (phone) {
       const cleanPhone = phone.replace(/[^\d]/g, "").slice(-10);
+      const safePhone = escapeRegex(cleanPhone);
       query.$or = [
-        { customerPhone: { $regex: cleanPhone, $options: "i" } },
-        { "shippingAddress.phone": { $regex: cleanPhone, $options: "i" } },
+        { customerPhone: { $regex: safePhone, $options: "i" } },
+        { "shippingAddress.phone": { $regex: safePhone, $options: "i" } },
       ];
     } else if (email) {
+      const safeEmail = escapeRegex(email);
       query.$or = [
-        { customerEmail: { $regex: email, $options: "i" } },
-        { "shippingAddress.email": { $regex: email, $options: "i" } },
+        { customerEmail: { $regex: safeEmail, $options: "i" } },
+        { "shippingAddress.email": { $regex: safeEmail, $options: "i" } },
       ];
     } else if (q) {
+      const safeQ = escapeRegex(q);
       query.$or = [
-        { id: { $regex: q, $options: "i" } },
-        { customerName: { $regex: q, $options: "i" } },
-        { customerPhone: { $regex: q, $options: "i" } },
-        { customerEmail: { $regex: q, $options: "i" } },
-        { courierPartner: { $regex: q, $options: "i" } },
-        { trackingNumber: { $regex: q, $options: "i" } },
-        { lrNumber: { $regex: q, $options: "i" } },
+        { id: { $regex: safeQ, $options: "i" } },
+        { customerName: { $regex: safeQ, $options: "i" } },
+        { customerPhone: { $regex: safeQ, $options: "i" } },
+        { customerEmail: { $regex: safeQ, $options: "i" } },
+        { courierPartner: { $regex: safeQ, $options: "i" } },
+        { trackingNumber: { $regex: safeQ, $options: "i" } },
+        { lrNumber: { $regex: safeQ, $options: "i" } },
       ];
     }
 
@@ -53,15 +58,16 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ orders, counts });
   } catch (error: any) {
-    console.error("GET /api/orders error:", error);
-    return NextResponse.json({ error: error.message || "Failed to fetch orders" }, { status: 500 });
+    return handleApiError(error, "GET /api/orders");
   }
 }
 
 export async function POST(request: Request) {
   try {
     await connectDB();
-    const body = await request.json();
+    const rawBody = await request.json().catch(() => ({}));
+    const body = sanitizeObject(rawBody);
+
     const orderId = body.id || `RN-ORD-${Math.floor(10000 + Math.random() * 90000)}`;
 
     const order = await Order.create({
@@ -77,7 +83,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json(order, { status: 201 });
   } catch (error: any) {
-    console.error("POST /api/orders error:", error);
-    return NextResponse.json({ error: error.message || "Failed to create order" }, { status: 500 });
+    return handleApiError(error, "POST /api/orders");
   }
 }

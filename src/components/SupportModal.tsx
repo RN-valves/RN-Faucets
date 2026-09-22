@@ -517,7 +517,12 @@ export default function SupportModal({ open, onClose }: SupportModalProps) {
               />
               <label htmlFor="support-consent">
                 I agree to the{" "}
-                <a href="#" onClick={(e) => e.preventDefault()}>
+                <a
+                  href="/privacy-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   Privacy Policy
                 </a>{" "}
                 &amp; consent to receive promotional communication via SMS,

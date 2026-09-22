@@ -3,10 +3,11 @@
 import { useState, useEffect } from "react";
 import { ChevronDown, CheckCircle, ArrowLeft, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { setAdminAuth, getAdminAuth, logoutAdmin } from "@/utils/adminStore";
 import { setCustomerSession, getCustomerSession, clearCustomerSession } from "@/utils/customerAuth";
 
-const LOGIN_BG = "/api/media/website/catalogue/products/default/image.webp";
+const LOGIN_BG = "/uploads/auth/login-bg.jpg";
 
 export default function AuthSplitSection() {
   const router = useRouter();
@@ -635,20 +636,21 @@ export default function AuthSplitSection() {
                   />
                   <span>
                     I have gone through the{" "}
-                    <button
-                      type="button"
+                    <Link
+                      href="/privacy-policy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
                       style={{
-                        border: "none",
-                        background: "transparent",
-                        padding: 0,
-                        color: "#1d1d1d",
+                        color: "#00AEEF",
                         textDecoration: "underline",
                         cursor: "pointer",
                         fontSize: "12.5px",
+                        fontWeight: 600,
                       }}
                     >
                       Privacy Policy
-                    </button>{" "}
+                    </Link>{" "}
                     and give my consent.
                   </span>
                 </label>

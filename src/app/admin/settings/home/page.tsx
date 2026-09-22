@@ -77,9 +77,14 @@ function R2UploadPicker({
     let targetKey = r2Key;
     if (isVideo) {
       const videoExt = ["mp4", "webm", "mov"].includes(ext) ? ext : "mp4";
-      targetKey = targetKey.replace(/\.(webp|jpg|jpeg|png|gif)$/i, `.${videoExt}`);
+      targetKey = targetKey.replace(/\.(webp|jpg|jpeg|png|gif|svg)$/i, `.${videoExt}`);
       if (!/\.[a-zA-Z0-9]+$/.test(targetKey)) {
         targetKey = `${targetKey}.${videoExt}`;
+      }
+    } else if (ext === "svg" || file.type?.includes("svg")) {
+      targetKey = targetKey.replace(/\.(webp|jpg|jpeg|png|gif|mp4|webm|mov|m4v)$/i, ".svg");
+      if (!/\.svg$/i.test(targetKey)) {
+        targetKey = `${targetKey}.svg`;
       }
     } else {
       targetKey = targetKey.replace(/\.(mp4|webm|mov|m4v)$/i, ".webp");
@@ -114,7 +119,7 @@ function R2UploadPicker({
       <div style={{ display: "flex", alignItems: "center", gap: "12px", background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: "8px", padding: "10px" }}>
         {/* Media Preview */}
         {currentUrl ? (
-          <div style={{ width: "60px", height: "60px", borderRadius: "6px", overflow: "hidden", border: "1px solid #D1D5DB", flexShrink: 0, position: "relative", background: "#111827", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ width: "60px", height: "60px", borderRadius: "6px", overflow: "hidden", border: "1px solid #D1D5DB", flexShrink: 0, position: "relative", background: "#0F172A", display: "flex", alignItems: "center", justifyContent: "center" }}>
             {isVideo ? (
               <video
                 src={currentUrl}
@@ -125,7 +130,17 @@ function R2UploadPicker({
                 style={{ width: "100%", height: "100%", objectFit: "cover" }}
               />
             ) : (
-              <img src={currentUrl} alt={label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <img
+                src={currentUrl}
+                alt={label}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "contain",
+                  padding: "4px",
+                  boxSizing: "border-box",
+                }}
+              />
             )}
             {isVideo && (
               <span style={{ position: "absolute", bottom: 2, right: 2, background: "rgba(0,0,0,0.75)", color: "#38bdf8", fontSize: "8px", padding: "1px 3px", borderRadius: "2px", fontWeight: 800 }}>
@@ -356,22 +371,25 @@ export default function AdminHomeSettingPage() {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px" }}>
                 <R2UploadPicker
                   label="Header Desktop Logo"
-                  r2Key="website/home/header/logo.webp"
+                  r2Key="website/home/header/logo.svg"
                   currentUrl={settings.header?.logo || ""}
+                  accept="image/*,.svg"
                   onUploadSuccess={(url) => setSettings({ ...settings, header: { ...settings.header, logo: url } })}
                 />
 
                 <R2UploadPicker
                   label="Header Mobile Logo"
-                  r2Key="website/home/header/mobile-logo.webp"
+                  r2Key="website/home/header/mobile-logo.svg"
                   currentUrl={settings.header?.mobileLogo || settings.header?.logo || ""}
+                  accept="image/*,.svg"
                   onUploadSuccess={(url) => setSettings({ ...settings, header: { ...settings.header, mobileLogo: url } })}
                 />
 
                 <R2UploadPicker
                   label="Footer Brand Logo"
-                  r2Key="website/home/footer/logo.webp"
+                  r2Key="website/home/footer/logo.svg"
                   currentUrl={settings.footer?.logo || ""}
+                  accept="image/*,.svg"
                   onUploadSuccess={(url) => setSettings({ ...settings, footer: { ...settings.footer, logo: url } })}
                 />
               </div>

@@ -201,6 +201,15 @@ export default function CategoryPage({
     categoryData?.parentName ||
     "PTMT | HIGH GRADE ENGINEERING POLYMER FAUCETS";
 
+  const parentCategory = useMemo(() => {
+    if (!categoryData) return null;
+    return allCategories.find(
+      (c) =>
+        (categoryData.categoryId && String(c.id) === String(categoryData.categoryId)) ||
+        (categoryData.categoryName && c.name?.toLowerCase().trim() === categoryData.categoryName?.toLowerCase().trim())
+    );
+  }, [categoryData, allCategories]);
+
   // Reusable Filter Content Element (used in desktop sidebar + mobile drawer)
   const FilterContent = () => (
     <>
@@ -742,30 +751,49 @@ export default function CategoryPage({
       <section data-header-theme="light" className="category-content-container">
         {/* Breadcrumbs */}
         <nav
+          aria-label="Breadcrumb"
           style={{
             fontFamily: "'Manrope', system-ui, sans-serif",
             fontSize: "13px",
-            color: "#888888",
+            color: "#64748B",
             marginBottom: "24px",
             display: "flex",
             alignItems: "center",
-            gap: "6px",
+            gap: "8px",
             overflowX: "auto",
             whiteSpace: "nowrap",
             paddingBottom: "4px",
           }}
         >
-          <Link href="/" style={{ color: "#888888", textDecoration: "none" }}>
+          <Link
+            href="/"
+            style={{ color: "#64748B", textDecoration: "none" }}
+          >
             Home
           </Link>
-          <span>›</span>
-          <span style={{ color: "#888888" }}>Bathware</span>
-          <span>›</span>
-          <Link href="/faucets" style={{ color: "#888888", textDecoration: "none" }}>
-            Faucets
-          </Link>
-          <span>›</span>
-          <span style={{ color: "#111111", fontWeight: 500 }}>{displayTitle}</span>
+          <span style={{ color: "#CBD5E1" }}>/</span>
+          {parentCategory ? (
+            <>
+              <Link
+                href={`/${parentCategory.slug}`}
+                style={{ color: "#64748B", textDecoration: "none" }}
+              >
+                {parentCategory.name}
+              </Link>
+              <span style={{ color: "#CBD5E1" }}>/</span>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/faucets"
+                style={{ color: "#64748B", textDecoration: "none" }}
+              >
+                Faucets
+              </Link>
+              <span style={{ color: "#CBD5E1" }}>/</span>
+            </>
+          )}
+          <span style={{ color: "#0F172A", fontWeight: 600 }}>{displayTitle}</span>
         </nav>
 
         {/* Tab & Controls Bar */}

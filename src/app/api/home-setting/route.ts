@@ -185,18 +185,20 @@ const DEFAULT_HOME_SETTINGS = {
       { label: "About Us", href: "/about-us" },
       { label: "Blogs", href: "/blogs" },
       { label: "Catalogues", href: "/catalogues" },
+      { label: "Our CSR", href: "/corporate-social-responsibility" },
     ],
     col2Links: [
-      { label: "Become a Channel Partner", href: "/business-user-registration" },
+      { label: "Become our Dealer", href: "/business-user-registration" },
+      { label: "Our Certification", href: "/certificates" },
       { label: "Contact Us", href: "/contact-us" },
       { label: "Warranty Policy", href: "/about-us" },
-      { label: "Tutorials Videos", href: "#" },
     ],
     col3Links: [
       { label: "Personal Account", href: "/retail-user-registration" },
       { label: "Business Account", href: "/business-user-registration" },
-      { label: "Privacy Policy", href: "#" },
-      { label: "Terms & Conditions", href: "#" },
+      { label: "Privacy Policy", href: "/privacy-policy" },
+      { label: "Return & Refund Policy", href: "/return-refund-policy" },
+      { label: "Terms & Conditions", href: "/terms-conditions" },
     ],
     socials: [
       { label: "Instagram", href: "https://instagram.com" },
@@ -228,13 +230,13 @@ export async function POST(req: Request) {
     await connectDB();
     const body = await req.json();
 
-    let setting = await HomeSetting.findOne();
-    if (setting) {
-      Object.assign(setting, body);
-      await setting.save();
-    } else {
-      setting = await HomeSetting.create(body);
-    }
+    const { _id, createdAt, updatedAt, ...updateData } = body;
+
+    const setting = await HomeSetting.findOneAndUpdate(
+      {},
+      { $set: updateData },
+      { new: true, upsert: true, setDefaultsOnInsert: true, runValidators: false }
+    );
 
     return NextResponse.json({ success: true, setting });
   } catch (error: any) {

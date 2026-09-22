@@ -279,6 +279,8 @@ export default function FaucetProductPage({
   const [dbVariants, setDbVariants] = useState<any[]>([]);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [parentCategory, setParentCategory] = useState<{ name: string; slug: string } | null>(null);
+  const [subcategoryInfo, setSubcategoryInfo] = useState<{ name: string; slug: string } | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -293,9 +295,71 @@ export default function FaucetProductPage({
           }
         }
 
+        // Fetch categories list to dynamically resolve parent category
+        let allCats: any[] = [];
+        try {
+          const catListRes = await fetch("/api/categories");
+          if (catListRes.ok) {
+            const catListData = await catListRes.json();
+            if (Array.isArray(catListData)) {
+              allCats = catListData;
+            }
+          }
+        } catch (e) {
+          console.error("Error fetching categories:", e);
+        }
+
+        // Fetch subcategory data
+        let subcatData: any = null;
+        const subcatQuery = category || loadedProd?.subcategoryId || loadedProd?.subcategoryName;
+        if (subcatQuery) {
+          try {
+            const subRes = await fetch(`/api/subcategories/${encodeURIComponent(subcatQuery)}`);
+            if (subRes.ok) {
+              const sData = await subRes.json();
+              if (sData && !sData.error) {
+                subcatData = sData;
+                setSubcategoryInfo({
+                  name: sData.name,
+                  slug: sData.slug || category,
+                });
+              }
+            }
+          } catch (e) {
+            console.error("Error fetching subcategory:", e);
+          }
+        }
+
+        // Match parent category from subcategory or product
+        let matchedCat: any = null;
+        if (subcatData) {
+          matchedCat = allCats.find(
+            (c) =>
+              (subcatData.categoryId && String(c.id) === String(subcatData.categoryId)) ||
+              (subcatData.categoryName && c.name?.toLowerCase().trim() === subcatData.categoryName?.toLowerCase().trim())
+          );
+        }
+        if (!matchedCat && loadedProd) {
+          matchedCat = allCats.find(
+            (c) =>
+              (loadedProd.categoryId && String(c.id) === String(loadedProd.categoryId)) ||
+              (loadedProd.category && (
+                c.name?.toLowerCase().trim() === loadedProd.category?.toLowerCase().trim() ||
+                c.slug?.toLowerCase().trim() === loadedProd.category?.toLowerCase().trim()
+              ))
+          );
+        }
+
+        if (matchedCat) {
+          setParentCategory({
+            name: matchedCat.name,
+            slug: matchedCat.slug,
+          });
+        }
+
         // Fetch products in same subcategory or category matching PHP logic
-        const subcatQuery = loadedProd?.subcategoryId || loadedProd?.subcategoryName || category;
-        const rangeRes = await fetch(`/api/products?subcategory=${encodeURIComponent(subcatQuery)}&limit=24`);
+        const rangeQuery = loadedProd?.subcategoryId || loadedProd?.subcategoryName || category;
+        const rangeRes = await fetch(`/api/products?subcategory=${encodeURIComponent(rangeQuery)}&limit=24`);
         let items: any[] = [];
         if (rangeRes.ok) {
           const rangeData = await rangeRes.json();
@@ -453,7 +517,17 @@ export default function FaucetProductPage({
   };
 
   const colorVariants = dbVariants.filter((item: any) => isSameProductColorVariant(item, rawProduct));
-  const variantProducts = colorVariants.length > 0 ? [product, ...colorVariants] : [];
+  const distinctColorMap = new Map<string, any>();
+  if (product.colorName) {
+    distinctColorMap.set(product.colorName.trim().toLowerCase(), product);
+  }
+  colorVariants.forEach((item: any) => {
+    const cName = (item.colorName || "").trim().toLowerCase();
+    if (cName && !distinctColorMap.has(cName)) {
+      distinctColorMap.set(cName, item);
+    }
+  });
+  const variantProducts = distinctColorMap.size > 1 ? Array.from(distinctColorMap.values()) : [];
 
   // Compute distinct size options available
   const rawSizeVariants = dbVariants.filter((item: any) => isSameProductSizeVariant(item, rawProduct));
@@ -533,6 +607,24 @@ export default function FaucetProductPage({
   const formatCategoryTitle = (cat: string) =>
     cat.charAt(0).toUpperCase() + cat.slice(1).replace(/-/g, " ");
 
+  const displayParentCatName =
+    parentCategory?.name ||
+    rawProduct?.category ||
+    "Faucets";
+
+  const displayParentCatHref = parentCategory?.slug
+    ? `/${parentCategory.slug}`
+    : rawProduct?.category
+    ? `/${rawProduct.category.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`
+    : "/faucets";
+
+  const displaySubcatName =
+    subcategoryInfo?.name ||
+    rawProduct?.subcategoryName ||
+    formatCategoryTitle(category);
+
+  const displaySubcatHref = `/faucets/${category}`;
+
   const activeGalleryImage = product.gallery[selectedImage] ?? product.image;
 
   return (
@@ -542,79 +634,96 @@ export default function FaucetProductPage({
       <section
         data-header-theme="light"
         style={{
-          maxWidth: "1820px",
+          maxWidth: "1360px",
           margin: "0 auto",
-          padding: "98px 36px 80px",
+          padding: "115px 28px 80px",
           boxSizing: "border-box",
         }}
       >
+        {/* Top Navigation & Breadcrumbs Bar */}
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            gap: "18px",
+            gap: "16px",
             fontFamily: "'Manrope', system-ui, sans-serif",
-            fontSize: "14px",
-            color: "#444444",
-            marginBottom: "20px",
+            fontSize: "13px",
+            marginBottom: "28px",
             flexWrap: "wrap",
           }}
         >
-          <button
-            type="button"
-            onClick={() => window.history.back()}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={() => window.history.back()}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                border: "1px solid #e2e8f0",
+                background: "#ffffff",
+                color: "#0f172a",
+                cursor: "pointer",
+                padding: "6px 12px",
+                borderRadius: "6px",
+                fontFamily: "inherit",
+                fontSize: "13px",
+                fontWeight: 700,
+                boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                transition: "all 0.2s ease",
+              }}
+            >
+              <ChevronLeft size={16} />
+              Back
+            </button>
+
+            <nav
+              aria-label="Breadcrumb"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                color: "#64748b",
+                fontSize: "13px",
+                overflowX: "auto",
+                whiteSpace: "nowrap",
+              }}
+            >
+              <Link href="/" style={{ color: "#64748b", textDecoration: "none" }}>
+                Home
+              </Link>
+              <span style={{ color: "#cbd5e1" }}>/</span>
+              <Link href={displayParentCatHref} style={{ color: "#64748b", textDecoration: "none" }}>
+                {displayParentCatName}
+              </Link>
+              <span style={{ color: "#cbd5e1" }}>/</span>
+              <Link
+                href={displaySubcatHref}
+                style={{ color: "#64748b", textDecoration: "none" }}
+              >
+                {displaySubcatName}
+              </Link>
+              <span style={{ color: "#cbd5e1" }}>/</span>
+              <span style={{ color: "#0f172a", fontWeight: 600 }}>{product.name}</span>
+            </nav>
+          </div>
+
+          <span
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
-              border: "none",
-              background: "transparent",
-              color: "#111111",
-              cursor: "pointer",
-              padding: 0,
-              fontFamily: "inherit",
-              fontSize: "14px",
               fontWeight: 700,
+              color: "#0f172a",
+              fontSize: "12px",
+              background: "#f8fafc",
+              padding: "5px 12px",
+              borderRadius: "999px",
+              border: "1px solid #e2e8f0",
+              letterSpacing: "0.02em",
             }}
           >
-            <ChevronLeft size={18} />
-            Back
-          </button>
-
-          <span style={{ fontWeight: 600, color: "#111111" }}>Get ₹200 OFF On Orders Above ₹2500</span>
+            Get ₹200 OFF On Orders Above ₹2500
+          </span>
         </div>
-
-        <nav
-          aria-label="Breadcrumb"
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: "8px",
-            marginBottom: "24px",
-            fontFamily: "'Manrope', system-ui, sans-serif",
-            fontSize: "14px",
-            color: "#666666",
-          }}
-        >
-          <Link href="/" style={{ color: "#666666", textDecoration: "none" }}>
-            Home
-          </Link>
-          <span>›</span>
-          <Link href="/faucets" style={{ color: "#666666", textDecoration: "none" }}>
-            Faucets
-          </Link>
-          <span>›</span>
-          <Link
-            href={`/faucets/${category}`}
-            style={{ color: "#666666", textDecoration: "none" }}
-          >
-            {formatCategoryTitle(category)}
-          </Link>
-          <span>›</span>
-          <span style={{ color: "#111111", fontWeight: 700 }}>{product.name}</span>
-        </nav>
 
         <div className="product-detail-layout">
           <div className="product-media-column">
@@ -626,18 +735,20 @@ export default function FaucetProductPage({
                     type="button"
                     onClick={() => setSelectedImage(index)}
                     style={{
-                      width: "96px",
-                      height: "96px",
-                      padding: "8px",
+                      width: "68px",
+                      height: "68px",
+                      padding: "5px",
                       border:
-                        selectedImage === index ? "2px solid #111111" : "1px solid #d7d7d7",
+                        selectedImage === index ? "2px solid #0f172a" : "1px solid #e2e8f0",
                       background: "#ffffff",
                       cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       borderRadius: "8px",
-                      boxShadow: selectedImage === index ? "0 2px 8px rgba(0,0,0,0.12)" : "none",
+                      boxShadow: selectedImage === index ? "0 2px 8px rgba(15, 23, 42, 0.1)" : "none",
+                      transition: "all 0.2s ease",
+                      flexShrink: 0,
                     }}
                   >
                     <img
@@ -652,14 +763,17 @@ export default function FaucetProductPage({
               <div
                 style={{
                   position: "relative",
-                  minHeight: "750px",
-                  background: "linear-gradient(145deg, #f8f8f8 0%, #efefef 100%)",
-                  border: "1px solid #ececec",
-                  borderRadius: "12px",
+                  width: "100%",
+                  aspectRatio: "1 / 1",
+                  maxHeight: "490px",
+                  background: "#ffffff",
+                  border: "1px solid #f1f5f9",
+                  borderRadius: "16px",
                   overflow: "hidden",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  boxShadow: "0 4px 20px rgba(0, 0, 0, 0.04)",
                 }}
               >
                 <Image
@@ -673,6 +787,69 @@ export default function FaucetProductPage({
                     padding: "24px",
                   }}
                 />
+
+                {product.gallery.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSelectedImage((current) =>
+                          current === 0 ? product.gallery.length - 1 : current - 1,
+                        )
+                      }
+                      style={{
+                        position: "absolute",
+                        left: "12px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        width: "36px",
+                        height: "36px",
+                        borderRadius: "50%",
+                        background: "rgba(255, 255, 255, 0.95)",
+                        border: "1px solid #e2e8f0",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+                        zIndex: 2,
+                        color: "#0f172a",
+                      }}
+                      aria-label="Previous image"
+                    >
+                      <ChevronLeft size={18} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSelectedImage((current) =>
+                          current === product.gallery.length - 1 ? 0 : current + 1,
+                        )
+                      }
+                      style={{
+                        position: "absolute",
+                        right: "12px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        width: "36px",
+                        height: "36px",
+                        borderRadius: "50%",
+                        background: "rgba(255, 255, 255, 0.95)",
+                        border: "1px solid #e2e8f0",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+                        zIndex: 2,
+                        color: "#0f172a",
+                      }}
+                      aria-label="Next image"
+                    >
+                      <ChevronRight size={18} />
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -682,115 +859,100 @@ export default function FaucetProductPage({
               <div
                 style={{
                   display: "flex",
-                  justifyContent: "space-between",
                   alignItems: "center",
-                  gap: "12px",
-                  marginBottom: "10px",
+                  gap: "8px",
+                  marginBottom: "8px",
                 }}
               >
                 <div
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    flexWrap: "wrap",
-                    gap: "8px",
                     fontFamily: "'Manrope', system-ui, sans-serif",
-                    fontSize: "12px",
-                    letterSpacing: "0.04em",
+                    fontSize: "11.5px",
+                    letterSpacing: "0.06em",
                     textTransform: "uppercase",
                     color: "#64748b",
                     fontWeight: 700,
                   }}
                 >
-                  <span>{hierarchyBreadcrumb}</span>
+                  {hierarchyBreadcrumb}
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setSelectedImage((current) =>
-                      current === product.gallery.length - 1 ? 0 : current + 1,
-                    )
-                  }
-                  style={{
-                    width: "36px",
-                    height: "36px",
-                    borderRadius: "999px",
-                    border: "1px solid #c6c6c6",
-                    background: "#ffffff",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    color: "#111111",
-                  }}
-                  aria-label="Next gallery image"
-                >
-                  <ChevronRight size={18} />
-                </button>
               </div>
 
               <h1
                 style={{
                   margin: "0 0 10px",
                   fontFamily: "'Manrope', system-ui, sans-serif",
-                  fontSize: "clamp(30px, 3vw, 42px)",
+                  fontSize: "clamp(24px, 2.2vw, 32px)",
                   fontWeight: 800,
                   color: "#0f172a",
-                  lineHeight: 1.15,
-                  letterSpacing: "-0.03em",
+                  lineHeight: 1.25,
+                  letterSpacing: "-0.02em",
                 }}
               >
                 {product.name}
               </h1>
 
-              {/* Article Line */}
+              {/* Article & Stock Status Bar */}
               <div
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "8px",
-                  marginBottom: "18px",
+                  gap: "12px",
+                  marginBottom: "16px",
                   fontFamily: "'Manrope', system-ui, sans-serif",
-                  fontSize: "15px",
+                  fontSize: "13px",
+                  flexWrap: "wrap",
                 }}
               >
-                <span style={{ fontWeight: 700, color: "#0f172a" }}>Article :</span>
+                <span style={{ color: "#64748b", fontWeight: 600 }}>
+                  Article : <strong style={{ color: "#0f172a", background: "#f1f5f9", padding: "3px 8px", borderRadius: "4px", border: "1px solid #e2e8f0", fontFamily: "ui-monospace, monospace" }}>{product.article || product.code}</strong>
+                </span>
+
+                <span style={{ color: "#cbd5e1" }}>•</span>
+
                 <span
                   style={{
-                    fontFamily: "ui-monospace, monospace",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "5px",
+                    padding: "3px 9px",
+                    borderRadius: "999px",
+                    fontSize: "12px",
                     fontWeight: 700,
-                    color: "#0f172a",
-                    letterSpacing: "0.02em",
-                    background: "#f1f5f9",
-                    padding: "3px 10px",
-                    borderRadius: "6px",
-                    border: "1px solid #e2e8f0",
-                    fontSize: "14px",
+                    background: inStock ? "#ecfdf5" : "#fef2f2",
+                    color: inStock ? "#059669" : "#dc2626",
+                    border: `1px solid ${inStock ? "#a7f3d0" : "#fecaca"}`,
                   }}
                 >
-                  {product.article || product.code}
+                  <span
+                    style={{
+                      width: "6px",
+                      height: "6px",
+                      borderRadius: "50%",
+                      background: inStock ? "#10b981" : "#ef4444",
+                    }}
+                  />
+                  {inStock ? "In Stock" : "Out of Stock"}
                 </span>
               </div>
 
               {/* Price & Discount */}
-              <div style={{ marginBottom: "22px" }}>
+              <div style={{ marginBottom: "18px" }}>
                 <div
                   style={{
                     display: "flex",
                     alignItems: "baseline",
                     gap: "12px",
                     flexWrap: "wrap",
-                    marginBottom: "6px",
                   }}
                 >
                   <span
                     style={{
                       fontFamily: "'Manrope', system-ui, sans-serif",
-                      fontSize: "38px",
+                      fontSize: "32px",
                       fontWeight: 800,
-                      color: "#ef4c23",
-                      letterSpacing: "-0.04em",
+                      color: "#0f172a",
+                      letterSpacing: "-0.03em",
                     }}
                   >
                     ₹ {product.price.toLocaleString("en-IN")}.00
@@ -800,7 +962,7 @@ export default function FaucetProductPage({
                       <span
                         style={{
                           fontFamily: "'Manrope', system-ui, sans-serif",
-                          fontSize: "17px",
+                          fontSize: "16px",
                           color: "#94a3b8",
                           textDecoration: "line-through",
                           fontWeight: 500,
@@ -811,12 +973,12 @@ export default function FaucetProductPage({
                       <span
                         style={{
                           fontFamily: "'Manrope', system-ui, sans-serif",
-                          fontSize: "13px",
+                          fontSize: "12px",
                           fontWeight: 800,
                           color: "#059669",
                           background: "#ecfdf5",
                           border: "1px solid #a7f3d0",
-                          padding: "3px 9px",
+                          padding: "2px 8px",
                           borderRadius: "999px",
                           letterSpacing: "0.02em",
                         }}
@@ -831,157 +993,59 @@ export default function FaucetProductPage({
               {/* Product Meta Details Box */}
               <div
                 style={{
-                  background: "#f8fafc",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "12px",
-                  padding: "16px 18px",
-                  marginBottom: "24px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "12px",
+                  background: "#fbfbfc",
+                  border: "1px solid #eaeaea",
+                  borderRadius: "10px",
+                  padding: "12px 16px",
+                  marginBottom: "20px",
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "10px 18px",
                   fontFamily: "'Manrope', system-ui, sans-serif",
+                  fontSize: "12.5px",
                 }}
               >
-                {/* Availability */}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    fontSize: "13px",
-                  }}
-                >
-                  <span style={{ color: "#64748b", fontWeight: 700 }}>Availability :</span>
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      padding: "3px 10px",
-                      borderRadius: "999px",
-                      fontSize: "12px",
-                      fontWeight: 700,
-                      background: inStock ? "#ecfdf5" : "#fef2f2",
-                      color: inStock ? "#059669" : "#dc2626",
-                      border: `1px solid ${inStock ? "#a7f3d0" : "#fecaca"}`,
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: "6px",
-                        height: "6px",
-                        borderRadius: "50%",
-                        background: inStock ? "#10b981" : "#ef4444",
-                      }}
-                    />
-                    {inStock ? "In Stock" : "Out of Stock"}
-                  </span>
+                <div>
+                  <span style={{ color: "#64748b", fontWeight: 500 }}>Product Code: </span>
+                  <strong style={{ color: "#0f172a", fontFamily: "ui-monospace, monospace" }}>{product.skuCode || product.code}</strong>
                 </div>
 
-                {/* Product Code */}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    fontSize: "13px",
-                  }}
-                >
-                  <span style={{ color: "#64748b", fontWeight: 700 }}>Product Code :</span>
-                  <span
-                    style={{
-                      fontFamily: "ui-monospace, monospace",
-                      fontSize: "12px",
-                      fontWeight: 700,
-                      color: "#334155",
-                      background: "#ffffff",
-                      padding: "2px 8px",
-                      borderRadius: "6px",
-                      border: "1px solid #e2e8f0",
-                    }}
-                  >
-                    {product.skuCode || product.code}
-                  </span>
-                </div>
-
-                {/* Category */}
                 {(product.subcategoryName || product.category) && (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      fontSize: "13px",
-                    }}
-                  >
-                    <span style={{ color: "#64748b", fontWeight: 700 }}>Category :</span>
+                  <div>
+                    <span style={{ color: "#64748b", fontWeight: 500 }}>Category: </span>
                     <Link
-                      href={`/faucets/${encodeURIComponent(product.category || category)}`}
+                      href={displaySubcatHref}
                       style={{
                         color: "#0284c7",
-                        fontWeight: 700,
+                        fontWeight: 600,
                         textDecoration: "none",
-                        fontSize: "13px",
                       }}
-                      className="hover:underline"
                     >
-                      {product.subcategoryName || product.category}
+                      {displaySubcatName}
                     </Link>
                   </div>
                 )}
 
-                {/* Product Size */}
                 {product.size && (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      fontSize: "13px",
-                    }}
-                  >
-                    <span style={{ color: "#64748b", fontWeight: 700 }}>Product Size :</span>
-                    <span
-                      style={{
-                        fontWeight: 700,
-                        color: "#0f172a",
-                        fontSize: "12px",
-                        background: "#ffffff",
-                        padding: "2px 8px",
-                        borderRadius: "6px",
-                        border: "1px solid #e2e8f0",
-                      }}
-                    >
-                      {product.size}
-                    </span>
+                  <div>
+                    <span style={{ color: "#64748b", fontWeight: 500 }}>Product Size: </span>
+                    <strong style={{ color: "#0f172a" }}>{product.size}</strong>
                   </div>
                 )}
 
-                {/* Discount Note */}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    fontSize: "13px",
-                  }}
-                >
-                  <span style={{ color: "#64748b", fontWeight: 700 }}>Discount :</span>
+                <div>
+                  <span style={{ color: "#64748b", fontWeight: 500 }}>Offers: </span>
                   <span
                     style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "4px",
+                      color: "#0369a1",
+                      background: "#f0f9ff",
+                      padding: "2px 6px",
+                      borderRadius: "4px",
                       fontSize: "11px",
-                      fontWeight: 700,
-                      color: "#b45309",
-                      background: "#fffbeb",
-                      padding: "3px 8px",
-                      borderRadius: "6px",
-                      border: "1px solid #fde68a",
+                      fontWeight: 600,
                     }}
                   >
-                    Tiered Bulk Discounts Applied at Checkout ℹ
+                    Tiered bulk discounts
                   </span>
                 </div>
               </div>
@@ -1189,20 +1253,24 @@ export default function FaucetProductPage({
                 style={{
                   display: "flex",
                   alignItems: "stretch",
-                  gap: "14px",
-                  marginBottom: "18px",
+                  gap: "10px",
+                  marginBottom: "24px",
+                  flexWrap: "wrap",
                 }}
               >
+                {/* Stepper */}
                 <div
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
-                    border: "1px solid #cccccc",
-                    borderRadius: "6px",
-                    minWidth: "140px",
-                    height: "56px",
+                    border: "1px solid #dcdfe4",
+                    borderRadius: "8px",
+                    background: "#f8fafc",
+                    width: "108px",
+                    height: "48px",
                     justifyContent: "space-between",
-                    padding: "0 16px",
+                    padding: "0 8px",
+                    flexShrink: 0,
                   }}
                 >
                   <button
@@ -1212,10 +1280,10 @@ export default function FaucetProductPage({
                       border: "none",
                       background: "transparent",
                       cursor: "pointer",
-                      fontSize: "24px",
-                      color: "#111111",
+                      fontSize: "20px",
+                      color: "#0f172a",
                       lineHeight: 1,
-                      padding: "10px 0",
+                      padding: "4px 8px",
                     }}
                   >
                     -
@@ -1223,9 +1291,9 @@ export default function FaucetProductPage({
                   <span
                     style={{
                       fontFamily: "'Manrope', system-ui, sans-serif",
-                      fontSize: "16px",
+                      fontSize: "15px",
                       fontWeight: 700,
-                      color: "#111111",
+                      color: "#0f172a",
                     }}
                   >
                     {quantity}
@@ -1237,16 +1305,17 @@ export default function FaucetProductPage({
                       border: "none",
                       background: "transparent",
                       cursor: "pointer",
-                      fontSize: "24px",
-                      color: "#111111",
+                      fontSize: "20px",
+                      color: "#0f172a",
                       lineHeight: 1,
-                      padding: "10px 0",
+                      padding: "4px 8px",
                     }}
                   >
                     +
                   </button>
                 </div>
 
+                {/* Add To Cart */}
                 <button
                   type="button"
                   onClick={() => {
@@ -1257,19 +1326,19 @@ export default function FaucetProductPage({
                       image: product.image,
                       color: product.colorName || "Standard",
                       size: product.size || undefined,
-                      quantity: quantity
+                      quantity: quantity,
                     });
                     router.push("/cart");
                   }}
                   style={{
-                    flex: 1,
-                    height: "56px",
-                    border: "1px solid #dedede",
-                    borderRadius: "6px",
+                    flex: "1 1 140px",
+                    height: "48px",
+                    border: "1.5px solid #0f172a",
+                    borderRadius: "8px",
                     background: "#ffffff",
-                    color: "#111111",
+                    color: "#0f172a",
                     fontFamily: "'Manrope', system-ui, sans-serif",
-                    fontSize: "15px",
+                    fontSize: "14px",
                     fontWeight: 800,
                     letterSpacing: "0.02em",
                     cursor: "pointer",
@@ -1277,50 +1346,50 @@ export default function FaucetProductPage({
                     alignItems: "center",
                     justifyContent: "center",
                     gap: "8px",
+                    transition: "all 0.2s ease",
                   }}
                 >
-                  <ShoppingCart size={18} />
+                  <ShoppingCart size={17} />
                   Add To Cart
                 </button>
-              </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  addToCart({
-                    id: product.id,
-                    name: product.name,
-                    price: product.price,
-                    image: product.image,
-                    color: product.colorName || "Standard",
-                    size: product.size || undefined,
-                    quantity: quantity,
-                  });
-                  router.push("/checkout");
-                }}
-                style={{
-                  width: "100%",
-                  height: "58px",
-                  border: "none",
-                  borderRadius: "6px",
-                  background: "#000000",
-                  color: "#ffffff",
-                  fontFamily: "'Manrope', system-ui, sans-serif",
-                  fontSize: "16px",
-                  fontWeight: 900,
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                  cursor: "pointer",
-                  marginBottom: "26px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "8px",
-                }}
-              >
-                <ShoppingCart size={18} />
-                Buy Now
-              </button>
+                {/* Buy Now */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    addToCart({
+                      id: product.id,
+                      name: product.name,
+                      price: product.price,
+                      image: product.image,
+                      color: product.colorName || "Standard",
+                      size: product.size || undefined,
+                      quantity: quantity,
+                    });
+                    router.push("/checkout");
+                  }}
+                  style={{
+                    flex: "1 1 140px",
+                    height: "48px",
+                    border: "none",
+                    borderRadius: "8px",
+                    background: "#0f172a",
+                    color: "#ffffff",
+                    fontFamily: "'Manrope', system-ui, sans-serif",
+                    fontSize: "14px",
+                    fontWeight: 800,
+                    letterSpacing: "0.04em",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  Buy Now
+                </button>
+              </div>
 
               <div
                 style={{
@@ -1562,70 +1631,32 @@ export default function FaucetProductPage({
       <style jsx>{`
         .product-detail-layout {
           display: grid;
-          grid-template-columns: minmax(0, 1.35fr) minmax(440px, 520px);
-          gap: 42px;
+          grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+          gap: 48px;
           align-items: start;
         }
 
         .product-gallery-column {
           display: grid;
-          grid-template-columns: 104px minmax(0, 1fr);
-          gap: 22px;
+          grid-template-columns: 78px minmax(0, 1fr);
+          gap: 16px;
           align-items: start;
-          position: sticky;
-          top: 110px;
-          align-self: start;
         }
 
         .product-media-column {
           min-width: 0;
           position: sticky;
-          top: 110px;
+          top: 96px;
           align-self: start;
-          max-height: calc(100vh - 126px);
-          overflow-y: auto;
-          padding-right: 8px;
-          scrollbar-gutter: stable;
-        }
-
-        .product-media-column::-webkit-scrollbar {
-          width: 6px;
-        }
-
-        .product-media-column::-webkit-scrollbar-thumb {
-          background: rgba(17, 17, 17, 0.18);
-          border-radius: 999px;
-        }
-
-        .product-media-column::-webkit-scrollbar-track {
-          background: transparent;
         }
 
         .product-summary-column {
-          position: sticky;
-          top: 110px;
-          align-self: start;
-          max-height: calc(100vh - 126px);
-          overflow-y: auto;
-          padding-right: 10px;
-          scrollbar-gutter: stable;
+          min-width: 0;
+          padding-left: 4px;
         }
 
         .product-summary-sticky {
           position: static;
-        }
-
-        .product-summary-column::-webkit-scrollbar {
-          width: 6px;
-        }
-
-        .product-summary-column::-webkit-scrollbar-thumb {
-          background: rgba(17, 17, 17, 0.18);
-          border-radius: 999px;
-        }
-
-        .product-summary-column::-webkit-scrollbar-track {
-          background: transparent;
         }
 
         .also-like-section {
@@ -2172,25 +2203,31 @@ export default function FaucetProductPage({
           justify-content: center;
         }
 
-        @media (max-width: 1180px) {
+        @media (max-width: 1024px) {
           .product-detail-layout {
             grid-template-columns: 1fr;
+            gap: 36px;
+          }
+
+          .product-media-column {
+            position: static;
           }
 
           .product-gallery-column {
-            position: static;
+            grid-template-columns: 1fr;
+          }
+
+          .product-thumbs {
+            flex-direction: row;
+            order: 2;
+            overflow-x: auto;
+            max-height: none;
+            padding-bottom: 4px;
           }
 
           .product-summary-column {
-            max-width: 760px;
-            position: static;
-            max-height: none;
-            overflow: visible;
-            padding-right: 0;
-          }
-
-          .product-summary-sticky {
-            position: static;
+            max-width: 100%;
+            padding-left: 0;
           }
 
           .also-like-section {
@@ -2202,18 +2239,7 @@ export default function FaucetProductPage({
           .also-like-arrow-right {
             display: none;
           }
-
         }
-
-        @media (max-width: 860px) {
-          .product-gallery-column {
-            grid-template-columns: 1fr;
-          }
-
-          .product-thumbs {
-            flex-direction: row;
-            flex-wrap: wrap;
-          }
 
           .variant-grid {
             grid-template-columns: repeat(3, minmax(0, 1fr));

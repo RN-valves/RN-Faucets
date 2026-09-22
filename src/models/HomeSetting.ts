@@ -144,7 +144,7 @@ const HomeSettingSchema = new Schema<IHomeSetting>(
       description: { type: String, default: "Top-rated, best-selling products trusted and loved by our customers." },
       categories: [
         {
-          id: { type: Number },
+          id: { type: Schema.Types.Mixed },
           name: { type: String },
           subtitle: { type: String },
           image: { type: String },
@@ -158,7 +158,7 @@ const HomeSettingSchema = new Schema<IHomeSetting>(
       description: { type: String, default: "Discover our latest precision-engineered designs and innovative bath fittings." },
       products: [
         {
-          id: { type: Number },
+          id: { type: Schema.Types.Mixed },
           name: { type: String },
           price: { type: String },
           sku: { type: String },
@@ -238,7 +238,11 @@ const HomeSettingSchema = new Schema<IHomeSetting>(
       socials: [{ label: { type: String }, href: { type: String } }],
     },
   },
-  { timestamps: true }
+  { timestamps: true, strict: false }
 );
+
+if (mongoose.models && mongoose.models.HomeSetting) {
+  delete (mongoose.models as any).HomeSetting;
+}
 
 export default mongoose.models.HomeSetting || mongoose.model<IHomeSetting>("HomeSetting", HomeSettingSchema);
