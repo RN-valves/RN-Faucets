@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Enquiry from "@/models/Enquiry";
-import { escapeRegex, sanitizeString, sanitizeObject, checkRateLimit, getClientIp, isValidEmail } from "@/lib/security";
-import { apiSuccess, apiError, handleApiError } from "@/lib/api-response";
 
 const DEFAULT_MOCK_ENQUIRIES = [
   {
@@ -41,8 +39,8 @@ export async function GET(request: Request) {
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
-    const q = sanitizeString(searchParams.get("q") || "", 80);
-    const status = sanitizeString(searchParams.get("status") || "All", 30);
+    const q = searchParams.get("q") || "";
+    const status = searchParams.get("status") || "All";
 
     const count = await Enquiry.countDocuments();
     if (count === 0) {
@@ -51,12 +49,11 @@ export async function GET(request: Request) {
 
     const query: any = {};
     if (q) {
-      const safeQ = escapeRegex(q);
       query.$or = [
-        { customerName: { $regex: safeQ, $options: "i" } },
-        { email: { $regex: safeQ, $options: "i" } },
-        { phone: { $regex: safeQ, $options: "i" } },
-        { subject: { $regex: safeQ, $options: "i" } },
+        { customerName: { $regex: q, $options: "i" } },
+        { email: { $regex: q, $options: "i" } },
+        { phone: { $regex: q, $options: "i" } },
+        { subject: { $regex: q, $options: "i" } },
       ];
     }
     if (status !== "All") {
@@ -72,35 +69,18 @@ export async function GET(request: Request) {
       newCount,
     });
   } catch (error: any) {
-    return handleApiError(error, "GET /api/enquiries");
+    console.error("GET /api/enquiries error:", error);
+    return NextResponse.json({ error: error.message || "Failed to fetch enquiries" }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   try {
-    // ── Spam & Rate Limit Protection ──
-    const clientIp = getClientIp(request);
-    const ipLimit = checkRateLimit(`enquiry-ip:${clientIp}`, 8, 10 * 60 * 1000);
-    if (!ipLimit.allowed) {
-      return apiError("Too many submissions from this connection. Please wait before submitting another enquiry.", {
-        status: 429,
-        code: "RATE_LIMITED",
-      });
-    }
-
     await connectDB();
-    const rawBody = await request.json().catch(() => ({}));
-    const body = sanitizeObject(rawBody);
+    const body = await request.json();
 
-    const customerName = sanitizeString(body.customerName, 100);
-    const email = sanitizeString(body.email, 120);
-
-    if (!customerName || !email) {
-      return apiError("Customer name and email address are required.", { status: 400 });
-    }
-
-    if (!isValidEmail(email)) {
-      return apiError("Please enter a valid email address.", { status: 400 });
+    if (!body.customerName || !body.email) {
+      return NextResponse.json({ error: "Customer name and email are required." }, { status: 400 });
     }
 
     const id = body.id || `enq-${Date.now().toString().slice(-6)}`;
@@ -108,13 +88,6 @@ export async function POST(request: Request) {
 
     const newEnquiry = await Enquiry.create({
       ...body,
-      customerName,
-      email,
-      phone: sanitizeString(body.phone, 30),
-      companyName: sanitizeString(body.companyName, 120),
-      profession: sanitizeString(body.profession, 60),
-      subject: sanitizeString(body.subject, 150),
-      message: sanitizeString(body.message, 1000),
       id,
       date,
       status: "New",
@@ -122,6 +95,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(newEnquiry, { status: 201 });
   } catch (error: any) {
-    return handleApiError(error, "POST /api/enquiries");
+    console.error("POST /api/enquiries error:", error);
+    return NextResponse.json({ error: error.message || "Failed to create enquiry lead" }, { status: 500 });
   }
 }

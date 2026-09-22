@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
-import { escapeRegex } from "@/lib/security";
 import mongoose from "mongoose";
 
 export async function GET(request: Request) {
@@ -18,12 +17,11 @@ export async function GET(request: Request) {
     const query: Record<string, any> = {};
     if (status) query.status = status;
     if (q) {
-      const safeQ = escapeRegex(q);
       query.$or = [
-        { name: { $regex: safeQ, $options: "i" } },
-        { title: { $regex: safeQ, $options: "i" } },
-        { shortDescription: { $regex: safeQ, $options: "i" } },
-        { createdBy: { $regex: safeQ, $options: "i" } },
+        { name: { $regex: q, $options: "i" } },
+        { title: { $regex: q, $options: "i" } },
+        { shortDescription: { $regex: q, $options: "i" } },
+        { createdBy: { $regex: q, $options: "i" } },
       ];
     }
 

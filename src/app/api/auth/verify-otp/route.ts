@@ -2,45 +2,23 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 import Otp from "@/models/Otp";
-import { checkRateLimit, getClientIp, isValidIndianPhone, sanitizeString } from "@/lib/security";
-import { apiSuccess, apiError, handleApiError } from "@/lib/api-response";
 
 export async function POST(request: Request) {
   try {
     await connectDB();
-    const body = await request.json().catch(() => ({}));
-    const { mobile, otp, name, email, userType, businessName, gstNumber, isDirectRegistration } = body;
+    const { mobile, otp, name, email, userType, businessName, gstNumber, isDirectRegistration } = await request.json();
 
-    if (!isValidIndianPhone(mobile)) {
-      return apiError("Please enter a valid 10-digit mobile number.", { status: 400 });
+    if (!mobile) {
+      return NextResponse.json({ error: "Mobile number is required." }, { status: 400 });
     }
 
     const cleanMobile = String(mobile).replace(/\D/g, "").slice(-10);
-    const clientIp = getClientIp(request);
-    const isSuperAdminNumber = cleanMobile === "8737029643";
+    const enteredOtp = otp ? String(otp).trim() : "";
 
-    // ── Security Check: Disallow unverified Admin claims via isDirectRegistration ──
-    if (isDirectRegistration && isSuperAdminNumber) {
-      return apiError("OTP verification is strictly required for administrator authentication.", {
-        status: 403,
-        code: "ADMIN_OTP_REQUIRED",
-      });
-    }
-
-    // If not direct registration, verify OTP with rate limit on attempts
+    // If not direct registration, verify OTP
     if (!isDirectRegistration) {
-      const enteredOtp = otp ? String(otp).trim() : "";
       if (!enteredOtp) {
-        return apiError("OTP is required.", { status: 400 });
-      }
-
-      // Brute-force protection: max 10 attempts per mobile per 15 minutes
-      const attemptLimit = checkRateLimit(`otp-verify:${cleanMobile}`, 10, 15 * 60 * 1000);
-      if (!attemptLimit.allowed) {
-        return apiError("Too many incorrect OTP attempts. Please wait 15 minutes.", {
-          status: 429,
-          code: "TOO_MANY_ATTEMPTS",
-        });
+        return NextResponse.json({ error: "OTP is required." }, { status: 400 });
       }
 
       let isValidOtp = false;
@@ -83,54 +61,41 @@ export async function POST(request: Request) {
       }
 
       if (!isValidOtp) {
-        return apiError("Invalid or expired OTP. Please enter the correct code.", { status: 400 });
+        return NextResponse.json(
+          { error: "Invalid or expired OTP. Please enter the correct code." },
+          { status: 400 }
+        );
       }
     }
 
-    // Find existing user
-    let user = await User.findOne({
+    // Find or create customer
+    const isSuperAdmin = cleanMobile === "8737029643";
+    let user = await User.findOne({ 
       $or: [
         { mobile: cleanMobile },
         { mobile: `+91${cleanMobile}` },
         { mobile: `91${cleanMobile}` },
-      ],
+      ]
     });
 
-    if (isDirectRegistration && user) {
-      return apiError("An account with this mobile number already exists. Please log in.", {
-        status: 409,
-        code: "ACCOUNT_EXISTS",
-      });
-    }
-
     if (!user) {
-      const safeType = isSuperAdminNumber ? "Admin" : (userType === "Business" ? "Business" : "Customer");
-      const userCode = isSuperAdminNumber
-        ? "RN-ADM-001"
-        : `RN-${safeType.substring(0, 4).toUpperCase()}-${Date.now().toString().slice(-4)}`;
+      const type = isSuperAdmin ? "Admin" : (userType || "Customer");
+      const userCode = isSuperAdmin ? "RN-ADM-001" : `RN-${type.substring(0, 4).toUpperCase()}-${Date.now().toString().slice(-4)}`;
 
       user = await User.create({
         mobile: cleanMobile,
-        name: isSuperAdminNumber
-          ? "Super Admin (Aditya)"
-          : sanitizeString(name, 100) || `Customer ${cleanMobile.slice(-4)}`,
-        email: isSuperAdminNumber
-          ? "admin.aditya@rnvalves.com"
-          : sanitizeString(email, 120),
+        name: isSuperAdmin ? "Super Admin (Aditya)" : (name || `Customer ${cleanMobile.slice(-4)}`),
+        email: email || (isSuperAdmin ? "admin.aditya@rnvalves.com" : ""),
         userCode,
-        userType: safeType,
-        role: isSuperAdminNumber ? "Super Admin" : "User",
-        profession: isSuperAdminNumber
-          ? "Super Admin"
-          : safeType === "Business"
-          ? "Dealer"
-          : "Consumer",
-        businessName: sanitizeString(businessName, 150),
-        gstNumber: sanitizeString(gstNumber, 20).toUpperCase(),
+        userType: type,
+        role: isSuperAdmin ? "Super Admin" : "User",
+        profession: isSuperAdmin ? "Super Admin" : (type === "Business" ? "Dealer" : "Consumer"),
+        businessName: businessName || "",
+        gstNumber: gstNumber || "",
         approvalStatus: "Approved",
         status: "Active",
       });
-    } else if (isSuperAdminNumber && !isDirectRegistration) {
+    } else if (isSuperAdmin) {
       user.mobile = "8737029643";
       user.userType = "Admin";
       user.role = "Super Admin";
@@ -140,16 +105,17 @@ export async function POST(request: Request) {
       await user.save();
     }
 
-    return apiSuccess({
+    return NextResponse.json({
+      success: true,
       message: "Mobile verified successfully!",
       user: {
         _id: user._id,
-        mobile: isSuperAdminNumber ? "8737029643" : user.mobile,
+        mobile: "8737029643" === cleanMobile ? "8737029643" : user.mobile,
         name: user.name,
         email: user.email,
         userCode: user.userCode,
-        userType: isSuperAdminNumber ? "Admin" : user.userType,
-        role: isSuperAdminNumber ? "Super Admin" : user.role || "User",
+        userType: isSuperAdmin ? "Admin" : user.userType,
+        role: isSuperAdmin ? "Super Admin" : (user.role || "User"),
         profession: user.profession,
         gstNumber: user.gstNumber,
         businessName: user.businessName,
@@ -157,6 +123,10 @@ export async function POST(request: Request) {
       },
     });
   } catch (error: any) {
-    return handleApiError(error, "POST /api/auth/verify-otp");
+    console.error("POST /api/auth/verify-otp error:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to verify OTP" },
+      { status: 500 }
+    );
   }
 }

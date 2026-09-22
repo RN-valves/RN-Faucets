@@ -1,28 +1,25 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
-import { escapeRegex, sanitizeString, sanitizeObject, isValidIndianPhone } from "@/lib/security";
-import { apiSuccess, apiError, handleApiError } from "@/lib/api-response";
 
 export async function GET(request: Request) {
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
-    const q = sanitizeString(searchParams.get("q") || "", 80);
-    const type = sanitizeString(searchParams.get("type") || "All", 30);
-    const approval = sanitizeString(searchParams.get("approval") || "All", 30);
+    const q = searchParams.get("q") || "";
+    const type = searchParams.get("type") || "All";
+    const approval = searchParams.get("approval") || "All";
 
     const query: any = {};
 
     if (q) {
-      const safeQ = escapeRegex(q);
       query.$or = [
-        { name: { $regex: safeQ, $options: "i" } },
-        { email: { $regex: safeQ, $options: "i" } },
-        { mobile: { $regex: safeQ, $options: "i" } },
-        { userCode: { $regex: safeQ, $options: "i" } },
-        { businessName: { $regex: safeQ, $options: "i" } },
-        { gstNumber: { $regex: safeQ, $options: "i" } },
+        { name: { $regex: q, $options: "i" } },
+        { email: { $regex: q, $options: "i" } },
+        { mobile: { $regex: q, $options: "i" } },
+        { userCode: { $regex: q, $options: "i" } },
+        { businessName: { $regex: q, $options: "i" } },
+        { gstNumber: { $regex: q, $options: "i" } },
       ];
     }
 
@@ -38,11 +35,7 @@ export async function GET(request: Request) {
       query.approvalStatus = approval;
     }
 
-    // Exclude sensitive password fields from API output
-    const users = await User.find(query)
-      .select("-password -local_password")
-      .sort({ createdAt: -1 })
-      .lean();
+    const users = await User.find(query).sort({ createdAt: -1 }).lean();
 
     const pendingCount = await User.countDocuments({ approvalStatus: "Pending" });
     const businessCount = await User.countDocuments({ userType: "Business" });
@@ -60,42 +53,42 @@ export async function GET(request: Request) {
       },
     });
   } catch (error: any) {
-    return handleApiError(error, "GET /api/customers");
+    console.error("GET /api/customers error:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to fetch customers" },
+      { status: 500 }
+    );
   }
 }
 
 export async function POST(request: Request) {
   try {
     await connectDB();
-    const rawBody = await request.json().catch(() => ({}));
-    const body = sanitizeObject(rawBody);
+    const body = await request.json();
 
     if (!body.mobile || !body.name) {
-      return apiError("Mobile number and name are required.", { status: 400 });
+      return NextResponse.json(
+        { error: "Mobile number and name are required." },
+        { status: 400 }
+      );
     }
 
-    const cleanMobile = String(body.mobile).replace(/\D/g, "").slice(-10);
-    const userCode =
-      body.userCode ||
-      `RN-${(body.userType || "CUST").toUpperCase().substring(0, 3)}-${Date.now().toString().slice(-4)}`;
+    const cleanMobile = body.mobile.trim();
+    const userCode = body.userCode || `RN-${(body.userType || "CUST").toUpperCase().substring(0, 3)}-${Date.now().toString().slice(-4)}`;
 
     const newUser = await User.create({
       ...body,
       mobile: cleanMobile,
-      name: sanitizeString(body.name, 100),
-      email: sanitizeString(body.email, 120),
-      businessName: sanitizeString(body.businessName, 150),
-      gstNumber: sanitizeString(body.gstNumber, 20).toUpperCase(),
       userCode,
       approvalStatus: body.approvalStatus || (body.userType === "Business" ? "Pending" : "Approved"),
     });
 
-    const userObj = newUser.toObject();
-    delete (userObj as any).password;
-    delete (userObj as any).local_password;
-
-    return NextResponse.json(userObj, { status: 201 });
+    return NextResponse.json(newUser, { status: 201 });
   } catch (error: any) {
-    return handleApiError(error, "POST /api/customers");
+    console.error("POST /api/customers error:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to create user record" },
+      { status: 500 }
+    );
   }
 }

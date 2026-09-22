@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
-import { escapeRegex } from "@/lib/security";
 import Product from "@/models/Product";
 
 export async function GET(request: Request) {
@@ -14,12 +13,11 @@ export async function GET(request: Request) {
     const filter: Record<string, any> = {};
 
     if (q) {
-      const safeQ = escapeRegex(q);
       filter.$or = [
-        { code: { $regex: safeQ, $options: "i" } },
-        { skuCode: { $regex: safeQ, $options: "i" } },
-        { article: { $regex: safeQ, $options: "i" } },
-        { name: { $regex: safeQ, $options: "i" } },
+        { code: { $regex: q, $options: "i" } },
+        { skuCode: { $regex: q, $options: "i" } },
+        { article: { $regex: q, $options: "i" } },
+        { name: { $regex: q, $options: "i" } },
       ];
     }
 

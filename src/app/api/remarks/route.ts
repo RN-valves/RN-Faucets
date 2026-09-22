@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
-import { escapeRegex } from "@/lib/security";
 import RemarkLog from "@/models/RemarkLog";
 import Remark from "@/models/Remark";
 
@@ -23,7 +22,7 @@ export async function GET(request: Request) {
       query.$or = [{ logableId: uid }, { adminUserId: uid }];
     } else if (mobile) {
       const cleanMobile = mobile.replace(/[^\d]/g, "").slice(-10);
-      query.customerMobile = { $regex: escapeRegex(cleanMobile) };
+      query.customerMobile = { $regex: cleanMobile };
     }
 
     const logs = await RemarkLog.find(query).sort({ createdAt: -1 }).limit(100).lean();

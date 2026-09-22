@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { r2Client, R2_BUCKET } from "@/lib/r2";
-import { sanitizeStorageKey } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
@@ -11,14 +10,7 @@ export async function GET(
 ) {
   try {
     const { key: keyParts } = await params;
-
-    // Security check: reject if any path segment contains traversal
-    if (!keyParts || !Array.isArray(keyParts) || keyParts.some((p) => p.includes("..") || p.includes("\0"))) {
-      return new NextResponse("Invalid Media Key", { status: 400 });
-    }
-
-    const rawKey = keyParts.join("/");
-    const key = sanitizeStorageKey(rawKey);
+    const key = keyParts.join("/");
 
     if (!key) {
       return new NextResponse("Media Key is required", { status: 400 });
@@ -42,11 +34,8 @@ export async function GET(
     const lowerKey = key.toLowerCase();
     let contentType = response.ContentType || "application/octet-stream";
 
-    if (
-      response.ContentType === "image/svg+xml" ||
-      response.ContentType?.startsWith("image/svg") ||
-      lowerKey.endsWith(".svg")
-    ) {
+    // If R2 stored image/svg+xml or if key ends in .svg, guarantee SVG Content-Type
+    if (response.ContentType === "image/svg+xml" || response.ContentType?.startsWith("image/svg") || lowerKey.endsWith(".svg")) {
       contentType = "image/svg+xml";
     } else if (
       !response.ContentType ||
@@ -103,9 +92,7 @@ export async function GET(
     ) {
       return new NextResponse("Media Asset Not Found", { status: 404 });
     }
-    if (process.env.NODE_ENV === "development") {
-      console.error("GET /api/media error:", error);
-    }
+    console.error("GET /api/media error:", error);
     return new NextResponse("Media Asset Not Found", { status: 404 });
   }
 }

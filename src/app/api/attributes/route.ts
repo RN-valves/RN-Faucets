@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
-import { escapeRegex } from "@/lib/security";
 import mongoose from "mongoose";
 
 export async function GET(request: Request) {
@@ -16,7 +15,7 @@ export async function GET(request: Request) {
 
     const filter: Record<string, any> = {};
     if (type) {
-      filter.type = { $regex: new RegExp(`^${escapeRegex(type)}$`, "i") };
+      filter.type = { $regex: new RegExp(`^${type}$`, "i") };
     }
 
     const attributes = await db.collection("attributes").find(filter).sort({ name: 1 }).toArray();

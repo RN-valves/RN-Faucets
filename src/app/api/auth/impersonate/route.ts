@@ -1,47 +1,35 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
-import { validateAdminAuth, sanitizeString, escapeRegex } from "@/lib/security";
-import { apiSuccess, apiError, handleApiError } from "@/lib/api-response";
 
 export async function POST(request: Request) {
   try {
-    // ── Security Guard: Enforce Admin Authorization ──
-    const isAdmin = validateAdminAuth(request);
-    if (!isAdmin) {
-      return apiError("Unauthorized: Only administrators are permitted to impersonate user accounts.", {
-        status: 403,
-        code: "UNAUTHORIZED_ADMIN_ACTION",
-      });
-    }
-
     await connectDB();
-    const body = await request.json().catch(() => ({}));
-    const { userId, userCode, mobile } = body;
+    const { userId, userCode, mobile } = await request.json();
 
     const query: any = {};
     if (userId) {
-      if (typeof userId === "number" || (!isNaN(Number(userId)) && String(userId).length < 12)) {
+      if (typeof userId === "number" || !isNaN(Number(userId))) {
         query.$or = [{ legacyId: Number(userId) }, { _id: String(userId) }];
       } else {
-        query._id = sanitizeString(userId, 50);
+        query._id = String(userId);
       }
     } else if (userCode) {
-      const cleanCode = sanitizeString(userCode, 50);
-      query.$or = [{ userCode: cleanCode }, { uuid: cleanCode }];
+      query.$or = [{ userCode }, { uuid: userCode }];
     } else if (mobile) {
       const cleanMobile = String(mobile).replace(/\D/g, "").slice(-10);
-      query.mobile = cleanMobile;
+      query.mobile = { $regex: cleanMobile };
     } else {
-      return apiError("User identifier (userId, userCode, or mobile) is required.", { status: 400 });
+      return NextResponse.json({ error: "User identifier required" }, { status: 400 });
     }
 
     const user = await User.findOne(query).lean();
     if (!user) {
-      return apiError("Customer not found.", { status: 404 });
+      return NextResponse.json({ error: "Customer not found." }, { status: 404 });
     }
 
-    return apiSuccess({
+    return NextResponse.json({
+      success: true,
       message: `Impersonating customer ${user.name || user.mobile}`,
       user: {
         _id: user._id,
@@ -62,6 +50,7 @@ export async function POST(request: Request) {
       },
     });
   } catch (error: any) {
-    return handleApiError(error, "POST /api/auth/impersonate");
+    console.error("POST /api/auth/impersonate error:", error);
+    return NextResponse.json({ error: error.message || "Failed to impersonate user" }, { status: 500 });
   }
 }
