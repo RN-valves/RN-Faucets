@@ -15,7 +15,6 @@ import {
   Phone,
   RefreshCcw,
   ShieldCheck,
-  Star,
   Truck,
   VolumeX,
   Waves,
@@ -722,42 +721,6 @@ export default function FaucetProductPage({
               >
                 {product.name}
               </h1>
-
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  marginBottom: "14px",
-                  fontFamily: "'Manrope', system-ui, sans-serif",
-                  fontSize: "13px",
-                  color: "#3a3a3a",
-                }}
-              >
-                <div style={{ display: "flex", gap: "4px", color: "#111111" }}>
-                  {Array.from({ length: 5 }).map((_, index) => (
-                    <Star key={index} size={15} fill="currentColor" />
-                  ))}
-                </div>
-                <span style={{ fontWeight: 600 }}>0 Reviews</span>
-              </div>
-
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  backgroundColor: "#0c8f43",
-                  color: "#ffffff",
-                  fontFamily: "'Manrope', system-ui, sans-serif",
-                  fontSize: "12px",
-                  fontWeight: 800,
-                  borderRadius: "6px",
-                  padding: "6px 12px",
-                  marginBottom: "18px",
-                }}
-              >
-                1 Year Warranty
-              </div>
 
               <div style={{ marginBottom: "24px" }}>
                 <div

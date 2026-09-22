@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useRef, useState, useEffect, useCallback } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, ShoppingBag, Check } from "lucide-react";
 import { addToCart } from "@/utils/cart";
@@ -68,7 +67,7 @@ export default function OtherProductsSection({
   const scroll = (direction: "left" | "right") => {
     const el = trackRef.current;
     if (!el) return;
-    const card = el.querySelector(".other-product-card") as HTMLElement | null;
+    const card = el.querySelector(".other-product-card-wrapper") as HTMLElement | null;
     const cardWidth = card?.offsetWidth || 300;
     const gap = 24;
     const amount = (cardWidth + gap) * 2;
@@ -137,11 +136,11 @@ export default function OtherProductsSection({
   return (
     <section className="other-products-section" aria-label="Other Products in this section">
       <div className="other-products-container">
-        {/* Header with Title & Navigation Controls */}
+        {/* Luxury Section Header matching RN Brand Guidelines */}
         <div className="other-products-header">
           <div>
-            <span className="other-products-subtitle">EXPLORE SIMILAR</span>
-            <h3 className="other-products-title">{title}</h3>
+            <span className="other-products-subtitle">EXPLORE SIMILAR DESIGNS</span>
+            <h2 className="other-products-title">{title}</h2>
           </div>
 
           <div className="other-products-nav">
@@ -176,100 +175,100 @@ export default function OtherProductsSection({
           onMouseLeave={handleMouseUpOrLeave}
         >
           {products.map((item, idx) => {
-            const itemKey = item.code || item.id || item.article || String(idx);
-            const sellingPrice = Number(item.inSelling ?? item.price ?? 0);
-            const mrp = Number(item.inMrp ?? item.originalPrice ?? 0);
-            const hasDiscount = mrp > sellingPrice && sellingPrice > 0;
-            const discountPercent = hasDiscount
-              ? Math.round(((mrp - sellingPrice) / mrp) * 100)
-              : 0;
-            const isAdded = Boolean(addedIds[itemKey]);
-            const targetUrl = `/faucets/${categorySlug}/${encodeURIComponent(item.code || item.id || itemKey)}`;
+            const itemCode = item.code || item.skuCode || item.id || item.article || String(idx);
+            const articleNo = item.article || item.code || item.skuCode || "";
+            const sizeVal = (item.size && item.size.trim() !== "-") ? item.size.trim() : "";
+            const priceVal = Number(item.inSelling ?? item.price ?? 0);
+            const mrpVal = Number(item.inMrp ?? item.originalPrice ?? 0);
+            const isAdded = Boolean(addedIds[itemCode]);
+            const targetUrl = `/faucets/${categorySlug}/${encodeURIComponent(item.code || item.id || itemCode)}`;
 
             return (
-              <div key={itemKey} className="other-product-card">
+              <div key={itemCode} className="other-product-card-wrapper">
                 <Link
                   href={targetUrl}
-                  className="other-product-card-link"
+                  className="product-card other-card-body group"
                   onClick={(e) => {
                     if (hasMovedRef.current) {
                       e.preventDefault();
                     }
                   }}
                 >
-                  {/* Thumbnail Image */}
-                  <div className="other-product-image-wrap">
-                    {hasDiscount && (
-                      <span className="other-product-badge">
-                        {discountPercent}% OFF
-                      </span>
-                    )}
+                  {/* Category / Collection Tag */}
+                  <div className="other-card-category-tag">
+                    {item.category || "RN"}
+                    {item.subcategoryName ? ` | ${item.subcategoryName}` : ""}
+                  </div>
+
+                  {/* Product Image on Continuous Paper Texture */}
+                  <div className="product-card__image-panel other-card-img-panel">
                     <img
                       src={item.image || "/api/media/website/catalogue/products/default/image.webp"}
                       alt={item.name}
-                      className="other-product-image"
+                      className="other-card-img group-hover:scale-[1.14]"
                       loading="lazy"
                     />
                   </div>
 
-                  {/* Card Content Info */}
-                  <div className="other-product-info">
-                    {/* Category & Subcategory line matching PHP */}
-                    <div className="other-product-category">
-                      {item.category || "RN"}
-                      {item.subcategoryName ? ` | ${item.subcategoryName}` : ""}
-                    </div>
-
-                    {/* Product Name */}
-                    <h4 className="other-product-name" title={item.name}>
+                  {/* Title & Info Block */}
+                  <div className="other-card-meta-block">
+                    <h3 className="other-card-name" title={item.name}>
                       {item.name}
-                    </h4>
+                    </h3>
 
-                    {/* Product Code */}
-                    <div className="other-product-meta">
-                      Product Code : <strong>{item.article || item.code || "—"}</strong>
-                    </div>
+                    {/* Size & Article Number info row */}
+                    {(articleNo || sizeVal) && (
+                      <div className="other-card-specs-row">
+                        {articleNo ? (
+                          <span className="other-card-art">
+                            <span className="other-card-art-label">Art:</span>
+                            <span className="other-card-art-val">{articleNo}</span>
+                          </span>
+                        ) : (
+                          <span />
+                        )}
 
-                    {/* Product Size (if present) */}
-                    {item.size && item.size.trim() !== "-" && (
-                      <div className="other-product-meta">
-                        Product Size : <strong>{item.size}</strong>
+                        {sizeVal && (
+                          <span className="other-card-size-badge">
+                            Size: {sizeVal}
+                          </span>
+                        )}
                       </div>
                     )}
 
-                    {/* Price Section */}
-                    <div className="other-product-price-row">
-                      <span className="other-product-selling-price">
-                        ₹{sellingPrice.toLocaleString("en-IN")}
+                    {/* Price Row */}
+                    <div className="other-card-price-row">
+                      <span className="other-card-price">
+                        ₹{priceVal.toLocaleString("en-IN")}/-
                       </span>
-                      {hasDiscount && (
-                        <del className="other-product-mrp">
-                          ₹{mrp.toLocaleString("en-IN")}
+                      {mrpVal > priceVal && (
+                        <del className="other-card-mrp">
+                          ₹{mrpVal.toLocaleString("en-IN")}
                         </del>
                       )}
                     </div>
                   </div>
-                </Link>
 
-                {/* Add To Cart Button */}
-                <div className="other-product-btn-wrap">
-                  <button
-                    type="button"
-                    onClick={(e) => handleAddToCart(e, item)}
-                    className={`other-product-add-btn ${isAdded ? "added" : ""}`}
-                    aria-label={`Add ${item.name} to cart`}
-                  >
-                    {isAdded ? (
-                      <>
-                        <Check size={16} /> Added to Cart
-                      </>
-                    ) : (
-                      <>
-                        <ShoppingBag size={16} /> Add To Cart
-                      </>
-                    )}
-                  </button>
-                </div>
+                  {/* Add To Cart Button */}
+                  <div className="other-card-btn-wrap">
+                    <button
+                      type="button"
+                      onClick={(e) => handleAddToCart(e, item)}
+                      className={`other-card-cart-btn ${isAdded ? "added" : ""}`}
+                      aria-label={`Add ${item.name} to cart`}
+                    >
+                      {isAdded ? (
+                        <>
+                          <Check size={14} /> Added to Cart
+                        </>
+                      ) : (
+                        <>
+                          <ShoppingBag size={14} /> Add To Cart
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </Link>
               </div>
             );
           })}
@@ -279,9 +278,9 @@ export default function OtherProductsSection({
       <style jsx>{`
         .other-products-section {
           width: 100%;
-          background: #FAFAFA;
-          border-top: 1px solid #E5E7EB;
-          padding: clamp(60px, 8vh, 85px) 0 clamp(50px, 7vh, 75px);
+          background: #FFFFFF;
+          border-top: 1px solid #E2E8F0;
+          padding: clamp(64px, 8vh, 96px) 0 clamp(48px, 6vh, 80px);
           overflow: hidden;
           box-sizing: border-box;
         }
@@ -297,7 +296,7 @@ export default function OtherProductsSection({
           display: flex;
           justify-content: space-between;
           align-items: flex-end;
-          margin-bottom: 32px;
+          margin-bottom: 36px;
           flex-wrap: wrap;
           gap: 16px;
         }
@@ -305,22 +304,22 @@ export default function OtherProductsSection({
         .other-products-subtitle {
           display: block;
           font-family: 'Manrope', system-ui, sans-serif;
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 0.14em;
+          font-size: 11.5px;
+          font-weight: 800;
+          letter-spacing: 0.16em;
           text-transform: uppercase;
           color: #64748B;
-          margin-bottom: 4px;
+          margin-bottom: 6px;
         }
 
         .other-products-title {
           font-family: 'Manrope', system-ui, sans-serif;
-          font-size: clamp(24px, 2.5vw, 32px);
-          font-weight: 700;
-          letter-spacing: -0.02em;
+          font-size: clamp(26px, 2.8vw, 36px);
+          font-weight: 800;
+          letter-spacing: -0.03em;
           color: #0F172A;
           margin: 0;
-          line-height: 1.2;
+          line-height: 1.15;
         }
 
         .other-products-nav {
@@ -363,7 +362,7 @@ export default function OtherProductsSection({
           scroll-behavior: smooth;
           scrollbar-width: none;
           -ms-overflow-style: none;
-          padding: 8px 4px 24px;
+          padding: 8px 4px 28px;
           cursor: grab;
           box-sizing: border-box;
         }
@@ -372,176 +371,198 @@ export default function OtherProductsSection({
           display: none;
         }
 
-        .other-product-card {
-          flex: 0 0 clamp(260px, calc((100% - 72px) / 4), 320px);
-          width: clamp(260px, calc((100% - 72px) / 4), 320px);
-          background: #FFFFFF;
-          border: 1px solid #E2E8F0;
-          border-radius: 12px;
-          overflow: hidden;
+        .other-product-card-wrapper {
+          flex: 0 0 clamp(270px, calc((100% - 72px) / 4), 320px);
+          width: clamp(270px, calc((100% - 72px) / 4), 320px);
           display: flex;
-          flex-direction: column;
-          transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
           box-sizing: border-box;
         }
 
-        .other-product-card:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 14px 30px rgba(0, 0, 0, 0.08);
-          border-color: #CBD5E1;
-        }
-
-        .other-product-card-link {
+        /* Continuous Luxury Paper Card matching catalog design */
+        .other-card-body {
+          width: 100%;
           text-decoration: none;
-          color: inherit;
+          padding: 22px 20px 18px;
           display: flex;
           flex-direction: column;
-          flex: 1;
+          min-height: 520px;
+          box-sizing: border-box;
+          cursor: pointer;
+          position: relative;
+          transition: transform 0.35s ease, box-shadow 0.35s ease;
+          border: 1px solid rgba(15, 23, 42, 0.08);
         }
 
-        .other-product-image-wrap {
-          position: relative;
+        .other-card-body:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 16px 36px rgba(18, 42, 62, 0.12);
+        }
+
+        .other-card-category-tag {
+          font-family: 'Manrope', system-ui, sans-serif;
+          font-size: 11px;
+          font-weight: 700;
+          color: #4B5563;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          margin-bottom: 8px;
+        }
+
+        .other-card-img-panel {
+          flex: 1 1 auto;
           width: 100%;
-          height: 240px;
-          background: #F8FAFC;
+          min-height: 250px;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 20px;
-          box-sizing: border-box;
           overflow: hidden;
-          border-bottom: 1px solid #F1F5F9;
+          padding: 10px 4px 14px;
+          box-sizing: border-box;
         }
 
-        .other-product-badge {
-          position: absolute;
-          top: 12px;
-          left: 12px;
-          background: #059669;
-          color: #FFFFFF;
-          font-family: 'Manrope', system-ui, sans-serif;
-          font-size: 11px;
-          font-weight: 800;
-          padding: 4px 8px;
-          border-radius: 4px;
-          letter-spacing: 0.04em;
-          z-index: 2;
-        }
-
-        .other-product-image {
-          max-width: 100%;
+        .other-card-img {
+          width: 100%;
+          height: 100%;
+          max-width: 94%;
           max-height: 100%;
           object-fit: contain;
-          transition: transform 0.35s ease;
+          transform: scale(1.08);
+          transition: transform 0.45s ease;
           user-select: none;
+          filter: drop-shadow(0 14px 22px rgba(20, 36, 52, 0.14));
         }
 
-        .other-product-card:hover .other-product-image {
-          transform: scale(1.06);
+        .other-card-meta-block {
+          flex-shrink: 0;
+          margin-top: 8px;
+          padding: 0 2px;
         }
 
-        .other-product-info {
-          padding: 16px 18px 12px;
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          flex: 1;
-        }
-
-        .other-product-category {
-          font-family: 'Manrope', system-ui, sans-serif;
-          font-size: 11px;
-          font-weight: 700;
-          color: #64748B;
-          text-transform: uppercase;
-          letter-spacing: 0.06em;
-        }
-
-        .other-product-name {
+        .other-card-name {
           font-family: 'Manrope', system-ui, sans-serif;
           font-size: 15px;
-          font-weight: 700;
-          color: #0F172A;
-          margin: 0;
-          line-height: 1.35;
+          font-weight: 600;
+          line-height: 1.4;
+          color: #1A1A1A;
+          margin: 0 0 10px 0;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
-          min-height: 40px;
+          min-height: 42px;
         }
 
-        .other-product-meta {
+        .other-card-specs-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 6px;
+          margin-bottom: 10px;
           font-family: 'Manrope', system-ui, sans-serif;
-          font-size: 12px;
-          color: #64748B;
-          line-height: 1.3;
+          font-size: 11.5px;
+          line-height: 1.2;
         }
 
-        .other-product-meta strong {
-          color: #1E293B;
+        .other-card-art {
+          color: #4B5563;
+          font-weight: 500;
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+        }
+
+        .other-card-art-label {
+          color: #8C96A3;
+          font-size: 10px;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          fontWeight: 700;
+        }
+
+        .other-card-art-val {
           font-weight: 700;
+          color: #1F2937;
         }
 
-        .other-product-price-row {
+        .other-card-size-badge {
+          color: #334155;
+          font-weight: 700;
+          font-size: 10.5px;
+          background-color: rgba(0, 0, 0, 0.05);
+          padding: 2px 7px;
+          border-radius: 4px;
+          white-space: nowrap;
+        }
+
+        .other-card-price-row {
           display: flex;
           align-items: baseline;
           gap: 8px;
-          margin-top: 6px;
+          margin-bottom: 14px;
         }
 
-        .other-product-selling-price {
+        .other-card-price {
           font-family: 'Manrope', system-ui, sans-serif;
-          font-size: 18px;
+          font-size: 20px;
           font-weight: 800;
-          color: #0F172A;
+          line-height: 1;
+          color: #111111;
         }
 
-        .other-product-mrp {
+        .other-card-mrp {
           font-family: 'Manrope', system-ui, sans-serif;
           font-size: 13px;
           color: #94A3B8;
         }
 
-        .other-product-btn-wrap {
-          padding: 0 18px 16px;
+        .other-card-btn-wrap {
+          margin-top: auto;
+          padding-top: 4px;
         }
 
-        .other-product-add-btn {
+        .other-card-cart-btn {
           width: 100%;
           height: 42px;
-          border-radius: 8px;
-          border: 1px solid #0F172A;
-          background: #0F172A;
+          border-radius: 6px;
+          border: 1px solid #111827;
+          background: #111827;
           color: #FFFFFF;
           font-family: 'Manrope', system-ui, sans-serif;
-          font-size: 13px;
-          font-weight: 700;
-          letter-spacing: 0.04em;
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 8px;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: all 0.25s ease;
         }
 
-        .other-product-add-btn:hover {
+        .other-card-cart-btn:hover {
           background: #003366;
           border-color: #003366;
-          transform: translateY(-1px);
         }
 
-        .other-product-add-btn.added {
+        .other-card-cart-btn.added {
           background: #059669;
           border-color: #059669;
           color: #FFFFFF;
         }
 
         @media (max-width: 1024px) {
-          .other-product-card {
+          .other-product-card-wrapper {
             flex: 0 0 260px;
             width: 260px;
+          }
+          .other-card-body {
+            min-height: 480px;
+            padding: 18px 14px 14px;
+          }
+          .other-card-img-panel {
+            min-height: 200px;
           }
         }
 
@@ -549,14 +570,18 @@ export default function OtherProductsSection({
           .other-products-section {
             padding: 45px 0 35px;
           }
-          .other-product-card {
+          .other-product-card-wrapper {
             flex: 0 0 230px;
             width: 230px;
           }
-          .other-product-image-wrap {
-            height: 200px;
+          .other-card-body {
+            min-height: 420px;
+            padding: 14px 12px 12px;
           }
-          .other-product-name {
+          .other-card-img-panel {
+            min-height: 160px;
+          }
+          .other-card-name {
             font-size: 14px;
             min-height: 36px;
           }
