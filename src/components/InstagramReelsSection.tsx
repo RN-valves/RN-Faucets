@@ -41,9 +41,9 @@ const REELS = [
   },
 ];
 
-const CARD_W = 232;
-const CARD_H = 418;
-const GAP = 18;
+const CARD_W = 285;
+const CARD_H = 510;
+const GAP = 20;
 const LOOP_SETS = 5;
 
 const SOCIALS = [
@@ -488,10 +488,10 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
     if (typeof window === "undefined") return;
     const w = window.innerWidth;
     let count = 4;
-    if (w >= 1600) count = 5;
-    else if (w >= 1024) count = 4;
-    else if (w >= 768) count = 3;
-    else if (w >= 520) count = 2;
+    if (w >= 1850) count = 5;
+    else if (w >= 1260) count = 4;
+    else if (w >= 980) count = 3;
+    else if (w >= 640) count = 2;
     else count = 1;
 
     setVisibleCount(count);
@@ -755,7 +755,7 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
         background: "#000000",
         display: "flex",
         alignItems: "center",
-        padding: "70px 0 70px 54px",
+        padding: "85px 0 85px 64px",
         boxSizing: "border-box",
         overflow: "hidden",
       }}
@@ -781,16 +781,25 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
         .insta-reels-track::-webkit-scrollbar {
           display: none;
         }
-        @media (max-width: 1200px) {
-          .insta-reels-section {
-            padding: 56px 0 56px 32px !important;
-          }
+        @media (max-width: 1400px) {
           .insta-reels-left {
-            width: 280px !important;
-            margin-right: 32px !important;
+            width: 340px !important;
+            margin-right: 36px !important;
           }
           .insta-reels-heading {
-            font-size: 40px !important;
+            font-size: 50px !important;
+          }
+        }
+        @media (max-width: 1200px) {
+          .insta-reels-section {
+            padding: 60px 0 60px 32px !important;
+          }
+          .insta-reels-left {
+            width: 300px !important;
+            margin-right: 28px !important;
+          }
+          .insta-reels-heading {
+            font-size: 42px !important;
           }
         }
         @media (max-width: 860px) {
@@ -808,8 +817,8 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
             margin-bottom: 28px !important;
           }
           .insta-reels-heading {
-            font-size: 32px !important;
-            max-width: 320px !important;
+            font-size: 34px !important;
+            max-width: 100% !important;
           }
           .insta-reels-stage {
             width: 100% !important;
@@ -826,9 +835,10 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
         ref={leftRef}
         className="insta-reels-left"
         style={{
-          width: "320px",
+          width: "380px",
+          maxWidth: "400px",
           flexShrink: 0,
-          marginRight: "40px",
+          marginRight: "48px",
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
@@ -840,12 +850,12 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
           style={{
             fontFamily: "'Manrope', Helvetica, Arial, sans-serif",
             fontWeight: 400,
-            fontSize: "48px",
-            lineHeight: 1.1,
-            letterSpacing: "-0.03em",
+            fontSize: "58px",
+            lineHeight: 1.08,
+            letterSpacing: "-0.035em",
             color: "#FFFFFF",
-            margin: "0 0 28px",
-            maxWidth: "320px",
+            margin: "0 0 32px",
+            maxWidth: "380px",
             WebkitFontSmoothing: "antialiased",
             MozOsxFontSmoothing: "grayscale",
           }}
@@ -861,15 +871,15 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
           style={{
             display: "inline-flex",
             alignItems: "center",
-            gap: "10px",
+            gap: "12px",
             alignSelf: "flex-start",
-            padding: "12px 24px",
+            padding: "14px 28px",
             borderRadius: "999px",
             border: "1px solid rgba(255,255,255,0.75)",
             background: "transparent",
             color: "#FFFFFF",
             fontFamily: "'Manrope', Helvetica, Arial, sans-serif",
-            fontSize: "16px",
+            fontSize: "17px",
             fontWeight: 600,
             textDecoration: "none",
             cursor: "pointer",
@@ -877,7 +887,7 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
             WebkitFontSmoothing: "antialiased",
           }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
             <rect
               x="3"
               y="3"
@@ -897,8 +907,8 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "14px",
-            marginTop: "44px",
+            gap: "16px",
+            marginTop: "48px",
           }}
           role="group"
           aria-label="Social media links"
@@ -912,8 +922,8 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
               className="insta-social-btn"
               aria-label={social.label}
               style={{
-                width: "40px",
-                height: "40px",
+                width: "44px",
+                height: "44px",
                 borderRadius: "50%",
                 border: "1px solid rgba(255,255,255,0.28)",
                 display: "flex",
@@ -985,8 +995,8 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
             width: `${visibleCount * CARD_W + (visibleCount - 1) * GAP}px`,
             maxWidth: "100%",
             overflow: "hidden",
-            padding: "24px 0",
-            margin: "-24px 0",
+            padding: "36px 0",
+            margin: "-36px 0",
           }}
         >
           <div
@@ -1005,8 +1015,8 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
               scrollbarWidth: "none",
               cursor: isGrabbing ? "grabbing" : "grab",
               userSelect: "none",
-              padding: "20px 0",
-              margin: "-20px 0",
+              padding: "32px 0",
+              margin: "-32px 0",
             }}
           >
             {loopReels.map((reel, i) => (
