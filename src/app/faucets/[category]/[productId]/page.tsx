@@ -755,16 +755,6 @@ export default function FaucetProductPage({
                     ₹{product.originalPrice.toLocaleString("en-IN")}.00
                   </span>
                 </div>
-                <p
-                  style={{
-                    margin: 0,
-                    fontFamily: "'Manrope', system-ui, sans-serif",
-                    fontSize: "13px",
-                    color: "#555555",
-                  }}
-                >
-                  Tax included. Shipping calculated at checkout.
-                </p>
               </div>
 
               {variantProducts.length > 1 && (
