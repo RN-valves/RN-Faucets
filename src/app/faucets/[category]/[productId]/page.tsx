@@ -15,6 +15,7 @@ import {
   Phone,
   RefreshCcw,
   ShieldCheck,
+  ShoppingCart,
   Truck,
   VolumeX,
   Waves,
@@ -346,7 +347,34 @@ export default function FaucetProductPage({
     productComboId: rawProduct?.productComboId || "",
     bullets: rawProduct?.bullets || [],
     description: rawProduct?.description || "",
+    category: rawProduct?.category || "",
+    subcategoryId: rawProduct?.subcategoryId || "",
+    subcategoryName: rawProduct?.subcategoryName || "",
+    stock: typeof rawProduct?.stock === "number" ? rawProduct.stock : (typeof rawProduct?.stockPcs === "number" ? rawProduct.stockPcs : 10),
   };
+
+  const hasDiscount = product.originalPrice > product.price && product.price > 0;
+  const discountPercent = hasDiscount
+    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+    : 0;
+  const inStock = product.stock > 0;
+
+  const hierarchyBreadcrumb = useMemo(() => {
+    const parts: string[] = [];
+    if (product.material) parts.push(product.material);
+    else if (product.category) parts.push(product.category);
+
+    if (product.subcategoryName && !parts.includes(product.subcategoryName)) {
+      parts.push(product.subcategoryName);
+    } else if (product.category && !parts.includes(product.category)) {
+      parts.push(product.category);
+    }
+
+    if (product.brand && !parts.includes(product.brand)) {
+      parts.push(product.brand);
+    }
+    return parts.length > 0 ? parts.join(" | ") : "RN Valves & Faucets";
+  }, [product.material, product.category, product.subcategoryName, product.brand]);
 
   // Helper to strictly identify color variants of THIS specific product only
   const isSameProductColorVariant = (item: any, currentProd: any) => {
@@ -657,7 +685,7 @@ export default function FaucetProductPage({
                   justifyContent: "space-between",
                   alignItems: "center",
                   gap: "12px",
-                  marginBottom: "12px",
+                  marginBottom: "10px",
                 }}
               >
                 <div
@@ -665,22 +693,16 @@ export default function FaucetProductPage({
                     display: "flex",
                     alignItems: "center",
                     flexWrap: "wrap",
-                    gap: "10px",
+                    gap: "8px",
                     fontFamily: "'Manrope', system-ui, sans-serif",
-                    fontSize: "13px",
-                    letterSpacing: "0.05em",
+                    fontSize: "12px",
+                    letterSpacing: "0.04em",
                     textTransform: "uppercase",
-                    color: "#555555",
+                    color: "#64748b",
                     fontWeight: 700,
                   }}
                 >
-                  <span>SKU: {product.code}</span>
-                  {product.article && (
-                    <>
-                      <span style={{ color: "#c0c0c0" }}>•</span>
-                      <span>Article: {product.article}</span>
-                    </>
-                  )}
+                  <span>{hierarchyBreadcrumb}</span>
                 </div>
 
                 <button
@@ -710,11 +732,11 @@ export default function FaucetProductPage({
 
               <h1
                 style={{
-                  margin: "0 0 16px",
+                  margin: "0 0 10px",
                   fontFamily: "'Manrope', system-ui, sans-serif",
-                  fontSize: "clamp(34px, 3vw, 46px)",
+                  fontSize: "clamp(30px, 3vw, 42px)",
                   fontWeight: 800,
-                  color: "#111111",
+                  color: "#0f172a",
                   lineHeight: 1.15,
                   letterSpacing: "-0.03em",
                 }}
@@ -722,7 +744,37 @@ export default function FaucetProductPage({
                 {product.name}
               </h1>
 
-              <div style={{ marginBottom: "24px" }}>
+              {/* Article Line */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  marginBottom: "18px",
+                  fontFamily: "'Manrope', system-ui, sans-serif",
+                  fontSize: "15px",
+                }}
+              >
+                <span style={{ fontWeight: 700, color: "#0f172a" }}>Article :</span>
+                <span
+                  style={{
+                    fontFamily: "ui-monospace, monospace",
+                    fontWeight: 700,
+                    color: "#0f172a",
+                    letterSpacing: "0.02em",
+                    background: "#f1f5f9",
+                    padding: "3px 10px",
+                    borderRadius: "6px",
+                    border: "1px solid #e2e8f0",
+                    fontSize: "14px",
+                  }}
+                >
+                  {product.article || product.code}
+                </span>
+              </div>
+
+              {/* Price & Discount */}
+              <div style={{ marginBottom: "22px" }}>
                 <div
                   style={{
                     display: "flex",
@@ -735,7 +787,7 @@ export default function FaucetProductPage({
                   <span
                     style={{
                       fontFamily: "'Manrope', system-ui, sans-serif",
-                      fontSize: "42px",
+                      fontSize: "38px",
                       fontWeight: 800,
                       color: "#ef4c23",
                       letterSpacing: "-0.04em",
@@ -743,16 +795,193 @@ export default function FaucetProductPage({
                   >
                     ₹ {product.price.toLocaleString("en-IN")}.00
                   </span>
+                  {hasDiscount && (
+                    <>
+                      <span
+                        style={{
+                          fontFamily: "'Manrope', system-ui, sans-serif",
+                          fontSize: "17px",
+                          color: "#94a3b8",
+                          textDecoration: "line-through",
+                          fontWeight: 500,
+                        }}
+                      >
+                        ₹{product.originalPrice.toLocaleString("en-IN")}.00
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "'Manrope', system-ui, sans-serif",
+                          fontSize: "13px",
+                          fontWeight: 800,
+                          color: "#059669",
+                          background: "#ecfdf5",
+                          border: "1px solid #a7f3d0",
+                          padding: "3px 9px",
+                          borderRadius: "999px",
+                          letterSpacing: "0.02em",
+                        }}
+                      >
+                        {discountPercent}% OFF
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Product Meta Details Box */}
+              <div
+                style={{
+                  background: "#f8fafc",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "12px",
+                  padding: "16px 18px",
+                  marginBottom: "24px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                  fontFamily: "'Manrope', system-ui, sans-serif",
+                }}
+              >
+                {/* Availability */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    fontSize: "13px",
+                  }}
+                >
+                  <span style={{ color: "#64748b", fontWeight: 700 }}>Availability :</span>
                   <span
                     style={{
-                      fontFamily: "'Manrope', system-ui, sans-serif",
-                      fontSize: "16px",
-                      color: "#888888",
-                      textDecoration: "line-through",
-                      fontWeight: 500,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "3px 10px",
+                      borderRadius: "999px",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      background: inStock ? "#ecfdf5" : "#fef2f2",
+                      color: inStock ? "#059669" : "#dc2626",
+                      border: `1px solid ${inStock ? "#a7f3d0" : "#fecaca"}`,
                     }}
                   >
-                    ₹{product.originalPrice.toLocaleString("en-IN")}.00
+                    <span
+                      style={{
+                        width: "6px",
+                        height: "6px",
+                        borderRadius: "50%",
+                        background: inStock ? "#10b981" : "#ef4444",
+                      }}
+                    />
+                    {inStock ? "In Stock" : "Out of Stock"}
+                  </span>
+                </div>
+
+                {/* Product Code */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    fontSize: "13px",
+                  }}
+                >
+                  <span style={{ color: "#64748b", fontWeight: 700 }}>Product Code :</span>
+                  <span
+                    style={{
+                      fontFamily: "ui-monospace, monospace",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      color: "#334155",
+                      background: "#ffffff",
+                      padding: "2px 8px",
+                      borderRadius: "6px",
+                      border: "1px solid #e2e8f0",
+                    }}
+                  >
+                    {product.skuCode || product.code}
+                  </span>
+                </div>
+
+                {/* Category */}
+                {(product.subcategoryName || product.category) && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      fontSize: "13px",
+                    }}
+                  >
+                    <span style={{ color: "#64748b", fontWeight: 700 }}>Category :</span>
+                    <Link
+                      href={`/faucets/${encodeURIComponent(product.category || category)}`}
+                      style={{
+                        color: "#0284c7",
+                        fontWeight: 700,
+                        textDecoration: "none",
+                        fontSize: "13px",
+                      }}
+                      className="hover:underline"
+                    >
+                      {product.subcategoryName || product.category}
+                    </Link>
+                  </div>
+                )}
+
+                {/* Product Size */}
+                {product.size && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      fontSize: "13px",
+                    }}
+                  >
+                    <span style={{ color: "#64748b", fontWeight: 700 }}>Product Size :</span>
+                    <span
+                      style={{
+                        fontWeight: 700,
+                        color: "#0f172a",
+                        fontSize: "12px",
+                        background: "#ffffff",
+                        padding: "2px 8px",
+                        borderRadius: "6px",
+                        border: "1px solid #e2e8f0",
+                      }}
+                    >
+                      {product.size}
+                    </span>
+                  </div>
+                )}
+
+                {/* Discount Note */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    fontSize: "13px",
+                  }}
+                >
+                  <span style={{ color: "#64748b", fontWeight: 700 }}>Discount :</span>
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      color: "#b45309",
+                      background: "#fffbeb",
+                      padding: "3px 8px",
+                      borderRadius: "6px",
+                      border: "1px solid #fde68a",
+                    }}
+                  >
+                    Tiered Bulk Discounts Applied at Checkout ℹ
                   </span>
                 </div>
               </div>
@@ -761,14 +990,32 @@ export default function FaucetProductPage({
                 <div style={{ marginBottom: "26px" }}>
                   <div
                     style={{
-                      fontFamily: "'Manrope', system-ui, sans-serif",
-                      fontSize: "14px",
-                      fontWeight: 800,
-                      color: "#111111",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
                       marginBottom: "12px",
                     }}
                   >
-                    Available Colours
+                    <span
+                      style={{
+                        fontFamily: "'Manrope', system-ui, sans-serif",
+                        fontSize: "14px",
+                        fontWeight: 800,
+                        color: "#111111",
+                      }}
+                    >
+                      Available Colours
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: "'Manrope', system-ui, sans-serif",
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        color: "#64748b",
+                      }}
+                    >
+                      Color Name: <strong style={{ color: "#0f172a" }}>{product.colorName || "Standard"}</strong>
+                    </span>
                   </div>
                   <div className="variant-grid">
                     {variantProducts.map((variant: any) => {
@@ -1026,8 +1273,13 @@ export default function FaucetProductPage({
                     fontWeight: 800,
                     letterSpacing: "0.02em",
                     cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
                   }}
                 >
+                  <ShoppingCart size={18} />
                   Add To Cart
                 </button>
               </div>
@@ -1060,8 +1312,13 @@ export default function FaucetProductPage({
                   textTransform: "uppercase",
                   cursor: "pointer",
                   marginBottom: "26px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
                 }}
               >
+                <ShoppingCart size={18} />
                 Buy Now
               </button>
 
