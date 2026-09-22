@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import Header from "@/components/Header";
 import FooterSection from "@/components/FooterSection";
+import OtherProductsSection from "@/components/OtherProductsSection";
 import { addToCart } from "@/utils/cart";
 
 const FEATURE_TILES = [
@@ -282,20 +283,39 @@ export default function FaucetProductPage({
   useEffect(() => {
     async function loadData() {
       try {
+        let loadedProd: any = null;
         const res = await fetch(`/api/products/${productId}`);
         if (res.ok) {
           const data = await res.json();
           if (data && !data.error) {
+            loadedProd = data;
             setDbProduct(data);
           }
         }
-        const rangeRes = await fetch(`/api/products?subcategory=${category}`);
+
+        // Fetch products in same subcategory or category matching PHP logic
+        const subcatQuery = loadedProd?.subcategoryId || loadedProd?.subcategoryName || category;
+        const rangeRes = await fetch(`/api/products?subcategory=${encodeURIComponent(subcatQuery)}&limit=24`);
+        let items: any[] = [];
         if (rangeRes.ok) {
           const rangeData = await rangeRes.json();
-          const items = rangeData.products || rangeData;
-          if (Array.isArray(items) && items.length > 0) {
-            setDbVariants(items);
+          items = rangeData.products || rangeData;
+        }
+
+        // Fallback to category if fewer than 2 items in subcategory
+        if ((!Array.isArray(items) || items.length < 2) && loadedProd?.category) {
+          const catRes = await fetch(`/api/products?category=${encodeURIComponent(loadedProd.category)}&limit=24`);
+          if (catRes.ok) {
+            const catData = await catRes.json();
+            const catItems = catData.products || catData;
+            if (Array.isArray(catItems) && catItems.length > 0) {
+              items = catItems;
+            }
           }
+        }
+
+        if (Array.isArray(items) && items.length > 0) {
+          setDbVariants(items);
         }
       } catch (err) {
         console.error("Error loading product detail data:", err);
@@ -421,10 +441,22 @@ export default function FaucetProductPage({
     }
   });
   const sizeProducts = Array.from(sizeOptionsMap.values());
-  const alsoLikeProducts = useMemo(
-    () => dbVariants.filter((item: any) => (item.id || item.code || item.skuCode) !== (product.id || product.code)).slice(0, 12),
-    [dbVariants, product.id, product.code],
-  );
+  const otherProducts = useMemo(() => {
+    const currentCode = String(product.code || product.id || productId).trim().toLowerCase();
+    const currentId = String(rawProduct?._id || rawProduct?.id || "").trim();
+
+    return dbVariants
+      .filter((item: any) => {
+        const itemCode = String(item.code || item.id || item.skuCode || "").trim().toLowerCase();
+        const itemId = String(item._id || item.id || "").trim();
+        if (itemCode && itemCode === currentCode) return false;
+        if (currentId && itemId && itemId === currentId) return false;
+        return true;
+      })
+      .slice(0, 12);
+  }, [dbVariants, product.code, product.id, productId, rawProduct]);
+
+  const alsoLikeProducts = otherProducts;
 
   const alsoLikeTrackRef = useRef<HTMLDivElement | null>(null);
   const [alsoLikePage, setAlsoLikePage] = useState(0);
@@ -1305,6 +1337,15 @@ export default function FaucetProductPage({
           </aside>
         </div>
       </section>
+
+      {/* ── Other Products in this section (matching PHP Laravel) ── */}
+      {otherProducts.length > 0 && (
+        <OtherProductsSection
+          products={otherProducts}
+          categorySlug={category}
+          title="Other Products in this section"
+        />
+      )}
 
       <FooterSection />
 
