@@ -168,7 +168,7 @@ const HomeSettingSchema = new Schema<IHomeSetting>(
     },
     whyBuySection: {
       visible: { type: Boolean, default: true },
-      heading: { type: String, default: "Why Buy from RN Faucets Directly" },
+      heading: { type: String, default: "Why Buy from RN Valves & Faucets Directly" },
       items: [
         {
           title: { type: String },

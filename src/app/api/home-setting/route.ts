@@ -75,30 +75,34 @@ const DEFAULT_HOME_SETTINGS = {
   },
   whyBuySection: {
     visible: true,
-    heading: "Why Buy from RN Faucets Directly",
+    heading: "Why Buy from RN Valves & Faucets Directly",
     items: [
       {
-        title: "Free and fast delivery. Same day dispatch*.",
-        description: "Enjoy fast, free delivery with same-day dispatch for an enhanced shopping experience.",
-        linkLabel: "See Terms",
-        href: "/terms-conditions",
-      },
-      {
-        title: "Simple returns - Return your order within 7 days*.",
-        description: "Benefit from our 7 day return policy.",
-        linkLabel: "See Terms",
+        title: "Warranty Up to 10 Years",
+        description:
+          "Every product backed by a manufacturer warranty of 1 to 10 years, depending on the range — built for long-term reliability.",
+        linkLabel: "→ See Warranty Terms",
         href: "/return-refund-policy",
       },
       {
-        title: "Professional Installation - RN Faucets approved installation available*.",
-        description: "Benefit from professional brand installation services.",
-        linkLabel: "Find Out More",
-        href: "/contact-us",
+        title: "Free & Fast Delivery",
+        description:
+          "Enjoy free, prompt delivery on your order for a smoother shopping experience.",
+        linkLabel: "→ See Terms",
+        href: "/terms-conditions",
       },
       {
-        title: "Assistance from RN Faucets specialists, Live Chat.",
-        description: "Live chat with RN Faucets product specialist and find your right product.",
-        linkLabel: "Contact Us",
+        title: "Direct From the Manufacturer",
+        description:
+          "No distributor markups — buy straight from RN Valves & Faucets for genuine products at better pricing.",
+        linkLabel: "→ Our Story",
+        href: "/about-us",
+      },
+      {
+        title: "Live Chat with Product Specialists",
+        description:
+          "Talk to an RN Valves & Faucets specialist in real time to find the right product for your needs.",
+        linkLabel: "→ Chat Now",
         href: "/contact-us",
       },
     ],

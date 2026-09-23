@@ -536,7 +536,7 @@ export default function HomeClient({
         initialCategories={initialCategories}
       />
 
-      {/* ── 5. Why Buy from RN Faucets Directly ── */}
+      {/* ── 5. Why Buy from RN Valves & Faucets Directly ── */}
       <WhyBuySection data={homeSetting?.whyBuySection} />
 
       {/* ── 6. Instagram Reels ── */}
