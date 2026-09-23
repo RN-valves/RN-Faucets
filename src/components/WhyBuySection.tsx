@@ -64,17 +64,14 @@ export default function WhyBuySection({ data }: WhyBuySectionProps) {
   const isVisible = data?.visible !== false;
 
   const headingText = data?.heading || "Why Buy from RN Faucets Directly";
-  const rawItems = data?.items && data.items.length > 0 ? data.items : TRUST_ITEMS;
-  const itemsList = rawItems.map((item: any, idx: number) => {
-    const fallback = TRUST_ITEMS[idx] || TRUST_ITEMS[0];
-    const cleanHref =
-      item.href && item.href !== "#" && item.href.trim() !== ""
-        ? item.href
-        : fallback.href;
+  const rawItems = data?.items && Array.isArray(data.items) ? data.items : [];
+  if (!isVisible || rawItems.length === 0) return null;
+
+  const itemsList = rawItems.map((item: any) => {
     return {
       ...item,
-      href: cleanHref,
-      linkLabel: item.linkLabel || fallback.linkLabel,
+      href: item.href || "/contact-us",
+      linkLabel: item.linkLabel || "Learn More",
     };
   });
 

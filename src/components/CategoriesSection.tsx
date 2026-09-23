@@ -567,21 +567,45 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
           maxWidth: "100vw",
         }}
       >
-        {categoriesList.map((cat, idx) => {
-          const hasHoverImg = Boolean(cat.hoverImage && cat.hoverImage !== cat.image);
-          const offsetClass = getCardOffsetClass(idx);
+        {!isLoaded ? (
+          [0, 1, 2, 3].map((idx) => {
+            const offsetClass = getCardOffsetClass(idx);
+            return (
+              <div
+                key={idx}
+                className={`luxury-card ${offsetClass}`}
+                style={{ cursor: "default" }}
+              >
+                <div
+                  className="luxury-card-image-wrap animate-pulse"
+                  style={{
+                    background: "linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%)",
+                    backgroundSize: "200% 100%",
+                  }}
+                />
+                <div style={{ marginTop: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <div style={{ height: "14px", width: "70%", backgroundColor: "#e2e8f0", borderRadius: "4px" }} />
+                  <div style={{ height: "10px", width: "40%", backgroundColor: "#e2e8f0", borderRadius: "4px" }} />
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          categoriesList.map((cat, idx) => {
+            const hasHoverImg = Boolean(cat.hoverImage && cat.hoverImage !== cat.image);
+            const offsetClass = getCardOffsetClass(idx);
 
-          return (
-            <Link
-              key={cat.id || idx}
-              href={cat.href || `/${cat.slug}`}
-              className={`luxury-card ${offsetClass}${hasHoverImg ? " has-hover-img" : ""}`}
-              onClick={(e) => {
-                if (hasMovedRef.current) {
-                  e.preventDefault();
-                }
-              }}
-            >
+            return (
+              <Link
+                key={cat.id || idx}
+                href={cat.href || `/${cat.slug}`}
+                className={`luxury-card ${offsetClass}${hasHoverImg ? " has-hover-img" : ""}`}
+                onClick={(e) => {
+                  if (hasMovedRef.current) {
+                    e.preventDefault();
+                  }
+                }}
+              >
               {/* Image Container with Smooth Primary -> Hover Cross-fade */}
               <div className="luxury-card-image-wrap">
                 {/* 1st Normal Image */}
@@ -630,7 +654,8 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
               </div>
             </Link>
           );
-        })}
+        })
+      )}
       </div>
     </section>
   );

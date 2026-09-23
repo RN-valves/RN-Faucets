@@ -133,21 +133,96 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
     const timeoutId = setTimeout(async () => {
       try {
         // 1. Fetch matching products from API
-        const prodRes = await fetch(`/api/products?q=${encodeURIComponent(trimmed)}&limit=10`);
+        const prodRes = await fetch(`/api/products?q=${encodeURIComponent(trimmed)}&limit=12`);
         let prodList: ProductItem[] = [];
         if (prodRes.ok) {
           const data = await prodRes.json();
           prodList = Array.isArray(data) ? data : data.products || [];
         }
 
-        // 2. Filter matching categories and subcategories
+        // Ensure category source is available
+        let catSource = allCategories;
+        if (catSource.length === 0) {
+          try {
+            const [catRes, subRes] = await Promise.all([
+              fetch("/api/categories"),
+              fetch("/api/subcategories"),
+            ]);
+            const cats = catRes.ok ? await catRes.json() : [];
+            const subs = subRes.ok ? await subRes.json() : [];
+            const combined: CategoryItem[] = [];
+            if (Array.isArray(cats)) {
+              cats.forEach((c) =>
+                combined.push({
+                  id: c.id || c._id,
+                  name: c.name,
+                  slug: c.slug || c.id,
+                  count: c.productCount || undefined,
+                  type: "category",
+                })
+              );
+            }
+            if (Array.isArray(subs)) {
+              subs.forEach((s) =>
+                combined.push({
+                  id: s.id || s._id,
+                  name: s.name,
+                  slug: s.slug || s.id,
+                  count: s.productCount || undefined,
+                  type: "subcategory",
+                })
+              );
+            }
+            catSource = combined;
+            setAllCategories(combined);
+          } catch (e) {
+            console.error("Error fetching categories during search:", e);
+          }
+        }
+
+        // 2. Direct name/slug matching
         const lowerQ = trimmed.toLowerCase();
-        const matchedCats = allCategories.filter((c) =>
-          c.name?.toLowerCase().includes(lowerQ)
+        const directMatches = catSource.filter(
+          (c) =>
+            c.name?.toLowerCase().includes(lowerQ) ||
+            c.slug?.toLowerCase().includes(lowerQ)
         );
 
+        // 3. Derived categories from matching products
+        const productCategoryNames = new Set<string>();
+        prodList.forEach((p) => {
+          if (p.category) productCategoryNames.add(p.category.trim().toLowerCase());
+          if (p.subcategoryName) productCategoryNames.add(p.subcategoryName.trim().toLowerCase());
+        });
+
+        const derivedCategories = catSource.filter(
+          (c) =>
+            productCategoryNames.has(c.name.trim().toLowerCase()) &&
+            !directMatches.some(
+              (dm) => dm.name.trim().toLowerCase() === c.name.trim().toLowerCase()
+            )
+        );
+
+        // 4. Combine direct + derived categories
+        let finalCategories = [...directMatches, ...derivedCategories];
+
+        // 5. If fewer than 5, append top active categories as suggestions
+        if (finalCategories.length < 5) {
+          const existingNames = new Set(
+            finalCategories.map((c) => c.name.trim().toLowerCase())
+          );
+          const topFallbacks = catSource
+            .filter(
+              (c) =>
+                c.type === "category" &&
+                !existingNames.has(c.name.trim().toLowerCase())
+            )
+            .slice(0, 5 - finalCategories.length);
+          finalCategories = [...finalCategories, ...topFallbacks];
+        }
+
         setProducts(prodList.slice(0, 8));
-        setMatchingCategories(matchedCats.slice(0, 8));
+        setMatchingCategories(finalCategories.slice(0, 8));
       } catch (err) {
         console.error("Search fetch error:", err);
       } finally {
@@ -359,7 +434,24 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                 Products:
               </h3>
 
-              {products.length > 0 ? (
+              {loading ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px" }} className="animate-pulse">
+                      <span style={{ color: "#94a3b8" }}>•</span>
+                      <div
+                        style={{
+                          height: "15px",
+                          width: i % 2 === 0 ? "75%" : "60%",
+                          background: "linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%)",
+                          backgroundSize: "200% 100%",
+                          borderRadius: "4px",
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : products.length > 0 ? (
                 <ul
                   style={{
                     listStyle: "none",
@@ -416,11 +508,11 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     );
                   })}
                 </ul>
-              ) : !loading ? (
+              ) : (
                 <p style={{ fontSize: "14px", color: "#64748b", margin: 0 }}>
                   No matching products found.
                 </p>
-              ) : null}
+              )}
             </div>
 
             {/* ── Right Column: Categories: ── */}
@@ -437,7 +529,24 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                 Categories:
               </h3>
 
-              {matchingCategories.length > 0 ? (
+              {loading ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px" }} className="animate-pulse">
+                      <span style={{ color: "#94a3b8" }}>•</span>
+                      <div
+                        style={{
+                          height: "15px",
+                          width: i % 2 === 0 ? "65%" : "50%",
+                          background: "linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%)",
+                          backgroundSize: "200% 100%",
+                          borderRadius: "4px",
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : matchingCategories.length > 0 ? (
                 <ul
                   style={{
                     listStyle: "none",
@@ -491,11 +600,11 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     </li>
                   ))}
                 </ul>
-              ) : !loading ? (
+              ) : (
                 <p style={{ fontSize: "14px", color: "#64748b", margin: 0 }}>
                   No matching categories found.
                 </p>
-              ) : null}
+              )}
             </div>
           </div>
         )}

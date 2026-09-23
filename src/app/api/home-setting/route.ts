@@ -17,8 +17,8 @@ const DEFAULT_HOME_SETTINGS = {
     {
       id: 0,
       type: "video",
-      src: "https://rnvalves.media/Catalogue/bannerVideo4.mp4",
-      title: "RN Italian\nCollection Faucets",
+      src: "/api/media/website/home/hero/0.mp4",
+      title: "RN LUXURY\nCollection Faucets",
       subtitle: "Explore",
       duration: 5000,
       active: true,

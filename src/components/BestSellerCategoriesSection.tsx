@@ -805,9 +805,24 @@ export default function BestSellerCategoriesSection({
             willChange: "transform",
           }}
         >
-          {productsSequence.map((product, i) => {
-            const isFeatured = virtualIndex === i;
-            const cardWidth = isFeatured ? 500 : 340;
+          {!isLoaded ? (
+            [0, 1, 2].map((n) => (
+              <div
+                key={n}
+                className="animate-pulse"
+                style={{
+                  width: n === 0 ? "500px" : "340px",
+                  height: n === 0 ? "660px" : "520px",
+                  borderRadius: "24px",
+                  background: "linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%)",
+                  flexShrink: 0,
+                }}
+              />
+            ))
+          ) : (
+            productsSequence.map((product, i) => {
+              const isFeatured = virtualIndex === i;
+              const cardWidth = isFeatured ? 500 : 340;
             const cardHeight = isFeatured ? 660 : 520;
             const infoPad = isFeatured ? "28px 32px 32px" : "20px 22px 24px";
 
@@ -1002,7 +1017,8 @@ export default function BestSellerCategoriesSection({
                 </div>
               </div>
             );
-          })}
+          })
+        )}
         </div>
       </div>
     </section>

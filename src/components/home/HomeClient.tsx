@@ -327,6 +327,19 @@ export default function HomeClient({
           background: "#000",
         }}
       >
+        {/* ── Shimmer placeholder until database hero loads ── */}
+        {heroSequence.length === 0 && (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "linear-gradient(90deg, #020914 0%, #081d38 50%, #020914 100%)",
+              backgroundSize: "200% 100%",
+            }}
+            className="animate-pulse"
+          />
+        )}
+
         {/* ── Background layers directly from database ── */}
         {heroSequence.map((item, i) => (
           isVideoSlide(item) ? (
