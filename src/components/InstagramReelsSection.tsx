@@ -8,7 +8,7 @@ if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
-const INSTAGRAM_PROFILE = "https://www.instagram.com/rn_valves/";
+const INSTAGRAM_PROFILE = "https://www.instagram.com/rnvalvesandfaucets/";
 
 const REELS = [
   {
@@ -49,7 +49,7 @@ const LOOP_SETS = 5;
 const SOCIALS = [
   {
     label: "Instagram",
-    href: INSTAGRAM_PROFILE,
+    href: "https://www.instagram.com/rnvalvesandfaucets/",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
         <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="1.6" />
@@ -60,7 +60,7 @@ const SOCIALS = [
   },
   {
     label: "Facebook",
-    href: "https://www.facebook.com/RNValvesIndia",
+    href: "https://www.facebook.com/rnvalvesandfaucets/",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
         <path
@@ -72,7 +72,7 @@ const SOCIALS = [
   },
   {
     label: "YouTube",
-    href: "https://www.youtube.com/@rnvalves",
+    href: "https://www.youtube.com/channel/UCpUUF6ZFL88S85IuSsHDRSQ/?sub_confirmation=1",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
         <path
@@ -86,7 +86,7 @@ const SOCIALS = [
   },
   {
     label: "LinkedIn",
-    href: "https://www.linkedin.com/company/rn-valves-faucets",
+    href: "https://www.linkedin.com/company/rn-valves-faucets/",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
         <path
@@ -97,8 +97,17 @@ const SOCIALS = [
     ),
   },
   {
+    label: "Twitter (X)",
+    href: "https://twitter.com/RNValves",
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+      </svg>
+    ),
+  },
+  {
     label: "Pinterest",
-    href: "https://www.pinterest.com/rnvalves/",
+    href: "https://in.pinterest.com/infornvalves/",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
         <path

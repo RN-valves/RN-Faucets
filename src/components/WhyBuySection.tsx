@@ -21,24 +21,26 @@ const TRUST_ITEMS: TrustItem[] = [
     description:
       "Enjoy fast, free delivery with same-day dispatch for an enhanced shopping experience.",
     linkLabel: "See Terms",
-    href: "#",
+    href: "/terms-conditions",
   },
   {
     title: "Simple returns - Return your order within 7 days*.",
     description: "Benefit from our 7 day return policy.",
     linkLabel: "See Terms",
-    href: "#",
+    href: "/return-refund-policy",
   },
   {
     title: "Professional Installation - RN Faucets approved installation available*.",
     description: "Benefit from professional brand installation services.",
     linkLabel: "Find Out More",
-    href: "#",
+    href: "/contact-us",
   },
   {
     title: "Assistance from RN Faucets specialists, Live Chat.",
     description:
       "Live chat with RN Faucets product specialist and find your right product.",
+    linkLabel: "Contact Us",
+    href: "/contact-us",
   },
 ];
 
@@ -62,7 +64,19 @@ export default function WhyBuySection({ data }: WhyBuySectionProps) {
   const isVisible = data?.visible !== false;
 
   const headingText = data?.heading || "Why Buy from RN Faucets Directly";
-  const itemsList = data?.items && data.items.length > 0 ? data.items : TRUST_ITEMS;
+  const rawItems = data?.items && data.items.length > 0 ? data.items : TRUST_ITEMS;
+  const itemsList = rawItems.map((item: any, idx: number) => {
+    const fallback = TRUST_ITEMS[idx] || TRUST_ITEMS[0];
+    const cleanHref =
+      item.href && item.href !== "#" && item.href.trim() !== ""
+        ? item.href
+        : fallback.href;
+    return {
+      ...item,
+      href: cleanHref,
+      linkLabel: item.linkLabel || fallback.linkLabel,
+    };
+  });
 
   useEffect(() => {
     if (!isVisible || !sectionRef.current || !headingRef.current || !columnsRef.current)

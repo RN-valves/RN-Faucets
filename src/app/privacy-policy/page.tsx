@@ -273,10 +273,10 @@ export default function PrivacyPolicyPage() {
                   RN Valves &amp; Faucets
                 </p>
                 <p style={{ margin: "0 0 6px 0", color: "#475569" }}>
-                  B-68, Site-IV, Sahibabad Industrial Area, Ghaziabad, Uttar Pradesh - 201010, India
+                  B-68 SITE-4 SAHIBABAD Ghaziabad Uttar Pradesh 201010, India
                 </p>
                 <p style={{ margin: "0", color: "#475569" }}>
-                  Email: <a href="mailto:info@rnvalves.com">info@rnvalves.com</a> / <a href="mailto:enquiry@rnvalves.com">enquiry@rnvalves.com</a> | Toll-Free: 1800 212 0192
+                  Email: <a href="mailto:enquiry@rnvalves.com">enquiry@rnvalves.com</a> | Toll-Free: <a href="tel:1800123400400">1800 12340 0400</a> | Website: <a href="https://www.rnvalves.com" target="_blank" rel="noopener noreferrer">www.rnvalves.com</a>
                 </p>
               </div>
             </article>

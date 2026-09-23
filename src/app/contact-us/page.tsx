@@ -18,6 +18,7 @@ import {
   AlertCircle,
   Clock,
   ChevronRight,
+  Globe,
 } from "lucide-react";
 
 export default function ContactUsPage() {
@@ -332,7 +333,25 @@ export default function ContactUsPage() {
                     }}
                   >
                     <Phone size={17} color="#00AEEF" />
-                    1800 12340 0400 &nbsp;|&nbsp; 1800 212 0192
+                    1800 12340 0400 (Toll Free)
+                  </a>
+
+                  <a
+                    href="https://www.rnvalves.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      color: "#0284C7",
+                      textDecoration: "none",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    <Globe size={17} color="#00AEEF" />
+                    www.rnvalves.com
                   </a>
 
                   <div style={{ display: "inline-flex", alignItems: "center", gap: "10px", color: "#64748B", fontSize: "13px" }}>

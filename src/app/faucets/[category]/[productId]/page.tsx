@@ -55,7 +55,7 @@ const HELP_ITEMS = [
   },
   {
     icon: Mail,
-    text: "Email care@rnvalves.com",
+    text: "Email enquiry@rnvalves.com",
   },
 ];
 

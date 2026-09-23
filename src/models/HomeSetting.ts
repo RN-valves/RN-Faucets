@@ -134,7 +134,7 @@ const HomeSettingSchema = new Schema<IHomeSetting>(
     ],
     spaceShowcase: {
       visible: { type: Boolean, default: true },
-      image: { type: String, default: "https://hindware.com/_next/image?url=https%3A%2F%2Fhindwarestg.blob.core.windows.net%2Fcontainer1%2Fproducts%2FBathroom-1756100455419-1756463985636.webp&w=3840&q=75" },
+      image: { type: String, default: "/api/media/website/home/showcase/space-bathroom.webp" },
       subtitle: { type: String, default: "Explore by Space" },
       title: { type: String, default: "Bathroom" },
     },
@@ -180,7 +180,7 @@ const HomeSettingSchema = new Schema<IHomeSetting>(
     },
     reelsSection: {
       visible: { type: Boolean, default: true },
-      profileUrl: { type: String, default: "https://www.instagram.com/rn_valves/" },
+      profileUrl: { type: String, default: "https://www.instagram.com/rnvalvesandfaucets/" },
       reels: [
         {
           video: { type: String },
@@ -228,9 +228,9 @@ const HomeSettingSchema = new Schema<IHomeSetting>(
     footer: {
       logo: { type: String, default: "https://www.rnvalves.com/uploads/logo/rn-logosvgrhp9isxc7mdnyofdf3iumzuy2s8zld.svg" },
       address: { type: String, default: "B-68 SITE-4 SAHIBABAD, Ghaziabad\nUttar Pradesh 201010, India" },
-      phone: { type: String, default: "1800 212 0192" },
-      email1: { type: String, default: "info@rnvalves.com" },
-      email2: { type: String, default: "support@rnvalves.com" },
+      phone: { type: String, default: "1800 12340 0400" },
+      email1: { type: String, default: "enquiry@rnvalves.com" },
+      email2: { type: String, default: "enquiry@rnvalves.com" },
       copyrightText: { type: String, default: "© Copyright | RN Valves & Faucets | All Rights Reserved" },
       col1Links: [{ label: { type: String }, href: { type: String } }],
       col2Links: [{ label: { type: String }, href: { type: String } }],

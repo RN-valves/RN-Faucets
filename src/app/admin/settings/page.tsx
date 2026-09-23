@@ -20,8 +20,8 @@ export default function AdminSettingsPage() {
   }, [searchParams, router]);
 
   const [storeName, setStoreName] = useState("RN Valves & Faucets");
-  const [contactEmail, setContactEmail] = useState("support@rnvalves.com");
-  const [contactPhone, setContactPhone] = useState("+91 1800 123 4567");
+  const [contactEmail, setContactEmail] = useState("enquiry@rnvalves.com");
+  const [contactPhone, setContactPhone] = useState("1800 12340 0400");
   const [currencySymbol, setCurrencySymbol] = useState("₹");
   const [gstRate, setGstRate] = useState("18");
   const [activeCoupon, setActiveCoupon] = useState("RN05OFF");

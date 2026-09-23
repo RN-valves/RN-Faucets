@@ -68,12 +68,12 @@ const NAV_COLUMN_3 = [
   { label: "Terms & Conditions", href: "/terms-conditions" },
 ];
 const SOCIAL_LINKS = [
-  { Component: InstagramIcon, label: "Instagram", href: "https://instagram.com" },
-  { Component: FacebookIcon, label: "Facebook", href: "https://facebook.com" },
-  { Component: YoutubeIcon, label: "Youtube", href: "https://youtube.com" },
-  { Component: LinkedinIcon, label: "Linkedin", href: "https://linkedin.com" },
-  { Component: TwitterXIcon, label: "Twitter (X)", href: "https://twitter.com" },
-  { Component: PinterestIcon, label: "Pinterest", href: "https://pinterest.com" },
+  { Component: InstagramIcon, label: "Instagram", href: "https://www.instagram.com/rnvalvesandfaucets/" },
+  { Component: FacebookIcon, label: "Facebook", href: "https://www.facebook.com/rnvalvesandfaucets/" },
+  { Component: YoutubeIcon, label: "Youtube", href: "https://www.youtube.com/channel/UCpUUF6ZFL88S85IuSsHDRSQ/?sub_confirmation=1" },
+  { Component: LinkedinIcon, label: "Linkedin", href: "https://www.linkedin.com/company/rn-valves-faucets/" },
+  { Component: TwitterXIcon, label: "Twitter (X)", href: "https://twitter.com/RNValves" },
+  { Component: PinterestIcon, label: "Pinterest", href: "https://in.pinterest.com/infornvalves/" },
 ];
 
 export default function Footer() {
@@ -198,18 +198,18 @@ export default function Footer() {
               Uttar Pradesh 201010, India
             </p>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.82)", margin: "0 0 4px" }}>
-              <a href="tel:18002120192" style={{ color: "rgba(255,255,255,0.82)", textDecoration: "none" }}>
-                1800 212 0192
+              <a href="tel:1800123400400" style={{ color: "rgba(255,255,255,0.82)", textDecoration: "none" }}>
+                1800 12340 0400
               </a>
             </p>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.82)", margin: "0 0 4px" }}>
-              <a href="mailto:info@rnvalves.com" style={{ color: "rgba(255,255,255,0.82)", textDecoration: "none" }}>
-                info@rnvalves.com
+              <a href="mailto:enquiry@rnvalves.com" style={{ color: "rgba(255,255,255,0.82)", textDecoration: "none" }}>
+                enquiry@rnvalves.com
               </a>
             </p>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.82)", margin: 0 }}>
-              <a href="mailto:support@rnvalves.com" style={{ color: "rgba(255,255,255,0.82)", textDecoration: "none" }}>
-                support@rnvalves.com
+              <a href="https://www.rnvalves.com" target="_blank" rel="noopener noreferrer" style={{ color: "rgba(255,255,255,0.82)", textDecoration: "none" }}>
+                www.rnvalves.com
               </a>
             </p>
 

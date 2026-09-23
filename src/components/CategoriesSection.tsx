@@ -79,7 +79,13 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
   }, []);
 
   const validPropsCategories = data?.categories
-    ?.filter((c: any) => Boolean(c.homeImage || c.image) && c.status !== "Inactive" && c.isVisibleWebsite !== false)
+    ?.filter(
+      (c: any) =>
+        Boolean(c.homeImage || c.image) &&
+        !String(c.image || "").includes("hindware") &&
+        c.status !== "Inactive" &&
+        c.isVisibleWebsite !== false
+    )
     ?.map((c: any) => ({
       ...c,
       image: c.homeImage || c.image || DEFAULT_CATEGORY_PLACEHOLDER,

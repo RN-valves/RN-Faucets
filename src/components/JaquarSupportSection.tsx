@@ -15,8 +15,7 @@ const SUPPORT_CARDS = [
     description: "Purchase our products from RN Faucets authorized dealers only.",
     cta: "Find a Store",
     href: "/store-locator",
-    image:
-      "https://www.jaquar.com/Themes/Jaquar2025_V1/Content/images/store-loacter-img_2026.webp",
+    image: "/uploads/support/store-locator.webp",
     overlay:
       "linear-gradient(90deg, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.58) 28%, rgba(0,0,0,0.14) 60%, rgba(0,0,0,0.06) 100%)",
   },
@@ -25,8 +24,7 @@ const SUPPORT_CARDS = [
     description: "Expert support. Trusted Service. Industry leading warranty.",
     cta: "Let's Connect",
     href: "/contact-us",
-    image:
-      "https://www.jaquar.com/Themes/Jaquar2025_V1/Content/images/jaquar-care_2026.webp",
+    image: "/uploads/support/rn-care.webp",
     overlay:
       "linear-gradient(90deg, rgba(0,0,0,0.84) 0%, rgba(0,0,0,0.7) 34%, rgba(0,0,0,0.2) 68%, rgba(0,0,0,0.08) 100%)",
   },
@@ -51,7 +49,16 @@ export default function JaquarSupportSection({ data }: JaquarSupportSectionProps
   const cardsRef = useRef<(HTMLAnchorElement | null)[]>([]);
   const isVisible = data?.visible !== false;
 
-  const cardsList = data?.cards && data.cards.length > 0 ? data.cards : SUPPORT_CARDS;
+  const rawCards = data?.cards && data.cards.length > 0 ? data.cards : SUPPORT_CARDS;
+  const cardsList = rawCards.map((c: any) => ({
+    ...c,
+    image:
+      c.image && !c.image.includes("jaquar.com")
+        ? c.image
+        : c.title?.toLowerCase().includes("store")
+        ? "/uploads/support/store-locator.webp"
+        : "/uploads/support/rn-care.webp",
+  }));
 
   useEffect(() => {
     if (!isVisible || !sectionRef.current) return;

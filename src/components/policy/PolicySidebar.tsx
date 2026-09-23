@@ -188,7 +188,7 @@ export default function PolicySidebar() {
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           <a
-            href="tel:18002120192"
+            href="tel:1800123400400"
             style={{
               display: "flex",
               alignItems: "center",
@@ -199,7 +199,7 @@ export default function PolicySidebar() {
               textDecoration: "none",
             }}
           >
-            <Headphones size={15} /> 1800 212 0192
+            <Headphones size={15} /> 1800 12340 0400
           </a>
           <a
             href="mailto:enquiry@rnvalves.com"

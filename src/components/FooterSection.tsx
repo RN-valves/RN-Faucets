@@ -59,12 +59,12 @@ const NAV_COL_3 = [
   { label: "Terms & Conditions", href: "/terms-conditions" },
 ];
 const SOCIALS = [
-  { Icon: InstagramIcon, label: "Instagram", href: "https://instagram.com" },
-  { Icon: FacebookIcon, label: "Facebook", href: "https://facebook.com" },
-  { Icon: YoutubeIcon, label: "Youtube", href: "https://youtube.com" },
-  { Icon: LinkedinIcon, label: "Linkedin", href: "https://linkedin.com" },
-  { Icon: TwitterXIcon, label: "Twitter X", href: "https://twitter.com" },
-  { Icon: PinterestIcon, label: "Pinterest", href: "https://pinterest.com" },
+  { Icon: InstagramIcon, label: "Instagram", href: "https://www.instagram.com/rnvalvesandfaucets/" },
+  { Icon: FacebookIcon, label: "Facebook", href: "https://www.facebook.com/rnvalvesandfaucets/" },
+  { Icon: YoutubeIcon, label: "Youtube", href: "https://www.youtube.com/channel/UCpUUF6ZFL88S85IuSsHDRSQ/?sub_confirmation=1" },
+  { Icon: LinkedinIcon, label: "Linkedin", href: "https://www.linkedin.com/company/rn-valves-faucets/" },
+  { Icon: TwitterXIcon, label: "Twitter X", href: "https://twitter.com/RNValves" },
+  { Icon: PinterestIcon, label: "Pinterest", href: "https://in.pinterest.com/infornvalves/" },
 ];
 
 interface FooterSectionProps {
@@ -84,9 +84,9 @@ interface FooterSectionProps {
 export default function FooterSection({ data }: FooterSectionProps) {
   const footerLogo = data?.logo || "https://www.rnvalves.com/uploads/logo/rn-logosvgrhp9isxc7mdnyofdf3iumzuy2s8zld.svg";
   const addressText = data?.address || "B-68 SITE-4 SAHIBABAD, Ghaziabad\nUttar Pradesh 201010, India";
-  const phoneText = data?.phone || "1800 212 0192";
-  const email1Text = data?.email1 || "info@rnvalves.com";
-  const email2Text = data?.email2 || "support@rnvalves.com";
+  const phoneText = data?.phone || "1800 12340 0400";
+  const email1Text = data?.email1 || "enquiry@rnvalves.com";
+  const email2Text = data?.email2 || "enquiry@rnvalves.com";
   const copyright = data?.copyrightText || "© Copyright | RN Valves & Faucets | All Rights Reserved";
   return (
     <footer
@@ -148,17 +148,17 @@ export default function FooterSection({ data }: FooterSectionProps) {
               Get In Touch
             </h2>
             <div style={{ height: 1, background: "rgba(255,255,255,0.25)", marginBottom: 18 }} />
-            <p style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", lineHeight: 1.75, margin: "0 0 8px 0" }}>
-              B-68 SITE-4 SAHIBABAD, Ghaziabad<br />Uttar Pradesh 201010, India
+            <p style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", lineHeight: 1.75, margin: "0 0 8px 0", whiteSpace: "pre-line" }}>
+              {addressText}
             </p>
             <p style={{ fontSize: 14, margin: "0 0 5px 0" }}>
-              <a href="tel:18002120192" style={{ color: "rgba(255,255,255,0.85)", textDecoration: "none" }}>1800 212 0192</a>
+              <a href={`tel:${phoneText.replace(/\s+/g, "")}`} style={{ color: "rgba(255,255,255,0.85)", textDecoration: "none" }}>{phoneText}</a>
             </p>
             <p style={{ fontSize: 14, margin: "0 0 5px 0" }}>
-              <a href="mailto:info@rnvalves.com" style={{ color: "rgba(255,255,255,0.85)", textDecoration: "none" }}>info@rnvalves.com</a>
+              <a href={`mailto:${email1Text}`} style={{ color: "rgba(255,255,255,0.85)", textDecoration: "none" }}>{email1Text}</a>
             </p>
             <p style={{ fontSize: 14, margin: 0 }}>
-              <a href="mailto:support@rnvalves.com" style={{ color: "rgba(255,255,255,0.85)", textDecoration: "none" }}>support@rnvalves.com</a>
+              <a href="https://www.rnvalves.com" target="_blank" rel="noopener noreferrer" style={{ color: "rgba(255,255,255,0.85)", textDecoration: "none" }}>www.rnvalves.com</a>
             </p>
             {/* Social icons */}
             <div style={{ display: "flex", gap: 10, marginTop: 24, flexWrap: "wrap" }}>
@@ -180,7 +180,7 @@ export default function FooterSection({ data }: FooterSectionProps) {
 
           {/* Col 2 */}
           <nav aria-label="Footer links 1" style={{ paddingTop: 4 }}>
-            {NAV_COL_1.map((l) => (
+            {(data?.col1Links && data.col1Links.length > 0 ? data.col1Links : NAV_COL_1).map((l) => (
               <Link key={l.label} href={l.href} style={{
                 display: "block", fontSize: 14.5, fontWeight: 400,
                 color: "rgba(255,255,255,0.85)", lineHeight: "2.35",
@@ -191,7 +191,7 @@ export default function FooterSection({ data }: FooterSectionProps) {
 
           {/* Col 3 */}
           <nav aria-label="Footer links 2" style={{ paddingTop: 4 }}>
-            {NAV_COL_2.map((l) => (
+            {(data?.col2Links && data.col2Links.length > 0 ? data.col2Links : NAV_COL_2).map((l) => (
               <Link key={l.label} href={l.href} style={{
                 display: "block", fontSize: 14.5, fontWeight: 400,
                 color: "rgba(255,255,255,0.85)", lineHeight: "2.35",
@@ -202,7 +202,7 @@ export default function FooterSection({ data }: FooterSectionProps) {
 
           {/* Col 4 */}
           <nav aria-label="Footer links 3" style={{ paddingTop: 4 }}>
-            {NAV_COL_3.map((l) => (
+            {(data?.col3Links && data.col3Links.length > 0 ? data.col3Links : NAV_COL_3).map((l) => (
               <Link key={l.label} href={l.href} style={{
                 display: "block", fontSize: 14.5, fontWeight: 400,
                 color: "rgba(255,255,255,0.85)", lineHeight: "2.35",
