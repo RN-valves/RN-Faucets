@@ -1391,6 +1391,7 @@ export default function FaucetProductPage({
                 </button>
               </div>
 
+              {/* ── Estimated Delivery (Commented out per user request) ──
               <div
                 style={{
                   borderTop: "1px solid #ececec",
@@ -1449,6 +1450,7 @@ export default function FaucetProductPage({
                   </button>
                 </div>
               </div>
+              ── */}
 
               <div className="feature-grid">
                 {FEATURE_TILES.map((item) => {
