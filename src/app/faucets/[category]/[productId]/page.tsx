@@ -1486,6 +1486,7 @@ export default function FaucetProductPage({
               </div>
             </div>
 
+            {/* ── A++ Content Column (Commented out per user request) ──
             <div className="a-plus-content-column">
               <div className="a-plus-help-card">
                 <div
@@ -1613,6 +1614,7 @@ export default function FaucetProductPage({
                 </div>
               </div>
             </div>
+            ── */}
           </aside>
         </div>
       </section>
