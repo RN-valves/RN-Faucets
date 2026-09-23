@@ -11,17 +11,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import {
-  setAdminAuth,
   logoutAdmin,
-  getAdminProducts,
-  getAdminCategories,
-  getAdminSubcategories,
-  getAdminCatalogues,
-  getAdminOrders,
-  getAdminEnquiries,
-  getAdminAttributes,
-  getAdminSizes,
-  getAdminColors,
 } from "@/utils/adminStore";
 import { AdminTheme } from "@/types/admin";
 import { adminNavigationConfig, SidebarNavItem } from "@/config/adminNavigation";
@@ -108,44 +98,20 @@ export default function AdminSidebar({
   useEffect(() => {
     let isMounted = true;
 
-    const fetchCounts = () => {
-      Promise.all([
-        getAdminProducts(),
-        getAdminCategories(),
-        getAdminSubcategories(),
-        getAdminCatalogues(),
-        getAdminOrders(),
-        getAdminEnquiries(),
-        getAdminAttributes(),
-        getAdminSizes(),
-        getAdminColors(),
-        fetch("/api/customers").then((r) => (r.ok ? r.json() : null)).catch(() => null),
-        fetch("/api/bullets?sub=product&limit=1").then((r) => (r.ok ? r.json() : null)).catch(() => null),
-        fetch("/api/news").then((r) => (r.ok ? r.json() : null)).catch(() => null),
-        fetch("/api/blogs").then((r) => (r.ok ? r.json() : null)).catch(() => null),
-        fetch("/api/payments?limit=1").then((r) => (r.ok ? r.json() : null)).catch(() => null),
-      ]).then(([prods, cats, subs, pdfs, ords, enqs, attrs, sizeRes, colorRes, custData, bulletData, newsData, blogData, paymentData]) => {
-        if (!isMounted) return;
-        setCounts((prev) => ({
-          ...prev,
-          products: prods.length || prev.products,
-          category: cats.length || prev.category,
-          subcategory: subs.length || prev.subcategory,
-          catalogue: pdfs.length || prev.catalogue,
-          orders: ords.length || prev.orders,
-          enquiries: enqs.length || prev.enquiries,
-          customers: custData?.counts?.total || custData?.users?.length || prev.customers,
-          customer_network: custData?.counts?.total || custData?.users?.length || prev.customers,
-          size: typeof sizeRes?.total === "number" ? sizeRes.total : prev.size,
-          color: typeof colorRes?.total === "number" ? colorRes.total : prev.color,
-          brands: attrs.filter((a) => a.type === "Brand").length || prev.brands,
-          materials: attrs.filter((a) => a.type === "Material").length || prev.materials,
-          bullets: typeof bulletData?.total === "number" ? bulletData.total : prev.bullets,
-          news: typeof newsData?.total === "number" ? newsData.total : prev.news,
-          blogs: typeof blogData?.total === "number" ? blogData.total : prev.blogs,
-          payments: typeof paymentData?.total === "number" ? paymentData.total : prev.payments,
-        }));
-      });
+    const fetchCounts = async () => {
+      try {
+        const res = await fetch("/api/admin/counts");
+        if (res.ok) {
+          const data = await res.json();
+          if (!isMounted || !data) return;
+          setCounts((prev) => ({
+            ...prev,
+            ...data,
+          }));
+        }
+      } catch (err) {
+        console.error("Failed to fetch admin sidebar counts:", err);
+      }
     };
 
     fetchCounts();

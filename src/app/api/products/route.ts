@@ -13,6 +13,7 @@ export async function GET(request: Request) {
     const status = searchParams.get("status") || "";
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "0", 10);
+    const countOnly = searchParams.get("countOnly") === "true" || searchParams.get("count") === "true";
 
     const filter: Record<string, unknown> = {};
 
@@ -55,7 +56,14 @@ export async function GET(request: Request) {
       filter.status = status;
     }
 
-    const query = Product.find(filter).sort({ createdAt: -1 });
+    if (countOnly) {
+      const total = await Product.countDocuments(filter);
+      return NextResponse.json({ total, count: total });
+    }
+
+    const query = Product.find(filter)
+      .select("-bullets -description -keywords -searchKeywords -gallery")
+      .sort({ createdAt: -1 });
 
     if (limit > 0) {
       const skip = (page - 1) * limit;
