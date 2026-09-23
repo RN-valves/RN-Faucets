@@ -112,7 +112,7 @@ export interface IHomeSetting extends Document {
 const HomeSettingSchema = new Schema<IHomeSetting>(
   {
     header: {
-      logo: { type: String, default: "https://www.rnvalves.com/uploads/logo/rn-logosvgrhp9isxc7mdnyofdf3iumzuy2s8zld.svg" },
+      logo: { type: String, default: "/rn-header-logo.svg" },
       menuLinks: [
         {
           label: { type: String },
@@ -226,7 +226,7 @@ const HomeSettingSchema = new Schema<IHomeSetting>(
       ],
     },
     footer: {
-      logo: { type: String, default: "https://www.rnvalves.com/uploads/logo/rn-logosvgrhp9isxc7mdnyofdf3iumzuy2s8zld.svg" },
+      logo: { type: String, default: "/rn-header-logo.svg" },
       address: { type: String, default: "B-68 SITE-4 SAHIBABAD, Ghaziabad\nUttar Pradesh 201010, India" },
       phone: { type: String, default: "1800 12340 0400" },
       email1: { type: String, default: "enquiry@rnvalves.com" },

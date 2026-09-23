@@ -4,7 +4,7 @@ import HomeSetting from "@/models/HomeSetting";
 
 const DEFAULT_HOME_SETTINGS = {
   header: {
-    logo: "https://www.rnvalves.com/uploads/logo/rn-logosvgrhp9isxc7mdnyofdf3iumzuy2s8zld.svg",
+    logo: "/rn-header-logo.svg",
     menuLinks: [
       { label: "About Us", href: "/about-us" },
       { label: "Catalogues", href: "/catalogues" },
@@ -152,7 +152,7 @@ const DEFAULT_HOME_SETTINGS = {
     items: [],
   },
   footer: {
-    logo: "https://www.rnvalves.com/uploads/logo/rn-logosvgrhp9isxc7mdnyofdf3iumzuy2s8zld.svg",
+    logo: "/rn-header-logo.svg",
     address: "B-68 SITE-4 SAHIBABAD, Ghaziabad\nUttar Pradesh 201010, India",
     phone: "1800 12340 0400",
     email1: "enquiry@rnvalves.com",

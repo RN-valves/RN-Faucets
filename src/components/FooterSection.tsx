@@ -82,7 +82,7 @@ interface FooterSectionProps {
 }
 
 export default function FooterSection({ data }: FooterSectionProps) {
-  const footerLogo = data?.logo || "https://www.rnvalves.com/uploads/logo/rn-logosvgrhp9isxc7mdnyofdf3iumzuy2s8zld.svg";
+  const footerLogo = data?.logo || "/rn-header-logo.svg";
   const addressText = data?.address || "B-68 SITE-4 SAHIBABAD, Ghaziabad\nUttar Pradesh 201010, India";
   const phoneText = data?.phone || "1800 12340 0400";
   const email1Text = data?.email1 || "enquiry@rnvalves.com";
@@ -128,6 +128,12 @@ export default function FooterSection({ data }: FooterSectionProps) {
             <img
               src={footerLogo}
               alt="RN Valves & Faucets"
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (!target.src.endsWith("/rn-header-logo.svg")) {
+                  target.src = "/rn-header-logo.svg";
+                }
+              }}
               style={{ height: 85, width: "auto", display: "block" }}
             />
           </Link>

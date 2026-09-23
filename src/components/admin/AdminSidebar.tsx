@@ -188,7 +188,7 @@ export default function AdminSidebar({
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="https://www.rnvalves.com/uploads/logo/rn-logosvgrhp9isxc7mdnyofdf3iumzuy2s8zld.svg"
+            src="/rn-header-logo.svg"
             alt="RN Valves & Faucets"
             style={{
               height: "32px",

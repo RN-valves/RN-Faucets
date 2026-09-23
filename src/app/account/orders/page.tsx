@@ -932,7 +932,7 @@ export default function CustomerOrdersPage() {
                                 <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
                                   {/* eslint-disable-next-line @next/next/no-img-element */}
                                   <img
-                                    src={it.image || "https://www.rnvalves.com/uploads/logo/rn-logosvgrhp9isxc7mdnyofdf3iumzuy2s8zld.svg"}
+                                    src={it.image || "/rn-header-logo.svg"}
                                     alt={it.name}
                                     style={{
                                       width: "70px",

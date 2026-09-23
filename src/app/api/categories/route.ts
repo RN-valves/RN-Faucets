@@ -7,13 +7,21 @@ import { requireAdminAuth } from "@/lib/security";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+let cachedCategoriesResponse: any = null;
+let lastCategoriesFetch = 0;
+
 export async function GET(request: Request) {
   try {
-    await connectDB();
     const { searchParams } = new URL(request.url);
     const showAll =
       searchParams.get("all") === "true" ||
       searchParams.get("admin") === "true";
+
+    if (!showAll && cachedCategoriesResponse && Date.now() - lastCategoriesFetch < 60000) {
+      return NextResponse.json(cachedCategoriesResponse);
+    }
+
+    await connectDB();
 
     const filter: Record<string, unknown> = {};
 
@@ -42,6 +50,11 @@ export async function GET(request: Request) {
       };
     });
 
+    if (!showAll) {
+      cachedCategoriesResponse = categoriesWithCount;
+      lastCategoriesFetch = Date.now();
+    }
+
     return NextResponse.json(categoriesWithCount);
   } catch (error) {
     console.error("GET /api/categories error:", error);
@@ -51,6 +64,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    cachedCategoriesResponse = null;
     const adminSession = await requireAdminAuth(request);
     if (!adminSession) {
       return NextResponse.json(

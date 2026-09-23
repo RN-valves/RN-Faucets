@@ -4,14 +4,22 @@ import Subcategory from "@/models/Subcategory";
 import Product from "@/models/Product";
 import { requireAdminAuth } from "@/lib/security";
 
+let cachedSubcategoriesResponse: any = null;
+let lastSubcategoriesFetch = 0;
+
 export async function GET(request: Request) {
   try {
-    await connectDB();
     const { searchParams } = new URL(request.url);
     const categoryId = searchParams.get("categoryId");
     const showAll =
       searchParams.get("all") === "true" ||
       searchParams.get("admin") === "true";
+
+    if (!showAll && !categoryId && cachedSubcategoriesResponse && Date.now() - lastSubcategoriesFetch < 60000) {
+      return NextResponse.json(cachedSubcategoriesResponse);
+    }
+
+    await connectDB();
 
     const filter: Record<string, unknown> = {};
     if (categoryId) filter.categoryId = categoryId;
@@ -40,6 +48,11 @@ export async function GET(request: Request) {
       };
     });
 
+    if (!showAll && !categoryId) {
+      cachedSubcategoriesResponse = subcategoriesWithCount;
+      lastSubcategoriesFetch = Date.now();
+    }
+
     return NextResponse.json(subcategoriesWithCount);
   } catch (error) {
     console.error("GET /api/subcategories error:", error);
@@ -49,6 +62,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    cachedSubcategoriesResponse = null;
     const adminSession = await requireAdminAuth(request);
     if (!adminSession) {
       return NextResponse.json(

@@ -167,7 +167,7 @@ export default function Footer() {
               }}
             >
               <Image
-                src="/logo.svg"
+                src="/rn-header-logo.svg"
                 alt="RN Valves & Faucets"
                 width={100}
                 height={32}

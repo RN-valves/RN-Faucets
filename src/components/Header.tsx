@@ -10,7 +10,7 @@ import { getAdminAuth, logoutAdmin } from "@/utils/adminStore";
 
 const USER_MENU_LINKS = [
   "About Us",
-  "Catalogues",
+  "Our Products",
   "Become A Channel Partner",
   "Blogs",
   "Contact Us",
@@ -46,14 +46,48 @@ interface DynamicSubcategory {
   description?: string;
 }
 
+let cachedCategories: DynamicCategory[] | null = null;
+let cachedSubcategories: DynamicSubcategory[] | null = null;
+let isPreloadingCatalogue = false;
+
+function preloadCatalogueData() {
+  if (cachedCategories && cachedSubcategories) return;
+  if (isPreloadingCatalogue) return;
+  isPreloadingCatalogue = true;
+  Promise.all([
+    fetch("/api/categories").then((r) => (r.ok ? r.json() : [])),
+    fetch("/api/subcategories").then((r) => (r.ok ? r.json() : [])),
+  ])
+    .then(([cats, subs]) => {
+      if (Array.isArray(cats) && cats.length > 0) cachedCategories = cats;
+      if (Array.isArray(subs) && subs.length > 0) cachedSubcategories = subs;
+    })
+    .catch(() => {})
+    .finally(() => {
+      isPreloadingCatalogue = false;
+    });
+}
+
 function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
   const router = useRouter();
-  const [categories, setCategories] = useState<DynamicCategory[]>([]);
-  const [subcategories, setSubcategories] = useState<DynamicSubcategory[]>([]);
-  const [activeCategoryId, setActiveCategoryId] = useState<string>("");
-  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<DynamicCategory[]>(cachedCategories || []);
+  const [subcategories, setSubcategories] = useState<DynamicSubcategory[]>(cachedSubcategories || []);
+  const [activeCategoryId, setActiveCategoryId] = useState<string>(
+    cachedCategories && cachedCategories.length > 0
+      ? cachedCategories[0].id || (cachedCategories[0] as any)._id || cachedCategories[0].slug
+      : ""
+  );
+  const [loading, setLoading] = useState(!cachedCategories || cachedCategories.length === 0);
 
   useEffect(() => {
+    if (cachedCategories && cachedSubcategories && cachedCategories.length > 0) {
+      setCategories(cachedCategories);
+      setSubcategories(cachedSubcategories);
+      setActiveCategoryId(cachedCategories[0].id || (cachedCategories[0] as any)._id || cachedCategories[0].slug);
+      setLoading(false);
+      return;
+    }
+
     async function loadCatalogueData() {
       try {
         setLoading(true);
@@ -66,10 +100,12 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
         const subs = subRes.ok ? await subRes.json() : [];
 
         if (Array.isArray(cats) && cats.length > 0) {
+          cachedCategories = cats;
           setCategories(cats);
           setActiveCategoryId(cats[0].id || (cats[0] as any)._id || cats[0].slug);
         }
         if (Array.isArray(subs) && subs.length > 0) {
+          cachedSubcategories = subs;
           setSubcategories(subs);
         }
       } catch (err) {
@@ -175,7 +211,20 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
             minWidth: 0,
           }}
         >
-          {activeSubcategories.length > 0 ? (
+          {loading && categories.length === 0 ? (
+            [1, 2, 3, 4].map((n) => (
+              <div
+                key={n}
+                className="animate-pulse"
+                style={{
+                  minHeight: "174px",
+                  borderRadius: "18px",
+                  background: "rgba(17, 39, 65, 0.6)",
+                  border: "1px solid rgba(157, 200, 255, 0.1)",
+                }}
+              />
+            ))
+          ) : activeSubcategories.length > 0 ? (
             activeSubcategories.map((sub, idx) => {
               const cardImg = getCardImage(sub.image || sub.banner || activeCategory?.image, idx);
               const targetSlug = sub.slug || sub.id;
@@ -367,7 +416,20 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
           paddingRight: "4px",
         }}
       >
-        {categories.map((item, idx) => {
+        {loading && categories.length === 0 ? (
+          [1, 2, 3, 4, 5].map((n) => (
+            <div
+              key={n}
+              className="animate-pulse"
+              style={{
+                height: "64px",
+                borderRadius: "16px",
+                background: "rgba(12, 28, 48, 0.6)",
+                border: "1px solid rgba(157, 200, 255, 0.1)",
+              }}
+            />
+          ))
+        ) : categories.map((item, idx) => {
           const isSelected =
             activeCategoryId === item.id ||
             activeCategoryId === (item as any)._id ||
@@ -452,6 +514,8 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
   );
 }
 
+const DEFAULT_LOGO = "/rn-header-logo.svg";
+
 interface HeaderProps {
   data?: {
     logo?: string;
@@ -460,7 +524,22 @@ interface HeaderProps {
 }
 
 export default function Header({ data }: HeaderProps) {
-  const logoUrl = data?.logo || "https://www.rnvalves.com/uploads/logo/rn-logosvgrhp9isxc7mdnyofdf3iumzuy2s8zld.svg";
+  const [logoSrc, setLogoSrc] = useState<string>(data?.logo || DEFAULT_LOGO);
+
+  useEffect(() => {
+    if (data?.logo) {
+      setLogoSrc(data.logo);
+    } else {
+      fetch("/api/home-setting")
+        .then((res) => res.json())
+        .then((json) => {
+          if (json?.header?.logo) {
+            setLogoSrc(json.header.logo);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [data?.logo]);
 
   const router = useRouter();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -489,6 +568,7 @@ export default function Header({ data }: HeaderProps) {
     };
 
     updateAuthStatus();
+    preloadCatalogueData();
     window.addEventListener("customer-auth-changed", updateAuthStatus);
     window.addEventListener("rn-admin-data-changed", updateAuthStatus);
 
@@ -656,11 +736,17 @@ export default function Header({ data }: HeaderProps) {
             transition: "color 0.3s ease",
           }}
         >
-          <a href="#" aria-label="Home" className="block cursor-pointer">
+          <a href="/" aria-label="RN Valves & Faucets Home" className="block cursor-pointer">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
-              src={logoUrl} 
-              alt="Logo" 
+              src={logoSrc} 
+              alt="RN Valves & Faucets" 
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (!target.src.endsWith(DEFAULT_LOGO)) {
+                  target.src = DEFAULT_LOGO;
+                }
+              }}
               className="h-[70px] md:h-[85px] w-auto block transition-opacity duration-300 hover:opacity-85" 
             />
           </a>
@@ -995,7 +1081,9 @@ export default function Header({ data }: HeaderProps) {
             {/* Menu Button */}
             <button
               type="button"
+              onMouseEnter={preloadCatalogueData}
               onClick={() => {
+                preloadCatalogueData();
                 setActiveUserMenuLink(null);
                 setUserMenuOpen(true);
               }}
@@ -1142,7 +1230,7 @@ export default function Header({ data }: HeaderProps) {
                         setActiveUserMenuLink(null);
                         setUserMenuOpen(false);
                         router.push(route);
-                      } else if (link === "Catalogues") {
+                      } else if (link === "Our Products") {
                         setActiveUserMenuLink(link);
                       } else {
                         setActiveUserMenuLink(null);
@@ -1199,7 +1287,7 @@ export default function Header({ data }: HeaderProps) {
             </ul>
           </div>
 
-          {activeUserMenuLink === "Catalogues" ? (
+          {activeUserMenuLink === "Our Products" ? (
             <CatalogueDashboard onClose={() => setUserMenuOpen(false)} />
           ) : (
             <div
