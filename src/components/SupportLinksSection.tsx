@@ -14,68 +14,31 @@ const ICON_MAP: Record<string, any> = {
   Smartphone,
 };
 
-const DEFAULT_SUPPORT_LINKS = [
-  {
-    title: "Institutional Business",
-    description: "Explore Projects for Institutional & Business Customers",
-    cta: "Know More",
-    href: "/business-user-registration",
-    iconName: "Building2",
-    icon: Building2,
-  },
-  {
-    title: "International Business",
-    description: "Explore our global presence and reach across regions",
-    cta: "Know More",
-    href: "/about-us",
-    iconName: "Globe",
-    icon: Globe,
-  },
-  {
-    title: "Service & Support",
-    description: "Connect with us for Installation and Service Requests",
-    cta: "Connect Now",
-    href: "/contact-us",
-    iconName: "Headset",
-    icon: Headset,
-  },
-  {
-    title: "Product Catalogues",
-    description: "Download official RN Valves & Faucets PDF catalogues",
-    cta: "Download Now",
-    href: "/catalogues",
-    iconName: "Smartphone",
-    icon: Smartphone,
-  },
-];
-
 export default function SupportLinksSection({ data }: { data?: any }) {
   if (data?.visible === false) return null;
 
-  const rawItems = data?.items && Array.isArray(data.items) && data.items.length > 0
-    ? data.items
-    : DEFAULT_SUPPORT_LINKS;
+  const rawItems = data?.items && Array.isArray(data.items) ? data.items : [];
+  const items = rawItems
+    .filter((item: any) => Boolean(item.title))
+    .map((item: any) => {
+      const IconComp =
+        (item.iconName && ICON_MAP[item.iconName]) ||
+        Building2;
+      const cleanHref =
+        item.href && item.href !== "#" && item.href.trim() !== ""
+          ? item.href
+          : "/contact-us";
 
-  const items = rawItems.map((item: any, idx: number) => {
-    const fallback = DEFAULT_SUPPORT_LINKS[idx] || DEFAULT_SUPPORT_LINKS[0];
-    const IconComp =
-      (item.iconName && ICON_MAP[item.iconName]) ||
-      item.icon ||
-      fallback.icon ||
-      Building2;
-    const cleanHref =
-      item.href && item.href !== "#" && item.href.trim() !== ""
-        ? item.href
-        : fallback.href;
+      return {
+        title: item.title,
+        description: item.description || "",
+        cta: item.cta || "Know More",
+        href: cleanHref,
+        Icon: IconComp,
+      };
+    });
 
-    return {
-      title: item.title || fallback.title,
-      description: item.description || fallback.description,
-      cta: item.cta ?? fallback.cta,
-      href: cleanHref,
-      Icon: IconComp,
-    };
-  });
+  if (items.length === 0) return null;
   return (
     <section
       data-header-theme="light"

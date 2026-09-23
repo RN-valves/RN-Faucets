@@ -9,9 +9,6 @@ if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
-const PRODUCT_IMAGE_URL =
-  "/api/media/website/catalogue/categories/cat-cp-faucets/banner.webp";
-
 interface ProductShowcaseProps {
   data?: {
     visible?: boolean;
@@ -26,11 +23,11 @@ export default function ProductShowcaseSection({ data }: ProductShowcaseProps) {
   const imageRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
 
-  const imageUrl = data?.image || PRODUCT_IMAGE_URL;
+  const imageUrl = data?.image || "";
   const subtitleText = data?.subtitle || "Explore by Space";
   const titleText = data?.title || "Bathroom";
 
-  const isVisible = data?.visible !== false;
+  const isVisible = data?.visible !== false && Boolean(imageUrl);
 
   useEffect(() => {
     if (!isVisible || !sectionRef.current || !imageRef.current || !textRef.current) return;
@@ -81,7 +78,7 @@ export default function ProductShowcaseSection({ data }: ProductShowcaseProps) {
     return () => ctx.revert();
   }, [isVisible]);
 
-  if (!isVisible) return null;
+  if (!isVisible || !imageUrl) return null;
 
   return (
     <section

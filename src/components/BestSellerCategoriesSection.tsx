@@ -204,149 +204,146 @@ interface BestSellerCategoriesSectionProps {
     description?: string;
     products?: ProductItem[];
   };
+  initialProducts?: any[];
+  initialCategories?: any[];
 }
 
-export default function BestSellerCategoriesSection({ data }: BestSellerCategoriesSectionProps) {
-  const [dbProducts, setDbProducts] = useState<ProductItem[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
+function processCategoryProducts(items: any[], catData: any[]): ProductItem[] {
+  if (!Array.isArray(items)) return [];
+  const active = items.filter(
+    (p: any) =>
+      p.status !== "Inactive" &&
+      p.isVisibleWebsite !== false &&
+      p.isVisible !== false
+  );
+
+  const priority = [
+    "cp faucet",
+    "faucet",
+    "shower",
+    "spray",
+    "health",
+    "mixer",
+    "diverter",
+    "polymer",
+    "ptmt",
+    "valve",
+    "cistern",
+    "accessori",
+  ];
+
+  const getCategoryScore = (name: string) => {
+    const lower = (name || "").toLowerCase();
+    for (let i = 0; i < priority.length; i++) {
+      if (lower.includes(priority[i])) return i;
+    }
+    return 99;
+  };
+
+  const seenCategories = new Set<string>();
+  const uniqueCategoryProducts: any[] = [];
+
+  if (Array.isArray(catData) && catData.length > 0) {
+    for (const cat of catData) {
+      const catName = cat.name || cat.title || "";
+      const catId = cat.id || cat._id || "";
+      const matching = active.filter(
+        (p: any) =>
+          (p.category && p.category.toLowerCase().trim() === catName.toLowerCase().trim()) ||
+          (p.categoryId && String(p.categoryId) === String(catId))
+      );
+
+      if (matching.length > 0) {
+        const randomProd = matching[Math.floor(Math.random() * matching.length)];
+        if (!uniqueCategoryProducts.some((x: any) => x.id === randomProd.id || x._id === randomProd._id)) {
+          uniqueCategoryProducts.push({
+            ...randomProd,
+            categoryDisplay: catName,
+          });
+          if (randomProd.category) seenCategories.add(randomProd.category.toLowerCase().trim());
+          seenCategories.add(catName.toLowerCase().trim());
+        }
+      }
+    }
+  }
+
+  for (const p of active) {
+    const catKey = (p.category || "Other").toLowerCase().trim();
+    if (!seenCategories.has(catKey)) {
+      const matching = active.filter(
+        (item: any) => (item.category || "Other").toLowerCase().trim() === catKey
+      );
+      const randomProd = matching[Math.floor(Math.random() * matching.length)];
+      seenCategories.add(catKey);
+      if (!uniqueCategoryProducts.some((x: any) => x.id === randomProd.id || x._id === randomProd._id)) {
+        uniqueCategoryProducts.push({
+          ...randomProd,
+          categoryDisplay: p.category || "Bath Fittings",
+        });
+      }
+    }
+  }
+
+  for (let i = uniqueCategoryProducts.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [uniqueCategoryProducts[i], uniqueCategoryProducts[j]] = [
+      uniqueCategoryProducts[j],
+      uniqueCategoryProducts[i],
+    ];
+  }
+
+  const finalProducts =
+    uniqueCategoryProducts.length >= 6
+      ? uniqueCategoryProducts
+      : active.slice(0, 12);
+
+  return finalProducts.slice(0, 12).map((p: any, idx: number) => {
+    const priceNum = Number(p.inSelling ?? p.price ?? 0);
+    const formattedPrice = priceNum > 0 ? `₹${priceNum.toLocaleString("en-IN")}` : "₹1,490";
+    const sku = p.skuCode || p.code || p.article || `RN-${p.id || idx}`;
+    const rawImage =
+      p.image || (Array.isArray(p.gallery) && p.gallery[0]) || "/api/media/website/catalogue/products/default/image.webp";
+    const image =
+      rawImage && !rawImage.includes("postimg") && !rawImage.includes("postimage")
+        ? rawImage
+        : "/api/media/website/catalogue/products/default/image.webp";
+    return {
+      id: idx,
+      name: p.name,
+      category: p.categoryDisplay || p.category || "Bath Fittings",
+      price: formattedPrice,
+      sku: sku,
+      image: image,
+    };
+  });
+}
+
+export default function BestSellerCategoriesSection({
+  data,
+  initialProducts = [],
+  initialCategories = [],
+}: BestSellerCategoriesSectionProps) {
+  const [dbProducts, setDbProducts] = useState<ProductItem[]>(() =>
+    initialProducts && initialProducts.length > 0 ? processCategoryProducts(initialProducts, initialCategories) : []
+  );
+  const [isLoaded, setIsLoaded] = useState(() => Boolean(initialProducts && initialProducts.length > 0));
 
   useEffect(() => {
+    if (initialProducts && initialProducts.length > 0) return;
     Promise.all([
       fetch("/api/products").then((res) => res.json()),
       fetch("/api/categories").then((res) => res.json()).catch(() => []),
     ])
       .then(([resData, catData]) => {
         const items = resData.products || resData;
-        if (Array.isArray(items)) {
-          const active = items.filter(
-            (p: any) =>
-              p.status !== "Inactive" &&
-              p.isVisibleWebsite !== false &&
-              p.isVisible !== false
-          );
-
-          // Priority ordering for categories
-          const priority = [
-            "cp faucet",
-            "faucet",
-            "shower",
-            "spray",
-            "health",
-            "mixer",
-            "diverter",
-            "polymer",
-            "ptmt",
-            "valve",
-            "cistern",
-            "accessori",
-          ];
-
-          const getCategoryScore = (name: string) => {
-            const lower = (name || "").toLowerCase();
-            for (let i = 0; i < priority.length; i++) {
-              if (lower.includes(priority[i])) return i;
-            }
-            return 99;
-          };
-
-          // Sort active categories by luxury priority
-          const sortedCategories = Array.isArray(catData)
-            ? [...catData].sort((a: any, b: any) => {
-                const scoreA = getCategoryScore(a.name || a.title);
-                const scoreB = getCategoryScore(b.name || b.title);
-                return scoreA - scoreB;
-              })
-            : [];
-
-          const seenCategories = new Set<string>();
-          const uniqueCategoryProducts: any[] = [];
-
-          // 1. Pick a RANDOM product for each active category from database
-          if (Array.isArray(catData) && catData.length > 0) {
-            for (const cat of catData) {
-              const catName = cat.name || cat.title || "";
-              const catId = cat.id || cat._id || "";
-              const matching = active.filter(
-                (p: any) =>
-                  (p.category && p.category.toLowerCase().trim() === catName.toLowerCase().trim()) ||
-                  (p.categoryId && String(p.categoryId) === String(catId))
-              );
-
-              if (matching.length > 0) {
-                // Pick random product from this category
-                const randomProd = matching[Math.floor(Math.random() * matching.length)];
-                if (!uniqueCategoryProducts.some((x: any) => x.id === randomProd.id || x._id === randomProd._id)) {
-                  uniqueCategoryProducts.push({
-                    ...randomProd,
-                    categoryDisplay: catName,
-                  });
-                  if (randomProd.category) seenCategories.add(randomProd.category.toLowerCase().trim());
-                  seenCategories.add(catName.toLowerCase().trim());
-                }
-              }
-            }
-          }
-
-          // 2. For any remaining active categories not matched above, pick 1 random product
-          for (const p of active) {
-            const catKey = (p.category || "Other").toLowerCase().trim();
-            if (!seenCategories.has(catKey)) {
-              const matching = active.filter(
-                (item: any) => (item.category || "Other").toLowerCase().trim() === catKey
-              );
-              const randomProd = matching[Math.floor(Math.random() * matching.length)];
-              seenCategories.add(catKey);
-              if (!uniqueCategoryProducts.some((x: any) => x.id === randomProd.id || x._id === randomProd._id)) {
-                uniqueCategoryProducts.push({
-                  ...randomProd,
-                  categoryDisplay: p.category || "Bath Fittings",
-                });
-              }
-            }
-          }
-
-          // 3. Randomize / shuffle the order of categories on every visit / refresh
-          for (let i = uniqueCategoryProducts.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [uniqueCategoryProducts[i], uniqueCategoryProducts[j]] = [
-              uniqueCategoryProducts[j],
-              uniqueCategoryProducts[i],
-            ];
-          }
-
-          const finalProducts =
-            uniqueCategoryProducts.length >= 6
-              ? uniqueCategoryProducts
-              : active.slice(0, 12);
-
-          const mapped: ProductItem[] = finalProducts.slice(0, 12).map((p: any, idx: number) => {
-            const priceNum = Number(p.inSelling ?? p.price ?? 0);
-            const formattedPrice = priceNum > 0 ? `₹${priceNum.toLocaleString("en-IN")}` : "₹1,490";
-            const sku = p.skuCode || p.code || p.article || `RN-${p.id || idx}`;
-            const rawImage =
-              p.image || (Array.isArray(p.gallery) && p.gallery[0]) || "/api/media/website/catalogue/products/default/image.webp";
-            const image =
-              rawImage && !rawImage.includes("postimg") && !rawImage.includes("postimage")
-                ? rawImage
-                : "/api/media/website/catalogue/products/default/image.webp";
-            return {
-              id: idx,
-              name: p.name,
-              category: p.categoryDisplay || p.category || "Bath Fittings",
-              price: formattedPrice,
-              sku: sku,
-              image: image,
-            };
-          });
-          setDbProducts(mapped);
-        }
+        setDbProducts(processCategoryProducts(items, catData));
         setIsLoaded(true);
       })
       .catch((err) => {
         console.error("Failed to load products for BestSellerCategoriesSection:", err);
         setIsLoaded(true);
       });
-  }, []);
+  }, [initialProducts, initialCategories]);
 
   const validPropsProducts = data?.products?.filter((p) => Boolean(p.image));
   const productsList =

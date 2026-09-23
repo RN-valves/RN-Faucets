@@ -27,11 +27,37 @@ interface CategoriesSectionProps {
     description?: string;
     categories?: CategoryItem[];
   };
+  initialCategories?: any[];
 }
 
-export default function CategoriesSection({ data }: CategoriesSectionProps) {
-  const [dbCategories, setDbCategories] = useState<CategoryItem[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
+const mapCategoryItems = (dataArr: any[]): CategoryItem[] => {
+  if (!Array.isArray(dataArr)) return [];
+  return dataArr
+    .filter(
+      (cat: any) =>
+        cat.status !== "Inactive" &&
+        cat.isVisibleWebsite !== false &&
+        cat.isVisible !== false
+    )
+    .map((cat: any, index: number) => ({
+      id: cat.id || cat._id || index,
+      name: cat.name,
+      subtitle: cat.description || cat.title || `Explore ${cat.name} luxury collection`,
+      slug: cat.slug,
+      href: `/${cat.slug}`,
+      image: cat.homeImage || cat.image || DEFAULT_CATEGORY_PLACEHOLDER,
+      hoverImage: cat.homeHoverImage || "",
+      homeImage: cat.homeImage || "",
+      homeHoverImage: cat.homeHoverImage || "",
+      productCount: cat.productCount || 0,
+    }));
+};
+
+export default function CategoriesSection({ data, initialCategories = [] }: CategoriesSectionProps) {
+  const [dbCategories, setDbCategories] = useState<CategoryItem[]>(() =>
+    initialCategories && initialCategories.length > 0 ? mapCategoryItems(initialCategories) : []
+  );
+  const [isLoaded, setIsLoaded] = useState(() => Boolean(initialCategories && initialCategories.length > 0));
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
@@ -42,41 +68,20 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
   const scrollLeftRef = useRef(0);
   const hasMovedRef = useRef(false);
 
-  // Fetch live Category data & dynamic Category Main Images from Database
+  // Fetch live Category data if not provided via SSR
   useEffect(() => {
+    if (initialCategories && initialCategories.length > 0) return;
     fetch("/api/categories")
       .then((res) => res.json())
       .then((dataArr: any[]) => {
-        if (Array.isArray(dataArr)) {
-          const activeOnly = dataArr.filter(
-            (cat: any) =>
-              cat.status !== "Inactive" &&
-              cat.isVisibleWebsite !== false &&
-              cat.isVisible !== false
-          );
-          const mapped: CategoryItem[] = activeOnly.map((cat: any, index: number) => ({
-            id: cat.id || cat._id || index,
-            name: cat.name,
-            subtitle: cat.description || cat.title || `Explore ${cat.name} luxury collection`,
-            slug: cat.slug,
-            href: `/${cat.slug}`,
-            // Normal Homepage Photo: uses homeImage first, then fallback to thumbnail image
-            image: cat.homeImage || cat.image || DEFAULT_CATEGORY_PLACEHOLDER,
-            // Hover Homepage Photo: exclusively uses homeHoverImage (NEVER fallback to banner)
-            hoverImage: cat.homeHoverImage || "",
-            homeImage: cat.homeImage || "",
-            homeHoverImage: cat.homeHoverImage || "",
-            productCount: cat.productCount || 0,
-          }));
-          setDbCategories(mapped);
-        }
+        setDbCategories(mapCategoryItems(dataArr));
         setIsLoaded(true);
       })
       .catch((err) => {
         console.error("Failed to load dynamic categories:", err);
         setIsLoaded(true);
       });
-  }, []);
+  }, [initialCategories]);
 
   const validPropsCategories = data?.categories
     ?.filter(

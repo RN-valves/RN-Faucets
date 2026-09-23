@@ -9,27 +9,6 @@ if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
-const SUPPORT_CARDS = [
-  {
-    title: "Store Locator",
-    description: "Purchase our products from RN Faucets authorized dealers only.",
-    cta: "Find a Store",
-    href: "/store-locator",
-    image: "/uploads/support/store-locator.webp",
-    overlay:
-      "linear-gradient(90deg, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.58) 28%, rgba(0,0,0,0.14) 60%, rgba(0,0,0,0.06) 100%)",
-  },
-  {
-    title: "RN Care",
-    description: "Expert support. Trusted Service. Industry leading warranty.",
-    cta: "Let's Connect",
-    href: "/contact-us",
-    image: "/uploads/support/rn-care.webp",
-    overlay:
-      "linear-gradient(90deg, rgba(0,0,0,0.84) 0%, rgba(0,0,0,0.7) 34%, rgba(0,0,0,0.2) 68%, rgba(0,0,0,0.08) 100%)",
-  },
-] as const;
-
 interface JaquarSupportSectionProps {
   data?: {
     visible?: boolean;
@@ -49,16 +28,18 @@ export default function JaquarSupportSection({ data }: JaquarSupportSectionProps
   const cardsRef = useRef<(HTMLAnchorElement | null)[]>([]);
   const isVisible = data?.visible !== false;
 
-  const rawCards = data?.cards && data.cards.length > 0 ? data.cards : SUPPORT_CARDS;
-  const cardsList = rawCards.map((c: any) => ({
-    ...c,
-    image:
-      c.image && !c.image.includes("jaquar.com")
-        ? c.image
-        : c.title?.toLowerCase().includes("store")
-        ? "/uploads/support/store-locator.webp"
-        : "/uploads/support/rn-care.webp",
-  }));
+  const rawCards = data?.cards && Array.isArray(data.cards) ? data.cards : [];
+  const cardsList = rawCards
+    .filter((c: any) => Boolean(c.title))
+    .map((c: any) => ({
+      ...c,
+      image:
+        c.image && !c.image.includes("jaquar.com")
+          ? c.image
+          : c.title?.toLowerCase().includes("store")
+          ? "/uploads/support/store-locator.webp"
+          : "/uploads/support/rn-care.webp",
+    }));
 
   useEffect(() => {
     if (!isVisible || !sectionRef.current) return;
@@ -88,7 +69,7 @@ export default function JaquarSupportSection({ data }: JaquarSupportSectionProps
     return () => ctx.revert();
   }, [isVisible]);
 
-  if (!isVisible) return null;
+  if (!isVisible || cardsList.length === 0) return null;
 
   return (
     <section

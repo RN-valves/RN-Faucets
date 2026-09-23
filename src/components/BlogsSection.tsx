@@ -19,6 +19,7 @@ interface BlogsSectionProps {
     viewAllHref?: string;
     blogs?: Array<{ title: string; image: string; href?: string; slug?: string }>;
   };
+  initialBlogs?: any[];
 }
 
 function normalizeBlogImage(src?: string): string {
@@ -32,8 +33,19 @@ function normalizeBlogImage(src?: string): string {
   return src.startsWith("/") ? src : `/${src}`;
 }
 
-export default function BlogsSection({ data }: BlogsSectionProps) {
-  const [dbBlogs, setDbBlogs] = useState<BlogItem[]>([]);
+export default function BlogsSection({ data, initialBlogs = [] }: BlogsSectionProps) {
+  const [dbBlogs, setDbBlogs] = useState<BlogItem[]>(() => {
+    if (initialBlogs && initialBlogs.length > 0) {
+      return initialBlogs.map((b: any) => ({
+        id: b.id || b._id,
+        title: b.title,
+        slug: b.slug,
+        image: normalizeBlogImage(b.image),
+        href: `/blogs?slug=${encodeURIComponent(b.slug || "")}`,
+      }));
+    }
+    return [];
+  });
   const [startIndex, setStartIndex] = useState(0);
 
   const validPropsBlogs = useMemo(() => {
@@ -44,24 +56,23 @@ export default function BlogsSection({ data }: BlogsSectionProps) {
   }, [data?.blogs]);
 
   useEffect(() => {
-    if (validPropsBlogs.length === 0) {
-      fetch("/api/blogs")
-        .then((res) => res.json())
-        .then((json) => {
-          if (Array.isArray(json.blogs)) {
-            const mapped = json.blogs.map((b: any) => ({
-              id: b.id || b._id,
-              title: b.title,
-              slug: b.slug,
-              image: normalizeBlogImage(b.image),
-              href: `/blogs?slug=${encodeURIComponent(b.slug || "")}`,
-            }));
-            setDbBlogs(mapped);
-          }
-        })
-        .catch((err) => console.error("Failed to load blogs for BlogsSection:", err));
-    }
-  }, [validPropsBlogs.length]);
+    if (validPropsBlogs.length > 0 || (initialBlogs && initialBlogs.length > 0)) return;
+    fetch("/api/blogs")
+      .then((res) => res.json())
+      .then((json) => {
+        if (Array.isArray(json.blogs)) {
+          const mapped = json.blogs.map((b: any) => ({
+            id: b.id || b._id,
+            title: b.title,
+            slug: b.slug,
+            image: normalizeBlogImage(b.image),
+            href: `/blogs?slug=${encodeURIComponent(b.slug || "")}`,
+          }));
+          setDbBlogs(mapped);
+        }
+      })
+      .catch((err) => console.error("Failed to load blogs for BlogsSection:", err));
+  }, [validPropsBlogs.length, initialBlogs]);
 
   const blogsList: BlogItem[] = useMemo(() => {
     if (validPropsBlogs.length > 0) {

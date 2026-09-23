@@ -10,37 +10,6 @@ if (typeof window !== "undefined") {
 
 const INSTAGRAM_PROFILE = "https://www.instagram.com/rnvalvesandfaucets/";
 
-const REELS = [
-  {
-    video: "/Insta-Reels/reel-1.mp4",
-    instagram: "https://www.instagram.com/reel/DYmKS6VIlS4/",
-  },
-  {
-    video: "/Insta-Reels/reel-2.mp4",
-    instagram: "https://www.instagram.com/reel/DZUHQ1aIY-e/",
-  },
-  {
-    video: "/Insta-Reels/reel-3.mp4",
-    instagram: "https://www.instagram.com/reel/DbIlkbKIXlh/",
-  },
-  {
-    video: "/Insta-Reels/reel-4.mp4",
-    instagram: "https://www.instagram.com/reel/DZreP5goV6Y/",
-  },
-  {
-    video: "/Insta-Reels/reel-5.mp4",
-    instagram: "https://www.instagram.com/reel/DTDHr6qlTgE/",
-  },
-  {
-    video: "/Insta-Reels/reel-6.mp4",
-    instagram: "https://www.instagram.com/reel/DQ6oBoxkYDN/",
-  },
-  {
-    video: "/Insta-Reels/reel-7.mp4",
-    instagram: "https://www.instagram.com/reel/DSH60G0j4YT/",
-  },
-];
-
 const CARD_W = 285;
 const CARD_H = 510;
 const GAP = 20;
@@ -442,7 +411,7 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
   const isVisible = data?.visible !== false;
 
   const validReels = data?.reels?.filter((r) => Boolean(r.video));
-  const reelsList = validReels && validReels.length > 0 ? validReels : REELS;
+  const reelsList = validReels || [];
   const profileLink = data?.profileUrl || INSTAGRAM_PROFILE;
   const sectionTitle = data?.title || "Stay inspired with us on Instagram";
 
@@ -753,7 +722,7 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
     }
   }, [handleMouseUp]);
 
-  if (!isVisible) return null;
+  if (!isVisible || reelsList.length === 0) return null;
 
   return (
     <section
