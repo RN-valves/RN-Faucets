@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ChevronRight, Heart, Search, ShoppingBag, User, X, Shield, LogOut } from "lucide-react";
+import SearchModal from "./SearchModal";
 import { getCartItems } from "@/utils/cart";
 import { getCustomerSession, clearCustomerSession, CustomerSession } from "@/utils/customerAuth";
 import { getAdminAuth, logoutAdmin } from "@/utils/adminStore";
@@ -463,6 +464,7 @@ export default function Header({ data }: HeaderProps) {
 
   const router = useRouter();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [activeUserMenuLink, setActiveUserMenuLink] = useState<string | null>(null);
   const [isDarkBg, setIsDarkBg] = useState(true);
@@ -681,7 +683,9 @@ export default function Header({ data }: HeaderProps) {
                 key={label}
                 type="button"
                 onClick={() => {
-                  if (label === "Shopping Cart") {
+                  if (label === "Search") {
+                    setSearchOpen(true);
+                  } else if (label === "Shopping Cart") {
                     router.push("/cart");
                   }
                 }}
@@ -1222,6 +1226,8 @@ export default function Header({ data }: HeaderProps) {
           )}
         </div>
       </div>
+
+      <SearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
     </>
   );
 }
