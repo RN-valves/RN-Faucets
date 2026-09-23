@@ -21,12 +21,30 @@ interface BlogsSectionProps {
   };
 }
 
+function normalizeBlogImage(src?: string): string {
+  if (!src) return "/api/media/website/catalogue/products/default/image.webp";
+  if (src.includes("trae.ai") || src.includes("text_to_image")) {
+    return "/api/media/website/catalogue/products/default/image.webp";
+  }
+  if (src.startsWith("http://") || src.startsWith("https://")) {
+    return src;
+  }
+  return src.startsWith("/") ? src : `/${src}`;
+}
+
 export default function BlogsSection({ data }: BlogsSectionProps) {
   const [dbBlogs, setDbBlogs] = useState<BlogItem[]>([]);
   const [startIndex, setStartIndex] = useState(0);
 
+  const validPropsBlogs = useMemo(() => {
+    if (!data?.blogs || !Array.isArray(data.blogs)) return [];
+    return data.blogs.filter(
+      (b) => Boolean(b.image) && !b.image.includes("trae.ai") && !b.image.includes("text_to_image")
+    );
+  }, [data?.blogs]);
+
   useEffect(() => {
-    if (!data?.blogs || data.blogs.length === 0) {
+    if (validPropsBlogs.length === 0) {
       fetch("/api/blogs")
         .then((res) => res.json())
         .then((json) => {
@@ -35,7 +53,7 @@ export default function BlogsSection({ data }: BlogsSectionProps) {
               id: b.id || b._id,
               title: b.title,
               slug: b.slug,
-              image: b.image || "/api/media/website/catalogue/products/default/image.webp",
+              image: normalizeBlogImage(b.image),
               href: `/blogs?slug=${encodeURIComponent(b.slug || "")}`,
             }));
             setDbBlogs(mapped);
@@ -43,17 +61,18 @@ export default function BlogsSection({ data }: BlogsSectionProps) {
         })
         .catch((err) => console.error("Failed to load blogs for BlogsSection:", err));
     }
-  }, [data?.blogs]);
+  }, [validPropsBlogs.length]);
 
   const blogsList: BlogItem[] = useMemo(() => {
-    if (data?.blogs && data.blogs.length > 0) {
-      return data.blogs.filter((b) => Boolean(b.image)).map((b) => ({
+    if (validPropsBlogs.length > 0) {
+      return validPropsBlogs.map((b) => ({
         ...b,
+        image: normalizeBlogImage(b.image),
         href: b.href || (b.slug ? `/blogs?slug=${encodeURIComponent(b.slug)}` : "/blogs"),
       }));
     }
     return dbBlogs;
-  }, [data?.blogs, dbBlogs]);
+  }, [validPropsBlogs, dbBlogs]);
 
   const sectionTitle = data?.title || "Blogs";
   const viewAllLink = data?.viewAllHref && data.viewAllHref !== "#" ? data.viewAllHref : "/blogs";
@@ -253,7 +272,21 @@ export default function BlogsSection({ data }: BlogsSectionProps) {
                   </button>
                 )}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={blog.image} alt={blog.title} className="blogs-image" />
+                <img
+                  src={blog.image}
+                  alt={blog.title}
+                  className="blogs-image"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    const originalSrc = blog.image || "";
+                    if (originalSrc && !target.src.includes("www.rnvalves.com") && !originalSrc.startsWith("http")) {
+                      const cleanPath = originalSrc.startsWith("/") ? originalSrc : `/${originalSrc}`;
+                      target.src = `https://www.rnvalves.com${cleanPath}`;
+                    } else {
+                      target.src = "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80";
+                    }
+                  }}
+                />
               </div>
               <h3 className="blogs-card-title">{blog.title}</h3>
             </a>

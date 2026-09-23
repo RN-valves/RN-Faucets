@@ -410,6 +410,16 @@ function BlogsContent() {
                         src={b.image || "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80"}
                         alt={b.title}
                         className="blog-card-img"
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          const originalSrc = b.image || "";
+                          if (originalSrc && !target.src.includes("www.rnvalves.com") && !originalSrc.startsWith("http")) {
+                            const cleanPath = originalSrc.startsWith("/") ? originalSrc : `/${originalSrc}`;
+                            target.src = `https://www.rnvalves.com${cleanPath}`;
+                          } else {
+                            target.src = "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80";
+                          }
+                        }}
                       />
                     </div>
 
@@ -582,6 +592,16 @@ function BlogsContent() {
                 src={readingBlog.image}
                 alt={readingBlog.title}
                 style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  const originalSrc = readingBlog.image || "";
+                  if (originalSrc && !target.src.includes("www.rnvalves.com") && !originalSrc.startsWith("http")) {
+                    const cleanPath = originalSrc.startsWith("/") ? originalSrc : `/${originalSrc}`;
+                    target.src = `https://www.rnvalves.com${cleanPath}`;
+                  } else {
+                    target.src = "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80";
+                  }
+                }}
               />
             </div>
 
