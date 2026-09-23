@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { getSessionFromRequest } from "@/lib/security";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
@@ -13,7 +14,20 @@ export async function GET(request: Request) {
     }
 
     await connectDB();
-    const user = await User.findById(session.id).lean();
+    let user: any = null;
+    if (session.id && mongoose.Types.ObjectId.isValid(session.id)) {
+      user = await User.findById(session.id).lean();
+    }
+    if (!user && session.mobile) {
+      const cleanMobile = String(session.mobile).replace(/\D/g, "").slice(-10);
+      user = await User.findOne({
+        $or: [
+          { mobile: cleanMobile },
+          { mobile: `+91${cleanMobile}` },
+          { mobile: `91${cleanMobile}` },
+        ],
+      }).lean();
+    }
 
     return NextResponse.json({
       authenticated: true,

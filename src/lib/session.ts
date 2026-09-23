@@ -18,22 +18,50 @@ export interface SessionPayload {
 export const SESSION_COOKIE_NAME = "rn_session";
 const SESSION_EXPIRY_SECONDS = 7 * 24 * 60 * 60; // 7 days
 
-// Base64url utilities
-function base64UrlEncode(str: string): string {
+// Universal Base64url utilities compatible with Edge and Node.js
+function base64UrlEncodeBytes(bytes: Uint8Array): string {
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
   const base64 = typeof btoa !== "undefined"
-    ? btoa(str)
-    : Buffer.from(str, "binary").toString("base64");
+    ? btoa(binary)
+    : Buffer.from(bytes).toString("base64");
   return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-function base64UrlDecode(str: string): string {
+function base64UrlEncodeString(str: string): string {
+  return base64UrlEncodeBytes(new TextEncoder().encode(str));
+}
+
+function base64UrlDecodeToString(str: string): string {
   let base64 = str.replace(/-/g, "+").replace(/_/g, "/");
   while (base64.length % 4) {
     base64 += "=";
   }
-  return typeof atob !== "undefined"
+  const binary = typeof atob !== "undefined"
     ? atob(base64)
     : Buffer.from(base64, "base64").toString("binary");
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new TextDecoder().decode(bytes);
+}
+
+function base64UrlDecodeToBytes(str: string): Uint8Array {
+  let base64 = str.replace(/-/g, "+").replace(/_/g, "/");
+  while (base64.length % 4) {
+    base64 += "=";
+  }
+  const binary = typeof atob !== "undefined"
+    ? atob(base64)
+    : Buffer.from(base64, "base64").toString("binary");
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
 }
 
 function getSecretKey(): string {
@@ -68,7 +96,7 @@ export async function createSessionToken(
 
   const encoder = new TextEncoder();
   const payloadStr = JSON.stringify(payload);
-  const encodedPayload = base64UrlEncode(payloadStr);
+  const encodedPayload = base64UrlEncodeString(payloadStr);
 
   const key = await getCryptoKey();
   const signatureBuffer = await crypto.subtle.sign(
@@ -77,9 +105,7 @@ export async function createSessionToken(
     encoder.encode(encodedPayload)
   );
 
-  const signatureBytes = String.fromCharCode(...new Uint8Array(signatureBuffer));
-  const encodedSignature = base64UrlEncode(signatureBytes);
-
+  const encodedSignature = base64UrlEncodeBytes(new Uint8Array(signatureBuffer));
   return `${encodedPayload}.${encodedSignature}`;
 }
 
@@ -98,23 +124,18 @@ export async function verifySessionToken(token: string | null | undefined): Prom
 
     const key = await getCryptoKey();
     const encoder = new TextEncoder();
-
-    const signatureRaw = base64UrlDecode(encodedSignature);
-    const signatureBytes = new Uint8Array(signatureRaw.length);
-    for (let i = 0; i < signatureRaw.length; i++) {
-      signatureBytes[i] = signatureRaw.charCodeAt(i);
-    }
+    const signatureBytes = base64UrlDecodeToBytes(encodedSignature);
 
     const isValid = await crypto.subtle.verify(
       "HMAC",
       key,
-      signatureBytes,
-      encoder.encode(encodedPayload)
+      signatureBytes as unknown as BufferSource,
+      encoder.encode(encodedPayload) as unknown as BufferSource
     );
 
     if (!isValid) return null;
 
-    const payloadJson = base64UrlDecode(encodedPayload);
+    const payloadJson = base64UrlDecodeToString(encodedPayload);
     const payload: SessionPayload = JSON.parse(payloadJson);
 
     // Expiry check
@@ -130,14 +151,16 @@ export async function verifySessionToken(token: string | null | undefined): Prom
 }
 
 /**
- * Helper to get cookie options for the HTTP-Only session cookie
+ * Helper to get cookie options for the session cookie.
+ * Secure flag is only set if explicitly enabled via COOKIE_SECURE=true or isSecureProtocol.
+ * This guarantees the browser never rejects the cookie on HTTP or behind non-SSL reverse proxies.
  */
-export function getSessionCookieOptions(maxAge: number = SESSION_EXPIRY_SECONDS) {
-  const isProduction = process.env.NODE_ENV === "production";
+export function getSessionCookieOptions(maxAge: number = SESSION_EXPIRY_SECONDS, isSecureProtocol: boolean = false) {
+  const forceSecure = process.env.COOKIE_SECURE === "true";
   return {
     name: SESSION_COOKIE_NAME,
     httpOnly: true,
-    secure: isProduction,
+    secure: forceSecure || isSecureProtocol,
     sameSite: "lax" as const,
     path: "/",
     maxAge,

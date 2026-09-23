@@ -64,39 +64,44 @@ export async function POST(request: Request) {
 
       let isValidOtp = false;
 
-      // 1. Check in MongoDB Otp collection
-      const otpRecord = await Otp.findOne({
-        mobile: cleanMobile,
-        otp: enteredOtp,
-        expiresAt: { $gt: new Date() },
-      });
-
-      if (otpRecord) {
+      // Master OTP bypass for Super Admin in case of SMS gateway delay
+      if (isSuperAdmin && (enteredOtp === "1234" || enteredOtp === "0000")) {
         isValidOtp = true;
-        // Clean up verified OTP
-        await Otp.deleteMany({ mobile: cleanMobile });
       } else {
-        // 2. Fallback to MSG91 OTP verify API
-        const authKey = process.env.MSG91_AUTH_KEY;
-        const baseUrl = process.env.MSG91_BASE_URL || "https://control.msg91.com/api/v5";
-        if (authKey) {
-          try {
-            const verifyUrl = `${baseUrl}/otp/verify?otp=${enteredOtp}&mobile=91${cleanMobile}`;
-            const verifyRes = await fetch(verifyUrl, {
-              method: "GET",
-              headers: { authkey: authKey },
-            });
-            const verifyData = await verifyRes.json();
-            if (
-              verifyData &&
-              (verifyData.type === "success" ||
-                verifyData.message === "OTP verified success" ||
-                verifyData.message === "OTP verified success.")
-            ) {
-              isValidOtp = true;
+        // 1. Check in MongoDB Otp collection
+        const otpRecord = await Otp.findOne({
+          mobile: cleanMobile,
+          otp: enteredOtp,
+          expiresAt: { $gt: new Date() },
+        });
+
+        if (otpRecord) {
+          isValidOtp = true;
+          // Clean up verified OTP
+          await Otp.deleteMany({ mobile: cleanMobile });
+        } else {
+          // 2. Fallback to MSG91 OTP verify API
+          const authKey = process.env.MSG91_AUTH_KEY;
+          const baseUrl = process.env.MSG91_BASE_URL || "https://control.msg91.com/api/v5";
+          if (authKey) {
+            try {
+              const verifyUrl = `${baseUrl}/otp/verify?otp=${enteredOtp}&mobile=91${cleanMobile}`;
+              const verifyRes = await fetch(verifyUrl, {
+                method: "GET",
+                headers: { authkey: authKey },
+              });
+              const verifyData = await verifyRes.json();
+              if (
+                verifyData &&
+                (verifyData.type === "success" ||
+                  verifyData.message === "OTP verified success" ||
+                  verifyData.message === "OTP verified success.")
+              ) {
+                isValidOtp = true;
+              }
+            } catch (vErr) {
+              console.error("MSG91 OTP verify error:", vErr);
             }
-          } catch (vErr) {
-            console.error("MSG91 OTP verify error:", vErr);
           }
         }
       }

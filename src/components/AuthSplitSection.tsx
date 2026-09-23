@@ -24,43 +24,29 @@ export default function AuthSplitSection() {
   const [currentUser, setCurrentUser] = useState<{
     mobile: string;
     name?: string;
+    email?: string;
     userCode: string;
+    userType?: string;
+    role?: string;
   } | null>(null);
 
   const cleanPhone = (val?: string) => String(val || "").replace(/\D/g, "").slice(-10);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const admin = getAdminAuth();
-      const customer = getCustomerSession();
       const stored = localStorage.getItem("rn_user_session");
-      let userObj = null;
       if (stored) {
         try {
-          userObj = JSON.parse(stored);
+          const userObj = JSON.parse(stored);
           setCurrentUser(userObj);
         } catch {
           // ignore
         }
-      } else if (customer) {
-        setCurrentUser(customer);
-        userObj = customer;
-      }
-
-      if (
-        admin ||
-        cleanPhone(userObj?.mobile) === "8737029643" ||
-        userObj?.userType === "Admin" ||
-        userObj?.role === "Super Admin" ||
-        cleanPhone(customer?.mobile) === "8737029643" ||
-        customer?.userType === "Admin"
-      ) {
-        setAdminAuth({
-          email: "admin.aditya@rnvalves.com",
-          name: "Super Admin (Aditya)",
-          role: "Super Admin",
-        });
-        window.location.href = "/admin/dashboard";
+      } else {
+        const customer = getCustomerSession();
+        if (customer) {
+          setCurrentUser(customer);
+        }
       }
     }
   }, []);
@@ -98,7 +84,7 @@ export default function AuthSplitSection() {
         setStep("otp");
         setTimer(30);
       } else {
-        setErrorMessage(data.message || "Failed to send OTP. Try again.");
+        setErrorMessage(data.message || data.error || "Failed to send OTP. Try again.");
       }
     } catch {
       setErrorMessage("Network error. Please try again.");
@@ -142,6 +128,9 @@ export default function AuthSplitSection() {
             name: data.user?.name || "Super Admin (Aditya)",
             role: "Super Admin",
           });
+          if (data.token) {
+            document.cookie = `rn_session=${data.token}; path=/; max-age=604800; SameSite=Lax`;
+          }
           setStep("success");
           setTimeout(() => {
             window.location.href = "/admin/dashboard";
@@ -153,7 +142,7 @@ export default function AuthSplitSection() {
           }, 1200);
         }
       } else {
-        setErrorMessage(data.message || "Invalid OTP. Try again.");
+        setErrorMessage(data.message || data.error || "Invalid OTP. Try again.");
       }
     } catch {
       setErrorMessage("Verification server error. Try again.");
@@ -164,6 +153,7 @@ export default function AuthSplitSection() {
 
   const handleLogout = () => {
     logoutAdmin();
+    document.cookie = "rn_session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     setCurrentUser(null);
     setStep("mobile");
     setMobile("");
@@ -260,13 +250,15 @@ export default function AuthSplitSection() {
                     gap: "10px",
                   }}
                 >
-                  {currentUser.mobile === "8737029643" && (
+                  {(cleanPhone(currentUser.mobile) === "8737029643" ||
+                    currentUser.userType === "Admin" ||
+                    currentUser.role === "Super Admin") && (
                     <button
                       type="button"
                       onClick={() => {
                         setAdminAuth({
-                          email: "admin.aditya@rnvalves.com",
-                          name: "Super Admin (Aditya)",
+                          email: currentUser.email || "admin.aditya@rnvalves.com",
+                          name: currentUser.name || "Super Admin (Aditya)",
                           role: "Super Admin",
                         });
                         router.push("/admin/dashboard");

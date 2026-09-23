@@ -108,6 +108,7 @@ export const logoutAdmin = () => {
   localStorage.removeItem(AUTH_KEY);
   localStorage.removeItem("rn_user_session");
   localStorage.removeItem("rn_customer_session");
+  document.cookie = "rn_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
   window.dispatchEvent(new CustomEvent("customer-auth-changed"));
 };
 

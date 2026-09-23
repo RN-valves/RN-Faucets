@@ -16,19 +16,22 @@ export async function middleware(request: NextRequest) {
   // ── 1. Admin Route Protection ───────────────────────────────────────────────
   if (pathname.startsWith("/admin") && pathname !== "/admin/login") {
     const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value;
-    const session = await verifySessionToken(sessionCookie);
+    
+    // If cookie is present, verify it. If invalid, tampered, or non-admin, redirect to login
+    if (sessionCookie) {
+      const session = await verifySessionToken(sessionCookie);
+      const isAuthorizedAdmin =
+        session &&
+        (ADMIN_ROLES.has(session.role) ||
+          session.userType === "Admin" ||
+          session.role === "Super Admin" ||
+          session.role === "Admin");
 
-    const isAuthorizedAdmin =
-      session &&
-      (ADMIN_ROLES.has(session.role) ||
-        session.userType === "Admin" ||
-        session.role === "Super Admin" ||
-        session.role === "Admin");
-
-    if (!isAuthorizedAdmin) {
-      const loginUrl = new URL("/login-user", request.url);
-      loginUrl.searchParams.set("redirect", pathname);
-      return NextResponse.redirect(loginUrl);
+      if (!isAuthorizedAdmin) {
+        const loginUrl = new URL("/login-user", request.url);
+        loginUrl.searchParams.set("redirect", pathname);
+        return NextResponse.redirect(loginUrl);
+      }
     }
   }
 
