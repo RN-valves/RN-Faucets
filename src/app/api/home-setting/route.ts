@@ -144,37 +144,8 @@ const DEFAULT_HOME_SETTINGS = {
     blogs: [],
   },
   supportLinksSection: {
-    visible: true,
-    items: [
-      {
-        title: "Institutional Business",
-        description: "Explore Projects for Institutional & Business Customers",
-        cta: "Know More",
-        href: "/business-user-registration",
-        iconName: "Building2",
-      },
-      {
-        title: "International Business",
-        description: "Explore the countries we operate in",
-        cta: "Know More",
-        href: "/about-us",
-        iconName: "Globe",
-      },
-      {
-        title: "Service & Support",
-        description: "Connect with us for Installation and Service Request",
-        cta: "Connect Now",
-        href: "/contact-us",
-        iconName: "Headset",
-      },
-      {
-        title: "Product Catalogues",
-        description: "Download official RN Valves & Faucets PDF catalogues",
-        cta: "Download Now",
-        href: "/catalogues",
-        iconName: "Smartphone",
-      },
-    ],
+    visible: false,
+    items: [],
   },
   footer: {
     logo: "https://www.rnvalves.com/uploads/logo/rn-logosvgrhp9isxc7mdnyofdf3iumzuy2s8zld.svg",

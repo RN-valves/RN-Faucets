@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { connectDB } from "@/lib/mongodb";
 import HomeSetting from "@/models/HomeSetting";
 import Category from "@/models/Category";
@@ -6,6 +7,11 @@ import Blog from "@/models/Blog";
 import HomeClient from "@/components/home/HomeClient";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "RN Valves & Faucets | Luxury Bathware",
+  description: "RN Valves & Faucets - Premium Bath Fittings, Mixers & Sanitaryware",
+};
 
 export default async function Home() {
   await connectDB();

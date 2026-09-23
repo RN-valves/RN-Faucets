@@ -15,31 +15,12 @@ const ICON_MAP: Record<string, any> = {
 };
 
 export default function SupportLinksSection({ data }: { data?: any }) {
-  if (data?.visible === false) return null;
+  // Completely removed from project per user request
+  return null;
+}
 
-  const rawItems = data?.items && Array.isArray(data.items) ? data.items : [];
-  const items = rawItems
-    .filter((item: any) => Boolean(item.title))
-    .map((item: any) => {
-      const IconComp =
-        (item.iconName && ICON_MAP[item.iconName]) ||
-        Building2;
-      const cleanHref =
-        item.href && item.href !== "#" && item.href.trim() !== ""
-          ? item.href
-          : "/contact-us";
-
-      return {
-        title: item.title,
-        description: item.description || "",
-        cta: item.cta || "Know More",
-        href: cleanHref,
-        Icon: IconComp,
-      };
-    });
-
-  if (items.length === 0) return null;
-  return (
+/*
+function DisabledSupportLinksSection({ data }: { data?: any }) {
     <section
       data-header-theme="light"
       className="support-links-section"
@@ -167,3 +148,4 @@ export default function SupportLinksSection({ data }: { data?: any }) {
     </section>
   );
 }
+*/

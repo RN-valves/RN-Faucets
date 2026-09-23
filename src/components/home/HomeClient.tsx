@@ -551,8 +551,9 @@ export default function HomeClient({
         initialBlogs={initialBlogs}
       />
 
-      {/* ── 9. Business and Support Links ── */}
+      {/* ── 9. Business and Support Links (Removed per user request) ──
       <SupportLinksSection data={homeSetting?.supportLinksSection} />
+      ── */}
 
       {/* ── 10. Footer Section ── */}
       <FooterSection data={homeSetting?.footer} />
