@@ -62,13 +62,17 @@ function ProgressRing({
     let active = true;
 
     if (itemType === "video") {
-      // Direct DOM update on every animation frame for video playback
-      const updateVideoProgress = () => {
+      let lastTime = 0;
+      const updateVideoProgress = (now: number) => {
         if (!active) return;
-        const vid = videoRef.current;
-        if (vid && vid.duration > 0 && isFinite(vid.duration) && circleRef.current) {
-          const p = Math.min(Math.max(vid.currentTime / vid.duration, 0), 1);
-          circleRef.current.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - p));
+        // Throttle media element currentTime queries to ~30fps to avoid blocking video decoder
+        if (now - lastTime >= 33) {
+          lastTime = now;
+          const vid = videoRef.current;
+          if (vid && vid.duration > 0 && isFinite(vid.duration) && circleRef.current) {
+            const p = Math.min(Math.max(vid.currentTime / vid.duration, 0), 1);
+            circleRef.current.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - p));
+          }
         }
         rafRef.current = requestAnimationFrame(updateVideoProgress);
       };
@@ -351,6 +355,8 @@ export default function HomeClient({
               muted
               playsInline
               preload="auto"
+              disablePictureInPicture
+              disableRemotePlayback
               onEnded={advance}
               style={{
                 position: "absolute",
@@ -362,6 +368,9 @@ export default function HomeClient({
                 transition: "opacity 0.5s ease",
                 zIndex: activeIdx === i ? 1 : 0,
                 pointerEvents: "none",
+                transform: "translateZ(0)",
+                willChange: "opacity, transform",
+                backfaceVisibility: "hidden",
               }}
             />
           ) : (
