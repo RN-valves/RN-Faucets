@@ -926,7 +926,7 @@ export default function WebsitePhotosAdminPage() {
                       >
                         <input
                           type="file"
-                          accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                          accept="image/*"
                           disabled={isUploadingThis}
                           onChange={(e) => {
                             const file = e.target.files?.[0];

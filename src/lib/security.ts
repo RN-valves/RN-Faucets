@@ -137,16 +137,34 @@ export function getClientIp(req: Request): string {
 /**
  * Whitelist check for allowed media upload extensions and MIME types.
  */
-const ALLOWED_IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "gif", "svg"]);
-const ALLOWED_VIDEO_EXTENSIONS = new Set(["mp4", "webm", "mov", "m4v"]);
-const ALLOWED_MIME_PREFIXES = ["image/", "video/"];
+const ALLOWED_IMAGE_EXTENSIONS = new Set([
+  "jpg",
+  "jpeg",
+  "jfif",
+  "pjpeg",
+  "pjp",
+  "png",
+  "webp",
+  "avif",
+  "gif",
+  "svg",
+  "bmp",
+  "tiff",
+  "tif",
+  "ico",
+  "heic",
+  "heif",
+]);
+const ALLOWED_VIDEO_EXTENSIONS = new Set(["mp4", "webm", "mov", "m4v", "avi", "mkv", "ogv"]);
+const ALLOWED_DOC_EXTENSIONS = new Set(["pdf"]);
+const ALLOWED_MIME_PREFIXES = ["image/", "video/", "application/pdf"];
 
 export function validateMediaUpload(
   filename: string,
   mimeType: string,
   sizeBytes: number,
   maxSizeBytes: number = 500 * 1024 * 1024
-): { valid: boolean; error?: string; mediaType?: "image" | "video" } {
+): { valid: boolean; error?: string; mediaType?: "image" | "video" | "document" } {
   if (!filename) {
     return { valid: false, error: "Filename is missing." };
   }
@@ -155,11 +173,12 @@ export function validateMediaUpload(
 
   const isImage = ALLOWED_IMAGE_EXTENSIONS.has(ext);
   const isVideo = ALLOWED_VIDEO_EXTENSIONS.has(ext);
+  const isDoc = ALLOWED_DOC_EXTENSIONS.has(ext);
 
-  if (!isImage && !isVideo) {
+  if (!isImage && !isVideo && !isDoc) {
     return {
       valid: false,
-      error: `File type .${ext} is not allowed. Supported formats: JPG, PNG, WEBP, SVG, GIF, MP4, WEBM, MOV.`,
+      error: `File type .${ext} is not allowed. Supported formats: JPG, JPEG, JFIF, PNG, WEBP, AVIF, SVG, GIF, MP4, WEBM, MOV, PDF.`,
     };
   }
 
@@ -167,7 +186,11 @@ export function validateMediaUpload(
   const isMimeValid =
     !mimeLower ||
     mimeLower === "application/octet-stream" ||
-    ALLOWED_MIME_PREFIXES.some((p) => mimeLower.startsWith(p));
+    ALLOWED_MIME_PREFIXES.some((p) => mimeLower.startsWith(p)) ||
+    mimeLower === "application/pdf" ||
+    mimeLower === "image/jfif" ||
+    mimeLower === "image/pjpeg" ||
+    mimeLower === "image/jpeg";
 
   if (!isMimeValid) {
     return {
@@ -187,7 +210,7 @@ export function validateMediaUpload(
 
   return {
     valid: true,
-    mediaType: isVideo ? "video" : "image",
+    mediaType: isVideo ? "video" : isDoc ? "document" : "image",
   };
 }
 

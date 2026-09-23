@@ -77,12 +77,12 @@ function R2UploadPicker({
     let targetKey = r2Key;
     if (isVideo) {
       const videoExt = ["mp4", "webm", "mov"].includes(ext) ? ext : "mp4";
-      targetKey = targetKey.replace(/\.(webp|jpg|jpeg|png|gif|svg)$/i, `.${videoExt}`);
+      targetKey = targetKey.replace(/\.(webp|jpg|jpeg|jfif|png|gif|svg|avif)$/i, `.${videoExt}`);
       if (!/\.[a-zA-Z0-9]+$/.test(targetKey)) {
         targetKey = `${targetKey}.${videoExt}`;
       }
     } else if (ext === "svg" || file.type?.includes("svg")) {
-      targetKey = targetKey.replace(/\.(webp|jpg|jpeg|png|gif|mp4|webm|mov|m4v)$/i, ".svg");
+      targetKey = targetKey.replace(/\.(webp|jpg|jpeg|jfif|png|gif|avif|mp4|webm|mov|m4v)$/i, ".svg");
       if (!/\.svg$/i.test(targetKey)) {
         targetKey = `${targetKey}.svg`;
       }

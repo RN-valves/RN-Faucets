@@ -55,8 +55,14 @@ export async function GET(
         contentType = "image/webp";
       } else if (lowerKey.endsWith(".png")) {
         contentType = "image/png";
-      } else if (lowerKey.endsWith(".jpg") || lowerKey.endsWith(".jpeg")) {
+      } else if (lowerKey.endsWith(".jpg") || lowerKey.endsWith(".jpeg") || lowerKey.endsWith(".jfif")) {
         contentType = "image/jpeg";
+      } else if (lowerKey.endsWith(".avif")) {
+        contentType = "image/avif";
+      } else if (lowerKey.endsWith(".gif")) {
+        contentType = "image/gif";
+      } else if (lowerKey.endsWith(".pdf")) {
+        contentType = "application/pdf";
       }
     }
 

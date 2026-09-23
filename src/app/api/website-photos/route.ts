@@ -291,8 +291,12 @@ export async function POST(req: Request) {
       contentType = "image/webp";
     } else if (ext === "png") {
       contentType = "image/png";
-    } else if (ext === "jpg" || ext === "jpeg") {
+    } else if (["jpg", "jpeg", "jfif", "pjpeg", "pjp"].includes(ext) || file.type?.includes("jpeg") || file.type?.includes("jfif")) {
       contentType = "image/jpeg";
+    } else if (ext === "avif") {
+      contentType = "image/avif";
+    } else if (ext === "gif") {
+      contentType = "image/gif";
     }
 
     // 1. Upload to Cloudflare R2

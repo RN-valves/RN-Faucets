@@ -55,6 +55,7 @@ export async function POST(req: Request) {
     // Detect MIME type and extension accurately
     const ext = file.name.split(".").pop()?.toLowerCase() || "";
     const isVideo = validation.mediaType === "video";
+    const isDoc = validation.mediaType === "document" || ext === "pdf";
 
     let contentType = file.type;
     if (!contentType || contentType === "application/octet-stream") {
@@ -62,26 +63,38 @@ export async function POST(req: Request) {
       else if (ext === "webm") contentType = "video/webm";
       else if (ext === "mov") contentType = "video/quicktime";
       else if (ext === "png") contentType = "image/png";
-      else if (ext === "jpg" || ext === "jpeg") contentType = "image/jpeg";
+      else if (["jpg", "jpeg", "jfif", "pjpeg", "pjp"].includes(ext)) contentType = "image/jpeg";
       else if (ext === "webp") contentType = "image/webp";
+      else if (ext === "avif") contentType = "image/avif";
+      else if (ext === "gif") contentType = "image/gif";
       else if (ext === "svg") contentType = "image/svg+xml";
-      else contentType = isVideo ? "video/mp4" : "image/webp";
+      else if (ext === "pdf") contentType = "application/pdf";
+      else contentType = isVideo ? "video/mp4" : isDoc ? "application/pdf" : "image/jpeg";
     }
 
     if (ext === "svg" || file.type?.includes("svg")) {
       contentType = "image/svg+xml";
+    } else if (["jfif", "pjpeg", "pjp"].includes(ext) || file.type?.includes("jfif")) {
+      contentType = "image/jpeg";
+    } else if (ext === "pdf" || file.type?.includes("pdf")) {
+      contentType = "application/pdf";
     }
 
     // Sanitize key extension based on media type
     let finalKey = sanitizedKey;
     if (isVideo) {
       const videoExt = ["mp4", "webm", "mov"].includes(ext) ? ext : "mp4";
-      finalKey = finalKey.replace(/\.(webp|jpg|jpeg|png|gif|svg)$/i, `.${videoExt}`);
+      finalKey = finalKey.replace(/\.(webp|jpg|jpeg|jfif|png|gif|svg|avif)$/i, `.${videoExt}`);
       if (!/\.[a-zA-Z0-9]+$/.test(finalKey)) {
         finalKey = `${finalKey}.${videoExt}`;
       }
+    } else if (isDoc || ext === "pdf") {
+      finalKey = finalKey.replace(/\.(webp|jpg|jpeg|jfif|png|gif|svg|avif|mp4|webm|mov|m4v)$/i, ".pdf");
+      if (!/\.pdf$/i.test(finalKey)) {
+        finalKey = `${finalKey}.pdf`;
+      }
     } else if (ext === "svg" || file.type?.includes("svg")) {
-      finalKey = finalKey.replace(/\.(webp|jpg|jpeg|png|gif|mp4|webm|mov|m4v)$/i, ".svg");
+      finalKey = finalKey.replace(/\.(webp|jpg|jpeg|jfif|png|gif|mp4|webm|mov|m4v|pdf)$/i, ".svg");
       if (!/\.svg$/i.test(finalKey)) {
         finalKey = `${finalKey}.svg`;
       }
