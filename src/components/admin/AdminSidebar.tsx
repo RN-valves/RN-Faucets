@@ -92,7 +92,10 @@ export default function AdminSidebar({
       })
     );
     if (activeParent) {
-      setOpenDropdownId(activeParent.id);
+      const parentId = activeParent.id;
+      queueMicrotask(() => {
+        setOpenDropdownId((prev) => (prev === parentId ? prev : parentId));
+      });
     }
   }, [pathname]);
 

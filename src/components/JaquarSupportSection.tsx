@@ -47,15 +47,14 @@ interface JaquarSupportSectionProps {
 }
 
 export default function JaquarSupportSection({ data }: JaquarSupportSectionProps) {
-  if (data?.visible === false) return null;
+  const sectionRef = useRef<HTMLElement>(null);
+  const cardsRef = useRef<(HTMLAnchorElement | null)[]>([]);
+  const isVisible = data?.visible !== false;
 
   const cardsList = data?.cards && data.cards.length > 0 ? data.cards : SUPPORT_CARDS;
 
-  const sectionRef = useRef<HTMLElement>(null);
-  const cardsRef = useRef<(HTMLAnchorElement | null)[]>([]);
-
   useEffect(() => {
-    if (!sectionRef.current) return;
+    if (!isVisible || !sectionRef.current) return;
 
     const ctx = gsap.context(() => {
       const validCards = cardsRef.current.filter(Boolean);
@@ -80,7 +79,9 @@ export default function JaquarSupportSection({ data }: JaquarSupportSectionProps
     }, sectionRef);
 
     return () => ctx.revert();
-  }, []);
+  }, [isVisible]);
+
+  if (!isVisible) return null;
 
   return (
     <section

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import mongoose from "mongoose";
+import { requireAdminAuth, escapeRegex } from "@/lib/security";
 
 export async function GET(request: Request) {
   try {
@@ -15,7 +16,7 @@ export async function GET(request: Request) {
 
     const filter: Record<string, any> = {};
     if (type) {
-      filter.type = { $regex: new RegExp(`^${type}$`, "i") };
+      filter.type = { $regex: new RegExp(`^${escapeRegex(type)}$`, "i") };
     }
 
     const attributes = await db.collection("attributes").find(filter).sort({ name: 1 }).toArray();
@@ -32,6 +33,14 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const adminSession = await requireAdminAuth(request);
+    if (!adminSession) {
+      return NextResponse.json(
+        { error: "Unauthorized. Admin privileges required to manage attributes." },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
     const db = mongoose.connection.db;
     if (!db) {
@@ -57,6 +66,14 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    const adminSession = await requireAdminAuth(request);
+    if (!adminSession) {
+      return NextResponse.json(
+        { error: "Unauthorized. Admin privileges required to delete attributes." },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
     const db = mongoose.connection.db;
     if (!db) {

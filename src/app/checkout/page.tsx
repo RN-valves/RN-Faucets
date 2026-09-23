@@ -38,6 +38,10 @@ interface Address {
 
 const SAVED_ADDRESSES_KEY = "rn_saved_addresses";
 
+function generateOrderId(): string {
+  return `RN-ORD-${Math.floor(100000 + Math.random() * 900000)}`;
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -288,7 +292,7 @@ export default function CheckoutPage() {
     const customerPhone = selectedAddress.phone || session?.mobile || "9999999999";
     const customerName = selectedAddress.name || session?.name || "Customer";
 
-    const generatedOrderId = `RN-ORD-${Math.floor(100000 + Math.random() * 900000)}`;
+    const generatedOrderId = generateOrderId();
 
     const orderPayload = {
       id: generatedOrderId,

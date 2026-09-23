@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Discount from "@/models/Discount";
+import { requireAdminAuth, escapeRegex } from "@/lib/security";
 
 const DEFAULT_MOCK_DISCOUNTS = [
   {
@@ -59,7 +60,7 @@ export async function GET(request: Request) {
 
     const query: any = {};
     if (q) {
-      query.name = { $regex: q, $options: "i" };
+      query.name = { $regex: escapeRegex(q), $options: "i" };
     }
     if (status !== "All") {
       query.status = status;
@@ -79,6 +80,14 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const adminSession = await requireAdminAuth(request);
+    if (!adminSession) {
+      return NextResponse.json(
+        { error: "Unauthorized. Admin privileges required to create discounts." },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
     const body = await request.json();
 

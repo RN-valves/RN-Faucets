@@ -142,6 +142,15 @@ const ProductSchema = new Schema<IProduct>(
   { timestamps: true }
 );
 
+// High-performance compound & lookup indexes
+ProductSchema.index({ code: 1 });
+ProductSchema.index({ category: 1, isVisibleWebsite: 1, status: 1 });
+ProductSchema.index({ subcategoryId: 1 });
+ProductSchema.index({ skuCode: 1 });
+ProductSchema.index({ urlKey: 1 });
+ProductSchema.index({ price: 1 });
+ProductSchema.index({ createdAt: -1 });
+
 const Product: Model<IProduct> =
   mongoose.models.Product || mongoose.model<IProduct>("Product", ProductSchema);
 

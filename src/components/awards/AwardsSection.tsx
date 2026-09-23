@@ -56,16 +56,16 @@ interface AwardsSectionProps {
 }
 
 export default function AwardsSection({ data }: AwardsSectionProps) {
-  if (data?.visible === false) return null;
+  const sectionRef = useRef<HTMLElement>(null);
+  const isVisible = data?.visible !== false;
 
   const awardsList = data?.awards && data.awards.length > 0 ? data.awards : AWARDS;
   const eyebrowText = data?.eyebrow || "Achievements";
   const titleText = data?.title || "Awards & Recognition";
   const descText = data?.description || "Celebrating our commitment to quality, innovation, customer trust, and manufacturing excellence through nationally recognized achievements and industry honors.";
 
-  const sectionRef = useRef<HTMLElement>(null);
-
   useEffect(() => {
+    if (!isVisible) return;
     const section = sectionRef.current;
     if (!section) return;
 
@@ -137,7 +137,9 @@ export default function AwardsSection({ data }: AwardsSectionProps) {
     }, section);
 
     return () => ctx.revert();
-  }, []);
+  }, [isVisible]);
+
+  if (!isVisible) return null;
 
   return (
     <section

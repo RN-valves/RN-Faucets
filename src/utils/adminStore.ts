@@ -104,6 +104,7 @@ export const setAdminAuth = (user: AdminUser | null) => {
 
 export const logoutAdmin = () => {
   if (!isClient) return;
+  fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
   localStorage.removeItem(AUTH_KEY);
   localStorage.removeItem("rn_user_session");
   localStorage.removeItem("rn_customer_session");

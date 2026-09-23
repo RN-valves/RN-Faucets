@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Product from "@/models/Product";
+import { requireAdminAuth } from "@/lib/security";
 
 export async function POST(request: Request) {
   try {
+    const adminSession = await requireAdminAuth(request);
+    if (!adminSession) {
+      return NextResponse.json(
+        { error: "Unauthorized. Admin privileges required to import products." },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
     const body = await request.json();
     const items = Array.isArray(body) ? body : body.products;

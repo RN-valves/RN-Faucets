@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import CataloguePdf from "@/models/Catalogue";
+import { requireAdminAuth } from "@/lib/security";
 
 export async function GET() {
   try {
@@ -15,10 +16,17 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const adminSession = await requireAdminAuth(request);
+    if (!adminSession) {
+      return NextResponse.json(
+        { error: "Unauthorized. Admin privileges required to upload catalogues." },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
     const body = await request.json();
     const id = body.id || `CAT-${Date.now()}`;
-    // Simple QR SVG data URI / URL generation helper if qrCode is empty
     const qrCode = body.qrCode || `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(body.pdf || "https://rnvalves.com")}`;
 
     const catalogue = new CataloguePdf({

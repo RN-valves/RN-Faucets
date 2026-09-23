@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
+import { requireAdminAuth, escapeRegex } from "@/lib/security";
 
 export async function GET(request: Request) {
   try {
+    const adminSession = await requireAdminAuth(request);
+    if (!adminSession) {
+      return NextResponse.json(
+        { error: "Unauthorized. Admin privileges required to view customer directory." },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
     const { searchParams } = new URL(request.url);
     const q = searchParams.get("q") || "";
@@ -13,13 +22,14 @@ export async function GET(request: Request) {
     const query: any = {};
 
     if (q) {
+      const safeQ = escapeRegex(q);
       query.$or = [
-        { name: { $regex: q, $options: "i" } },
-        { email: { $regex: q, $options: "i" } },
-        { mobile: { $regex: q, $options: "i" } },
-        { userCode: { $regex: q, $options: "i" } },
-        { businessName: { $regex: q, $options: "i" } },
-        { gstNumber: { $regex: q, $options: "i" } },
+        { name: { $regex: safeQ, $options: "i" } },
+        { email: { $regex: safeQ, $options: "i" } },
+        { mobile: { $regex: safeQ, $options: "i" } },
+        { userCode: { $regex: safeQ, $options: "i" } },
+        { businessName: { $regex: safeQ, $options: "i" } },
+        { gstNumber: { $regex: safeQ, $options: "i" } },
       ];
     }
 
@@ -63,6 +73,14 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const adminSession = await requireAdminAuth(request);
+    if (!adminSession) {
+      return NextResponse.json(
+        { error: "Unauthorized. Admin privileges required to create accounts manually." },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
     const body = await request.json();
 

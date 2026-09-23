@@ -211,7 +211,7 @@ export default function CategoryPage({
   }, [categoryData, allCategories]);
 
   // Reusable Filter Content Element (used in desktop sidebar + mobile drawer)
-  const FilterContent = () => (
+  const renderFilterContent = () => (
     <>
       {/* ── 1: PRODUCTS ── */}
       <div style={{ marginBottom: "24px" }}>
@@ -862,7 +862,7 @@ export default function CategoryPage({
         <div style={{ display: "flex", gap: "32px", alignItems: "flex-start" }}>
           {/* Desktop Filter Sidebar */}
           <aside className="desktop-filter-sidebar">
-            <FilterContent />
+            {renderFilterContent()}
           </aside>
 
           {/* Product Grid Area */}
@@ -1128,7 +1128,7 @@ export default function CategoryPage({
                 padding: "18px 20px 24px",
               }}
             >
-              <FilterContent />
+              {renderFilterContent()}
             </div>
 
             {/* Drawer Footer Actions */}

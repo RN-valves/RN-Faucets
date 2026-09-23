@@ -56,17 +56,16 @@ interface WhyBuySectionProps {
 }
 
 export default function WhyBuySection({ data }: WhyBuySectionProps) {
-  if (data?.visible === false) return null;
+  const sectionRef = useRef<HTMLElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const columnsRef = useRef<HTMLDivElement>(null);
+  const isVisible = data?.visible !== false;
 
   const headingText = data?.heading || "Why Buy from RN Faucets Directly";
   const itemsList = data?.items && data.items.length > 0 ? data.items : TRUST_ITEMS;
 
-  const sectionRef = useRef<HTMLElement>(null);
-  const headingRef = useRef<HTMLHeadingElement>(null);
-  const columnsRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
-    if (!sectionRef.current || !headingRef.current || !columnsRef.current)
+    if (!isVisible || !sectionRef.current || !headingRef.current || !columnsRef.current)
       return;
 
     const ctx = gsap.context(() => {
@@ -108,7 +107,9 @@ export default function WhyBuySection({ data }: WhyBuySectionProps) {
     }, sectionRef);
 
     return () => ctx.revert();
-  }, []);
+  }, [isVisible]);
+
+  if (!isVisible) return null;
 
   return (
     <section

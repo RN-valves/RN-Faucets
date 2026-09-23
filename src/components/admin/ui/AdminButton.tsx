@@ -34,7 +34,6 @@ export default function AdminButton({
   let bg = "#0077B6";
   let color = "#FFFFFF";
   let border = "1px solid transparent";
-  let hoverBg = "#0096C7";
 
   switch (variant) {
     case "primary":
@@ -91,6 +90,7 @@ export default function AdminButton({
   return (
     <button
       {...props}
+      className={className}
       disabled={disabled}
       style={{
         display: "inline-flex",

@@ -69,6 +69,12 @@ const UserSchema = new Schema<IUser>(
   { timestamps: true, strict: false }
 );
 
+// High-performance compound & lookup indexes
+UserSchema.index({ userType: 1, approvalStatus: 1 });
+UserSchema.index({ email: 1 });
+UserSchema.index({ role: 1 });
+UserSchema.index({ createdAt: -1 });
+
 const User: Model<IUser> =
   mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
 

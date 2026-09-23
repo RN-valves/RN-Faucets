@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Product from "@/models/Product";
+import { requireAdminAuth } from "@/lib/security";
 
 export async function POST(request: Request) {
   try {
+    const adminSession = await requireAdminAuth(request);
+    if (!adminSession) {
+      return NextResponse.json(
+        { error: "Unauthorized. Admin privileges required for bulk product operations." },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
     const body = await request.json();
     const { action, ids, status, stock, category, subcategoryId, subcategoryName, brand, isVisibleWebsite, priceType, priceValue, isPercentage } = body;
@@ -83,4 +92,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message || "Failed to perform bulk operation" }, { status: 500 });
   }
 }
-

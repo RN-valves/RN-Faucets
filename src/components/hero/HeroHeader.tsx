@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Search, Heart, ShoppingBag, User } from "lucide-react";
 
 /* ─── Types ────────────────────────────────────────────── */
@@ -79,14 +80,14 @@ const HeroHeader = forwardRef<HTMLDivElement, HeroHeaderProps>(({ activeNav = "H
         role="banner"
       >
         {/* ── Logo ── */}
-        <a
+        <Link
           href="/"
           aria-label="RN Valves & Faucets home"
           className="flex-shrink-0 transition-opacity duration-300 hover:opacity-70"
           style={{ maxHeight: 42 }}
         >
           <RNLogo />
-        </a>
+        </Link>
 
         {/* ── Desktop Nav ── */}
         <nav
@@ -95,7 +96,7 @@ const HeroHeader = forwardRef<HTMLDivElement, HeroHeaderProps>(({ activeNav = "H
           aria-label="Primary navigation"
         >
           {NAV_ITEMS.map((item) => (
-            <a
+            <Link
               key={item}
               href={item === "Home" ? "/" : `/${item.toLowerCase()}`}
               className={`nav-link text-white transition-opacity duration-300 hover:opacity-70${
@@ -112,7 +113,7 @@ const HeroHeader = forwardRef<HTMLDivElement, HeroHeaderProps>(({ activeNav = "H
               aria-current={item === activeNav ? "page" : undefined}
             >
               {item}
-            </a>
+            </Link>
           ))}
         </nav>
 

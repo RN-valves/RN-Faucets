@@ -10,7 +10,7 @@ export interface IDiscount extends Document {
   startValue: number;
   endValue: number;
   expiredAt?: Date | string;
-  status: "Active" | "Inactive" | "InActive";
+  status: "Active" | "Inactive" | "InActive" | (string & {});
 }
 
 const DiscountSchema = new Schema<IDiscount>(
@@ -28,6 +28,10 @@ const DiscountSchema = new Schema<IDiscount>(
   },
   { timestamps: true, strict: false }
 );
+
+DiscountSchema.index({ code: 1, status: 1 });
+DiscountSchema.index({ name: 1, status: 1 });
+DiscountSchema.index({ status: 1, startValue: 1 });
 
 const Discount: Model<IDiscount> =
   mongoose.models.Discount || mongoose.model<IDiscount>("Discount", DiscountSchema);

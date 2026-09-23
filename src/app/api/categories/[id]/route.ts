@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Category from "@/models/Category";
+import { requireAdminAuth } from "@/lib/security";
 
 export async function GET(
   _request: Request,
@@ -28,6 +29,14 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const adminSession = await requireAdminAuth(request);
+    if (!adminSession) {
+      return NextResponse.json(
+        { error: "Unauthorized. Admin privileges required to update categories." },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
     const { id } = await params;
     const body = await request.json();
@@ -52,10 +61,18 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const adminSession = await requireAdminAuth(request);
+    if (!adminSession) {
+      return NextResponse.json(
+        { error: "Unauthorized. Admin privileges required to delete categories." },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
     const { id } = await params;
     const deleted = await Category.findOneAndDelete({ $or: [{ id }, { slug: id }] });

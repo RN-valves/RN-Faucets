@@ -2,9 +2,18 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Order from "@/models/Order";
 import { createShipwayOrder, trackShipwayShipment } from "@/lib/shipping/shipway";
+import { requireAdminAuth } from "@/lib/security";
 
 export async function POST(request: Request) {
   try {
+    const adminSession = await requireAdminAuth(request);
+    if (!adminSession) {
+      return NextResponse.json(
+        { error: "Unauthorized. Admin privileges required to dispatch shipments." },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { orderId } = body;
 

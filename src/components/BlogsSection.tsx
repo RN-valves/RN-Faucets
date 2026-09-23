@@ -22,8 +22,6 @@ interface BlogsSectionProps {
 }
 
 export default function BlogsSection({ data }: BlogsSectionProps) {
-  if (data?.visible === false) return null;
-
   const [dbBlogs, setDbBlogs] = useState<BlogItem[]>([]);
   const [startIndex, setStartIndex] = useState(0);
 
@@ -80,6 +78,7 @@ export default function BlogsSection({ data }: BlogsSectionProps) {
     setStartIndex((prev) => (prev + 1) % blogsList.length);
   };
 
+  if (data?.visible === false) return null;
   if (blogsList.length === 0) return null;
 
   return (

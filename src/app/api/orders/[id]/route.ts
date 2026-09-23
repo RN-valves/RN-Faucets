@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Order from "@/models/Order";
+import { requireAdminAuth, requireAuth } from "@/lib/security";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -12,6 +13,24 @@ export async function GET(
     const order = await Order.findOne({ $or: [{ _id: id }, { id }] }).lean();
 
     if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
+
+    const adminSession = await requireAdminAuth(request);
+    if (!adminSession) {
+      const userSession = await requireAuth(request);
+      if (!userSession) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
+      const userPhone = userSession.mobile.replace(/[^\d]/g, "").slice(-10);
+      const isOwner =
+        order.customerPhone?.includes(userPhone) ||
+        order.shippingAddress?.phone?.includes(userPhone);
+
+      if (!isOwner) {
+        return NextResponse.json({ error: "Forbidden. You can only view your own orders." }, { status: 403 });
+      }
+    }
+
     return NextResponse.json(order);
   } catch (error: any) {
     console.error("GET /api/orders/[id] error:", error);
@@ -24,6 +43,14 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const adminSession = await requireAdminAuth(request);
+    if (!adminSession) {
+      return NextResponse.json(
+        { error: "Unauthorized. Admin privileges required to update orders." },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
     const { id } = await params;
     const body = await request.json();
@@ -43,10 +70,18 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const adminSession = await requireAdminAuth(request);
+    if (!adminSession) {
+      return NextResponse.json(
+        { error: "Unauthorized. Admin privileges required to delete orders." },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
     const { id } = await params;
     const deleted = await Order.findOneAndDelete({ $or: [{ _id: id }, { id }] });

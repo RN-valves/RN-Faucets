@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Category from "@/models/Category";
+import { requireAdminAuth } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -30,6 +31,14 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const adminSession = await requireAdminAuth(request);
+    if (!adminSession) {
+      return NextResponse.json(
+        { error: "Unauthorized. Admin privileges required to create categories." },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
     const body = await request.json();
     const id = body.id || `cat-${Date.now()}`;

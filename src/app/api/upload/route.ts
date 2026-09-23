@@ -1,11 +1,20 @@
 import { NextResponse } from "next/server";
 import { uploadToR2, deleteFromR2 } from "@/lib/r2";
+import { requireAdminAuth, validateMediaUpload, sanitizeStorageKey } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 export async function POST(req: Request) {
   try {
+    const adminSession = await requireAdminAuth(req);
+    if (!adminSession) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized. Admin privileges required to upload assets." },
+        { status: 401 }
+      );
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const key = formData.get("key") as string | null;
@@ -23,11 +32,19 @@ export async function POST(req: Request) {
       );
     }
 
-    // Allow high-res videos up to 500MB
-    if (file.size > 500 * 1024 * 1024) {
-      const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+    // Validate media format & size
+    const validation = validateMediaUpload(file.name, file.type, file.size);
+    if (!validation.valid) {
       return NextResponse.json(
-        { success: false, error: `File size (${sizeMB} MB) exceeds the 500MB limit` },
+        { success: false, error: validation.error },
+        { status: 400 }
+      );
+    }
+
+    const sanitizedKey = sanitizeStorageKey(key);
+    if (!sanitizedKey) {
+      return NextResponse.json(
+        { success: false, error: "Invalid storage key specified." },
         { status: 400 }
       );
     }
@@ -37,7 +54,7 @@ export async function POST(req: Request) {
 
     // Detect MIME type and extension accurately
     const ext = file.name.split(".").pop()?.toLowerCase() || "";
-    const isVideo = file.type?.startsWith("video/") || ["mp4", "webm", "mov", "m4v", "mkv"].includes(ext);
+    const isVideo = validation.mediaType === "video";
 
     let contentType = file.type;
     if (!contentType || contentType === "application/octet-stream") {
@@ -56,7 +73,7 @@ export async function POST(req: Request) {
     }
 
     // Sanitize key extension based on media type
-    let finalKey = key;
+    let finalKey = sanitizedKey;
     if (isVideo) {
       const videoExt = ["mp4", "webm", "mov"].includes(ext) ? ext : "mp4";
       finalKey = finalKey.replace(/\.(webp|jpg|jpeg|png|gif|svg)$/i, `.${videoExt}`);
@@ -89,12 +106,21 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
+    const adminSession = await requireAdminAuth(req);
+    if (!adminSession) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized. Admin privileges required to delete assets." },
+        { status: 401 }
+      );
+    }
+
     const { key } = await req.json();
     if (!key) {
       return NextResponse.json({ success: false, error: "Key required" }, { status: 400 });
     }
 
-    await deleteFromR2(key);
+    const sanitizedKey = sanitizeStorageKey(key);
+    await deleteFromR2(sanitizedKey);
     return NextResponse.json({ success: true, message: "R2 object deleted" });
   } catch (error: any) {
     console.error("DELETE /api/upload error:", error);

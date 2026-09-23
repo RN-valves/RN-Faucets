@@ -430,7 +430,7 @@ interface InstagramReelsSectionProps {
 }
 
 export default function InstagramReelsSection({ data }: InstagramReelsSectionProps) {
-  if (data?.visible === false) return null;
+  const isVisible = data?.visible !== false;
 
   const validReels = data?.reels?.filter((r) => Boolean(r.video));
   const reelsList = validReels && validReels.length > 0 ? validReels : REELS;
@@ -499,7 +499,9 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
   }, []);
 
   useEffect(() => {
-    updateVisibleCount();
+    queueMicrotask(() => {
+      updateVisibleCount();
+    });
     window.addEventListener("resize", updateVisibleCount);
     return () => window.removeEventListener("resize", updateVisibleCount);
   }, [updateVisibleCount]);
@@ -741,6 +743,8 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
       handleMouseUp();
     }
   }, [handleMouseUp]);
+
+  if (!isVisible) return null;
 
   return (
     <section

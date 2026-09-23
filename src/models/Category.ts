@@ -53,10 +53,8 @@ const CategorySchema = new Schema<ICategory>(
   { timestamps: true, strict: false }
 );
 
-// Delete cached model in Next.js memory so schema updates are always applied
-if (mongoose.models && mongoose.models.Category) {
-  delete (mongoose.models as any).Category;
-}
+CategorySchema.index({ slug: 1 });
+CategorySchema.index({ status: 1, isVisibleWebsite: 1 });
 
 const Category: Model<ICategory> =
   mongoose.models.Category || mongoose.model<ICategory>("Category", CategorySchema);

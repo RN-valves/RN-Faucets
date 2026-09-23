@@ -133,6 +133,13 @@ const OrderSchema = new Schema<IOrder>(
   { timestamps: true, strict: false }
 );
 
+// High-performance compound & lookup indexes
+OrderSchema.index({ customerPhone: 1, createdAt: -1 });
+OrderSchema.index({ customerEmail: 1, createdAt: -1 });
+OrderSchema.index({ status: 1 });
+OrderSchema.index({ paymentStatus: 1 });
+OrderSchema.index({ createdAt: -1 });
+
 const Order: Model<IOrder> =
   mongoose.models.Order || mongoose.model<IOrder>("Order", OrderSchema);
 

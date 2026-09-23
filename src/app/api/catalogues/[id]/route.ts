@@ -1,12 +1,21 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import CataloguePdf from "@/models/Catalogue";
+import { requireAdminAuth } from "@/lib/security";
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const adminSession = await requireAdminAuth(request);
+    if (!adminSession) {
+      return NextResponse.json(
+        { error: "Unauthorized. Admin privileges required to delete catalogues." },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
     const { id } = await params;
     await CataloguePdf.findOneAndDelete({ id });

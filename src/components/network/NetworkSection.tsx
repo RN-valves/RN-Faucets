@@ -29,17 +29,17 @@ interface NetworkSectionProps {
 }
 
 export default function NetworkSection({ data }: NetworkSectionProps) {
-  if (data?.visible === false) return null;
+  const sectionRef = useRef<HTMLElement>(null);
+  const [countersActive, setCountersActive] = useState(false);
+  const isVisible = data?.visible !== false;
 
   const statsList = data?.stats && data.stats.length > 0 ? data.stats : STATS;
   const eyebrowText = data?.eyebrow || "Our Network";
   const headingText = data?.heading || "Strategic Distribution & Factory Network";
   const descriptionText = data?.description || "Pan India distribution network powered by 1500+ channel partners, strategically located manufacturing units, branch offices, and warehouse hubs ensuring efficient supply and nationwide product availability.";
 
-  const sectionRef = useRef<HTMLElement>(null);
-  const [countersActive, setCountersActive] = useState(false);
-
   useEffect(() => {
+    if (!isVisible) return;
     const section = sectionRef.current;
     if (!section) return;
 
@@ -117,7 +117,9 @@ export default function NetworkSection({ data }: NetworkSectionProps) {
     }, section);
 
     return () => ctx.revert();
-  }, []);
+  }, [isVisible]);
+
+  if (!isVisible) return null;
 
   return (
     <section

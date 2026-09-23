@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Subcategory from "@/models/Subcategory";
 import Product from "@/models/Product";
+import { requireAdminAuth } from "@/lib/security";
 
 export async function GET(request: Request) {
   try {
@@ -48,6 +49,14 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const adminSession = await requireAdminAuth(request);
+    if (!adminSession) {
+      return NextResponse.json(
+        { error: "Unauthorized. Admin privileges required to create subcategories." },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
     const body = await request.json();
     const slug = body.slug || (body.name ? body.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") : `sub-${Date.now()}`);

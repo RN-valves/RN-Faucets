@@ -5,6 +5,7 @@ import { connectDB } from "@/lib/mongodb";
 import WebsitePhoto, { IWebsitePhoto } from "@/models/WebsitePhoto";
 import { r2Client, R2_BUCKET, uploadToR2 } from "@/lib/r2";
 import { HeadObjectCommand } from "@aws-sdk/client-s3";
+import { requireAdminAuth } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
@@ -145,7 +146,8 @@ async function verifyPhotoHealth(photo: any) {
   let localMtime = "";
 
   if (photo.localPath) {
-    const fullPath = path.join(process.cwd(), photo.localPath);
+    const cleanRelative = String(photo.localPath).replace(/^(\.\.[\/\\])+/, "").replace(/^[\/\\]+/, "").replace(/^public[\/\\]+/, "");
+    const fullPath = path.join(process.cwd(), "public", cleanRelative);
     if (fs.existsSync(fullPath)) {
       try {
         const stats = fs.statSync(fullPath);
@@ -248,6 +250,14 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const adminSession = await requireAdminAuth(req);
+    if (!adminSession) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized. Admin privileges required." },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
 
     const formData = await req.formData();
@@ -290,7 +300,8 @@ export async function POST(req: Request) {
 
     // 2. If photo has a local path in public/, also update the local file on disk
     if (photo.localPath) {
-      const fullPath = path.join(process.cwd(), photo.localPath);
+      const cleanRelative = String(photo.localPath).replace(/^(\.\.[\/\\])+/, "").replace(/^[\/\\]+/, "").replace(/^public[\/\\]+/, "");
+      const fullPath = path.join(process.cwd(), "public", cleanRelative);
       const dir = path.dirname(fullPath);
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
@@ -325,6 +336,14 @@ export async function POST(req: Request) {
 
 export async function PUT(req: Request) {
   try {
+    const adminSession = await requireAdminAuth(req);
+    if (!adminSession) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized. Admin privileges required." },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
     const body = await req.json();
     const { photoId, title, description, category, location, r2Key, recommendedResolution } = body;
@@ -372,6 +391,14 @@ export async function PUT(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
+    const adminSession = await requireAdminAuth(req);
+    if (!adminSession) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized. Admin privileges required." },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
     const { searchParams } = new URL(req.url);
     const photoId = searchParams.get("photoId");

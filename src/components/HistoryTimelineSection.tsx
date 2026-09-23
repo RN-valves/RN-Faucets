@@ -59,8 +59,6 @@ interface HistoryTimelineSectionProps {
 }
 
 export default function HistoryTimelineSection({ data }: HistoryTimelineSectionProps) {
-  if (data?.visible === false) return null;
-
   const milestonesList = data?.milestones && data.milestones.length > 0 ? data.milestones : MILESTONES;
   const sectionHeading = data?.heading || "Milestones";
   const sectionSubtitle = data?.subtitle || "Offering cutting-edge designs and energy-saving products that are proudly manufactured in India!";
@@ -162,7 +160,9 @@ export default function HistoryTimelineSection({ data }: HistoryTimelineSectionP
     }, sectionRef);
 
     return () => ctx.revert();
-  }, []);
+  }, [data?.visible]);
+
+  if (data?.visible === false) return null;
 
   return (
     <section

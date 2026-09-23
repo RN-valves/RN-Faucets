@@ -1,22 +1,45 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Otp from "@/models/Otp";
+import { checkRateLimit, getClientIp, isValidIndianPhone } from "@/lib/security";
 
 export async function POST(request: Request) {
   try {
-    const { mobile } = await request.json();
+    const ip = getClientIp(request);
+    const body = await request.json();
+    const { mobile } = body;
 
-    if (!mobile || !/^[6-9]\d{9}$/.test(mobile.trim())) {
+    // Rate limit per IP: max 5 requests per minute
+    const ipLimit = checkRateLimit(`send-otp:ip:${ip}`, 5, 60 * 1000);
+    if (!ipLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many OTP requests from this connection. Please wait a minute." },
+        { status: 429 }
+      );
+    }
+
+    if (!mobile || !isValidIndianPhone(mobile)) {
       return NextResponse.json(
         { error: "Please enter a valid 10-digit Indian mobile number." },
         { status: 400 }
       );
     }
 
-    const cleanMobile = mobile.trim();
+    const cleanMobile = String(mobile).replace(/\D/g, "").slice(-10);
 
-    // Generate random 4-digit OTP (1000 - 9999)
-    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    // Rate limit per phone number: max 3 requests per 2 minutes
+    const phoneLimit = checkRateLimit(`send-otp:phone:${cleanMobile}`, 3, 2 * 60 * 1000);
+    if (!phoneLimit.allowed) {
+      return NextResponse.json(
+        { error: "An OTP was recently sent. Please wait before requesting another." },
+        { status: 429 }
+      );
+    }
+
+    // Generate cryptographically random 4-digit OTP (1000 - 9999)
+    const randomArray = new Uint32Array(1);
+    crypto.getRandomValues(randomArray);
+    const otp = (1000 + (randomArray[0] % 9000)).toString();
 
     // Store OTP in MongoDB with 10-minute expiry
     try {
@@ -64,4 +87,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

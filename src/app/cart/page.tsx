@@ -451,14 +451,14 @@ export default function CartPage() {
                 </button>
 
                 <div className="action-links">
-                  <a href="/enquire-now" className="action-link">
+                  <Link href="/enquire-now" className="action-link">
                     <Send size={14} />
                     Enquire Now
-                  </a>
-                  <a href="/contact-us" className="action-link">
+                  </Link>
+                  <Link href="/contact-us" className="action-link">
                     <Headset size={14} />
                     Support
-                  </a>
+                  </Link>
                 </div>
               </div>
             </div>

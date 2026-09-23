@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { r2Client, R2_BUCKET } from "@/lib/r2";
 
+import { sanitizeStorageKey } from "@/lib/security";
+
 export const dynamic = "force-dynamic";
 
 export async function GET(
@@ -10,10 +12,10 @@ export async function GET(
 ) {
   try {
     const { key: keyParts } = await params;
-    const key = keyParts.join("/");
+    const key = sanitizeStorageKey(keyParts.join("/"));
 
     if (!key) {
-      return new NextResponse("Media Key is required", { status: 400 });
+      return new NextResponse("Media Key is required and must be valid", { status: 400 });
     }
 
     const rangeHeader = req.headers.get("range");

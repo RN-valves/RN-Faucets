@@ -1,8 +1,10 @@
 /**
- * RN Valves & Faucets - Security & Sanitization Layer
+ * RN Valves & Faucets - Security, Sanitization & Authentication Layer
  * Provides ReDoS protection, NoSQL injection defenses, sliding-window rate limiting,
- * media upload validation, path traversal guards, and admin authorization verification.
+ * media upload validation, path traversal guards, and cryptographic session verification.
  */
+
+import { verifySessionToken, SessionPayload, SESSION_COOKIE_NAME } from "./session";
 
 // ── In-Memory Rate Limiter Storage ──
 interface RateLimitRecord {
@@ -72,8 +74,8 @@ export function sanitizeObject<T>(obj: T): T {
     return obj.map((item) => sanitizeObject(item)) as unknown as T;
   }
 
-  const cleaned: Record<string, any> = {};
-  for (const [key, value] of Object.entries(obj as Record<string, any>)) {
+  const cleaned: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
     // Drop keys containing MongoDB operators or dot notation
     if (key.startsWith("$") || key.includes(".")) {
       continue;
@@ -91,9 +93,6 @@ export function sanitizeObject<T>(obj: T): T {
 
 /**
  * Sliding window in-memory rate limiter.
- * @param identifier Unique key (e.g. IP + endpoint, or mobile number)
- * @param maxRequests Maximum requests allowed within window
- * @param windowMs Time window in milliseconds
  */
 export function checkRateLimit(
   identifier: string,
@@ -140,7 +139,6 @@ export function getClientIp(req: Request): string {
  */
 const ALLOWED_IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "gif", "svg"]);
 const ALLOWED_VIDEO_EXTENSIONS = new Set(["mp4", "webm", "mov", "m4v"]);
-
 const ALLOWED_MIME_PREFIXES = ["image/", "video/"];
 
 export function validateMediaUpload(
@@ -207,29 +205,90 @@ export function sanitizeStorageKey(rawKey: string): string {
 }
 
 /**
- * Validates admin request authorization via headers or session token.
- * Checks for either:
- * 1. An authorization header matching an admin token
- * 2. An x-admin-role header or internal admin secret
+ * Authorized admin roles
  */
-export function validateAdminAuth(req: Request): boolean {
+export const ADMIN_ROLES = new Set([
+  "Super Admin",
+  "Admin",
+  "Catalogue Manager",
+  "Order Dispatcher",
+  "Customer Support Manager",
+]);
+
+/**
+ * Parses cookies from raw request cookie header
+ */
+function parseCookieHeader(header: string | null): Record<string, string> {
+  const cookies: Record<string, string> = {};
+  if (!header) return cookies;
+  for (const pair of header.split(";")) {
+    const [name, ...valParts] = pair.trim().split("=");
+    if (name) {
+      cookies[name] = decodeURIComponent(valParts.join("="));
+    }
+  }
+  return cookies;
+}
+
+/**
+ * Extracts and verifies session payload from request cookie or Bearer header
+ */
+export async function getSessionFromRequest(req: Request): Promise<SessionPayload | null> {
+  // 1. Check Authorization Bearer header
   const authHeader = req.headers.get("authorization") || "";
-  const adminSecret = process.env.ADMIN_API_SECRET || "rn-admin-secured-2026";
-
-  if (authHeader && (authHeader === `Bearer ${adminSecret}` || authHeader === adminSecret)) {
-    return true;
+  if (authHeader.startsWith("Bearer ")) {
+    const token = authHeader.substring(7).trim();
+    const session = await verifySessionToken(token);
+    if (session) return session;
   }
 
-  const roleHeader = req.headers.get("x-rn-role");
-  const mobileHeader = req.headers.get("x-rn-user");
-
-  if (roleHeader === "Super Admin" || roleHeader === "Admin") {
-    return true;
+  // 2. Check Cookie header
+  const cookieHeader = req.headers.get("cookie");
+  const cookies = parseCookieHeader(cookieHeader);
+  const sessionCookie = cookies[SESSION_COOKIE_NAME];
+  if (sessionCookie) {
+    const session = await verifySessionToken(sessionCookie);
+    if (session) return session;
   }
 
-  if (mobileHeader === "8737029643") {
-    return true;
+  return null;
+}
+
+/**
+ * Requires an authenticated user session. Returns session or null.
+ */
+export async function requireAuth(req: Request): Promise<SessionPayload | null> {
+  return await getSessionFromRequest(req);
+}
+
+/**
+ * Validates admin request authorization via session token or admin API secret.
+ */
+export async function requireAdminAuth(req: Request): Promise<SessionPayload | null> {
+  // Machine-to-machine internal API secret check if configured
+  const authHeader = req.headers.get("authorization") || "";
+  const adminSecret = process.env.ADMIN_API_SECRET;
+  if (adminSecret && (authHeader === `Bearer ${adminSecret}` || authHeader === adminSecret)) {
+    return {
+      id: "system-admin",
+      mobile: "system",
+      name: "System Admin API",
+      role: "Super Admin",
+      userType: "Admin",
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    };
   }
 
-  return false;
+  const session = await getSessionFromRequest(req);
+  if (!session) return null;
+
+  const isAdmin =
+    ADMIN_ROLES.has(session.role) ||
+    session.userType === "Admin" ||
+    session.role === "Super Admin" ||
+    session.role === "Admin";
+
+  if (!isAdmin) return null;
+
+  return session;
 }

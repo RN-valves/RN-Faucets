@@ -348,8 +348,6 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
       });
   }, []);
 
-  if (data?.visible === false) return null;
-
   const validPropsProducts = data?.products?.filter((p) => Boolean(p.image));
   const productsList =
     dbProducts.length > 0
@@ -357,8 +355,6 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
       : validPropsProducts && validPropsProducts.length > 0
       ? validPropsProducts
       : [];
-
-  if (isLoaded && productsList.length === 0) return null;
 
   const productsSequence = productsList.length > 0 ? [
     ...productsList,
@@ -382,6 +378,7 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
 
   const router = useRouter();
   const [virtualIndex, setVirtualIndex] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
   const sectionRef = useRef<HTMLElement>(null);
   const leftContentRef = useRef<HTMLDivElement>(null);
@@ -436,6 +433,7 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
   // ── Drag & Touch Handlers with real-time responsive tracking ──
   const handlePointerDown = (clientX: number) => {
     isDraggingRef.current = true;
+    setIsDragging(true);
     startXRef.current = clientX;
     dragDistanceRef.current = 0;
     startTrackXRef.current = -(virtualIndex * STEP);
@@ -452,6 +450,7 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
   const handlePointerUp = () => {
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
+    setIsDragging(false);
 
     const threshold = 45;
     if (dragDistanceRef.current < -threshold) {
@@ -528,7 +527,10 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
     return () => ctx.revert();
   }, []);
 
-  const activeCategoryIdx = virtualIndex % productsList.length;
+  const activeCategoryIdx = virtualIndex % (productsList.length || 1);
+
+  if (data?.visible === false) return null;
+  if (isLoaded && productsList.length === 0) return null;
 
   return (
     <section
@@ -738,7 +740,7 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
               <DarkProgressDot
                 key={cat.id || i}
                 isActive={activeCategoryIdx === i}
-                isPaused={isDraggingRef.current}
+                isPaused={isDragging}
                 duration={4500}
                 onComplete={handleNext}
                 onClick={() => {
@@ -791,7 +793,7 @@ export default function BestSellerCategoriesSection({ data }: BestSellerCategori
           alignItems: "center",
           overflow: "hidden",
           position: "relative",
-          cursor: isDraggingRef.current ? "grabbing" : "grab",
+          cursor: isDragging ? "grabbing" : "grab",
           userSelect: "none",
           touchAction: "pan-y",
         }}

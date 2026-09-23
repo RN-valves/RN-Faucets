@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
+import { requireAdminAuth, escapeRegex } from "@/lib/security";
 
 export async function POST(request: Request) {
   try {
+    const adminSession = await requireAdminAuth(request);
+    if (!adminSession) {
+      return NextResponse.json(
+        { error: "Unauthorized. Admin privileges required to impersonate users." },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
     const { userId, userCode, mobile } = await request.json();
 
@@ -18,7 +27,7 @@ export async function POST(request: Request) {
       query.$or = [{ userCode }, { uuid: userCode }];
     } else if (mobile) {
       const cleanMobile = String(mobile).replace(/\D/g, "").slice(-10);
-      query.mobile = { $regex: cleanMobile };
+      query.mobile = { $regex: escapeRegex(cleanMobile) };
     } else {
       return NextResponse.json({ error: "User identifier required" }, { status: 400 });
     }
@@ -26,6 +35,14 @@ export async function POST(request: Request) {
     const user = await User.findOne(query).lean();
     if (!user) {
       return NextResponse.json({ error: "Customer not found." }, { status: 404 });
+    }
+
+    // Never allow impersonating an Admin or Super Admin account
+    if (user.userType === "Admin" || user.role === "Super Admin") {
+      return NextResponse.json(
+        { error: "Cannot impersonate administrative accounts." },
+        { status: 403 }
+      );
     }
 
     return NextResponse.json({

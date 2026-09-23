@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 
 // Extend the NodeJS global to cache connection across hot-reloads in dev
 declare global {
-  // eslint-disable-next-line no-var
   var _mongooseCache: {
     conn: typeof mongoose | null;
     promise: Promise<typeof mongoose> | null;
@@ -39,12 +38,25 @@ export async function connectDB(): Promise<typeof mongoose> {
   if (cached.conn) return cached.conn;
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(targetUri, {
-      bufferCommands: false,
-    });
+    cached.promise = mongoose
+      .connect(targetUri, {
+        bufferCommands: false,
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 10000,
+      })
+      .catch((err) => {
+        cached.promise = null;
+        throw err;
+      });
   }
 
-  cached.conn = await cached.promise;
-  cached.currentUri = targetUri;
-  return cached.conn;
+  try {
+    cached.conn = await cached.promise;
+    cached.currentUri = targetUri;
+    return cached.conn;
+  } catch (err) {
+    cached.promise = null;
+    cached.conn = null;
+    throw err;
+  }
 }

@@ -30,11 +30,10 @@ export default function ProductShowcaseSection({ data }: ProductShowcaseProps) {
   const subtitleText = data?.subtitle || "Explore by Space";
   const titleText = data?.title || "Bathroom";
 
-  if (data?.visible === false) return null;
-
+  const isVisible = data?.visible !== false;
 
   useEffect(() => {
-    if (!sectionRef.current || !imageRef.current || !textRef.current) return;
+    if (!isVisible || !sectionRef.current || !imageRef.current || !textRef.current) return;
 
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
@@ -80,7 +79,9 @@ export default function ProductShowcaseSection({ data }: ProductShowcaseProps) {
     }, sectionRef);
 
     return () => ctx.revert();
-  }, []);
+  }, [isVisible]);
+
+  if (!isVisible) return null;
 
   return (
     <section

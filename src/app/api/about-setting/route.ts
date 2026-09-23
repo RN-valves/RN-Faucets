@@ -148,8 +148,18 @@ export async function GET() {
   }
 }
 
+import { requireAdminAuth } from "@/lib/security";
+
 export async function POST(req: Request) {
   try {
+    const adminSession = await requireAdminAuth(req);
+    if (!adminSession) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized. Admin privileges required to update settings." },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
     const body = await req.json();
 

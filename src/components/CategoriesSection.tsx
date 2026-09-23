@@ -78,8 +78,6 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
       });
   }, []);
 
-  if (data?.visible === false) return null;
-
   const validPropsCategories = data?.categories
     ?.filter((c: any) => Boolean(c.homeImage || c.image) && c.status !== "Inactive" && c.isVisibleWebsite !== false)
     ?.map((c: any) => ({
@@ -96,8 +94,6 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
 
   // Reverse order: last categories appear first, first categories appear last
   const categoriesList: CategoryItem[] = [...baseCategoriesList].reverse();
-
-  if (isLoaded && categoriesList.length === 0) return null;
 
   const updateScrollState = useCallback(() => {
     const el = scrollContainerRef.current;
@@ -193,6 +189,9 @@ export default function CategoriesSection({ data }: CategoriesSectionProps) {
     if (index === 0) return "stagger-mid";
     return index % 2 === 1 ? "stagger-down" : "stagger-up";
   };
+
+  if (data?.visible === false) return null;
+  if (isLoaded && categoriesList.length === 0) return null;
 
   return (
     <section

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Product from "@/models/Product";
+import { requireAdminAuth, escapeRegex } from "@/lib/security";
 
 export async function GET(request: Request) {
   try {
@@ -16,35 +17,42 @@ export async function GET(request: Request) {
     const filter: Record<string, unknown> = {};
 
     if (q) {
+      const safeQ = escapeRegex(q);
       filter.$or = [
-        { name: { $regex: q, $options: "i" } },
-        { code: { $regex: q, $options: "i" } },
-        { skuCode: { $regex: q, $options: "i" } },
-        { article: { $regex: q, $options: "i" } },
-        { searchKeywords: { $regex: q, $options: "i" } },
+        { name: { $regex: safeQ, $options: "i" } },
+        { code: { $regex: safeQ, $options: "i" } },
+        { skuCode: { $regex: safeQ, $options: "i" } },
+        { article: { $regex: safeQ, $options: "i" } },
+        { searchKeywords: { $regex: safeQ, $options: "i" } },
       ];
     }
 
     if (category && category !== "All") {
-      const normCat = category.replace(/-/g, " ");
+      const safeCategory = escapeRegex(category);
+      const normCat = escapeRegex(category.replace(/-/g, " "));
       filter.$or = [
-        { category: { $regex: `^${category}$`, $options: "i" } },
+        { category: { $regex: `^${safeCategory}$`, $options: "i" } },
         { category: { $regex: `^${normCat}$`, $options: "i" } },
-        { subcategoryName: { $regex: `^${category}$`, $options: "i" } },
+        { subcategoryName: { $regex: `^${safeCategory}$`, $options: "i" } },
         { subcategoryName: { $regex: `^${normCat}$`, $options: "i" } },
         { subcategoryId: category },
       ];
     }
 
     if (subcategory && subcategory !== "All") {
-      const normSub = subcategory.replace(/-/g, " ");
+      const safeSub = escapeRegex(subcategory);
+      const normSub = escapeRegex(subcategory.replace(/-/g, " "));
       filter.$or = [
         { subcategoryId: subcategory },
-        { subcategoryName: { $regex: subcategory, $options: "i" } },
+        { subcategoryName: { $regex: safeSub, $options: "i" } },
         { subcategoryName: { $regex: normSub, $options: "i" } },
-        { category: { $regex: subcategory, $options: "i" } },
+        { category: { $regex: safeSub, $options: "i" } },
         { category: { $regex: normSub, $options: "i" } },
       ];
+    }
+
+    if (status && status !== "All") {
+      filter.status = status;
     }
 
     const query = Product.find(filter).sort({ createdAt: -1 });
@@ -71,6 +79,14 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const adminSession = await requireAdminAuth(request);
+    if (!adminSession) {
+      return NextResponse.json(
+        { error: "Unauthorized. Admin privileges required to create products." },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
     const body = await request.json();
     const code = body.code ? body.code.toUpperCase() : `RN-${Date.now()}`;

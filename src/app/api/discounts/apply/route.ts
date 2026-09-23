@@ -23,12 +23,10 @@ export async function POST(request: Request) {
     // 1. If coupon code is explicitly submitted by user
     if (code && typeof code === "string" && code.trim()) {
       const cleanCode = code.trim().toUpperCase();
-      const discounts = await Discount.find().lean();
-      const discount = discounts.find(
-        (d: any) =>
-          (d.code === cleanCode || (d.name && d.name.toUpperCase() === cleanCode)) &&
-          (d.status === "Active" || d.status === "active")
-      );
+      const discount = await Discount.findOne({
+        $or: [{ code: cleanCode }, { name: cleanCode }],
+        status: { $in: ["Active", "active"] as any },
+      }).lean();
 
       if (!discount) {
         return NextResponse.json(
@@ -96,8 +94,10 @@ export async function POST(request: Request) {
     }
 
     // 2. Automatic Slab Discount Check (if no manual coupon was applied)
-    const allDiscounts = await Discount.find().lean();
-    const activeDiscounts = allDiscounts.filter((d: any) => d.status === "Active" || d.status === "active");
+    const activeDiscounts = await Discount.find({
+      status: { $in: ["Active", "active"] as any },
+      startValue: { $lte: subtotal },
+    }).lean();
 
     // Find the highest applicable slab discount
     let bestSlab: any = null;

@@ -3,12 +3,21 @@ import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 import Order from "@/models/Order";
 import RemarkLog from "@/models/RemarkLog";
+import { requireAdminAuth, escapeRegex } from "@/lib/security";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const adminSession = await requireAdminAuth(request);
+    if (!adminSession) {
+      return NextResponse.json(
+        { error: "Unauthorized. Admin privileges required." },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
     const { id } = await params;
 
@@ -30,7 +39,7 @@ export async function GET(
     const orderQuery: any = {
       $or: [
         ...(user.legacyId ? [{ userId: user.legacyId }] : []),
-        ...(cleanMobile ? [{ customerPhone: { $regex: cleanMobile } }] : []),
+        ...(cleanMobile ? [{ customerPhone: { $regex: escapeRegex(cleanMobile) } }] : []),
       ],
     };
     const orders = await Order.find(orderQuery).sort({ createdAt: -1 }).lean();
@@ -39,7 +48,7 @@ export async function GET(
     const remarkQuery: any = {
       $or: [
         ...(user.legacyId ? [{ logableId: user.legacyId }] : []),
-        ...(cleanMobile ? [{ customerMobile: { $regex: cleanMobile } }] : []),
+        ...(cleanMobile ? [{ customerMobile: { $regex: escapeRegex(cleanMobile) } }] : []),
       ],
     };
     const remarkLogs = await RemarkLog.find(remarkQuery).sort({ createdAt: -1 }).lean();
@@ -64,6 +73,14 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const adminSession = await requireAdminAuth(request);
+    if (!adminSession) {
+      return NextResponse.json(
+        { error: "Unauthorized. Admin privileges required." },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
     const { id } = await params;
     const body = await request.json();
@@ -91,10 +108,18 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const adminSession = await requireAdminAuth(request);
+    if (!adminSession) {
+      return NextResponse.json(
+        { error: "Unauthorized. Admin privileges required." },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
     const { id } = await params;
     let deleted: any = null;
