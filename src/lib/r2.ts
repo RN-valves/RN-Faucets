@@ -1,4 +1,5 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const accountId = process.env.CLOUDFLARE_R2_ACCOUNT_ID;
 const accessKeyId = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID || "";
@@ -17,6 +18,18 @@ export const r2Client = new S3Client({
     secretAccessKey,
   },
 });
+
+export async function getPresignedUploadUrl(key: string, contentType: string) {
+  const command = new PutObjectCommand({
+    Bucket: R2_BUCKET,
+    Key: key,
+    ContentType: contentType,
+  });
+
+  const uploadUrl = await getSignedUrl(r2Client, command, { expiresIn: 3600 });
+  const publicUrl = `/api/media/${key}?v=${Date.now()}`;
+  return { key, uploadUrl, publicUrl };
+}
 
 export async function uploadToR2(key: string, buffer: Buffer, contentType: string) {
   const command = new PutObjectCommand({

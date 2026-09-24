@@ -672,6 +672,41 @@ export const updateAdminHomeSetting = async (payload: any): Promise<boolean> => 
 
 export const uploadFileToR2 = async (file: File, key: string): Promise<{ success: boolean; url?: string; key?: string; error?: string }> => {
   try {
+    // 1. Try direct presigned S3 upload to Cloudflare R2 (supports large files up to 500MB without body limits)
+    try {
+      const presignedParams = new URLSearchParams({
+        key,
+        filename: file.name,
+        contentType: file.type || "application/octet-stream",
+        size: String(file.size),
+      });
+
+      const presignedRes = await fetch(`/api/upload?${presignedParams.toString()}`);
+      if (presignedRes.ok) {
+        const presignedData = await presignedRes.json();
+        if (presignedData.success && presignedData.presignedUrl) {
+          const directUploadRes = await fetch(presignedData.presignedUrl, {
+            method: "PUT",
+            body: file,
+            headers: {
+              "Content-Type": presignedData.contentType || file.type || "application/octet-stream",
+            },
+          });
+
+          if (directUploadRes.ok) {
+            return {
+              success: true,
+              url: presignedData.publicUrl,
+              key: presignedData.key,
+            };
+          }
+        }
+      }
+    } catch (presignedErr) {
+      console.warn("Presigned upload attempt failed, falling back to multipart:", presignedErr);
+    }
+
+    // 2. Fallback to standard multipart FormData upload endpoint
     const formData = new FormData();
     formData.append("file", file);
     formData.append("key", key);

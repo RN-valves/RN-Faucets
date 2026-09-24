@@ -3,6 +3,11 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "100mb",
+    },
+  },
   images: {
     qualities: [75, 100],
     remotePatterns: [
