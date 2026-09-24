@@ -151,15 +151,14 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
 
   return (
     <div
+      className="catalogue-paper-canvas"
       style={{
         flex: 1,
         minWidth: 0,
         height: "100vh",
         padding: "24px 28px",
         boxSizing: "border-box",
-        background:
-          "radial-gradient(circle at 85% 15%, rgba(0, 174, 239, 0.12) 0%, transparent 45%), linear-gradient(180deg, #031427 0%, #020b17 100%)",
-        borderLeft: "1px solid rgba(0, 174, 239, 0.12)",
+        borderLeft: "1px solid rgba(148, 163, 184, 0.3)",
         display: "flex",
         gap: "24px",
       }}
@@ -167,14 +166,14 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
       {/* ── 1. Middle Column: Categories List (placed in middle next to menu) ── */}
       <aside
         style={{
-          width: "280px",
-          minWidth: "280px",
+          width: "290px",
+          minWidth: "290px",
           display: "flex",
           flexDirection: "column",
           gap: "8px",
           height: "calc(100vh - 48px)",
           overflowY: "auto",
-          paddingRight: "6px",
+          paddingRight: "8px",
           flexShrink: 0,
         }}
       >
@@ -184,7 +183,7 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
             alignItems: "center",
             justifyContent: "space-between",
             paddingBottom: "10px",
-            borderBottom: "1px solid rgba(0, 174, 239, 0.15)",
+            borderBottom: "1px solid rgba(148, 163, 184, 0.25)",
             marginBottom: "4px",
           }}
         >
@@ -194,8 +193,8 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
               fontWeight: 800,
               letterSpacing: "0.12em",
               textTransform: "uppercase",
-              color: "#00AEEF",
-              fontFamily: "'Inter', sans-serif",
+              color: "#0077B6",
+              fontFamily: "'Manrope', system-ui, sans-serif",
             }}
           >
             Categories
@@ -203,8 +202,9 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
           <span
             style={{
               fontSize: "11px",
-              color: "rgba(255, 255, 255, 0.5)",
-              fontWeight: 500,
+              color: "#64748B",
+              fontWeight: 600,
+              fontFamily: "'Manrope', system-ui, sans-serif",
             }}
           >
             {categories.length} Ranges
@@ -217,10 +217,10 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
               key={n}
               className="animate-pulse"
               style={{
-                height: "60px",
+                height: "64px",
                 borderRadius: "14px",
-                background: "rgba(12, 28, 48, 0.6)",
-                border: "1px solid rgba(0, 174, 239, 0.1)",
+                background: "rgba(226, 234, 242, 0.8)",
+                border: "1px solid rgba(148, 163, 184, 0.2)",
               }}
             />
           ))
@@ -244,14 +244,14 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
                 padding: "8px 12px",
                 borderRadius: "14px",
                 border: isSelected
-                  ? "1px solid rgba(0, 174, 239, 0.75)"
-                  : "1px solid rgba(255, 255, 255, 0.08)",
+                  ? "1.5px solid #00AEEF"
+                  : "1px solid rgba(203, 213, 225, 0.75)",
                 background: isSelected
-                  ? "linear-gradient(90deg, rgba(0, 174, 239, 0.22) 0%, rgba(2, 43, 82, 0.75) 100%)"
-                  : "rgba(255, 255, 255, 0.03)",
+                  ? "linear-gradient(90deg, #ffffff 0%, #e0f2fe 100%)"
+                  : "rgba(255, 255, 255, 0.65)",
                 boxShadow: isSelected
-                  ? "0 6px 20px rgba(0, 174, 239, 0.2)"
-                  : "none",
+                  ? "0 4px 16px rgba(0, 174, 239, 0.18)"
+                  : "0 1px 3px rgba(18, 42, 62, 0.04)",
                 cursor: "pointer",
                 textAlign: "left",
                 width: "100%",
@@ -260,9 +260,19 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
               }}
               onMouseEnter={(event) => {
                 event.currentTarget.style.transform = "translateX(3px)";
+                if (!isSelected) {
+                  event.currentTarget.style.background = "rgba(255, 255, 255, 0.95)";
+                  event.currentTarget.style.borderColor = "#93c5fd";
+                  event.currentTarget.style.boxShadow = "0 4px 12px rgba(18, 42, 62, 0.08)";
+                }
               }}
               onMouseLeave={(event) => {
                 event.currentTarget.style.transform = "translateX(0)";
+                if (!isSelected) {
+                  event.currentTarget.style.background = "rgba(255, 255, 255, 0.65)";
+                  event.currentTarget.style.borderColor = "rgba(203, 213, 225, 0.75)";
+                  event.currentTarget.style.boxShadow = "0 1px 3px rgba(18, 42, 62, 0.04)";
+                }
               }}
             >
               <div
@@ -270,22 +280,25 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
                   width: "50px",
                   height: "50px",
                   borderRadius: "10px",
-                  backgroundColor: "#061324",
-                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  backgroundColor: "#ffffff",
+                  border: isSelected
+                    ? "1.5px solid #00AEEF"
+                    : "1px solid rgba(148, 163, 184, 0.25)",
                   backgroundImage: `url(${thumbnailImg})`,
                   backgroundSize: "contain",
                   backgroundRepeat: "no-repeat",
                   backgroundPosition: "center",
                   flexShrink: 0,
                   padding: "4px",
+                  boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)",
                 }}
               />
               <p
                 style={{
                   margin: 0,
-                  color: isSelected ? "#ffffff" : "rgba(240, 246, 255, 0.85)",
-                  fontFamily: "'Inter', 'Helvetica Neue', Helvetica, 'Manrope', sans-serif",
-                  fontSize: "13px",
+                  color: isSelected ? "#0f172a" : "#334155",
+                  fontFamily: "'Manrope', system-ui, sans-serif",
+                  fontSize: "13.5px",
                   fontWeight: isSelected ? 700 : 500,
                   lineHeight: 1.35,
                   display: "-webkit-box",
@@ -298,8 +311,8 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
               </p>
               <ChevronRight
                 size={16}
-                strokeWidth={2}
-                color={isSelected ? "#00AEEF" : "rgba(255, 255, 255, 0.35)"}
+                strokeWidth={isSelected ? 2.5 : 2}
+                color={isSelected ? "#00AEEF" : "#94A3B8"}
                 style={{ flexShrink: 0 }}
               />
             </button>
@@ -318,7 +331,7 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
           height: "calc(100vh - 48px)",
           overflowY: "auto",
           paddingRight: "6px",
-          borderLeft: "1px solid rgba(0, 174, 239, 0.1)",
+          borderLeft: "1px solid rgba(148, 163, 184, 0.25)",
           paddingLeft: "24px",
         }}
       >
@@ -331,7 +344,7 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
             flexWrap: "wrap",
             gap: "12px",
             paddingBottom: "14px",
-            borderBottom: "1px solid rgba(0, 174, 239, 0.15)",
+            borderBottom: "1px solid rgba(148, 163, 184, 0.25)",
           }}
         >
           <div>
@@ -344,8 +357,9 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
                 fontWeight: 700,
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
-                color: "#00AEEF",
+                color: "#0077B6",
                 marginBottom: "3px",
+                fontFamily: "'Manrope', system-ui, sans-serif",
               }}
             >
               <span>Subcategories</span>
@@ -355,11 +369,11 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
             <h2
               style={{
                 margin: 0,
-                color: "#FFFFFF",
-                fontFamily: "'Inter', 'Manrope', sans-serif",
-                fontSize: "20px",
+                color: "#0f172a",
+                fontFamily: "'Manrope', system-ui, sans-serif",
+                fontSize: "22px",
                 fontWeight: 700,
-                letterSpacing: "-0.01em",
+                letterSpacing: "-0.02em",
                 lineHeight: 1.25,
               }}
             >
@@ -375,12 +389,13 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "8px",
-                padding: "8px 16px",
+                padding: "9px 18px",
                 borderRadius: "10px",
                 background: "linear-gradient(90deg, #0077B6 0%, #00AEEF 100%)",
                 color: "#FFFFFF",
                 fontSize: "13px",
                 fontWeight: 600,
+                fontFamily: "'Manrope', system-ui, sans-serif",
                 border: "none",
                 cursor: "pointer",
                 boxShadow: "0 4px 14px rgba(0, 174, 239, 0.25)",
@@ -388,7 +403,7 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = "translateY(-1px)";
-                e.currentTarget.style.boxShadow = "0 6px 18px rgba(0, 174, 239, 0.4)";
+                e.currentTarget.style.boxShadow = "0 6px 18px rgba(0, 174, 239, 0.35)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = "translateY(0)";
@@ -417,9 +432,9 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
                 className="animate-pulse"
                 style={{
                   minHeight: "160px",
-                  borderRadius: "16px",
-                  background: "rgba(17, 39, 65, 0.6)",
-                  border: "1px solid rgba(0, 174, 239, 0.1)",
+                  borderRadius: "12px",
+                  background: "rgba(226, 234, 242, 0.8)",
+                  border: "1px solid rgba(148, 163, 184, 0.2)",
                 }}
               />
             ))
@@ -431,60 +446,60 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
               return (
                 <article
                   key={sub.id || idx}
+                  className="subcategory-card group"
                   onClick={() => handleNavigate(`/faucets/${targetSlug}`)}
                   style={{
                     display: "grid",
                     gridTemplateColumns: "38% 1fr",
                     minHeight: "160px",
                     overflow: "hidden",
-                    borderRadius: "16px",
-                    border: "1px solid rgba(0, 174, 239, 0.18)",
-                    background:
-                      "linear-gradient(145deg, rgba(14, 34, 58, 0.9) 0%, rgba(4, 15, 29, 0.96) 100%)",
-                    boxShadow: "0 10px 28px rgba(0, 0, 0, 0.24)",
                     cursor: "pointer",
-                    transition: "transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-3px)";
-                    e.currentTarget.style.borderColor = "rgba(0, 174, 239, 0.6)";
-                    e.currentTarget.style.boxShadow = "0 14px 34px rgba(0, 174, 239, 0.18)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.borderColor = "rgba(0, 174, 239, 0.18)";
-                    e.currentTarget.style.boxShadow = "0 10px 28px rgba(0, 0, 0, 0.24)";
+                    textDecoration: "none",
                   }}
                 >
                   <div
+                    className="product-card__image-panel"
                     style={{
                       height: "100%",
-                      backgroundColor: "#051322",
-                      backgroundImage: `url(${cardImg})`,
-                      backgroundSize: "contain",
-                      backgroundRepeat: "no-repeat",
-                      backgroundPosition: "center",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      overflow: "hidden",
                       padding: "8px",
-                      borderRadius: "14px 0 0 14px",
                     }}
-                  />
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={cardImg}
+                      alt={sub.name}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        maxHeight: "135px",
+                        objectFit: "contain",
+                        transform: "scale(1.08)",
+                        transition: "transform 0.4s ease",
+                      }}
+                      className="group-hover:scale-115"
+                    />
+                  </div>
 
                   <div
                     style={{
-                      padding: "18px 16px",
+                      padding: "16px 14px",
                       display: "flex",
                       flexDirection: "column",
                       justifyContent: "space-between",
-                      gap: "12px",
+                      gap: "10px",
                     }}
                   >
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
                       <h3
                         style={{
                           margin: 0,
-                          color: "#f8fbff",
-                          fontFamily: "'Inter', 'Helvetica Neue', Helvetica, 'Manrope', sans-serif",
-                          fontSize: "16px",
+                          color: "#1a1a1a",
+                          fontFamily: "'Manrope', system-ui, sans-serif",
+                          fontSize: "15.5px",
                           fontWeight: 600,
                           lineHeight: 1.3,
                           letterSpacing: "-0.01em",
@@ -495,11 +510,11 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
                       <p
                         style={{
                           margin: 0,
-                          color: "rgba(220, 233, 245, 0.75)",
-                          fontFamily: "'Inter', 'Helvetica Neue', Helvetica, 'Manrope', sans-serif",
-                          fontSize: "12.5px",
+                          color: "#475569",
+                          fontFamily: "'Manrope', system-ui, sans-serif",
+                          fontSize: "12px",
                           fontWeight: 400,
-                          lineHeight: 1.5,
+                          lineHeight: 1.45,
                           display: "-webkit-box",
                           WebkitLineClamp: 2,
                           WebkitBoxOrient: "vertical",
@@ -516,16 +531,18 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
                           width: "32px",
                           height: "32px",
                           borderRadius: "999px",
-                          border: "1px solid rgba(0, 174, 239, 0.35)",
+                          border: "1px solid rgba(0, 119, 182, 0.25)",
                           display: "inline-flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          color: "#00AEEF",
-                          backgroundColor: "rgba(0, 174, 239, 0.1)",
-                          transition: "background 0.2s ease, transform 0.2s ease",
+                          color: "#0077B6",
+                          backgroundColor: "rgba(255, 255, 255, 0.85)",
+                          boxShadow: "0 2px 6px rgba(18, 42, 62, 0.08)",
+                          transition: "all 0.2s ease",
                         }}
+                        className="group-hover:bg-[#0077B6] group-hover:text-white group-hover:border-[#0077B6]"
                       >
-                        <ChevronRight size={15} strokeWidth={2} />
+                        <ChevronRight size={15} strokeWidth={2.2} />
                       </span>
                     </div>
                   </div>
@@ -535,32 +552,42 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
           ) : (
             /* Fallback single collection exploration card if no subcategories exist */
             <article
+              className="subcategory-card group"
               onClick={() => activeCategory && handleNavigate(`/faucets/${activeCategory.slug || activeCategory.id}`)}
               style={{
                 gridColumn: "1 / -1",
                 display: "grid",
                 gridTemplateColumns: "36% 1fr",
-                minHeight: "200px",
+                minHeight: "190px",
                 overflow: "hidden",
-                borderRadius: "16px",
-                border: "1px solid rgba(0, 174, 239, 0.25)",
-                background:
-                  "linear-gradient(145deg, rgba(14, 34, 58, 0.9) 0%, rgba(4, 15, 29, 0.96) 100%)",
-                boxShadow: "0 14px 34px rgba(0,0,0,0.24)",
                 cursor: "pointer",
               }}
             >
               <div
+                className="product-card__image-panel"
                 style={{
                   height: "100%",
-                  backgroundColor: "#051322",
-                  backgroundImage: `url(${getCardImage(activeCategory?.image, 0)})`,
-                  backgroundSize: "contain",
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "center",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                   padding: "12px",
                 }}
-              />
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={getCardImage(activeCategory?.image, 0)}
+                  alt={activeCategory?.name || "Range"}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    maxHeight: "160px",
+                    objectFit: "contain",
+                    transform: "scale(1.08)",
+                    transition: "transform 0.4s ease",
+                  }}
+                  className="group-hover:scale-115"
+                />
+              </div>
               <div
                 style={{
                   padding: "24px 20px",
@@ -574,9 +601,10 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
                   <h3
                     style={{
                       margin: "0 0 8px 0",
-                      color: "#f8fbff",
+                      color: "#1a1a1a",
                       fontSize: "19px",
                       fontWeight: 700,
+                      fontFamily: "'Manrope', system-ui, sans-serif",
                     }}
                   >
                     {activeCategory?.name}
@@ -584,16 +612,17 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
                   <p
                     style={{
                       margin: 0,
-                      color: "rgba(220, 233, 245, 0.8)",
+                      color: "#475569",
                       fontSize: "13.5px",
                       lineHeight: 1.6,
+                      fontFamily: "'Manrope', system-ui, sans-serif",
                     }}
                   >
                     {activeCategory?.description ||
                       "Browse the complete catalogue range, technical specifications, and available finishes."}
                   </p>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#00AEEF", fontWeight: 700, fontSize: "14px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#0077B6", fontWeight: 700, fontSize: "14px" }}>
                   <span>Explore Range Products</span>
                   <ChevronRight size={18} />
                 </div>
