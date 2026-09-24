@@ -670,9 +670,11 @@ export const updateAdminHomeSetting = async (payload: any): Promise<boolean> => 
   }
 };
 
+const SERVER_UPLOAD_MAX_BYTES = 10 * 1024 * 1024; // Next/proxy FormData & body limits kick in around here
+
 export const uploadFileToR2 = async (file: File, key: string): Promise<{ success: boolean; url?: string; key?: string; error?: string }> => {
   try {
-    // 1. Try direct presigned S3 upload to Cloudflare R2 (supports large files up to 500MB without body limits)
+    // 1. Prefer direct browser → R2 via presigned URL (avoids Next.js body size limits)
     try {
       const presignedParams = new URLSearchParams({
         key,
@@ -700,21 +702,41 @@ export const uploadFileToR2 = async (file: File, key: string): Promise<{ success
               key: presignedData.key,
             };
           }
+
+          console.warn(
+            "Presigned R2 PUT failed:",
+            directUploadRes.status,
+            await directUploadRes.text().catch(() => "")
+          );
         }
+      } else {
+        const errBody = await presignedRes.json().catch(() => null);
+        console.warn("Presigned URL request failed:", presignedRes.status, errBody?.error);
       }
     } catch (presignedErr) {
-      console.warn("Presigned upload attempt failed, falling back to multipart:", presignedErr);
+      console.warn("Presigned upload attempt failed, falling back to server upload:", presignedErr);
     }
 
-    // 2. Fallback to standard multipart FormData upload endpoint
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("key", key);
+    // Large files cannot safely go through the Next.js server — surface a clear error
+    if (file.size > SERVER_UPLOAD_MAX_BYTES) {
+      return {
+        success: false,
+        error:
+          "Direct upload to Cloudflare R2 failed. For files over 10MB, check R2 bucket CORS allows PUT from this site, then try again.",
+      };
+    }
 
+    // 2. Fallback: direct binary POST (avoids multipart FormData parse failures)
     const res = await fetch("/api/upload", {
       method: "POST",
-      body: formData,
+      headers: {
+        "x-file-key": encodeURIComponent(key),
+        "x-file-name": encodeURIComponent(file.name),
+        "content-type": file.type || "application/octet-stream",
+      },
+      body: file,
     });
+
     const data = await res.json().catch(() => null);
     if (!res.ok) {
       return { success: false, error: data?.error || `Upload failed (Status ${res.status})` };

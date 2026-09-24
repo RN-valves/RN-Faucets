@@ -108,38 +108,68 @@ export async function POST(req: Request) {
       );
     }
 
-    let formData: FormData;
-    try {
-      formData = await req.formData();
-    } catch (parseErr: any) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Failed to parse file upload body. For large video files (>10MB), please use direct presigned uploads.",
-          details: parseErr?.message,
-        },
-        { status: 400 }
-      );
+    let buffer: Buffer;
+    let filename = "";
+    let rawKey = "";
+    let contentType = req.headers.get("content-type") || "application/octet-stream";
+
+    const headerKey = req.headers.get("x-file-key");
+    const headerFilename = req.headers.get("x-file-name");
+
+    if (headerKey) {
+      // ── Method A: Direct binary stream (bypasses all multipart FormData limits!) ──
+      rawKey = decodeURIComponent(headerKey);
+      filename = headerFilename ? decodeURIComponent(headerFilename) : rawKey.split("/").pop() || "media";
+      const arrayBuffer = await req.arrayBuffer();
+      buffer = Buffer.from(arrayBuffer);
+    } else {
+      // ── Method B: Multipart FormData fallback ──
+      let formData: FormData;
+      try {
+        formData = await req.formData();
+      } catch (parseErr: any) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "Failed to parse file upload body. For large files (>10MB), use direct presigned uploads.",
+            details: parseErr?.message,
+          },
+          { status: 400 }
+        );
+      }
+
+      const file = formData.get("file") as File | null;
+      rawKey = (formData.get("key") as string) || "";
+
+      if (!file) {
+        return NextResponse.json(
+          { success: false, error: "No file was received in upload request" },
+          { status: 400 }
+        );
+      }
+      filename = file.name;
+      contentType = file.type || contentType;
+      const arrayBuffer = await file.arrayBuffer();
+      buffer = Buffer.from(arrayBuffer);
     }
 
-    const file = formData.get("file") as File | null;
-    const key = formData.get("key") as string | null;
-
-    if (!file) {
-      return NextResponse.json(
-        { success: false, error: "No file was received in upload request" },
-        { status: 400 }
-      );
-    }
-    if (!key) {
+    if (!rawKey) {
       return NextResponse.json(
         { success: false, error: "Media storage key is missing" },
         { status: 400 }
       );
     }
 
+    if (!buffer || buffer.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "Uploaded file is empty" },
+        { status: 400 }
+      );
+    }
+
     // Validate media format & size
-    const validation = validateMediaUpload(file.name, file.type, file.size);
+    const validation = validateMediaUpload(filename, contentType, buffer.length);
     if (!validation.valid) {
       return NextResponse.json(
         { success: false, error: validation.error },
@@ -147,7 +177,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const sanitizedKey = sanitizeStorageKey(key);
+    const sanitizedKey = sanitizeStorageKey(rawKey);
     if (!sanitizedKey) {
       return NextResponse.json(
         { success: false, error: "Invalid storage key specified." },
@@ -155,15 +185,11 @@ export async function POST(req: Request) {
       );
     }
 
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
     // Detect MIME type and extension accurately
-    const ext = file.name.split(".").pop()?.toLowerCase() || "";
+    const ext = filename.split(".").pop()?.toLowerCase() || "";
     const isVideo = validation.mediaType === "video";
     const isDoc = validation.mediaType === "document" || ext === "pdf";
 
-    let contentType = file.type;
     if (!contentType || contentType === "application/octet-stream") {
       if (ext === "mp4" || ext === "m4v") contentType = "video/mp4";
       else if (ext === "webm") contentType = "video/webm";
@@ -178,11 +204,11 @@ export async function POST(req: Request) {
       else contentType = isVideo ? "video/mp4" : isDoc ? "application/pdf" : "image/jpeg";
     }
 
-    if (ext === "svg" || file.type?.includes("svg")) {
+    if (ext === "svg" || contentType?.includes("svg")) {
       contentType = "image/svg+xml";
-    } else if (["jfif", "pjpeg", "pjp"].includes(ext) || file.type?.includes("jfif")) {
+    } else if (["jfif", "pjpeg", "pjp"].includes(ext) || contentType?.includes("jfif")) {
       contentType = "image/jpeg";
-    } else if (ext === "pdf" || file.type?.includes("pdf")) {
+    } else if (ext === "pdf" || contentType?.includes("pdf")) {
       contentType = "application/pdf";
     }
 
@@ -199,7 +225,7 @@ export async function POST(req: Request) {
       if (!/\.pdf$/i.test(finalKey)) {
         finalKey = `${finalKey}.pdf`;
       }
-    } else if (ext === "svg" || file.type?.includes("svg")) {
+    } else if (ext === "svg" || contentType?.includes("svg")) {
       finalKey = finalKey.replace(/\.(webp|jpg|jpeg|jfif|png|gif|mp4|webm|mov|m4v|pdf)$/i, ".svg");
       if (!/\.svg$/i.test(finalKey)) {
         finalKey = `${finalKey}.svg`;
