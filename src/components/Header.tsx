@@ -138,10 +138,31 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
   });
 
   const getCardImage = (imgSrc?: string, fallbackIdx: number = 0) => {
-    if (imgSrc && imgSrc.trim() && !imgSrc.includes("coresg-normal.trae.ai")) {
+    if (imgSrc && imgSrc.trim() && !imgSrc.includes("coresg-normal.trae.ai") && !imgSrc.includes("www.rnvalves.com")) {
       return imgSrc;
     }
     return "/api/media/website/catalogue/products/default/image.webp";
+  };
+
+  const getCategoryThumbnail = (cat: DynamicCategory, idx: number) => {
+    if (cat.icon && cat.icon.trim() && !cat.icon.includes("coresg-normal.trae.ai") && !cat.icon.includes("www.rnvalves.com")) {
+      return cat.icon;
+    }
+    if (cat.image && cat.image.trim() && !cat.image.includes("coresg-normal.trae.ai") && !cat.image.includes("www.rnvalves.com")) {
+      return cat.image;
+    }
+    const catId = cat.id || (cat as any)._id;
+    const matchingSub = subcategories.find(
+      (s) =>
+        (String(s.categoryId) === String(catId) ||
+          (s.categoryName && cat.name && s.categoryName.toLowerCase().trim() === cat.name.toLowerCase().trim())) &&
+        s.image &&
+        !s.image.includes("www.rnvalves.com")
+    );
+    if (matchingSub?.image) {
+      return matchingSub.image;
+    }
+    return getCardImage(cat.image, idx);
   };
 
   const handleNavigate = (path: string) => {
@@ -229,7 +250,7 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
             activeCategoryId === item.id ||
             activeCategoryId === (item as any)._id ||
             activeCategoryId === item.slug;
-          const thumbnailImg = getCardImage(item.icon || item.image, idx);
+          const thumbnailImg = getCategoryThumbnail(item, idx);
 
           return (
             <button
@@ -248,7 +269,7 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
                   : "1px solid rgba(203, 213, 225, 0.75)",
                 background: isSelected
                   ? "linear-gradient(90deg, #ffffff 0%, #e0f2fe 100%)"
-                  : "rgba(255, 255, 255, 0.65)",
+                  : "rgba(255, 255, 255, 0.75)",
                 boxShadow: isSelected
                   ? "0 4px 16px rgba(0, 174, 239, 0.18)"
                   : "0 1px 3px rgba(18, 42, 62, 0.04)",
@@ -269,7 +290,7 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
               onMouseLeave={(event) => {
                 event.currentTarget.style.transform = "translateX(0)";
                 if (!isSelected) {
-                  event.currentTarget.style.background = "rgba(255, 255, 255, 0.65)";
+                  event.currentTarget.style.background = "rgba(255, 255, 255, 0.75)";
                   event.currentTarget.style.borderColor = "rgba(203, 213, 225, 0.75)";
                   event.currentTarget.style.boxShadow = "0 1px 3px rgba(18, 42, 62, 0.04)";
                 }
@@ -284,15 +305,29 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
                   border: isSelected
                     ? "1.5px solid #00AEEF"
                     : "1px solid rgba(148, 163, 184, 0.25)",
-                  backgroundImage: `url(${thumbnailImg})`,
-                  backgroundSize: "contain",
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "center",
                   flexShrink: 0,
                   padding: "4px",
                   boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  overflow: "hidden",
                 }}
-              />
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={thumbnailImg}
+                  alt={item.name}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "contain",
+                  }}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = "/api/media/website/catalogue/products/default/image.webp";
+                  }}
+                />
+              </div>
               <p
                 style={{
                   margin: 0,
@@ -369,10 +404,10 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
             <h2
               style={{
                 margin: 0,
-                color: "#0f172a",
+                color: "#0a192f",
                 fontFamily: "'Manrope', system-ui, sans-serif",
-                fontSize: "22px",
-                fontWeight: 700,
+                fontSize: "24px",
+                fontWeight: 800,
                 letterSpacing: "-0.02em",
                 lineHeight: 1.25,
               }}
@@ -394,11 +429,11 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
                 background: "linear-gradient(90deg, #0077B6 0%, #00AEEF 100%)",
                 color: "#FFFFFF",
                 fontSize: "13px",
-                fontWeight: 600,
+                fontWeight: 700,
                 fontFamily: "'Manrope', system-ui, sans-serif",
                 border: "none",
                 cursor: "pointer",
-                boxShadow: "0 4px 14px rgba(0, 174, 239, 0.25)",
+                boxShadow: "0 4px 14px rgba(0, 174, 239, 0.3)",
                 transition: "transform 0.2s ease, box-shadow 0.2s ease",
               }}
               onMouseEnter={(e) => {
@@ -497,10 +532,10 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
                       <h3
                         style={{
                           margin: 0,
-                          color: "#1a1a1a",
+                          color: "#0a192f",
                           fontFamily: "'Manrope', system-ui, sans-serif",
-                          fontSize: "15.5px",
-                          fontWeight: 600,
+                          fontSize: "16px",
+                          fontWeight: 700,
                           lineHeight: 1.3,
                           letterSpacing: "-0.01em",
                         }}
@@ -510,10 +545,10 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
                       <p
                         style={{
                           margin: 0,
-                          color: "#475569",
+                          color: "#1e3a5f",
                           fontFamily: "'Manrope', system-ui, sans-serif",
-                          fontSize: "12px",
-                          fontWeight: 400,
+                          fontSize: "12.5px",
+                          fontWeight: 500,
                           lineHeight: 1.45,
                           display: "-webkit-box",
                           WebkitLineClamp: 2,
@@ -536,8 +571,8 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
                           alignItems: "center",
                           justifyContent: "center",
                           color: "#0077B6",
-                          backgroundColor: "rgba(255, 255, 255, 0.85)",
-                          boxShadow: "0 2px 6px rgba(18, 42, 62, 0.08)",
+                          backgroundColor: "#ffffff",
+                          boxShadow: "0 2px 8px rgba(18, 42, 62, 0.12)",
                           transition: "all 0.2s ease",
                         }}
                         className="group-hover:bg-[#0077B6] group-hover:text-white group-hover:border-[#0077B6]"
