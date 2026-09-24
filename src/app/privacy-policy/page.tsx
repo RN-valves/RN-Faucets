@@ -174,7 +174,7 @@ export default function PrivacyPolicyPage() {
               <ul>
                 <li>Official Website: <a href="https://www.rnvalves.com" target="_blank" rel="noopener noreferrer">www.rnvalves.com</a></li>
                 <li>Social Media Channels (Facebook, Instagram, LinkedIn, YouTube)</li>
-                <li>Direct messaging apps and WhatsApp customer support (+91 9319888435)</li>
+                <li>Direct messaging apps and WhatsApp customer support (+91 9811103377)</li>
               </ul>
 
               <p>

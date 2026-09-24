@@ -42,7 +42,7 @@ const TRUST_ITEMS: TrustItem[] = [
     description:
       "Talk to an RN Valves & Faucets specialist in real time to find the right product for your needs.",
     linkLabel: "→ Chat Now",
-    href: "/contact-us",
+    href: "https://api.whatsapp.com/send?phone=919811103377&text=Hello,%20I%20am%20interested%20in%20RN%20Valves%20%26%20Faucets%20products.",
   },
 ];
 
@@ -274,6 +274,8 @@ export default function WhyBuySection({ data }: WhyBuySectionProps) {
             {item.linkLabel && (
               <a
                 href={item.href || "#"}
+                target={item.href?.startsWith("http") ? "_blank" : undefined}
+                rel={item.href?.startsWith("http") ? "noopener noreferrer" : undefined}
                 className="why-buy-link"
                 style={{
                   fontFamily: "'Manrope', Helvetica, Arial, sans-serif",

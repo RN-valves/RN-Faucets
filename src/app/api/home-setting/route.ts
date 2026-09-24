@@ -103,7 +103,7 @@ const DEFAULT_HOME_SETTINGS = {
         description:
           "Talk to an RN Valves & Faucets specialist in real time to find the right product for your needs.",
         linkLabel: "→ Chat Now",
-        href: "/contact-us",
+        href: "https://api.whatsapp.com/send?phone=919811103377&text=Hello,%20I%20am%20interested%20in%20RN%20Valves%20%26%20Faucets%20products.",
       },
     ],
   },
@@ -168,7 +168,6 @@ const DEFAULT_HOME_SETTINGS = {
       { label: "Become our Dealer", href: "/business-user-registration" },
       { label: "Our Certification", href: "/certificates" },
       { label: "Contact Us", href: "/contact-us" },
-      { label: "Warranty Policy", href: "/about-us" },
     ],
     col3Links: [
       { label: "Personal Account", href: "/retail-user-registration" },

@@ -49,7 +49,6 @@ const NAV_COL_2 = [
   { label: "Become our Dealer", href: "/business-user-registration" },
   { label: "Our Certification", href: "/certificates" },
   { label: "Contact Us", href: "/contact-us" },
-  { label: "Warranty Policy", href: "/about-us" },
 ];
 const NAV_COL_3 = [
   { label: "Personal Account", href: "/retail-user-registration" },
@@ -197,7 +196,9 @@ export default function FooterSection({ data }: FooterSectionProps) {
 
           {/* Col 3 */}
           <nav aria-label="Footer links 2" style={{ paddingTop: 4 }}>
-            {(data?.col2Links && data.col2Links.length > 0 ? data.col2Links : NAV_COL_2).map((l) => (
+            {(data?.col2Links && data.col2Links.length > 0 ? data.col2Links : NAV_COL_2)
+              .filter((l) => !l.label?.toLowerCase().includes("warranty"))
+              .map((l) => (
               <Link key={l.label} href={l.href} style={{
                 display: "block", fontSize: 14.5, fontWeight: 400,
                 color: "rgba(255,255,255,0.85)", lineHeight: "2.35",

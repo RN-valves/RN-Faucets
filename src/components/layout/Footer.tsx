@@ -58,7 +58,6 @@ const NAV_COLUMN_2 = [
   { label: "Become our Dealer", href: "/business-user-registration" },
   { label: "Our Certification", href: "/certificates" },
   { label: "Contact Us", href: "/contact-us" },
-  { label: "Warranty Policy", href: "/about-us" },
 ];
 const NAV_COLUMN_3 = [
   { label: "Personal Account", href: "/retail-user-registration" },
