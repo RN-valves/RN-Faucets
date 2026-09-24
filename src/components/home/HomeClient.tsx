@@ -62,21 +62,23 @@ function ProgressRing({
     let active = true;
 
     if (itemType === "video") {
-      let lastTime = 0;
-      const updateVideoProgress = (now: number) => {
-        if (!active) return;
-        // Throttle media element currentTime queries to ~30fps to avoid blocking video decoder
-        if (now - lastTime >= 33) {
-          lastTime = now;
-          const vid = videoRef.current;
-          if (vid && vid.duration > 0 && isFinite(vid.duration) && circleRef.current) {
-            const p = Math.min(Math.max(vid.currentTime / vid.duration, 0), 1);
-            circleRef.current.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - p));
-          }
-        }
-        rafRef.current = requestAnimationFrame(updateVideoProgress);
+      const vid = videoRef.current;
+      if (!vid) return;
+
+      const updateProgress = () => {
+        if (!active || !circleRef.current || !vid.duration) return;
+        const p = Math.min(Math.max(vid.currentTime / vid.duration, 0), 1);
+        circleRef.current.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - p));
       };
-      rafRef.current = requestAnimationFrame(updateVideoProgress);
+
+      vid.addEventListener("timeupdate", updateProgress);
+      const interval = setInterval(updateProgress, 100);
+
+      return () => {
+        active = false;
+        vid.removeEventListener("timeupdate", updateProgress);
+        clearInterval(interval);
+      };
     } else {
       // Direct DOM update on every animation frame for image timer
       const startTime = performance.now();
@@ -94,15 +96,15 @@ function ProgressRing({
         }
       };
       rafRef.current = requestAnimationFrame(updateImageProgress);
-    }
 
-    return () => {
-      active = false;
-      if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-    };
+      return () => {
+        active = false;
+        if (rafRef.current !== null) {
+          cancelAnimationFrame(rafRef.current);
+          rafRef.current = null;
+        }
+      };
+    }
   }, [isActive, itemType, videoRef, imageDuration, onComplete]);
 
   if (!isActive) {
@@ -258,6 +260,13 @@ export default function HomeClient({
     }, 300);
   }, []);
 
+  const getOptimizedVideoSrc = (src?: string) => {
+    if (!src) return "";
+    if (src.includes("bannerVideo5.mp4")) return "/videos/optimized/bannerVideo5.mp4";
+    if (src.includes("bannerVideo2.mp4")) return "/videos/optimized/bannerVideo2.mp4";
+    return src;
+  };
+
   const isVideoSlide = (item: any) => {
     if (!item || !item.src) return false;
     if (item.type === "video") return true;
@@ -342,7 +351,7 @@ export default function HomeClient({
         data-header-theme="dark"
         style={{
           position: "relative",
-          width: "100vw",
+          width: "100%",
           height: "100vh",
           overflow: "hidden",
           background: "#000",
@@ -361,17 +370,18 @@ export default function HomeClient({
           />
         )}
 
-        {/* ── Background layers directly from database ── */}
-        {heroSequence.map((item, i) => (
-          isVideoSlide(item) ? (
+        {/* ── Background layers directly from database (Virtualized for zero GPU lag) ── */}
+        {heroSequence.map((item, i) => {
+          if (activeIdx !== i) return null;
+          return isVideoSlide(item) ? (
             <video
               key={item.id || i}
-              ref={activeIdx === i ? videoRef : undefined}
-              src={item.src}
-              autoPlay={activeIdx === i}
+              ref={videoRef}
+              src={getOptimizedVideoSrc(item.src)}
+              autoPlay
               muted
               playsInline
-              preload={activeIdx === i ? "metadata" : "none"}
+              preload="metadata"
               disablePictureInPicture
               disableRemotePlayback
               onEnded={advance}
@@ -381,12 +391,12 @@ export default function HomeClient({
                 width: "100%",
                 height: "100%",
                 objectFit: "cover",
-                opacity: activeIdx === i ? (visible ? 1 : 0) : 0,
-                transition: "opacity 0.5s ease",
-                zIndex: activeIdx === i ? 1 : 0,
+                objectPosition: "center center",
+                opacity: visible ? 1 : 0,
+                transition: "opacity 0.4s ease",
+                zIndex: 1,
                 pointerEvents: "none",
-                transform: "translateZ(0)",
-                willChange: "opacity, transform",
+                transform: "translate3d(0, 0, 0)",
                 backfaceVisibility: "hidden",
               }}
             />
@@ -402,14 +412,14 @@ export default function HomeClient({
                 width: "100%",
                 height: "100%",
                 objectFit: "cover",
-                opacity: activeIdx === i ? (visible ? 1 : 0) : 0,
-                transition: "opacity 0.5s ease",
-                zIndex: activeIdx === i ? 1 : 0,
+                opacity: visible ? 1 : 0,
+                transition: "opacity 0.4s ease",
+                zIndex: 1,
                 pointerEvents: "none",
               }}
             />
-          )
-        ))}
+          );
+        })}
 
         {/* ── Dark gradient for text legibility ── */}
         <div

@@ -955,12 +955,13 @@ export default function Header({ data }: HeaderProps) {
           </button>
         </div>
 
-        {/* Center: Brand Logo (Increased Size & Centered in Header) */}
+        {/* Center: Brand Logo (Vertically & Horizontally Centered in Header) */}
         <div
           style={{
             position: "absolute",
             left: "50%",
-            transform: "translateX(-50%)",
+            top: "50%",
+            transform: "translate(-50%, -50%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -968,7 +969,7 @@ export default function Header({ data }: HeaderProps) {
             pointerEvents: "auto",
           }}
         >
-          <a href="/" aria-label="RN Valves & Faucets Home" className="block cursor-pointer">
+          <a href="/" aria-label="RN Valves & Faucets Home" className="flex items-center justify-center cursor-pointer">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src={logoSrc} 
@@ -979,7 +980,7 @@ export default function Header({ data }: HeaderProps) {
                   target.src = DEFAULT_LOGO;
                 }
               }}
-              className="h-[80px] sm:h-[92px] md:h-[105px] w-auto block transition-all duration-300 hover:opacity-85 hover:scale-[1.02]" 
+              className="h-[62px] sm:h-[76px] md:h-[88px] max-h-[90px] w-auto block object-contain transition-all duration-300 hover:opacity-85 hover:scale-[1.02]" 
             />
           </a>
         </div>
