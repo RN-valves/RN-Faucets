@@ -66,7 +66,10 @@ export default function WhyBuySection({ data }: WhyBuySectionProps) {
   const isVisible = data?.visible !== false;
 
   const headingText = data?.heading || "Why Buy from RN Valves & Faucets Directly";
-  const rawItems = data?.items && Array.isArray(data.items) ? data.items : [];
+  const rawItems =
+    data?.items && Array.isArray(data.items) && data.items.length > 0
+      ? data.items
+      : TRUST_ITEMS;
   if (!isVisible || rawItems.length === 0) return null;
 
   const itemsList = rawItems.map((item: any) => {
