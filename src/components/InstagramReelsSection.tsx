@@ -13,7 +13,16 @@ const INSTAGRAM_PROFILE = "https://www.instagram.com/rnvalvesandfaucets/";
 const CARD_W = 285;
 const CARD_H = 510;
 const GAP = 20;
-const LOOP_SETS = 5;
+const LOOP_SETS = 3;
+
+function getReelThumbnail(videoUrl: string): string {
+  if (!videoUrl) return "";
+  const match = videoUrl.match(/reel-(\d+)\.mp4/i);
+  if (match) {
+    return `/Insta-Reels/thumbnails/reel-${match[1]}.jpg`;
+  }
+  return "";
+}
 
 const SOCIALS = [
   {
@@ -92,6 +101,7 @@ function ReelCard({
   video,
   instagram,
   isActive,
+  sectionInView,
   onEnded,
   onSelect,
   didDragRef,
@@ -99,6 +109,7 @@ function ReelCard({
   video: string;
   instagram: string;
   isActive: boolean;
+  sectionInView: boolean;
   onEnded: () => void;
   onSelect: () => void;
   didDragRef: MutableRefObject<boolean>;
@@ -110,6 +121,8 @@ function ReelCard({
   const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isScalingDown, setIsScalingDown] = useState(false);
+  const poster = useMemo(() => getReelThumbnail(video), [video]);
+  const shouldPlay = isActive && sectionInView;
 
   const stopProgress = useCallback(() => {
     if (rafRef.current !== null) {
@@ -187,7 +200,7 @@ function ReelCard({
     const el = videoRef.current;
     if (!el) return;
 
-    if (isActive) {
+    if (shouldPlay) {
       isEndingRef.current = false;
       setIsScalingDown(false);
       el.defaultMuted = true;
@@ -195,7 +208,7 @@ function ReelCard({
       el.playsInline = true;
 
       const handleCanPlay = () => {
-        if (videoRef.current && isActive) {
+        if (videoRef.current && shouldPlay) {
           playActiveVideo();
         }
       };
@@ -223,7 +236,7 @@ function ReelCard({
       clearFallback();
       stopProgress();
     };
-  }, [clearFallback, isActive, playActiveVideo, stopProgress]);
+  }, [clearFallback, shouldPlay, playActiveVideo, stopProgress]);
 
   const handleClick = () => {
     if (didDragRef.current) return;
@@ -272,24 +285,56 @@ function ReelCard({
         zIndex: isZoomed ? 10 : 1,
       }}
     >
-      <video
-        ref={videoRef}
-        src={video}
-        autoPlay={isActive}
-        muted
-        playsInline
-        preload="metadata"
-        loop={false}
-        onEnded={handleCompleteAndNext}
-        className="w-full h-full object-cover"
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-          display: "block",
-          pointerEvents: "none",
-        }}
-      />
+      {shouldPlay ? (
+        <video
+          ref={videoRef}
+          src={video}
+          autoPlay
+          muted
+          playsInline
+          preload="auto"
+          poster={poster || undefined}
+          loop={false}
+          onEnded={handleCompleteAndNext}
+          className="w-full h-full object-cover"
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            display: "block",
+            pointerEvents: "none",
+          }}
+        />
+      ) : poster ? (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={poster}
+          alt="Instagram reel preview"
+          loading="lazy"
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            display: "block",
+            pointerEvents: "none",
+          }}
+        />
+      ) : (
+        <video
+          src={video}
+          muted
+          playsInline
+          preload="none"
+          className="w-full h-full object-cover"
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            display: "block",
+            pointerEvents: "none",
+          }}
+        />
+      )}
 
       <div
         style={{
@@ -433,9 +478,10 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
   const visibleCountRef = useRef(4);
 
   // Start in middle set so user can scroll left or right seamlessly
-  const initialStartIndex = numReels * 2;
+  const initialStartIndex = numReels;
   const [startIdx, setStartIdx] = useState(initialStartIndex);
   const [activeCardIndex, setActiveCardIndex] = useState(initialStartIndex);
+  const [sectionInView, setSectionInView] = useState(false);
 
   const startIdxRef = useRef(initialStartIndex);
   const activeCardIndexRef = useRef(initialStartIndex);
@@ -506,7 +552,7 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
         onComplete: () => {
           // Transparent rebase if scrolled into outer loop sets
           const len = reelsList.length;
-          if (targetStart >= len * 3) {
+          if (targetStart >= len * 2) {
             const rebased = targetStart - len;
             startIdxRef.current = rebased;
             setStartIdx(rebased);
@@ -634,13 +680,14 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
   // Pause when section is scrolled out of viewport
   useEffect(() => {
     const section = sectionRef.current;
-    if (!section) return;
+    if (!section || typeof IntersectionObserver === "undefined") return;
 
     const io = new IntersectionObserver(
       ([entry]) => {
+        setSectionInView(entry.isIntersecting);
         pausedRef.current = !entry.isIntersecting;
       },
-      { threshold: 0.3 }
+      { threshold: 0.15 }
     );
 
     io.observe(section);
@@ -1018,6 +1065,7 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
                   video={reel.video}
                   instagram={reel.instagram}
                   isActive={activeCardIndex === i}
+                  sectionInView={sectionInView}
                   onEnded={() => handleCardEnded(i)}
                   onSelect={() => handleCardSelect(i, reel.instagram)}
                   didDragRef={didDragRef}

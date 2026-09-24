@@ -199,6 +199,8 @@ export default function HomeClient({
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const advancingRef = useRef(false);
+  const heroSectionRef = useRef<HTMLElement>(null);
+  const [heroInView, setHeroInView] = useState(true);
 
   useEffect(() => {
     if (!initialHomeSetting) {
@@ -207,6 +209,22 @@ export default function HomeClient({
       });
     }
   }, [initialHomeSetting]);
+
+  /* ── Observe hero section visibility to pause video when out of viewport ── */
+  useEffect(() => {
+    const el = heroSectionRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setHeroInView(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // Only use active items with valid sources directly from the database - zero hardcoded fallbacks
   const heroSequence: SeqItem[] =
@@ -253,23 +271,21 @@ export default function HomeClient({
     );
   };
 
-  /* ── React to active index changes ── */
+  /* ── React to active index & viewport visibility changes ── */
   useEffect(() => {
     if (heroSequence.length === 0) return;
     const item = heroSequence[activeIdx] || heroSequence[0];
     if (!item) return;
 
-    if (isVideoSlide(item)) {
-      const vid = videoRef.current;
-      if (vid) {
-        vid.currentTime = 0;
-        const playPromise = vid.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(() => {});
-        }
-      }
+    const vid = videoRef.current;
+    if (!vid) return;
+
+    if (isVideoSlide(item) && heroInView) {
+      vid.play().catch(() => {});
+    } else {
+      vid.pause();
     }
-  }, [activeIdx, heroSequence]);
+  }, [activeIdx, heroInView, heroSequence]);
 
   /* ── Smooth 1-wheel snap from Section 1 -> Section 2 -> Section 3 ── */
   const isSnappingRef = useRef(false);
@@ -322,6 +338,7 @@ export default function HomeClient({
 
       {/* ── 1. Hero Section ── */}
       <section
+        ref={heroSectionRef}
         data-header-theme="dark"
         style={{
           position: "relative",
@@ -354,7 +371,7 @@ export default function HomeClient({
               autoPlay={activeIdx === i}
               muted
               playsInline
-              preload="auto"
+              preload={activeIdx === i ? "metadata" : "none"}
               disablePictureInPicture
               disableRemotePlayback
               onEnded={advance}

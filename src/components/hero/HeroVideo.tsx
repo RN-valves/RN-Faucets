@@ -62,7 +62,7 @@ export default function HeroVideo({
           muted
           loop={false}
           playsInline
-          preload="auto"
+          preload="metadata"
           onEnded={() => handleEnded(i)}
           className="absolute inset-0 w-full h-full"
           style={{
