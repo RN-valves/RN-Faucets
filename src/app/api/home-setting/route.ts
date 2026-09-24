@@ -69,8 +69,10 @@ const DEFAULT_HOME_SETTINGS = {
   },
   bestSellersSection: {
     visible: true,
-    title: "New\nArrivals",
-    description: "Discover our latest precision-engineered designs and innovative bath fittings.",
+    title: "Best\nSeller",
+    description: "Top-rated, best-selling products trusted and loved by our customers.",
+    collectionId: "all",
+    collectionName: "",
     products: [],
   },
   whyBuySection: {

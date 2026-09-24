@@ -23,6 +23,12 @@ import {
   ExternalLink,
   Layers,
   ShoppingBag,
+  ArrowUp,
+  ArrowDown,
+  Search,
+  Check,
+  FolderCheck,
+  Sparkles,
 } from "lucide-react";
 
 // Reusable R2 Media Upload & Preview Component
@@ -236,6 +242,7 @@ export default function AdminHomeSettingPage() {
 
   const [dbProducts, setDbProducts] = useState<AdminProduct[]>([]);
   const [dbCategories, setDbCategories] = useState<AdminCategory[]>([]);
+  const [bestsellerSearch, setBestsellerSearch] = useState("");
 
   const isDark = theme === "dark";
 
@@ -316,7 +323,7 @@ export default function AdminHomeSettingPage() {
               { id: "header_footer", label: "1. Header & Footer" },
               { id: "hero", label: "2. Hero Carousel" },
               { id: "categories", label: "3. Showcase & Categories" },
-              { id: "bestsellers", label: "4. New Arrivals & Why Buy" },
+              { id: "bestsellers", label: "4. Best Sellers & Collection" },
               { id: "content", label: "5. Reels, Support & Blogs" },
             ].map((t) => (
               <button
@@ -617,72 +624,502 @@ export default function AdminHomeSettingPage() {
           </div>
         )}
 
-        {/* Tab 4: Best Sellers & Why Buy */}
+        {/* Tab 4: Best Sellers & Collection */}
         {activeTab === "bestsellers" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-            {/* Best Sellers referencing Product DB without duplication */}
+            {/* 1. Best Sellers Section Settings */}
             <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: "12px", padding: "24px", boxShadow: shadow }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: `1px solid ${border}`, paddingBottom: "12px" }}>
                 <div>
-                  <h3 style={{ margin: 0, color: textMain, fontSize: "16px" }}>New Arrivals Products</h3>
-                  <p style={{ margin: "2px 0 0 0", fontSize: "12px", color: textMuted }}>Select products from catalog to automatically reuse existing product images without R2 duplication.</p>
+                  <h3 style={{ margin: 0, color: textMain, fontSize: "16px" }}>Best Seller Section Settings</h3>
+                  <p style={{ margin: "2px 0 0 0", fontSize: "12px", color: textMuted }}>Configure the homepage Best Seller section headlines, visibility, and source collection.</p>
+                </div>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "13px", fontWeight: 700, color: textMain }}>
+                  <input
+                    type="checkbox"
+                    checked={settings.bestSellersSection?.visible !== false}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        bestSellersSection: {
+                          ...settings.bestSellersSection,
+                          visible: e.target.checked,
+                        },
+                      })
+                    }
+                    style={{ cursor: "pointer", width: "16px", height: "16px" }}
+                  />
+                  <span>Show Section on Homepage</span>
+                </label>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "20px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textMain, marginBottom: "4px" }}>
+                    Section Title (use Enter to break into lines, e.g. "Best\nSeller")
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={settings.bestSellersSection?.title ?? "Best\nSeller"}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        bestSellersSection: {
+                          ...settings.bestSellersSection,
+                          title: e.target.value,
+                        },
+                      })
+                    }
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: `1px solid ${border}`, background: inputBg, color: textMain, fontFamily: "inherit" }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textMain, marginBottom: "4px" }}>
+                    Section Subtitle / Description
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={settings.bestSellersSection?.description ?? "Top-rated, best-selling products trusted and loved by our customers."}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        bestSellersSection: {
+                          ...settings.bestSellersSection,
+                          description: e.target.value,
+                        },
+                      })
+                    }
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: `1px solid ${border}`, background: inputBg, color: textMain, fontFamily: "inherit" }}
+                  />
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-                {settings.bestSellersSection?.products?.map((prod: any, index: number) => (
-                  <div key={prod.id || index} style={{ border: `1px solid ${border}`, borderRadius: "10px", padding: "16px", background: inputBg, display: "flex", flexDirection: "column", gap: "10px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontWeight: 800, fontSize: "13px", color: "#0077B6" }}>Slot #{index + 1}</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const updated = settings.bestSellersSection.products.filter((_: any, i: number) => i !== index);
-                          setSettings({
-                            ...settings,
-                            bestSellersSection: { ...settings.bestSellersSection, products: updated },
-                          });
-                        }}
-                        style={{ background: "transparent", border: "none", color: "#DC2626", cursor: "pointer" }}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
+              {/* Collection Selection Dropdown */}
+              <div style={{ background: isDark ? "#161B22" : "#F0F9FF", border: `1px solid ${isDark ? "#30363D" : "#BAE6FD"}`, borderRadius: "10px", padding: "18px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                  <FolderCheck size={18} color="#0077B6" />
+                  <span style={{ fontSize: "14px", fontWeight: 800, color: textMain }}>Featured Collection / Category Feed</span>
+                </div>
+                <p style={{ margin: "0 0 12px 0", fontSize: "12px", color: textMuted }}>
+                  Select which collection will automatically feed best seller products into the homepage slider. Choose &quot;All Categories&quot; to show a diverse mix from across the entire catalog.
+                </p>
 
-                    <label style={{ fontSize: "11px", fontWeight: 700, color: textMuted }}>Link to Catalog Product (Auto-fetches Image)</label>
-                    <select
-                      onChange={(e) => {
-                        const selectedProd = dbProducts.find((p) => p.id === e.target.value);
-                        if (selectedProd) {
-                          const updated = [...settings.bestSellersSection.products];
-                          updated[index] = {
-                            id: selectedProd.id,
-                            name: selectedProd.name,
-                            price: `₹${(selectedProd.inSelling || selectedProd.price || 0).toLocaleString()}`,
-                            sku: selectedProd.skuCode || selectedProd.code,
-                            image: selectedProd.image,
-                          };
-                          setSettings({ ...settings, bestSellersSection: { ...settings.bestSellersSection, products: updated } });
-                        }
+                <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+                  <select
+                    value={settings.bestSellersSection?.collectionId || "all"}
+                    onChange={(e) => {
+                      const selectedId = e.target.value;
+                      const selectedCat = dbCategories.find(
+                        (c) => String(c.id) === String(selectedId) || String(c.slug) === String(selectedId)
+                      );
+                      setSettings({
+                        ...settings,
+                        bestSellersSection: {
+                          ...settings.bestSellersSection,
+                          collectionId: selectedId,
+                          collectionName: selectedCat ? selectedCat.name : "",
+                        },
+                      });
+                    }}
+                    style={{
+                      flex: 1,
+                      minWidth: "260px",
+                      padding: "10px 14px",
+                      borderRadius: "8px",
+                      border: `1px solid ${border}`,
+                      background: cardBg,
+                      color: textMain,
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <option value="all">🌟 All Categories (Dynamic Diverse Best Sellers)</option>
+                    {dbCategories.map((c) => (
+                      <option key={c.id || c.slug} value={c.id || c.slug}>
+                        📁 {c.name} {c.productCount ? `(${c.productCount} products)` : ""}
+                      </option>
+                    ))}
+                  </select>
+
+                  {settings.bestSellersSection?.collectionId && settings.bestSellersSection.collectionId !== "all" && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSettings({
+                          ...settings,
+                          bestSellersSection: {
+                            ...settings.bestSellersSection,
+                            collectionId: "all",
+                            collectionName: "",
+                          },
+                        })
+                      }
+                      style={{
+                        padding: "9px 14px",
+                        borderRadius: "6px",
+                        border: `1px solid ${border}`,
+                        background: cardBg,
+                        color: textMuted,
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        cursor: "pointer",
                       }}
-                      style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: `1px solid ${border}`, background: cardBg, color: textMain }}
                     >
-                      <option value="">Select from catalog...</option>
-                      {dbProducts.map((p) => (
-                        <option key={p.id} value={p.id}>{p.name} ({p.skuCode || p.code}) - ₹{p.price}</option>
-                      ))}
-                    </select>
+                      Reset to All Categories
+                    </button>
+                  )}
+                </div>
 
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "4px" }}>
-                      <img src={prod.image} alt={prod.name} style={{ width: "48px", height: "48px", borderRadius: "6px", objectFit: "cover", border: `1px solid ${border}` }} />
-                      <div>
-                        <div style={{ fontWeight: 700, color: textMain, fontSize: "13px" }}>{prod.name}</div>
-                        <div style={{ fontSize: "11px", color: textMuted }}>{prod.sku} • {prod.price}</div>
+                {settings.bestSellersSection?.collectionName && settings.bestSellersSection.collectionId !== "all" && (
+                  <div style={{ marginTop: "12px", display: "inline-flex", alignItems: "center", gap: "6px", background: "#E0F2FE", color: "#0369A1", padding: "4px 10px", borderRadius: "6px", fontSize: "12px", fontWeight: 700 }}>
+                    <Sparkles size={14} /> Active Collection Filter: <u>{settings.bestSellersSection.collectionName}</u>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 2. Curated Best Seller Products (Optional Manual Overrides) */}
+            <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: "12px", padding: "24px", boxShadow: shadow }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: `1px solid ${border}`, paddingBottom: "12px", flexWrap: "wrap", gap: "10px" }}>
+                <div>
+                  <h3 style={{ margin: 0, color: textMain, fontSize: "16px" }}>Curated Best Seller Products (Optional Manual Overrides)</h3>
+                  <p style={{ margin: "2px 0 0 0", fontSize: "12px", color: textMuted }}>
+                    Search and pick specific products to feature in the Best Seller section. If empty, the carousel will automatically display products from your selected collection above.
+                  </p>
+                </div>
+
+                {Array.isArray(settings.bestSellersSection?.products) && settings.bestSellersSection.products.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm("Remove all manually pinned products and return to the automated collection feed?")) {
+                        setSettings({
+                          ...settings,
+                          bestSellersSection: { ...settings.bestSellersSection, products: [] },
+                        });
+                      }
+                    }}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: "6px",
+                      border: "1px solid #FECACA",
+                      background: "#FEF2F2",
+                      color: "#DC2626",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Clear All Curated Products
+                  </button>
+                )}
+              </div>
+
+              {/* Product Search & Picker */}
+              <div style={{ marginBottom: "20px" }}>
+                <div style={{ position: "relative" }}>
+                  <Search size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: textMuted }} />
+                  <input
+                    type="text"
+                    placeholder="Search catalog to add best seller product (by name, SKU code, or category)..."
+                    value={bestsellerSearch}
+                    onChange={(e) => setBestsellerSearch(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px 10px 38px",
+                      borderRadius: "8px",
+                      border: `1px solid ${border}`,
+                      background: inputBg,
+                      color: textMain,
+                      fontSize: "13px",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                  {bestsellerSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setBestsellerSearch("")}
+                      style={{
+                        position: "absolute",
+                        right: "12px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        background: "none",
+                        border: "none",
+                        color: textMuted,
+                        cursor: "pointer",
+                        fontSize: "12px",
+                      }}
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                {/* Instant Search Results Dropdown */}
+                {bestsellerSearch.trim().length > 0 && (
+                  <div
+                    style={{
+                      marginTop: "8px",
+                      border: `1px solid ${border}`,
+                      borderRadius: "8px",
+                      background: cardBg,
+                      maxHeight: "320px",
+                      overflowY: "auto",
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                    }}
+                  >
+                    {(() => {
+                      const query = bestsellerSearch.trim().toLowerCase();
+                      const currentProducts = settings.bestSellersSection?.products || [];
+                      const hits = dbProducts
+                        .filter((p) => {
+                          const name = (p.name || "").toLowerCase();
+                          const code = (p.code || p.skuCode || p.article || "").toLowerCase();
+                          const cat = (p.category || "").toLowerCase();
+                          return name.includes(query) || code.includes(query) || cat.includes(query);
+                        })
+                        .slice(0, 8);
+
+                      if (hits.length === 0) {
+                        return (
+                          <div style={{ padding: "16px", color: textMuted, textAlign: "center", fontSize: "13px" }}>
+                            No products found matching &quot;{bestsellerSearch}&quot;.
+                          </div>
+                        );
+                      }
+
+                      return hits.map((p) => {
+                        const isAdded = currentProducts.some(
+                          (cur: any) => cur.id === p.id || (p.code && cur.sku === p.code)
+                        );
+
+                        return (
+                          <div
+                            key={p.id}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: "12px",
+                              padding: "10px 14px",
+                              borderBottom: `1px solid ${border}`,
+                            }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+                              <img
+                                src={p.image || "/api/media/website/catalogue/products/default/image.webp"}
+                                alt={p.name}
+                                style={{ width: "40px", height: "40px", borderRadius: "6px", objectFit: "contain", border: `1px solid ${border}`, background: "#FFF" }}
+                              />
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontWeight: 700, fontSize: "13px", color: textMain, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                  {p.name}
+                                </div>
+                                <div style={{ fontSize: "11px", color: textMuted }}>
+                                  {p.skuCode || p.code || "RN-PROD"} • ₹{((p.inSelling || p.price || 0)).toLocaleString()} • {p.category || "Bath Fittings"}
+                                </div>
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              disabled={isAdded}
+                              onClick={() => {
+                                const newProd = {
+                                  id: p.id,
+                                  name: p.name,
+                                  price: `₹${(p.inSelling || p.price || 0).toLocaleString()}`,
+                                  sku: p.skuCode || p.code || p.article || `RN-${p.id}`,
+                                  image: p.image || "/api/media/website/catalogue/products/default/image.webp",
+                                  category: p.category || "Bath Fittings",
+                                };
+                                const updated = [...(settings.bestSellersSection?.products || []), newProd];
+                                setSettings({
+                                  ...settings,
+                                  bestSellersSection: {
+                                    ...settings.bestSellersSection,
+                                    products: updated,
+                                  },
+                                });
+                                setBestsellerSearch("");
+                              }}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                padding: "6px 12px",
+                                borderRadius: "6px",
+                                border: isAdded ? "1px solid #D1D5DB" : "none",
+                                background: isAdded ? "#F3F4F6" : "#0077B6",
+                                color: isAdded ? "#9CA3AF" : "#FFF",
+                                fontSize: "12px",
+                                fontWeight: 700,
+                                cursor: isAdded ? "default" : "pointer",
+                                flexShrink: 0,
+                              }}
+                            >
+                              {isAdded ? (
+                                <>
+                                  <Check size={12} /> Added
+                                </>
+                              ) : (
+                                <>
+                                  <Plus size={12} /> Add to Best Sellers
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                )}
+              </div>
+
+              {/* Current Selected Products List */}
+              {Array.isArray(settings.bestSellersSection?.products) && settings.bestSellersSection.products.length > 0 ? (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "14px" }}>
+                  {settings.bestSellersSection.products.map((prod: any, index: number) => (
+                    <div
+                      key={prod.id || index}
+                      style={{
+                        border: `1px solid ${border}`,
+                        borderRadius: "10px",
+                        padding: "14px",
+                        background: inputBg,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                      }}
+                    >
+                      <span style={{ fontSize: "11px", fontWeight: 800, color: "#0077B6", background: isDark ? "#1F6FEB22" : "#E0F2FE", padding: "3px 7px", borderRadius: "4px", flexShrink: 0 }}>
+                        #{index + 1}
+                      </span>
+
+                      <img
+                        src={prod.image || "/api/media/website/catalogue/products/default/image.webp"}
+                        alt={prod.name}
+                        style={{ width: "48px", height: "48px", borderRadius: "6px", objectFit: "contain", border: `1px solid ${border}`, background: "#FFF", flexShrink: 0 }}
+                      />
+
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, color: textMain, fontSize: "13px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {prod.name}
+                        </div>
+                        <div style={{ fontSize: "11px", color: textMuted }}>
+                          {prod.sku} • {prod.price}
+                        </div>
+                        {prod.category && (
+                          <div style={{ fontSize: "10px", color: "#0284C7", marginTop: "2px" }}>
+                            {prod.category}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action buttons: Up, Down, Remove */}
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
+                        <button
+                          type="button"
+                          disabled={index === 0}
+                          onClick={() => {
+                            if (index === 0) return;
+                            const items = [...settings.bestSellersSection.products];
+                            const temp = items[index - 1];
+                            items[index - 1] = items[index];
+                            items[index] = temp;
+                            setSettings({
+                              ...settings,
+                              bestSellersSection: { ...settings.bestSellersSection, products: items },
+                            });
+                          }}
+                          style={{
+                            padding: "5px",
+                            borderRadius: "4px",
+                            border: `1px solid ${border}`,
+                            background: cardBg,
+                            color: index === 0 ? "#9CA3AF" : textMain,
+                            cursor: index === 0 ? "not-allowed" : "pointer",
+                          }}
+                          title="Move Up"
+                        >
+                          <ArrowUp size={13} />
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={index === settings.bestSellersSection.products.length - 1}
+                          onClick={() => {
+                            if (index === settings.bestSellersSection.products.length - 1) return;
+                            const items = [...settings.bestSellersSection.products];
+                            const temp = items[index + 1];
+                            items[index + 1] = items[index];
+                            items[index] = temp;
+                            setSettings({
+                              ...settings,
+                              bestSellersSection: { ...settings.bestSellersSection, products: items },
+                            });
+                          }}
+                          style={{
+                            padding: "5px",
+                            borderRadius: "4px",
+                            border: `1px solid ${border}`,
+                            background: cardBg,
+                            color: index === settings.bestSellersSection.products.length - 1 ? "#9CA3AF" : textMain,
+                            cursor: index === settings.bestSellersSection.products.length - 1 ? "not-allowed" : "pointer",
+                          }}
+                          title="Move Down"
+                        >
+                          <ArrowDown size={13} />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = settings.bestSellersSection.products.filter((_: any, i: number) => i !== index);
+                            setSettings({
+                              ...settings,
+                              bestSellersSection: { ...settings.bestSellersSection, products: updated },
+                            });
+                          }}
+                          style={{
+                            padding: "5px",
+                            borderRadius: "4px",
+                            border: "1px solid #FECACA",
+                            background: "#FEF2F2",
+                            color: "#DC2626",
+                            cursor: "pointer",
+                          }}
+                          title="Remove product"
+                        >
+                          <Trash2 size={13} />
+                        </button>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    border: `1px dashed ${border}`,
+                    borderRadius: "10px",
+                    padding: "28px",
+                    textAlign: "center",
+                    color: textMuted,
+                  }}
+                >
+                  <p style={{ margin: "0 0 6px 0", fontSize: "14px", fontWeight: 700, color: textMain }}>
+                    No manual products pinned
+                  </p>
+                  <p style={{ margin: 0, fontSize: "12px" }}>
+                    The homepage Best Seller section is currently streaming dynamic products automatically from your selected collection (
+                    <strong>{settings.bestSellersSection?.collectionName || "All Categories"}</strong>).
+                    Use the search bar above if you want to feature specific products manually.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}

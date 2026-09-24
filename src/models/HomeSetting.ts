@@ -37,12 +37,15 @@ export interface IHomeSetting extends Document {
     visible: boolean;
     title: string;
     description: string;
+    collectionId?: string;
+    collectionName?: string;
     products: Array<{
-      id: number;
+      id: any;
       name: string;
       price: string;
       sku: string;
       image: string;
+      category?: string;
     }>;
   };
   whyBuySection: {
@@ -154,8 +157,10 @@ const HomeSettingSchema = new Schema<IHomeSetting>(
     },
     bestSellersSection: {
       visible: { type: Boolean, default: true },
-      title: { type: String, default: "New\nArrivals" },
-      description: { type: String, default: "Discover our latest precision-engineered designs and innovative bath fittings." },
+      title: { type: String, default: "Best\nSeller" },
+      description: { type: String, default: "Top-rated, best-selling products trusted and loved by our customers." },
+      collectionId: { type: String, default: "all" },
+      collectionName: { type: String, default: "" },
       products: [
         {
           id: { type: Schema.Types.Mixed },
@@ -163,6 +168,7 @@ const HomeSettingSchema = new Schema<IHomeSetting>(
           price: { type: String },
           sku: { type: String },
           image: { type: String },
+          category: { type: String },
         },
       ],
     },

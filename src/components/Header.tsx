@@ -864,7 +864,7 @@ export default function Header({ data }: HeaderProps) {
           top: 0,
           left: 0,
           width: "100%",
-          height: "90px",
+          height: "100px",
           zIndex: 9999,
           background: headerBg,
           backdropFilter: backdropFilterStyle,
@@ -882,14 +882,90 @@ export default function Header({ data }: HeaderProps) {
           transition: "background 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease",
         }}
       >
+        {/* Left: Navigation Menu Trigger */}
         <div
           style={{
-            color: textColor,
             display: "flex",
             alignItems: "center",
             justifyContent: "flex-start",
+            zIndex: 20,
             pointerEvents: "auto",
-            transition: "color 0.3s ease",
+          }}
+        >
+          <button
+            type="button"
+            onMouseEnter={preloadCatalogueData}
+            onClick={() => {
+              preloadCatalogueData();
+              setActiveUserMenuLink(null);
+              setUserMenuOpen(true);
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+              color: textColor,
+              outline: "none",
+            }}
+            className="group transition-opacity duration-300 hover:opacity-70"
+            aria-label="Open Navigation Menu"
+            aria-expanded={userMenuOpen}
+          >
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "5px",
+                width: "20px",
+              }}
+            >
+              {[0, 1, 2].map((line) => (
+                <span
+                  key={line}
+                  style={{
+                    width: "20px",
+                    height: "2px",
+                    backgroundColor: textColor,
+                    display: "block",
+                    borderRadius: "1px",
+                    transition: "background-color 0.3s ease",
+                  }}
+                />
+              ))}
+            </div>
+            <span
+              style={{
+                fontFamily: "'Manrope', system-ui, sans-serif",
+                fontSize: "14px",
+                fontWeight: 600,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: textMutedColor,
+                transition: "color 0.3s ease",
+                WebkitFontSmoothing: "antialiased",
+                MozOsxFontSmoothing: "grayscale",
+              }}
+            >
+              MENU
+            </span>
+          </button>
+        </div>
+
+        {/* Center: Brand Logo (Increased Size & Centered in Header) */}
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            transform: "translateX(-50%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 20,
+            pointerEvents: "auto",
           }}
         >
           <a href="/" aria-label="RN Valves & Faucets Home" className="block cursor-pointer">
@@ -903,7 +979,7 @@ export default function Header({ data }: HeaderProps) {
                   target.src = DEFAULT_LOGO;
                 }
               }}
-              className="h-[70px] md:h-[85px] w-auto block transition-opacity duration-300 hover:opacity-85" 
+              className="h-[80px] sm:h-[92px] md:h-[105px] w-auto block transition-all duration-300 hover:opacity-85 hover:scale-[1.02]" 
             />
           </a>
         </div>
@@ -1233,69 +1309,6 @@ export default function Header({ data }: HeaderProps) {
                 )}
               </div>
             </div>
-
-            {/* Menu Button */}
-            <button
-              type="button"
-              onMouseEnter={preloadCatalogueData}
-              onClick={() => {
-                preloadCatalogueData();
-                setActiveUserMenuLink(null);
-                setUserMenuOpen(true);
-              }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-                padding: 0,
-                color: textColor,
-                outline: "none",
-              }}
-              className="group transition-opacity duration-300 hover:opacity-70"
-              aria-label="Open Navigation Menu"
-              aria-expanded={userMenuOpen}
-            >
-              <span
-                style={{
-                  fontFamily: "'Manrope', system-ui, sans-serif",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  color: textMutedColor,
-                  transition: "color 0.3s ease",
-                  WebkitFontSmoothing: "antialiased",
-                  MozOsxFontSmoothing: "grayscale",
-                }}
-              >
-                MENU
-              </span>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "5px",
-                  width: "18px",
-                }}
-              >
-                {[0, 1, 2].map((line) => (
-                  <span
-                    key={line}
-                    style={{
-                      width: "18px",
-                      height: "1.5px",
-                      backgroundColor: textColor,
-                      display: "block",
-                      borderRadius: "1px",
-                      transition: "background-color 0.3s ease",
-                    }}
-                  />
-                ))}
-              </div>
-            </button>
           </div>
         </div>
       </header>

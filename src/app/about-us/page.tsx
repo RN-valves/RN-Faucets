@@ -535,9 +535,11 @@ export default function AboutUsPage() {
 
       <HistoryTimelineSection data={aboutSetting?.timelineSection} />
 
-      <NetworkSection data={aboutSetting?.networkSection} />
+      {/* Strategic Distribution & Factory Network (Commented for now) */}
+      {/* <NetworkSection data={aboutSetting?.networkSection} /> */}
 
-      <AwardsSection data={aboutSetting?.awardsSection} />
+      {/* Awards & Recognition (Commented for now) */}
+      {/* <AwardsSection data={aboutSetting?.awardsSection} /> */}
 
       <FooterSection />
     </main>

@@ -11,6 +11,22 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "RN Valves & Faucets | Luxury Bathware",
   description: "RN Valves & Faucets - Premium Bath Fittings, Mixers & Sanitaryware",
+  openGraph: {
+    title: "RN Valves & Faucets | Luxury Bathware",
+    description: "RN Valves & Faucets - Premium Bath Fittings, Mixers & Sanitaryware",
+    url: "https://rnvalves.com",
+    siteName: "RN Valves & Faucets",
+    images: [
+      {
+        url: "/apple-touch-icon.png?v=3",
+        width: 512,
+        height: 512,
+        alt: "RN Valves & Faucets",
+      },
+    ],
+    locale: "en_IN",
+    type: "website",
+  },
 };
 
 export default async function Home() {

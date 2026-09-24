@@ -202,13 +202,20 @@ interface BestSellerCategoriesSectionProps {
     visible?: boolean;
     title?: string;
     description?: string;
-    products?: ProductItem[];
+    collectionId?: string;
+    collectionName?: string;
+    products?: any[];
   };
   initialProducts?: any[];
   initialCategories?: any[];
 }
 
-function processCategoryProducts(items: any[], catData: any[]): ProductItem[] {
+function processCategoryProducts(
+  items: any[],
+  catData: any[],
+  collectionId?: string,
+  collectionName?: string
+): ProductItem[] {
   if (!Array.isArray(items)) return [];
   const active = items.filter(
     (p: any) =>
@@ -216,6 +223,49 @@ function processCategoryProducts(items: any[], catData: any[]): ProductItem[] {
       p.isVisibleWebsite !== false &&
       p.isVisible !== false
   );
+
+  // If a specific collection is selected by admin, filter for that collection first
+  if (collectionId && collectionId !== "all") {
+    const targetCat = Array.isArray(catData)
+      ? catData.find(
+          (c) =>
+            String(c.id) === String(collectionId) ||
+            String(c._id) === String(collectionId) ||
+            c.slug === collectionId
+        )
+      : null;
+    const catName = targetCat?.name || collectionName || "";
+
+    const collectionProducts = active.filter((p: any) => {
+      const matchId = p.categoryId && String(p.categoryId) === String(collectionId);
+      const matchName =
+        catName &&
+        p.category &&
+        p.category.toLowerCase().trim() === catName.toLowerCase().trim();
+      return matchId || matchName;
+    });
+
+    if (collectionProducts.length > 0) {
+      return collectionProducts.slice(0, 12).map((p: any, idx: number) => {
+        const priceNum = Number(p.inSelling ?? p.price ?? 0);
+        const formattedPrice =
+          priceNum > 0 ? `₹${priceNum.toLocaleString("en-IN")}` : "₹1,490";
+        const sku = p.skuCode || p.code || p.article || `RN-${p.id || idx}`;
+        const rawImage =
+          p.image ||
+          (Array.isArray(p.gallery) && p.gallery[0]) ||
+          "/api/media/website/catalogue/products/default/image.webp";
+        return {
+          id: idx,
+          name: p.name,
+          category: catName || p.category || "Best Seller",
+          price: formattedPrice,
+          sku: sku,
+          image: rawImage,
+        };
+      });
+    }
+  }
 
   const priority = [
     "cp faucet",
@@ -324,33 +374,58 @@ export default function BestSellerCategoriesSection({
   initialCategories = [],
 }: BestSellerCategoriesSectionProps) {
   const [dbProducts, setDbProducts] = useState<ProductItem[]>(() =>
-    initialProducts && initialProducts.length > 0 ? processCategoryProducts(initialProducts, initialCategories) : []
+    initialProducts && initialProducts.length > 0
+      ? processCategoryProducts(initialProducts, initialCategories, data?.collectionId, data?.collectionName)
+      : []
   );
   const [isLoaded, setIsLoaded] = useState(() => Boolean(initialProducts && initialProducts.length > 0));
 
   useEffect(() => {
-    if (initialProducts && initialProducts.length > 0) return;
+    if (initialProducts && initialProducts.length > 0) {
+      setDbProducts(processCategoryProducts(initialProducts, initialCategories, data?.collectionId, data?.collectionName));
+      setIsLoaded(true);
+      return;
+    }
     Promise.all([
       fetch("/api/products").then((res) => res.json()),
       fetch("/api/categories").then((res) => res.json()).catch(() => []),
     ])
       .then(([resData, catData]) => {
         const items = resData.products || resData;
-        setDbProducts(processCategoryProducts(items, catData));
+        setDbProducts(processCategoryProducts(items, catData, data?.collectionId, data?.collectionName));
         setIsLoaded(true);
       })
       .catch((err) => {
         console.error("Failed to load products for BestSellerCategoriesSection:", err);
         setIsLoaded(true);
       });
-  }, [initialProducts, initialCategories]);
+  }, [initialProducts, initialCategories, data?.collectionId, data?.collectionName]);
 
-  const validPropsProducts = data?.products?.filter((p) => Boolean(p.image));
+  const validPropsProducts: ProductItem[] = Array.isArray(data?.products)
+    ? data.products
+        .filter((p: any) => Boolean(p.image && p.name))
+        .map((p: any, idx: number) => ({
+          id: idx,
+          name: p.name,
+          category: p.category || (p as any).categoryDisplay || "Best Seller",
+          price:
+            typeof p.price === "number"
+              ? `₹${p.price.toLocaleString("en-IN")}`
+              : String(p.price || "₹1,490"),
+          sku: p.sku || p.skuCode || p.code || p.article || `RN-${idx}`,
+          image: p.image,
+        }))
+    : [];
+
   const productsList =
-    dbProducts.length > 0
-      ? dbProducts
-      : validPropsProducts && validPropsProducts.length > 0
+    data?.collectionId && data.collectionId !== "all"
+      ? dbProducts.length > 0
+        ? dbProducts
+        : validPropsProducts
+      : validPropsProducts.length > 0
       ? validPropsProducts
+      : dbProducts.length > 0
+      ? dbProducts
       : [];
 
   const productsSequence = productsList.length > 0 ? [
@@ -361,17 +436,19 @@ export default function BestSellerCategoriesSection({
 
   const sectionTitle =
     data?.title &&
+    data.title !== "New Arrivals" &&
+    data.title !== "New\nArrivals" &&
     data.title !== "Best seller\nCategories" &&
     data.title !== "Best seller Categories"
       ? data.title
-      : "New\nArrivals";
+      : "Best\nSeller";
 
   const sectionDesc =
     data?.description &&
     data.description !==
-      "Top-rated, best-selling products trusted and loved by our customers."
+      "Discover our latest precision-engineered designs and innovative bath fittings."
       ? data.description
-      : "Discover our latest precision-engineered designs and innovative bath fittings.";
+      : "Top-rated, best-selling products trusted and loved by our customers.";
 
   const router = useRouter();
   const [virtualIndex, setVirtualIndex] = useState(0);
@@ -546,7 +623,7 @@ export default function BestSellerCategoriesSection({
         padding: "110px 56px 40px",
         boxSizing: "border-box",
       }}
-      aria-label="New Arrivals"
+      aria-label="Best Sellers"
     >
       <style>{`
         .best-seller-card {
@@ -731,7 +808,7 @@ export default function BestSellerCategoriesSection({
               gap: "6px",
             }}
             role="group"
-            aria-label="New arrivals navigation indicators"
+            aria-label="Best sellers navigation indicators"
           >
             {productsList.map((cat, i) => (
               <DarkProgressDot
