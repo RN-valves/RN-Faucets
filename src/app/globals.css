@@ -37,56 +37,7 @@ body {
   box-shadow: none;
 }
 
-/* Paper grain — fine matte catalog fiber (full card) */
-.product-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.28;
-  mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='paperGrain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='5' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.7 0 0 0 0 0.74 0 0 0 0 0.78 0 0 0 0.45 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paperGrain)'/%3E%3C/svg%3E");
-  background-size: 160px 160px;
-  background-repeat: repeat;
-}
 
-/* Soft linen fibers + faint brushed strokes */
-.product-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.45;
-  mix-blend-mode: soft-light;
-  background-image:
-    repeating-linear-gradient(
-      0deg,
-      transparent 0,
-      transparent 2px,
-      rgba(255, 255, 255, 0.07) 2px,
-      rgba(255, 255, 255, 0.07) 3px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      transparent 0,
-      transparent 3px,
-      rgba(148, 166, 184, 0.06) 3px,
-      rgba(148, 166, 184, 0.06) 4px
-    ),
-    repeating-linear-gradient(
-      -24deg,
-      transparent 0,
-      transparent 22px,
-      rgba(255, 255, 255, 0.06) 22px,
-      rgba(255, 255, 255, 0.06) 23px,
-      transparent 23px,
-      transparent 48px,
-      rgba(158, 176, 194, 0.05) 48px,
-      rgba(158, 176, 194, 0.05) 49px
-    );
-}
 
 .product-card > * {
   position: relative;
@@ -128,43 +79,7 @@ body {
   box-shadow: 0 4px 18px rgba(18, 38, 56, 0.08);
 }
 
-.subcategory-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.35;
-  mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='subGrain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='5' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.55 0 0 0 0 0.60 0 0 0 0 0.65 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23subGrain)'/%3E%3C/svg%3E");
-  background-size: 160px 160px;
-  background-repeat: repeat;
-}
 
-.subcategory-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.38;
-  mix-blend-mode: soft-light;
-  background-image:
-    repeating-linear-gradient(
-      0deg,
-      transparent 0,
-      transparent 2px,
-      rgba(255, 255, 255, 0.08) 2px,
-      rgba(255, 255, 255, 0.08) 3px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      transparent 0,
-      transparent 3px,
-      rgba(80, 105, 130, 0.09) 3px,
-      rgba(80, 105, 130, 0.09) 4px
-    );
-}
 
 .subcategory-card > * {
   position: relative;
@@ -271,7 +186,8 @@ body {
   animation: rnAdminShimmer 1.5s ease-in-out infinite;
 }
 
-/* ── Dynamic Catalogue Drawer Canvas (Clean Light Blue Canvas - No Blur/Grain) ── */
+/* ── Dynamic Catalogue Drawer Canvas (Clean Light Blue Canvas - No Paper Effect) ── */
+.catalogue-canvas,
 .catalogue-paper-canvas {
   position: relative;
   background-color: #eaf0f6;
@@ -280,16 +196,20 @@ body {
     linear-gradient(180deg, #f4f8fb 0%, #eaf0f6 50%, #dfe7ef 100%);
 }
 
+.catalogue-canvas ::-webkit-scrollbar,
 .catalogue-paper-canvas ::-webkit-scrollbar {
   width: 5px;
 }
+.catalogue-canvas ::-webkit-scrollbar-track,
 .catalogue-paper-canvas ::-webkit-scrollbar-track {
   background: transparent;
 }
+.catalogue-canvas ::-webkit-scrollbar-thumb,
 .catalogue-paper-canvas ::-webkit-scrollbar-thumb {
   background: rgba(148, 163, 184, 0.45);
   border-radius: 999px;
 }
+.catalogue-canvas ::-webkit-scrollbar-thumb:hover,
 .catalogue-paper-canvas ::-webkit-scrollbar-thumb:hover {
   background: rgba(100, 116, 139, 0.65);
 }

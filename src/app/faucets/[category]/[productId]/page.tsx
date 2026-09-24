@@ -1728,50 +1728,7 @@ export default function FaucetProductPage({
           transition: all 300ms cubic-bezier(0.22, 1, 0.36, 1);
         }
 
-        /* Premium paper texture (visible grain + fibers) */
-        .also-like-card-inner::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          opacity: 0.32;
-          pointer-events: none;
-          background-image:
-            radial-gradient(ellipse 80% 60% at 50% 22%, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0)
-                  58%),
-            radial-gradient(ellipse 70% 55% at 18% 12%, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0)
-                  55%),
-            radial-gradient(ellipse 75% 60% at 86% 92%, rgba(150, 168, 182, 0.22) 0%, rgba(150, 168, 182, 0)
-                  55%),
-            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='6' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.55 0 0 0 0 0.6 0 0 0 0 0.66 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)' opacity='0.85'/%3E%3C/svg%3E"),
-            linear-gradient(180deg, #e9f0f3 0%, #dde6ea 52%, #d5e0e6 100%);
-          background-size: auto, auto, auto, 180px 180px, auto;
-          background-repeat: no-repeat, no-repeat, no-repeat, repeat, no-repeat;
-          mix-blend-mode: multiply;
-        }
 
-        .also-like-card-inner::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          opacity: 0.45;
-          pointer-events: none;
-          background-image:
-            repeating-linear-gradient(
-              0deg,
-              transparent 0,
-              transparent 2px,
-              rgba(255, 255, 255, 0.11) 2px,
-              rgba(255, 255, 255, 0.11) 3px
-            ),
-            repeating-linear-gradient(
-              90deg,
-              transparent 0,
-              transparent 4px,
-              rgba(123, 141, 154, 0.09) 4px,
-              rgba(123, 141, 154, 0.09) 5px
-            );
-          mix-blend-mode: soft-light;
-        }
 
         .also-like-card-inner > * {
           position: relative;

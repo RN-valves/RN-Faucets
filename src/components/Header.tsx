@@ -172,7 +172,7 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
 
   return (
     <div
-      className="catalogue-paper-canvas"
+      className="catalogue-canvas"
       style={{
         flex: 1,
         minWidth: 0,
