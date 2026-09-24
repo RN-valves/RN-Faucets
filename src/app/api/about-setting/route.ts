@@ -9,33 +9,33 @@ const DEFAULT_ABOUT_SETTINGS = {
   introVisionMission: {
     visible: true,
     introTitle: "Offering One of the Broadest Ranges of",
-    introAccentText: "Faucets and Plumbing Systems in india.",
+    introAccentText: "PTMT & Luxury Bath Fittings in India.",
     introDescription:
-      "We are committed towards constant innovations in plumbing, irrigation and sewerage technologies to meet the nation's constantly increasing water demands. RN Valves constantly strives to pave the way for a future that provides clean water for everyone and everywhere; from the smallest villages to the largest cities.",
+      "RN Valves & Faucets is a pioneer in premium PTMT taps, chrome-plated brass fittings, sanitaryware, valves, and luxury bathroom accessories. Built on engineering precision, cutting-edge polymer technology, and uncompromising durability, we deliver corrosion-resistant, lead-free, and aesthetically refined bath solutions designed for modern Indian homes, commercial spaces, and infrastructure projects.",
     visionText:
-      "To be an acknowledged leader in Indian plastic Faucets industry by exceeding customers expectations and maximizing bottom line for all our stake holders.",
+      "To be India's most trusted and innovative bathware brand, celebrated for pioneering PTMT polymer excellence and luxury bath fittings that unite enduring strength, modern design, and sustainable water management.",
     missionText:
-      "Our mission is to bring a revolution in plastic piping industry through innovative solutions which would create a profitable growth and benefit our customers & the society at large.",
+      "Our mission is to redefine bathroom aesthetics and functionality through high-performance PTMT polymer engineering, precision CP brass craftsmanship, and zero-defect manufacturing — delivering unmatched value, long-term reliability, and water efficiency for every customer.",
     visionImage: "",
     missionImage: "",
   },
   manufacturingSection: {
     visible: true,
     statement:
-      "Consistently increasing pan-India distributor base to ensure customer proximity and readiness to address their needs.",
+      "Our centralized state-of-the-art manufacturing facility in Sahibabad (Ghaziabad) powers our pan-India distributor network with precision-engineered bath solutions.",
     counters: [
-      { value: "09", label: "MANUFACTURING PLANTS" },
+      { value: "01", label: "MANUFACTURING PLANT" },
       { value: "05", label: "DEPOTS" },
       { value: "1,500 ++", label: "CHANNEL PARTNERS" },
     ],
-    heading: "State-Of-The-Art. Manufacturing and Operations Excellence.",
+    heading: "State-Of-The-Art Manufacturing and Operations Excellence.",
     description:
-      "Our manufacturing framework is built around advanced machinery and computerized injection moulding processes that deliver consistent, high-precision output at scale — so every product meets the same quality standard, every time.",
+      "Our advanced manufacturing plant integrates computerized PTMT injection moulding, precision brass CNC machining, and automated chrome-finishing lines. Every batch undergoes rigorous pressure, leak, and endurance testing to guarantee flawless quality, dimensional accuracy, and lifetime corrosion resistance.",
     features: [
-      "High quality plasticizing capacity, due to specially designed screw barrels, ensuring homogeneity of material.",
-      "Precisely controlled processing parameters ensuring consistent quality output.",
-      "Higher operating speeds that increase production capacity.",
-      "Power-saving measures.",
+      "Advanced computerized injection moulding machines delivering spotless PTMT finish and dimensional accuracy.",
+      "In-house precision tooling, valve core engineering, and automated leak-proof pressure testing.",
+      "100% virgin engineering polymers and lead-free brass alloys meeting rigorous national quality standards.",
+      "Energy-efficient, sustainable operations with dedicated zero-defect quality control protocols.",
     ],
     youtubeEmbed: "https://www.youtube.com/embed/EV7CsqilJzo",
   },
@@ -87,11 +87,11 @@ const DEFAULT_ABOUT_SETTINGS = {
     eyebrow: "Our Network",
     heading: "Strategic Distribution & Factory Network",
     description:
-      "Pan India distribution network powered by 1500+ channel partners, strategically located manufacturing units, branch offices, and warehouse hubs ensuring efficient supply and nationwide product availability.",
+      "Pan India distribution network powered by 1500+ channel partners, our centralized manufacturing facility, branch offices, and warehouse hubs ensuring efficient supply and nationwide product availability.",
     stats: [
       { value: 1500, suffix: "+", label: "Channel Partners" },
       { value: 18, suffix: "+", label: "Distribution Hubs" },
-      { value: 5, suffix: "", label: "Manufacturing Units" },
+      { value: 1, suffix: "", label: "Manufacturing Facility" },
       { value: 24, suffix: "/7", label: "Supply Support" },
     ],
   },

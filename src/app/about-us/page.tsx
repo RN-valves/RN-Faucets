@@ -17,16 +17,16 @@ const ABOUT_HERO_IMAGE =
 const YOUTUBE_EMBED = "https://www.youtube.com/embed/EV7CsqilJzo";
 
 const COUNTERS = [
-  { value: "09", label: "MANUFACTURING PLANTS" },
+  { value: "01", label: "MANUFACTURING PLANT" },
   { value: "05", label: "DEPOTS" },
   { value: "1,500 ++", label: "CHANNEL PARTNERS" },
 ] as const;
 
 const MANUFACTURING_FEATURES = [
-  "High quality plasticizing capacity, due to specially designed screw barrels, ensuring homogeneity of material.",
-  "Precisely controlled processing parameters ensuring consistent quality output.",
-  "Higher operating speeds that increase production capacity.",
-  "Power-saving measures.",
+  "Advanced computerized injection moulding machines delivering spotless PTMT finish and dimensional accuracy.",
+  "In-house precision tooling, valve core engineering, and automated leak-proof pressure testing.",
+  "100% virgin engineering polymers and lead-free brass alloys meeting rigorous national quality standards.",
+  "Energy-efficient, sustainable operations with dedicated zero-defect quality control protocols.",
 ] as const;
 
 function MissionTargetIcon() {
@@ -100,14 +100,14 @@ export default function AboutUsPage() {
 
   const heroImg = aboutSetting?.hero?.image || ABOUT_HERO_IMAGE;
   const introTitle = aboutSetting?.introVisionMission?.introTitle || "Offering One of the Broadest Ranges of";
-  const introAccent = aboutSetting?.introVisionMission?.introAccentText || "Faucets and Plumbing Systems in india.";
-  const introDesc = aboutSetting?.introVisionMission?.introDescription || "We are committed towards constant innovations in plumbing, irrigation and sewerage technologies to meet the nation's constantly increasing water demands. RN Valves constantly strives to pave the way for a future that provides clean water for everyone and everywhere; from the smallest villages to the largest cities.";
-  const vision = aboutSetting?.introVisionMission?.visionText || "To be an acknowledged leader in Indian plastic Faucets industry by exceeding customers expectations and maximizing bottom line for all our stake holders.";
-  const mission = aboutSetting?.introVisionMission?.missionText || "Our mission is to bring a revolution in plastic piping industry through innovative solutions which would create a profitable growth and benefit our customers & the society at large.";
-  const mfgStatement = aboutSetting?.manufacturingSection?.statement || "Consistently increasing pan-India distributor base to ensure customer proximity and readiness to address their needs.";
+  const introAccent = aboutSetting?.introVisionMission?.introAccentText || "PTMT & Luxury Bath Fittings in India.";
+  const introDesc = aboutSetting?.introVisionMission?.introDescription || "RN Valves & Faucets is a pioneer in premium PTMT taps, chrome-plated brass fittings, sanitaryware, valves, and luxury bathroom accessories. Built on engineering precision, cutting-edge polymer technology, and uncompromising durability, we deliver corrosion-resistant, lead-free, and aesthetically refined bath solutions designed for modern Indian homes, commercial spaces, and infrastructure projects.";
+  const vision = aboutSetting?.introVisionMission?.visionText || "To be India's most trusted and innovative bathware brand, celebrated for pioneering PTMT polymer excellence and luxury bath fittings that unite enduring strength, modern design, and sustainable water management.";
+  const mission = aboutSetting?.introVisionMission?.missionText || "Our mission is to redefine bathroom aesthetics and functionality through high-performance PTMT polymer engineering, precision CP brass craftsmanship, and zero-defect manufacturing — delivering unmatched value, long-term reliability, and water efficiency for every customer.";
+  const mfgStatement = aboutSetting?.manufacturingSection?.statement || "Our centralized state-of-the-art manufacturing facility in Sahibabad (Ghaziabad) powers our pan-India distributor network with precision-engineered bath solutions.";
   const mfgCounters = aboutSetting?.manufacturingSection?.counters && aboutSetting.manufacturingSection.counters.length > 0 ? aboutSetting.manufacturingSection.counters : COUNTERS;
-  const mfgHeading = aboutSetting?.manufacturingSection?.heading || "State-Of-The-Art. Manufacturing and Operations Excellence.";
-  const mfgDesc = aboutSetting?.manufacturingSection?.description || "Our manufacturing framework is built around advanced machinery and computerized injection moulding processes that deliver consistent, high-precision output at scale — so every product meets the same quality standard, every time.";
+  const mfgHeading = aboutSetting?.manufacturingSection?.heading || "State-Of-The-Art Manufacturing and Operations Excellence.";
+  const mfgDesc = aboutSetting?.manufacturingSection?.description || "Our advanced manufacturing plant integrates computerized PTMT injection moulding, precision brass CNC machining, and automated chrome-finishing lines. Every batch undergoes rigorous pressure, leak, and endurance testing to guarantee flawless quality, dimensional accuracy, and lifetime corrosion resistance.";
   const mfgFeatures = aboutSetting?.manufacturingSection?.features && aboutSetting.manufacturingSection.features.length > 0 ? aboutSetting.manufacturingSection.features : MANUFACTURING_FEATURES;
   const youtubeUrl = aboutSetting?.manufacturingSection?.youtubeEmbed || YOUTUBE_EMBED;
 

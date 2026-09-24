@@ -14,7 +14,7 @@ if (typeof window !== "undefined") {
 const STATS = [
   { value: 1500, suffix: "+", label: "Channel Partners" },
   { value: 18, suffix: "+", label: "Distribution Hubs" },
-  { value: 5, suffix: "", label: "Manufacturing Units" },
+  { value: 1, suffix: "", label: "Manufacturing Facility" },
   { value: 24, suffix: "/7", label: "Supply Support" },
 ] as const;
 
@@ -36,7 +36,7 @@ export default function NetworkSection({ data }: NetworkSectionProps) {
   const statsList = data?.stats && data.stats.length > 0 ? data.stats : STATS;
   const eyebrowText = data?.eyebrow || "Our Network";
   const headingText = data?.heading || "Strategic Distribution & Factory Network";
-  const descriptionText = data?.description || "Pan India distribution network powered by 1500+ channel partners, strategically located manufacturing units, branch offices, and warehouse hubs ensuring efficient supply and nationwide product availability.";
+  const descriptionText = data?.description || "Pan India distribution network powered by 1500+ channel partners, our centralized manufacturing facility, branch offices, and warehouse hubs ensuring efficient supply and nationwide product availability.";
 
   useEffect(() => {
     if (!isVisible) return;
