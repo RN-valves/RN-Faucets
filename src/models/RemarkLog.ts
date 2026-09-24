@@ -28,10 +28,10 @@ const RemarkLogSchema = new Schema<IRemarkLog>(
     remark: { type: String, default: "" },
     message: { type: String, default: "" },
   },
-  { timestamps: true, strict: false }
+  { timestamps: true, strict: false, collection: "remark_logs" }
 );
 
 const RemarkLog: Model<IRemarkLog> =
-  mongoose.models.RemarkLog || mongoose.model<IRemarkLog>("RemarkLog", RemarkLogSchema);
+  mongoose.models.RemarkLog || mongoose.model<IRemarkLog>("RemarkLog", RemarkLogSchema, "remark_logs");
 
 export default RemarkLog;

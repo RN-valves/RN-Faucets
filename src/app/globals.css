@@ -35,9 +35,14 @@ body {
     radial-gradient(ellipse 65% 45% at 85% 88%, rgba(196, 210, 222, 0.35) 0%, transparent 55%),
     linear-gradient(180deg, #eef3f6 0%, #e4ebf1 45%, #dce5ed 100%);
   box-shadow: none;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
-
+.product-card ::selection {
+  background-color: #bae6fd;
+  color: #0f172a;
+}
 
 .product-card > * {
   position: relative;

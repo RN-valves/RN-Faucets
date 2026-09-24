@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, use, useMemo } from "react";
 import Header from "@/components/Header";
 import FooterSection from "@/components/FooterSection";
-import { SlidersHorizontal, X } from "lucide-react";
+import { SlidersHorizontal, X, Copy, Check } from "lucide-react";
 
 export default function CategoryPage({
   params,
@@ -16,6 +16,7 @@ export default function CategoryPage({
   const { category } = use(params);
   const router = useRouter();
 
+  const [copiedArt, setCopiedArt] = useState<string | null>(null);
   const [categoryData, setCategoryData] = useState<any>(null);
   const [dbProducts, setDbProducts] = useState<any[]>([]);
   const [allCategories, setAllCategories] = useState<any[]>([]);
@@ -592,6 +593,12 @@ export default function CategoryPage({
           cursor: pointer;
           position: relative;
           transition: transform 0.35s ease, box-shadow 0.35s ease;
+          user-select: text;
+          -webkit-user-select: text;
+        }
+        .product-card-responsive ::selection {
+          background-color: #bae6fd;
+          color: #0f172a;
         }
         @media (max-width: 640px) {
           .product-card-responsive {
@@ -631,6 +638,9 @@ export default function CategoryPage({
           -webkit-box-orient: vertical;
           overflow: hidden;
           min-height: 42px;
+          user-select: text;
+          -webkit-user-select: text;
+          cursor: text;
         }
         @media (max-width: 640px) {
           .product-card-title {
@@ -647,6 +657,9 @@ export default function CategoryPage({
           font-weight: 700;
           line-height: 1.1;
           color: #1a1a1a;
+          user-select: text;
+          -webkit-user-select: text;
+          cursor: text;
         }
         @media (max-width: 640px) {
           .product-card-price {
@@ -913,18 +926,41 @@ export default function CategoryPage({
                   const articleNo = product.article || product.code || product.skuCode || "";
                   const sizeVal = product.size || "";
                   const priceVal = Number(product.inSelling ?? product.price ?? 0);
+                  const productUrl = `/faucets/${category}/${encodeURIComponent(prodCode)}`;
 
                   return (
-                    <Link
+                    <article
                       key={product.id || prodCode}
-                      href={`/faucets/${category}/${encodeURIComponent(prodCode)}`}
                       className="product-card product-card-responsive group"
+                      onClick={(e) => {
+                        // If user selected text with mouse, do not navigate!
+                        const selection = typeof window !== "undefined" ? window.getSelection() : null;
+                        if (selection && selection.toString().trim().length > 0) {
+                          return;
+                        }
+                        const target = e.target as HTMLElement;
+                        if (target.closest("button") || target.closest("a") || target.closest(".copy-art-btn")) {
+                          return;
+                        }
+                        router.push(productUrl);
+                      }}
                     >
                       {/* Product Image Panel */}
-                      <div className="product-card__image-panel product-card-img-panel">
+                      <Link
+                        href={productUrl}
+                        className="product-card__image-panel product-card-img-panel"
+                        style={{ textDecoration: "none", display: "flex", width: "100%" }}
+                        onClick={(e) => {
+                          const selection = typeof window !== "undefined" ? window.getSelection() : null;
+                          if (selection && selection.toString().trim().length > 0) {
+                            e.preventDefault();
+                          }
+                        }}
+                      >
                         <img
                           src={product.image || "/api/media/website/catalogue/products/default/image.webp"}
                           alt={product.name}
+                          draggable={false}
                           style={{
                             width: "100%",
                             height: "100%",
@@ -933,14 +969,50 @@ export default function CategoryPage({
                             objectFit: "contain",
                             transform: "scale(1.12)",
                             transition: "transform 0.45s ease",
+                            userSelect: "none",
                           }}
                           className="group-hover:scale-[1.18]"
                         />
-                      </div>
+                      </Link>
 
                       {/* Editorial Title + Specs + Price */}
-                      <div style={{ flexShrink: 0, marginTop: "8px", padding: "0 2px" }}>
-                        <h3 className="product-card-title">{product.name}</h3>
+                      <div
+                        style={{
+                          flexShrink: 0,
+                          marginTop: "8px",
+                          padding: "0 2px",
+                          userSelect: "text",
+                          WebkitUserSelect: "text",
+                        }}
+                      >
+                        <h3
+                          className="product-card-title"
+                          style={{
+                            userSelect: "text",
+                            WebkitUserSelect: "text",
+                            cursor: "text",
+                          }}
+                        >
+                          <Link
+                            href={productUrl}
+                            draggable={false}
+                            style={{
+                              color: "inherit",
+                              textDecoration: "none",
+                              userSelect: "text",
+                              WebkitUserSelect: "text",
+                              cursor: "text",
+                            }}
+                            onClick={(e) => {
+                              const selection = typeof window !== "undefined" ? window.getSelection() : null;
+                              if (selection && selection.toString().trim().length > 0) {
+                                e.preventDefault();
+                              }
+                            }}
+                          >
+                            {product.name}
+                          </Link>
+                        </h3>
 
                         {/* Size & Article Number info row */}
                         {(articleNo || sizeVal) && (
@@ -955,6 +1027,8 @@ export default function CategoryPage({
                               fontFamily: "'Manrope', system-ui, sans-serif",
                               fontSize: "11px",
                               lineHeight: 1.2,
+                              userSelect: "text",
+                              WebkitUserSelect: "text",
                             }}
                           >
                             {articleNo ? (
@@ -965,7 +1039,11 @@ export default function CategoryPage({
                                   display: "inline-flex",
                                   alignItems: "center",
                                   gap: "3px",
+                                  userSelect: "text",
+                                  WebkitUserSelect: "text",
+                                  cursor: "text",
                                 }}
+                                onClick={(e) => e.stopPropagation()}
                               >
                                 <span
                                   style={{
@@ -974,11 +1052,60 @@ export default function CategoryPage({
                                     textTransform: "uppercase",
                                     letterSpacing: "0.04em",
                                     fontWeight: 600,
+                                    userSelect: "text",
+                                    WebkitUserSelect: "text",
+                                    cursor: "text",
                                   }}
                                 >
                                   Art:
                                 </span>
-                                <span style={{ fontWeight: 600, color: "#1f2937" }}>{articleNo}</span>
+                                <span
+                                  style={{
+                                    fontWeight: 600,
+                                    color: "#1f2937",
+                                    userSelect: "text",
+                                    WebkitUserSelect: "text",
+                                    cursor: "text",
+                                  }}
+                                >
+                                  {articleNo}
+                                </span>
+                                <button
+                                  type="button"
+                                  className="copy-art-btn"
+                                  title="Copy Art number"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    if (typeof navigator !== "undefined" && navigator.clipboard) {
+                                      navigator.clipboard.writeText(articleNo);
+                                      setCopiedArt(articleNo);
+                                      setTimeout(() => setCopiedArt(null), 1800);
+                                    }
+                                  }}
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    padding: "2px 4px",
+                                    marginLeft: "2px",
+                                    background: copiedArt === articleNo ? "rgba(22, 163, 74, 0.12)" : "rgba(0, 0, 0, 0.04)",
+                                    border: copiedArt === articleNo ? "1px solid rgba(22, 163, 74, 0.3)" : "1px solid rgba(0, 0, 0, 0.08)",
+                                    borderRadius: "4px",
+                                    cursor: "pointer",
+                                    color: copiedArt === articleNo ? "#16a34a" : "#64748b",
+                                    transition: "all 0.2s ease",
+                                  }}
+                                >
+                                  {copiedArt === articleNo ? (
+                                    <span style={{ display: "inline-flex", alignItems: "center", gap: "2px", fontSize: "9px", fontWeight: 700 }}>
+                                      <Check size={10} strokeWidth={2.5} />
+                                      <span>Copied</span>
+                                    </span>
+                                  ) : (
+                                    <Copy size={10} strokeWidth={2} />
+                                  )}
+                                </button>
                               </span>
                             ) : (
                               <span />
@@ -994,7 +1121,11 @@ export default function CategoryPage({
                                   padding: "2px 6px",
                                   borderRadius: "4px",
                                   whiteSpace: "nowrap",
+                                  userSelect: "text",
+                                  WebkitUserSelect: "text",
+                                  cursor: "text",
                                 }}
+                                onClick={(e) => e.stopPropagation()}
                               >
                                 Size: {sizeVal}
                               </span>
@@ -1008,14 +1139,24 @@ export default function CategoryPage({
                             justifyContent: "space-between",
                             alignItems: "center",
                             paddingTop: "2px",
+                            userSelect: "text",
+                            WebkitUserSelect: "text",
                           }}
                         >
-                          <span className="product-card-price">
+                          <span
+                            className="product-card-price"
+                            style={{
+                              userSelect: "text",
+                              WebkitUserSelect: "text",
+                              cursor: "text",
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             ₹{priceVal.toLocaleString("en-IN")}/-
                           </span>
                         </div>
                       </div>
-                    </Link>
+                    </article>
                   );
                 })}
               </div>

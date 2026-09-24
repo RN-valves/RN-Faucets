@@ -36,6 +36,7 @@ export async function GET(request: Request) {
       colors,
       brands,
       materials,
+      remark_logs,
     ] = await Promise.all([
       db.collection("products").countDocuments(),
       db.collection("categories").countDocuments(),
@@ -52,6 +53,7 @@ export async function GET(request: Request) {
       db.collection("colors").countDocuments().catch(() => 68),
       db.collection("attributes").countDocuments({ type: "Brand" }).catch(() => 4),
       db.collection("attributes").countDocuments({ type: "Material" }).catch(() => 10),
+      db.collection("remark_logs").countDocuments().catch(() => 0),
     ]);
 
     return NextResponse.json({
@@ -71,6 +73,7 @@ export async function GET(request: Request) {
       color: colors,
       brands,
       materials,
+      remark_logs,
     });
   } catch (error: any) {
     console.error("GET /api/admin/counts error:", error);

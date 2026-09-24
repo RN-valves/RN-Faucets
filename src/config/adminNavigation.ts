@@ -93,9 +93,9 @@ export const adminNavigationConfig: SidebarNavItem[] = [
     label: "Reports",
     icon: BarChart3,
     children: [
-      { id: "remark_logs", label: "Remark Logs", href: "/admin/reports", countKey: "remark_logs", badge: 1262 },
-      { id: "order_reports", label: "Orders", href: "/admin/reports?tab=sales" },
-      { id: "product_report", label: "Product Report", href: "/admin/reports?tab=inventory" },
+      { id: "remark_logs", label: "Remark Logs", href: "/admin/reports?tab=remarks", countKey: "remark_logs", badge: 1555 },
+      { id: "order_reports", label: "Orders", href: "/admin/reports?tab=orders" },
+      { id: "product_report", label: "Product Report", href: "/admin/reports?tab=products" },
     ],
   },
   {

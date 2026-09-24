@@ -115,12 +115,21 @@ function AlsoLikeProductCard({
   item: any;
   category: string;
 }) {
+  const router = useRouter();
   const itemKey = item.id || item.code || item.skuCode;
+  const targetUrl = `/faucets/${category}/${itemKey}`;
+
   return (
-    <Link
-      href={`/faucets/${category}/${itemKey}`}
+    <article
       className="also-like-card"
       aria-label={`View ${item.name}`}
+      onClick={(e) => {
+        const selection = typeof window !== "undefined" ? window.getSelection() : null;
+        if (selection && selection.toString().trim().length > 0) return;
+        const target = e.target as HTMLElement;
+        if (target.closest("button") || target.closest("a")) return;
+        router.push(targetUrl);
+      }}
       style={{
         textDecoration: "none",
         padding: "40px 32px 28px",
@@ -131,10 +140,13 @@ function AlsoLikeProductCard({
         cursor: "pointer",
         position: "relative",
         transition: "transform 0.35s ease, box-shadow 0.35s ease",
+        userSelect: "text",
+        WebkitUserSelect: "text",
       }}
     >
-      <article className="product-card group" style={{ display: "contents" }}>
-        <div
+      <div className="product-card group" style={{ display: "contents" }}>
+        <Link
+          href={targetUrl}
           className="product-card__image-panel"
           style={{
             flex: "1 1 auto",
@@ -146,22 +158,31 @@ function AlsoLikeProductCard({
             overflow: "hidden",
             padding: "12px 8px 16px",
             boxSizing: "border-box",
+            textDecoration: "none",
+          }}
+          onClick={(e) => {
+            const selection = typeof window !== "undefined" ? window.getSelection() : null;
+            if (selection && selection.toString().trim().length > 0) {
+              e.preventDefault();
+            }
           }}
         >
           <img
             src={item.image}
             alt={item.name}
+            draggable={false}
             style={{
               maxWidth: "88%",
               maxHeight: "100%",
               objectFit: "contain",
               transition: "transform 0.45s ease",
+              userSelect: "none",
             }}
             className="group-hover:scale-[1.04]"
           />
-        </div>
+        </Link>
 
-        <div style={{ flexShrink: 0, marginTop: "8px" }}>
+        <div style={{ flexShrink: 0, marginTop: "8px", userSelect: "text", WebkitUserSelect: "text" }}>
           <h3
             style={{
               fontFamily: "'Manrope', system-ui, sans-serif",
@@ -175,9 +196,23 @@ function AlsoLikeProductCard({
               WebkitBoxOrient: "vertical",
               overflow: "hidden",
               minHeight: "44px",
+              userSelect: "text",
+              WebkitUserSelect: "text",
+              cursor: "text",
             }}
           >
-            {item.name}
+            <Link
+              href={targetUrl}
+              style={{ color: "inherit", textDecoration: "none", userSelect: "text", WebkitUserSelect: "text" }}
+              onClick={(e) => {
+                const selection = typeof window !== "undefined" ? window.getSelection() : null;
+                if (selection && selection.toString().trim().length > 0) {
+                  e.preventDefault();
+                }
+              }}
+            >
+              {item.name}
+            </Link>
           </h3>
 
           {/* Size & Article Number info row */}
@@ -193,6 +228,8 @@ function AlsoLikeProductCard({
                 fontFamily: "'Manrope', system-ui, sans-serif",
                 fontSize: "12px",
                 lineHeight: 1.2,
+                userSelect: "text",
+                WebkitUserSelect: "text",
               }}
             >
               {((item as any).article || (item as any).code) ? (
@@ -203,7 +240,11 @@ function AlsoLikeProductCard({
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "4px",
+                    userSelect: "text",
+                    WebkitUserSelect: "text",
+                    cursor: "text",
                   }}
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <span
                     style={{
@@ -212,11 +253,13 @@ function AlsoLikeProductCard({
                       textTransform: "uppercase",
                       letterSpacing: "0.03em",
                       fontWeight: 600,
+                      userSelect: "text",
+                      WebkitUserSelect: "text",
                     }}
                   >
                     Art:
                   </span>
-                  <span style={{ fontWeight: 600, color: "#1f2937" }}>
+                  <span style={{ fontWeight: 600, color: "#1f2937", userSelect: "text", WebkitUserSelect: "text", cursor: "text" }}>
                     {(item as any).article || (item as any).code}
                   </span>
                 </span>
@@ -234,7 +277,11 @@ function AlsoLikeProductCard({
                     padding: "2px 8px",
                     borderRadius: "4px",
                     whiteSpace: "nowrap",
+                    userSelect: "text",
+                    WebkitUserSelect: "text",
+                    cursor: "text",
                   }}
+                  onClick={(e) => e.stopPropagation()}
                 >
                   Size: {(item as any).size}
                 </span>
@@ -262,8 +309,8 @@ function AlsoLikeProductCard({
             </span>
           </div>
         </div>
-      </article>
-    </Link>
+      </div>
+    </article>
   );
 }
 
