@@ -155,277 +155,72 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
         flex: 1,
         minWidth: 0,
         height: "100vh",
-        padding: "28px 28px 28px 32px",
+        padding: "24px 28px",
         boxSizing: "border-box",
         background:
-          "radial-gradient(circle at top right, rgba(25,87,156,0.22), transparent 30%), linear-gradient(180deg, #03101f 0%, #020913 100%)",
+          "radial-gradient(circle at 85% 15%, rgba(0, 174, 239, 0.12) 0%, transparent 45%), linear-gradient(180deg, #031427 0%, #020b17 100%)",
+        borderLeft: "1px solid rgba(0, 174, 239, 0.12)",
         display: "flex",
-        gap: "28px",
+        gap: "24px",
       }}
     >
-      {/* ── Left / Center Content ── */}
-      <div
-        style={{
-          flex: 1,
-          minWidth: 0,
-          display: "flex",
-          flexDirection: "column",
-          gap: "18px",
-          height: "calc(100vh - 56px)",
-          overflowY: "auto",
-          paddingRight: "8px",
-        }}
-      >
-        {/* Active Category Title Pill */}
-        <div
-          onClick={() => activeCategory && handleNavigate(`/faucets/${activeCategory.slug || activeCategory.id}`)}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            alignSelf: "flex-start",
-            padding: "10px 20px",
-            borderRadius: "14px",
-            background: "linear-gradient(90deg, rgba(17,42,73,0.95) 0%, rgba(17,171,118,0.96) 100%)",
-            color: "#f5fbff",
-            fontFamily: "'Inter', 'Helvetica Neue', Helvetica, 'Manrope', sans-serif",
-            fontSize: "14.5px",
-            fontWeight: 600,
-            letterSpacing: "-0.01em",
-            boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
-            cursor: "pointer",
-            transition: "transform 0.2s ease",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.02)")}
-          onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-        >
-          <span>{activeCategory?.name ?? "Catalogue Collection"}</span>
-          <ChevronRight size={16} style={{ marginLeft: "6px", opacity: 0.9 }} />
-        </div>
-
-        {/* Dynamic Cards Grid */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-            gap: "14px",
-            minWidth: 0,
-          }}
-        >
-          {loading && categories.length === 0 ? (
-            [1, 2, 3, 4].map((n) => (
-              <div
-                key={n}
-                className="animate-pulse"
-                style={{
-                  minHeight: "174px",
-                  borderRadius: "18px",
-                  background: "rgba(17, 39, 65, 0.6)",
-                  border: "1px solid rgba(157, 200, 255, 0.1)",
-                }}
-              />
-            ))
-          ) : activeSubcategories.length > 0 ? (
-            activeSubcategories.map((sub, idx) => {
-              const cardImg = getCardImage(sub.image || sub.banner || activeCategory?.image, idx);
-              const targetSlug = sub.slug || sub.id;
-
-              return (
-                <article
-                  key={sub.id || idx}
-                  onClick={() => handleNavigate(`/faucets/${targetSlug}`)}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "44% 1fr",
-                    minHeight: "174px",
-                    overflow: "hidden",
-                    borderRadius: "18px",
-                    border: "1px solid rgba(157, 200, 255, 0.18)",
-                    background:
-                      "linear-gradient(180deg, rgba(17,39,65,0.96) 0%, rgba(5,13,25,0.97) 100%)",
-                    boxShadow: "0 14px 34px rgba(0,0,0,0.24)",
-                    cursor: "pointer",
-                    transition: "transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-3px)";
-                    e.currentTarget.style.borderColor = "rgba(100, 180, 255, 0.6)";
-                    e.currentTarget.style.boxShadow = "0 18px 40px rgba(0, 100, 220, 0.25)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.borderColor = "rgba(157, 200, 255, 0.18)";
-                    e.currentTarget.style.boxShadow = "0 14px 34px rgba(0,0,0,0.24)";
-                  }}
-                >
-                  <div
-                    style={{
-                      height: "100%",
-                      backgroundColor: "#0d1f35",
-                      backgroundImage: `url(${cardImg})`,
-                      backgroundSize: "contain",
-                      backgroundRepeat: "no-repeat",
-                      backgroundPosition: "center",
-                      padding: "8px",
-                    }}
-                  />
-
-                  <div
-                    style={{
-                      padding: "22px 20px 18px",
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "space-between",
-                      gap: "14px",
-                    }}
-                  >
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                      <h3
-                        style={{
-                          margin: 0,
-                          color: "#f8fbff",
-                          fontFamily: "'Inter', 'Helvetica Neue', Helvetica, 'Manrope', sans-serif",
-                          fontSize: "17.5px",
-                          fontWeight: 600,
-                          lineHeight: 1.3,
-                          letterSpacing: "-0.01em",
-                        }}
-                      >
-                        {sub.name}
-                      </h3>
-                      <p
-                        style={{
-                          margin: 0,
-                          color: "rgba(220, 233, 245, 0.8)",
-                          fontFamily: "'Inter', 'Helvetica Neue', Helvetica, 'Manrope', sans-serif",
-                          fontSize: "13px",
-                          fontWeight: 400,
-                          lineHeight: 1.5,
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                          overflow: "hidden",
-                        }}
-                      >
-                        {sub.description || "Precision engineered collection for modern luxury."}
-                      </p>
-                    </div>
-
-                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                      <span
-                        style={{
-                          width: "38px",
-                          height: "38px",
-                          borderRadius: "999px",
-                          border: "1px solid rgba(197, 220, 245, 0.4)",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: "#f8fbff",
-                          backgroundColor: "rgba(255, 255, 255, 0.05)",
-                          transition: "background 0.2s ease, transform 0.2s ease",
-                        }}
-                      >
-                        <ChevronRight size={17} strokeWidth={1.8} />
-                      </span>
-                    </div>
-                  </div>
-                </article>
-              );
-            })
-          ) : (
-            /* Fallback single collection exploration card if no subcategories exist */
-            <article
-              onClick={() => activeCategory && handleNavigate(`/faucets/${activeCategory.slug || activeCategory.id}`)}
-              style={{
-                gridColumn: "1 / -1",
-                display: "grid",
-                gridTemplateColumns: "36% 1fr",
-                minHeight: "220px",
-                overflow: "hidden",
-                borderRadius: "18px",
-                border: "1px solid rgba(157, 200, 255, 0.25)",
-                background:
-                  "linear-gradient(180deg, rgba(17,39,65,0.96) 0%, rgba(5,13,25,0.97) 100%)",
-                boxShadow: "0 14px 34px rgba(0,0,0,0.24)",
-                cursor: "pointer",
-              }}
-            >
-              <div
-                style={{
-                  height: "100%",
-                  backgroundColor: "#0d1f35",
-                  backgroundImage: `url(${getCardImage(activeCategory?.image, 0)})`,
-                  backgroundSize: "contain",
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "center",
-                  padding: "12px",
-                }}
-              />
-              <div
-                style={{
-                  padding: "28px 24px",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                  gap: "16px",
-                }}
-              >
-                <div>
-                  <h3
-                    style={{
-                      margin: "0 0 10px 0",
-                      color: "#f8fbff",
-                      fontSize: "20px",
-                      fontWeight: 700,
-                    }}
-                  >
-                    {activeCategory?.name}
-                  </h3>
-                  <p
-                    style={{
-                      margin: 0,
-                      color: "rgba(220, 233, 245, 0.85)",
-                      fontSize: "14px",
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    {activeCategory?.description ||
-                      "Browse the complete catalogue range, technical specifications, and available finishes."}
-                  </p>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#38bdf8", fontWeight: 700, fontSize: "14px" }}>
-                  <span>Explore Range Products</span>
-                  <ChevronRight size={18} />
-                </div>
-              </div>
-            </article>
-          )}
-        </div>
-      </div>
-
-      {/* ── Right Categories Column ── */}
+      {/* ── 1. Middle Column: Categories List (placed in middle next to menu) ── */}
       <aside
         style={{
-          width: "240px",
-          minWidth: "240px",
+          width: "280px",
+          minWidth: "280px",
           display: "flex",
           flexDirection: "column",
-          gap: "10px",
-          height: "calc(100vh - 56px)",
+          gap: "8px",
+          height: "calc(100vh - 48px)",
           overflowY: "auto",
-          paddingRight: "4px",
+          paddingRight: "6px",
+          flexShrink: 0,
         }}
       >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingBottom: "10px",
+            borderBottom: "1px solid rgba(0, 174, 239, 0.15)",
+            marginBottom: "4px",
+          }}
+        >
+          <span
+            style={{
+              fontSize: "11px",
+              fontWeight: 800,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              color: "#00AEEF",
+              fontFamily: "'Inter', sans-serif",
+            }}
+          >
+            Categories
+          </span>
+          <span
+            style={{
+              fontSize: "11px",
+              color: "rgba(255, 255, 255, 0.5)",
+              fontWeight: 500,
+            }}
+          >
+            {categories.length} Ranges
+          </span>
+        </div>
+
         {loading && categories.length === 0 ? (
           [1, 2, 3, 4, 5].map((n) => (
             <div
               key={n}
               className="animate-pulse"
               style={{
-                height: "64px",
-                borderRadius: "16px",
+                height: "60px",
+                borderRadius: "14px",
                 background: "rgba(12, 28, 48, 0.6)",
-                border: "1px solid rgba(157, 200, 255, 0.1)",
+                border: "1px solid rgba(0, 174, 239, 0.1)",
               }}
             />
           ))
@@ -443,28 +238,28 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
               onClick={() => setActiveCategoryId(item.id || (item as any)._id || item.slug)}
               style={{
                 display: "grid",
-                gridTemplateColumns: "56px 1fr auto",
+                gridTemplateColumns: "50px 1fr auto",
                 alignItems: "center",
                 gap: "12px",
-                padding: "10px 12px",
-                borderRadius: "16px",
+                padding: "8px 12px",
+                borderRadius: "14px",
                 border: isSelected
-                  ? "1px solid rgba(92, 174, 255, 0.78)"
-                  : "1px solid rgba(157, 200, 255, 0.18)",
+                  ? "1px solid rgba(0, 174, 239, 0.75)"
+                  : "1px solid rgba(255, 255, 255, 0.08)",
                 background: isSelected
-                  ? "linear-gradient(180deg, rgba(16,42,75,0.98) 0%, rgba(5,18,33,0.98) 100%)"
-                  : "linear-gradient(180deg, rgba(12,28,48,0.96) 0%, rgba(4,12,24,0.98) 100%)",
+                  ? "linear-gradient(90deg, rgba(0, 174, 239, 0.22) 0%, rgba(2, 43, 82, 0.75) 100%)"
+                  : "rgba(255, 255, 255, 0.03)",
                 boxShadow: isSelected
-                  ? "0 12px 28px rgba(28, 109, 196, 0.24)"
-                  : "0 10px 26px rgba(0,0,0,0.2)",
+                  ? "0 6px 20px rgba(0, 174, 239, 0.2)"
+                  : "none",
                 cursor: "pointer",
                 textAlign: "left",
                 width: "100%",
                 color: "inherit",
-                transition: "border-color 0.24s ease, background 0.24s ease, box-shadow 0.24s ease, transform 0.24s ease",
+                transition: "border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease",
               }}
               onMouseEnter={(event) => {
-                event.currentTarget.style.transform = "translateX(-2px)";
+                event.currentTarget.style.transform = "translateX(3px)";
               }}
               onMouseLeave={(event) => {
                 event.currentTarget.style.transform = "translateX(0)";
@@ -472,10 +267,11 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
             >
               <div
                 style={{
-                  width: "56px",
-                  height: "56px",
-                  borderRadius: "12px",
-                  backgroundColor: "#081322",
+                  width: "50px",
+                  height: "50px",
+                  borderRadius: "10px",
+                  backgroundColor: "#061324",
+                  border: "1px solid rgba(255, 255, 255, 0.08)",
                   backgroundImage: `url(${thumbnailImg})`,
                   backgroundSize: "contain",
                   backgroundRepeat: "no-repeat",
@@ -487,11 +283,11 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
               <p
                 style={{
                   margin: 0,
-                  color: isSelected ? "#ffffff" : "#f4f8fc",
+                  color: isSelected ? "#ffffff" : "rgba(240, 246, 255, 0.85)",
                   fontFamily: "'Inter', 'Helvetica Neue', Helvetica, 'Manrope', sans-serif",
-                  fontSize: "12.5px",
-                  fontWeight: 600,
-                  lineHeight: 1.4,
+                  fontSize: "13px",
+                  fontWeight: isSelected ? 700 : 500,
+                  lineHeight: 1.35,
                   display: "-webkit-box",
                   WebkitLineClamp: 2,
                   WebkitBoxOrient: "vertical",
@@ -502,14 +298,310 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
               </p>
               <ChevronRight
                 size={16}
-                strokeWidth={1.8}
-                color={isSelected ? "#ffffff" : "rgba(248, 251, 255, 0.85)"}
+                strokeWidth={2}
+                color={isSelected ? "#00AEEF" : "rgba(255, 255, 255, 0.35)"}
                 style={{ flexShrink: 0 }}
               />
             </button>
           );
         })}
       </aside>
+
+      {/* ── 2. Right Column: Subcategories Showcase (displayed on right) ── */}
+      <div
+        style={{
+          flex: 1,
+          minWidth: 0,
+          display: "flex",
+          flexDirection: "column",
+          gap: "18px",
+          height: "calc(100vh - 48px)",
+          overflowY: "auto",
+          paddingRight: "6px",
+          borderLeft: "1px solid rgba(0, 174, 239, 0.1)",
+          paddingLeft: "24px",
+        }}
+      >
+        {/* Header Bar: Category Title & Explore Button */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "12px",
+            paddingBottom: "14px",
+            borderBottom: "1px solid rgba(0, 174, 239, 0.15)",
+          }}
+        >
+          <div>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                fontSize: "11px",
+                fontWeight: 700,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "#00AEEF",
+                marginBottom: "3px",
+              }}
+            >
+              <span>Subcategories</span>
+              <span>•</span>
+              <span>{activeSubcategories.length} Collections</span>
+            </div>
+            <h2
+              style={{
+                margin: 0,
+                color: "#FFFFFF",
+                fontFamily: "'Inter', 'Manrope', sans-serif",
+                fontSize: "20px",
+                fontWeight: 700,
+                letterSpacing: "-0.01em",
+                lineHeight: 1.25,
+              }}
+            >
+              {activeCategory?.name ?? "Catalogue Collection"}
+            </h2>
+          </div>
+
+          {activeCategory && (
+            <button
+              type="button"
+              onClick={() => handleNavigate(`/faucets/${activeCategory.slug || activeCategory.id}`)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "8px 16px",
+                borderRadius: "10px",
+                background: "linear-gradient(90deg, #0077B6 0%, #00AEEF 100%)",
+                color: "#FFFFFF",
+                fontSize: "13px",
+                fontWeight: 600,
+                border: "none",
+                cursor: "pointer",
+                boxShadow: "0 4px 14px rgba(0, 174, 239, 0.25)",
+                transition: "transform 0.2s ease, box-shadow 0.2s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-1px)";
+                e.currentTarget.style.boxShadow = "0 6px 18px rgba(0, 174, 239, 0.4)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 4px 14px rgba(0, 174, 239, 0.25)";
+              }}
+            >
+              <span>View Full Range</span>
+              <ChevronRight size={15} />
+            </button>
+          )}
+        </div>
+
+        {/* Dynamic Cards Grid */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gap: "14px",
+            minWidth: 0,
+          }}
+        >
+          {loading && categories.length === 0 ? (
+            [1, 2, 3, 4].map((n) => (
+              <div
+                key={n}
+                className="animate-pulse"
+                style={{
+                  minHeight: "160px",
+                  borderRadius: "16px",
+                  background: "rgba(17, 39, 65, 0.6)",
+                  border: "1px solid rgba(0, 174, 239, 0.1)",
+                }}
+              />
+            ))
+          ) : activeSubcategories.length > 0 ? (
+            activeSubcategories.map((sub, idx) => {
+              const cardImg = getCardImage(sub.image || sub.banner || activeCategory?.image, idx);
+              const targetSlug = sub.slug || sub.id;
+
+              return (
+                <article
+                  key={sub.id || idx}
+                  onClick={() => handleNavigate(`/faucets/${targetSlug}`)}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "38% 1fr",
+                    minHeight: "160px",
+                    overflow: "hidden",
+                    borderRadius: "16px",
+                    border: "1px solid rgba(0, 174, 239, 0.18)",
+                    background:
+                      "linear-gradient(145deg, rgba(14, 34, 58, 0.9) 0%, rgba(4, 15, 29, 0.96) 100%)",
+                    boxShadow: "0 10px 28px rgba(0, 0, 0, 0.24)",
+                    cursor: "pointer",
+                    transition: "transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-3px)";
+                    e.currentTarget.style.borderColor = "rgba(0, 174, 239, 0.6)";
+                    e.currentTarget.style.boxShadow = "0 14px 34px rgba(0, 174, 239, 0.18)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.borderColor = "rgba(0, 174, 239, 0.18)";
+                    e.currentTarget.style.boxShadow = "0 10px 28px rgba(0, 0, 0, 0.24)";
+                  }}
+                >
+                  <div
+                    style={{
+                      height: "100%",
+                      backgroundColor: "#051322",
+                      backgroundImage: `url(${cardImg})`,
+                      backgroundSize: "contain",
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: "center",
+                      padding: "8px",
+                      borderRadius: "14px 0 0 14px",
+                    }}
+                  />
+
+                  <div
+                    style={{
+                      padding: "18px 16px",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      gap: "12px",
+                    }}
+                  >
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <h3
+                        style={{
+                          margin: 0,
+                          color: "#f8fbff",
+                          fontFamily: "'Inter', 'Helvetica Neue', Helvetica, 'Manrope', sans-serif",
+                          fontSize: "16px",
+                          fontWeight: 600,
+                          lineHeight: 1.3,
+                          letterSpacing: "-0.01em",
+                        }}
+                      >
+                        {sub.name}
+                      </h3>
+                      <p
+                        style={{
+                          margin: 0,
+                          color: "rgba(220, 233, 245, 0.75)",
+                          fontFamily: "'Inter', 'Helvetica Neue', Helvetica, 'Manrope', sans-serif",
+                          fontSize: "12.5px",
+                          fontWeight: 400,
+                          lineHeight: 1.5,
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                        }}
+                      >
+                        {sub.description || "Precision engineered collection for modern luxury."}
+                      </p>
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                      <span
+                        style={{
+                          width: "32px",
+                          height: "32px",
+                          borderRadius: "999px",
+                          border: "1px solid rgba(0, 174, 239, 0.35)",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#00AEEF",
+                          backgroundColor: "rgba(0, 174, 239, 0.1)",
+                          transition: "background 0.2s ease, transform 0.2s ease",
+                        }}
+                      >
+                        <ChevronRight size={15} strokeWidth={2} />
+                      </span>
+                    </div>
+                  </div>
+                </article>
+              );
+            })
+          ) : (
+            /* Fallback single collection exploration card if no subcategories exist */
+            <article
+              onClick={() => activeCategory && handleNavigate(`/faucets/${activeCategory.slug || activeCategory.id}`)}
+              style={{
+                gridColumn: "1 / -1",
+                display: "grid",
+                gridTemplateColumns: "36% 1fr",
+                minHeight: "200px",
+                overflow: "hidden",
+                borderRadius: "16px",
+                border: "1px solid rgba(0, 174, 239, 0.25)",
+                background:
+                  "linear-gradient(145deg, rgba(14, 34, 58, 0.9) 0%, rgba(4, 15, 29, 0.96) 100%)",
+                boxShadow: "0 14px 34px rgba(0,0,0,0.24)",
+                cursor: "pointer",
+              }}
+            >
+              <div
+                style={{
+                  height: "100%",
+                  backgroundColor: "#051322",
+                  backgroundImage: `url(${getCardImage(activeCategory?.image, 0)})`,
+                  backgroundSize: "contain",
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "center",
+                  padding: "12px",
+                }}
+              />
+              <div
+                style={{
+                  padding: "24px 20px",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  gap: "14px",
+                }}
+              >
+                <div>
+                  <h3
+                    style={{
+                      margin: "0 0 8px 0",
+                      color: "#f8fbff",
+                      fontSize: "19px",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {activeCategory?.name}
+                  </h3>
+                  <p
+                    style={{
+                      margin: 0,
+                      color: "rgba(220, 233, 245, 0.8)",
+                      fontSize: "13.5px",
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    {activeCategory?.description ||
+                      "Browse the complete catalogue range, technical specifications, and available finishes."}
+                  </p>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#00AEEF", fontWeight: 700, fontSize: "14px" }}>
+                  <span>Explore Range Products</span>
+                  <ChevronRight size={18} />
+                </div>
+              </div>
+            </article>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -1192,7 +1284,8 @@ export default function Header({ data }: HeaderProps) {
               height: "100vh",
               overflow: "hidden",
               border: "none",
-              background: "linear-gradient(180deg, #010816 0%, #021328 100%)",
+              background: "linear-gradient(180deg, #020e1f 0%, #010813 100%)",
+              borderRight: "1px solid rgba(0, 174, 239, 0.12)",
               padding: "32px 40px",
               display: "flex",
               flexDirection: "column",
@@ -1275,8 +1368,8 @@ export default function Header({ data }: HeaderProps) {
                           bottom: "2px",
                           width: "3px",
                           borderRadius: "999px",
-                          background: "linear-gradient(180deg, #2a8cff 0%, #0d56ff 100%)",
-                          boxShadow: "0 0 18px rgba(45, 128, 255, 0.85)",
+                          background: "linear-gradient(180deg, #00AEEF 0%, #0077B6 100%)",
+                          boxShadow: "0 0 14px rgba(0, 174, 239, 0.85)",
                         }}
                       />
                     ) : null}
