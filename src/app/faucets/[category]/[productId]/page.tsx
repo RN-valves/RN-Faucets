@@ -289,25 +289,71 @@ function AlsoLikeProductCard({
             </div>
           )}
 
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <span
-              style={{
-                fontFamily: "'Manrope', system-ui, sans-serif",
-                fontSize: "22px",
-                fontWeight: 700,
-                lineHeight: 1,
-                color: "#1a1a1a",
-              }}
-            >
-              ₹{item.price.toLocaleString("en-IN")}/-
-            </span>
-          </div>
+          {(() => {
+            const itemSelling = Number(item.inSelling ?? item.price ?? 0);
+            const itemMrp = Number(
+              item.inV1Mrp ||
+              item.in_v1_mrp ||
+              item.v1_mrp ||
+              item.originalPrice ||
+              (item.inMrp && item.inSelling && item.inMrp > item.inSelling ? item.inMrp : (itemSelling > 0 ? itemSelling * 2 : 0))
+            );
+            const itemHasDiscount = itemMrp > itemSelling && itemSelling > 0;
+            const itemDiscPercent = itemHasDiscount ? Math.round(((itemMrp - itemSelling) / itemMrp) * 100) : 0;
+
+            return (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "baseline",
+                  gap: "8px",
+                  flexWrap: "wrap",
+                  marginTop: "4px",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "'Manrope', system-ui, sans-serif",
+                    fontSize: "20px",
+                    fontWeight: 800,
+                    lineHeight: 1,
+                    color: "#0f172a",
+                  }}
+                >
+                  ₹{itemSelling.toLocaleString("en-IN")}
+                </span>
+                {itemHasDiscount && (
+                  <>
+                    <span
+                      style={{
+                        fontFamily: "'Manrope', system-ui, sans-serif",
+                        fontSize: "13px",
+                        color: "#94a3b8",
+                        textDecoration: "line-through",
+                        fontWeight: 500,
+                      }}
+                    >
+                      ₹{itemMrp.toLocaleString("en-IN")}
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: "'Manrope', system-ui, sans-serif",
+                        fontSize: "11px",
+                        fontWeight: 800,
+                        color: "#059669",
+                        background: "#ecfdf5",
+                        border: "1px solid #a7f3d0",
+                        padding: "1px 6px",
+                        borderRadius: "999px",
+                      }}
+                    >
+                      {itemDiscPercent}% OFF
+                    </span>
+                  </>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
     </article>
@@ -441,8 +487,26 @@ export default function FaucetProductPage({
     id: rawProduct?.id || rawProduct?.code || productId,
     name: rawProduct?.name || "RN Bathware Product",
     code: rawProduct?.code || rawProduct?.skuCode || productId,
-    price: Number(rawProduct?.inSelling ?? rawProduct?.price ?? 1018),
-    originalPrice: Number(rawProduct?.inMrp ?? rawProduct?.originalPrice ?? 1390),
+    price: Number(
+      rawProduct?.inSelling ??
+      rawProduct?.in_selling ??
+      rawProduct?.price ??
+      rawProduct?.inMrp ??
+      (rawProduct?.inV1Mrp || rawProduct?.in_v1_mrp || rawProduct?.v1_mrp ? Number(rawProduct?.inV1Mrp || rawProduct?.in_v1_mrp || rawProduct?.v1_mrp) * 0.5 : 1018)
+    ),
+    originalPrice: Number(
+      (rawProduct?.inV1Mrp && rawProduct.inV1Mrp > 0)
+        ? rawProduct.inV1Mrp
+        : (rawProduct?.in_v1_mrp && rawProduct.in_v1_mrp > 0)
+        ? rawProduct.in_v1_mrp
+        : (rawProduct?.v1_mrp && rawProduct.v1_mrp > 0)
+        ? rawProduct.v1_mrp
+        : (rawProduct?.originalPrice && rawProduct.originalPrice > 0)
+        ? rawProduct.originalPrice
+        : (rawProduct?.inMrp && rawProduct?.inSelling && rawProduct.inMrp > rawProduct.inSelling)
+        ? rawProduct.inMrp
+        : (rawProduct?.inSelling ? rawProduct.inSelling * 2 : (rawProduct?.inMrp ? rawProduct.inMrp * 2 : 1390))
+    ),
     image: rawProduct?.image || "/api/media/website/catalogue/products/default/image.webp",
     gallery: Array.isArray(rawProduct?.gallery) && rawProduct.gallery.length > 0
       ? rawProduct.gallery
@@ -461,6 +525,13 @@ export default function FaucetProductPage({
     category: rawProduct?.category || "",
     subcategoryId: rawProduct?.subcategoryId || "",
     subcategoryName: rawProduct?.subcategoryName || "",
+    innerPcs: typeof rawProduct?.innerPcs === "number" ? rawProduct.innerPcs : (typeof rawProduct?.inner_pcs === "number" ? rawProduct.inner_pcs : 0),
+    amazonLink: rawProduct?.amazonLink || rawProduct?.amazon_link || rawProduct?.productAttribute?.amazon_link || "",
+    flipkartLink: rawProduct?.flipkartLink || rawProduct?.flipkart_link || rawProduct?.productAttribute?.flipkart_link || "",
+    isFullTurn: !!(rawProduct?.isFullTurn || rawProduct?.is_full_turn),
+    fullTurnCode: rawProduct?.fullTurnCode || rawProduct?.full_turn_code || "",
+    residentialWarranty: rawProduct?.residentialWarranty || rawProduct?.residential_warranty || rawProduct?.productAttribute?.residential_warranty || 0,
+    commercialWarranty: rawProduct?.commercialWarranty || rawProduct?.commercial_warranty || rawProduct?.productAttribute?.commercial_warranty || 0,
     stock: typeof rawProduct?.stock === "number" ? rawProduct.stock : (typeof rawProduct?.stockPcs === "number" ? rawProduct.stockPcs : 10),
   };
 
@@ -1037,6 +1108,55 @@ export default function FaucetProductPage({
                 </div>
               </div>
 
+              {/* Buy Options (Amazon / Flipkart) matching Laravel */}
+              {(product.amazonLink || product.flipkartLink) && (
+                <div style={{ marginBottom: "18px" }}>
+                  <p style={{ margin: "0 0 8px", fontSize: "13.5px", fontWeight: 700, color: "#0f172a" }}>
+                    Buy Options
+                  </p>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+                    {product.flipkartLink && (
+                      <a
+                        href={product.flipkartLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          padding: "6px 14px",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: "8px",
+                          background: "#ffffff",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                        }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/users/images/flipkart.png" width="110" alt="Buy on Flipkart" style={{ objectFit: "contain", height: "26px" }} />
+                      </a>
+                    )}
+                    {product.amazonLink && (
+                      <a
+                        href={product.amazonLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          padding: "6px 14px",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: "8px",
+                          background: "#ffffff",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                        }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/users/images/amazon.png" width="110" alt="Buy on Amazon" style={{ objectFit: "contain", height: "26px" }} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Product Meta Details Box */}
               <div
                 style={{
@@ -1077,6 +1197,20 @@ export default function FaucetProductPage({
                   <div>
                     <span style={{ color: "#64748b", fontWeight: 500 }}>Product Size: </span>
                     <strong style={{ color: "#0f172a" }}>{product.size}</strong>
+                  </div>
+                )}
+
+                {product.innerPcs > 1 && (
+                  <div>
+                    <span style={{ color: "#64748b", fontWeight: 500 }}>Pack of: </span>
+                    <strong style={{ color: "#0f172a" }}>{product.innerPcs} Pcs</strong>
+                  </div>
+                )}
+
+                {product.residentialWarranty > 0 && (
+                  <div>
+                    <span style={{ color: "#64748b", fontWeight: 500 }}>Warranty: </span>
+                    <strong style={{ color: "#0f172a" }}>{product.residentialWarranty} Year Residential</strong>
                   </div>
                 )}
 
