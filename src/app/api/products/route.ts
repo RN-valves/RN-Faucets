@@ -61,9 +61,27 @@ export async function GET(request: Request) {
       return NextResponse.json({ total, count: total });
     }
 
+    const sortBy = searchParams.get("sortBy") || searchParams.get("sort") || "";
+    let sortOptions: Record<string, 1 | -1> = { name: 1, article: 1, inSelling: 1 };
+
+    if (sortBy === "price_asc" || sortBy === "price_low_high" || sortBy === "price_lowest") {
+      sortOptions = { inSelling: 1, price: 1 };
+    } else if (sortBy === "price_desc" || sortBy === "price_high_low" || sortBy === "price_highest") {
+      sortOptions = { inSelling: -1, price: -1 };
+    } else if (sortBy === "newest" || sortBy === "product_new") {
+      sortOptions = { createdAt: -1 };
+    } else if (sortBy === "name_desc" || sortBy === "name_z_a") {
+      sortOptions = { name: -1, article: -1 };
+    } else if (sortBy === "name_asc" || sortBy === "name_a_z") {
+      sortOptions = { name: 1, article: 1 };
+    } else {
+      // Default: Logical grouping by name, article & price
+      sortOptions = { name: 1, article: 1, inSelling: 1 };
+    }
+
     const query = Product.find(filter)
       .select("-bullets -description -keywords -searchKeywords -gallery")
-      .sort({ createdAt: -1 });
+      .sort(sortOptions);
 
     if (limit > 0) {
       const skip = (page - 1) * limit;

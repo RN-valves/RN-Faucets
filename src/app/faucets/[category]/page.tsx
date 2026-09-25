@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, use, useMemo } from "react";
 import Header from "@/components/Header";
 import FooterSection from "@/components/FooterSection";
-import { SlidersHorizontal, X, Copy, Check } from "lucide-react";
+import { SlidersHorizontal, X } from "lucide-react";
 
 export default function CategoryPage({
   params,
@@ -16,17 +16,17 @@ export default function CategoryPage({
   const { category } = use(params);
   const router = useRouter();
 
-  const [copiedArt, setCopiedArt] = useState<string | null>(null);
   const [categoryData, setCategoryData] = useState<any>(null);
   const [dbProducts, setDbProducts] = useState<any[]>([]);
   const [allCategories, setAllCategories] = useState<any[]>([]);
   const [relatedSubcategories, setRelatedSubcategories] = useState<any[]>([]);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
-  // Filter states
+  // Filter & Sort states
   const [selectedNames, setSelectedNames] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<string>("recommended");
 
   useEffect(() => {
     async function loadData() {
@@ -113,7 +113,7 @@ export default function CategoryPage({
     });
     return Array.from(map.entries())
       .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }));
   }, [baseProducts]);
 
   // ── Unique Available Colors and Counts ──
@@ -127,7 +127,7 @@ export default function CategoryPage({
     });
     return Array.from(map.entries())
       .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }));
   }, [baseProducts]);
 
   // ── Unique Available Sizes and Counts ──
@@ -141,7 +141,7 @@ export default function CategoryPage({
     });
     return Array.from(map.entries())
       .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }));
   }, [baseProducts]);
 
   // ── Filter Toggle Handlers ──
@@ -173,9 +173,9 @@ export default function CategoryPage({
     selectedNames.length + selectedColors.length + selectedSizes.length;
   const hasActiveFilters = activeFilterCount > 0;
 
-  // ── Filtered Products ──
+  // ── Filtered & Intelligently Sorted Products ──
   const displayedProducts = useMemo(() => {
-    return baseProducts.filter((p) => {
+    const filtered = baseProducts.filter((p) => {
       if (selectedNames.length > 0 && !selectedNames.includes((p.name || "").trim())) {
         return false;
       }
@@ -187,7 +187,43 @@ export default function CategoryPage({
       }
       return true;
     });
-  }, [baseProducts, selectedNames, selectedColors, selectedSizes]);
+
+    return filtered.sort((a, b) => {
+      if (sortBy === "price_low_high") {
+        const priceA = Number(a.inSelling ?? a.price ?? 0);
+        const priceB = Number(b.inSelling ?? b.price ?? 0);
+        return priceA - priceB;
+      }
+      if (sortBy === "price_high_low") {
+        const priceA = Number(a.inSelling ?? a.price ?? 0);
+        const priceB = Number(b.inSelling ?? b.price ?? 0);
+        return priceB - priceA;
+      }
+      if (sortBy === "name_a_z") {
+        return (a.name || "").localeCompare(b.name || "", undefined, { numeric: true, sensitivity: "base" });
+      }
+      if (sortBy === "name_z_a") {
+        return (b.name || "").localeCompare(a.name || "", undefined, { numeric: true, sensitivity: "base" });
+      }
+      if (sortBy === "newest") {
+        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+      }
+
+      // Default: Recommended Intelligent Grouping
+      // 1. Group by Product Name A to Z with natural numeric comparison
+      const nameCompare = (a.name || "").localeCompare(b.name || "", undefined, { numeric: true, sensitivity: "base" });
+      if (nameCompare !== 0) return nameCompare;
+
+      // 2. Secondary: Article Code / SKU Code numeric order
+      const artA = String(a.article || a.code || "");
+      const artB = String(b.article || b.code || "");
+      const artCompare = artA.localeCompare(artB, undefined, { numeric: true, sensitivity: "base" });
+      if (artCompare !== 0) return artCompare;
+
+      // 3. Tertiary: Price
+      return Number(a.inSelling ?? a.price ?? 0) - Number(b.inSelling ?? b.price ?? 0);
+    });
+  }, [baseProducts, selectedNames, selectedColors, selectedSizes, sortBy]);
 
   const formatCategoryTitle = (cat: string) => {
     return cat.charAt(0).toUpperCase() + cat.slice(1).replace(/-/g, " ");
@@ -847,28 +883,69 @@ export default function CategoryPage({
             </span>
           </div>
 
-          {/* Mobile Filter Button (visible on <= 1024px) */}
-          <button
-            onClick={() => setIsMobileFilterOpen(true)}
-            className="mobile-filter-trigger-btn"
-          >
-            <SlidersHorizontal size={15} />
-            <span>Filters</span>
-            {hasActiveFilters && (
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            {/* Sort By Dropdown */}
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span
                 style={{
-                  backgroundColor: "#0284c7",
-                  color: "#ffffff",
-                  borderRadius: "999px",
-                  padding: "1px 6px",
-                  fontSize: "11px",
-                  fontWeight: 700,
+                  fontFamily: "'Manrope', system-ui, sans-serif",
+                  fontSize: "12.5px",
+                  fontWeight: 600,
+                  color: "#64748b",
+                  whiteSpace: "nowrap",
                 }}
               >
-                {activeFilterCount}
+                Sort:
               </span>
-            )}
-          </button>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid #d1d5db",
+                  backgroundColor: "#ffffff",
+                  fontFamily: "'Manrope', system-ui, sans-serif",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  color: "#0f172a",
+                  cursor: "pointer",
+                  outline: "none",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                }}
+              >
+                <option value="recommended">Recommended (Grouped A-Z)</option>
+                <option value="price_low_high">Price: Low to High</option>
+                <option value="price_high_low">Price: High to Low</option>
+                <option value="name_a_z">Name: A to Z</option>
+                <option value="name_z_a">Name: Z to A</option>
+                <option value="newest">Newest Arrivals</option>
+              </select>
+            </div>
+
+            {/* Mobile Filter Button (visible on <= 1024px) */}
+            <button
+              onClick={() => setIsMobileFilterOpen(true)}
+              className="mobile-filter-trigger-btn"
+            >
+              <SlidersHorizontal size={15} />
+              <span>Filters</span>
+              {hasActiveFilters && (
+                <span
+                  style={{
+                    backgroundColor: "#0284c7",
+                    color: "#ffffff",
+                    borderRadius: "999px",
+                    padding: "1px 6px",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                  }}
+                >
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* ── 3. Main Area: Sidebar (Desktop) + Product Grid ── */}
@@ -939,7 +1016,7 @@ export default function CategoryPage({
                           return;
                         }
                         const target = e.target as HTMLElement;
-                        if (target.closest("button") || target.closest("a") || target.closest(".copy-art-btn")) {
+                        if (target.closest("button") || target.closest("a")) {
                           return;
                         }
                         router.push(productUrl);
@@ -1070,42 +1147,6 @@ export default function CategoryPage({
                                 >
                                   {articleNo}
                                 </span>
-                                <button
-                                  type="button"
-                                  className="copy-art-btn"
-                                  title="Copy Art number"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    e.preventDefault();
-                                    if (typeof navigator !== "undefined" && navigator.clipboard) {
-                                      navigator.clipboard.writeText(articleNo);
-                                      setCopiedArt(articleNo);
-                                      setTimeout(() => setCopiedArt(null), 1800);
-                                    }
-                                  }}
-                                  style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    padding: "2px 4px",
-                                    marginLeft: "2px",
-                                    background: copiedArt === articleNo ? "rgba(22, 163, 74, 0.12)" : "rgba(0, 0, 0, 0.04)",
-                                    border: copiedArt === articleNo ? "1px solid rgba(22, 163, 74, 0.3)" : "1px solid rgba(0, 0, 0, 0.08)",
-                                    borderRadius: "4px",
-                                    cursor: "pointer",
-                                    color: copiedArt === articleNo ? "#16a34a" : "#64748b",
-                                    transition: "all 0.2s ease",
-                                  }}
-                                >
-                                  {copiedArt === articleNo ? (
-                                    <span style={{ display: "inline-flex", alignItems: "center", gap: "2px", fontSize: "9px", fontWeight: 700 }}>
-                                      <Check size={10} strokeWidth={2.5} />
-                                      <span>Copied</span>
-                                    </span>
-                                  ) : (
-                                    <Copy size={10} strokeWidth={2} />
-                                  )}
-                                </button>
                               </span>
                             ) : (
                               <span />
