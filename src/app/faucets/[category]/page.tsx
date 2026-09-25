@@ -69,6 +69,16 @@ function getColorPriority(color: string): number {
   return 50;
 }
 
+// Helper to extract base product family name (e.g. "Angle Cock", "Bib Cock", "Pillar Cock")
+function getBaseProductName(name: string): string {
+  if (!name) return "";
+  let base = name;
+  base = base.replace(/,\s*(Nickel Plated|Brass Finish|Chrome Finish|Chrome Plated|Chrome Black|Chrome|Matte Black|Black Matte|Black|Rose Gold|Gold|White Gloss|White Matte|White|Ivory).*$/i, "");
+  base = base.replace(/\s*-\s*(Nickel Plated|Brass Finish|Chrome Finish|Chrome Plated|Chrome Black|Chrome|Matte Black|Black Matte|Black|Rose Gold|Gold|White Gloss|White Matte|White|Ivory).*$/i, "");
+  base = base.replace(/\s*\((Nickel Plated|Brass Finish|Chrome Finish|Chrome Plated|Chrome Black|Chrome|Matte Black|Black Matte|Black|Rose Gold|Gold|White Gloss|White Matte|White|Ivory)\)/i, "");
+  return base.trim();
+}
+
 export default function CategoryPage({
   params,
 }: {
@@ -292,28 +302,34 @@ export default function CategoryPage({
         return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
       }
 
-      // Default: Recommended Intelligent Grouping
-      // 1. Group by Base Product Name A to Z with natural numeric comparison
-      const nameCompare = (a.name || "").localeCompare(b.name || "", undefined, { numeric: true, sensitivity: "base" });
-      if (nameCompare !== 0) return nameCompare;
+      // Default: Recommended Intelligent Grouping (Grouped A-Z, Finish & Size)
+      // 1. Group by Base Product Family Name (e.g. "Angle Cock", "Bib Cock", etc.)
+      const baseA = getBaseProductName(a.name || "");
+      const baseB = getBaseProductName(b.name || "");
+      const baseCompare = baseA.localeCompare(baseB, undefined, { numeric: true, sensitivity: "base" });
+      if (baseCompare !== 0) return baseCompare;
 
-      // 2. Secondary: Color finish hierarchy (Chrome standard first, then specialty finishes)
-      const colorA = getColorPriority(a.colorName || "");
-      const colorB = getColorPriority(b.colorName || "");
-      if (colorA !== colorB) return colorA - colorB;
-
-      // 3. Tertiary: Size dimension ascending (15mm -> 20mm -> 25mm / 1/2" -> 3/4" -> 1")
+      // 2. Physical Size dimension ascending (15mm -> 20mm -> 25mm / 1/2" -> 3/4" -> 1")
       const sizeA = parseSizeValue(a.size || "");
       const sizeB = parseSizeValue(b.size || "");
       if (sizeA !== sizeB) return sizeA - sizeB;
 
-      // 4. Quaternary: Article Code / SKU Code numeric order
+      // 3. Color finish hierarchy (Chrome standard first, then specialty finishes)
+      const colorA = getColorPriority(a.colorName || a.name || "");
+      const colorB = getColorPriority(b.colorName || b.name || "");
+      if (colorA !== colorB) return colorA - colorB;
+
+      // 4. Exact full name if there are distinct sub-variants
+      const fullNameCompare = (a.name || "").localeCompare(b.name || "", undefined, { numeric: true, sensitivity: "base" });
+      if (fullNameCompare !== 0) return fullNameCompare;
+
+      // 5. Article Code / SKU Code numeric order
       const artA = String(a.article || a.code || "");
       const artB = String(b.article || b.code || "");
       const artCompare = artA.localeCompare(artB, undefined, { numeric: true, sensitivity: "base" });
       if (artCompare !== 0) return artCompare;
 
-      // 5. Quinary: Price
+      // 6. Price
       return Number(a.inSelling ?? a.price ?? 0) - Number(b.inSelling ?? b.price ?? 0);
     });
   }, [baseProducts, selectedNames, selectedColors, selectedSizes, sortBy]);
