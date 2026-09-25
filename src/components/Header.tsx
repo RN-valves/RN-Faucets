@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ChevronRight, Heart, Search, ShoppingBag, User, X, Shield, LogOut } from "lucide-react";
+import { ChevronRight, Search, ShoppingBag, User, X, Shield, LogOut } from "lucide-react";
 import SearchModal from "./SearchModal";
 import { getCartItems } from "@/utils/cart";
 import { getCustomerSession, clearCustomerSession, CustomerSession } from "@/utils/customerAuth";
@@ -582,7 +582,6 @@ export default function Header({ data }: HeaderProps) {
           top: 0,
           left: 0,
           width: "100%",
-          height: "100px",
           zIndex: 9999,
           background: headerBg,
           backdropFilter: backdropFilterStyle,
@@ -592,18 +591,17 @@ export default function Header({ data }: HeaderProps) {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          paddingLeft: "clamp(28px, 6vw, 110px)",
-          paddingRight: "clamp(28px, 6vw, 110px)",
           boxSizing: "border-box",
           pointerEvents: "auto",
           color: textColor,
           transition: "background 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease",
         }}
+        className="rn-header-navbar"
       >
-        {/* Left: Navigation Menu Trigger */}
+        {/* Left: Navigation Menu Trigger (Desktop) */}
         <div
+          className="rn-header-left"
           style={{
-            display: "flex",
             alignItems: "center",
             justifyContent: "flex-start",
             zIndex: 20,
@@ -673,16 +671,10 @@ export default function Header({ data }: HeaderProps) {
           </button>
         </div>
 
-        {/* Center: Brand Logo (Vertically & Horizontally Centered in Header) */}
+        {/* Center / Left on Mobile: Brand Logo */}
         <div
+          className="rn-header-logo-container"
           style={{
-            position: "absolute",
-            left: "50%",
-            top: "50%",
-            transform: "translate(-50%, -50%)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
             zIndex: 20,
             pointerEvents: "auto",
           }}
@@ -698,22 +690,22 @@ export default function Header({ data }: HeaderProps) {
                   target.src = DEFAULT_LOGO;
                 }
               }}
-              className="h-[62px] sm:h-[76px] md:h-[88px] max-h-[90px] w-auto block object-contain transition-all duration-300 hover:opacity-85 hover:scale-[1.02]" 
+              className="rn-header-logo-img h-[60px] sm:h-[76px] md:h-[88px] max-h-[92px] w-auto block object-contain transition-all duration-300 hover:opacity-85 hover:scale-[1.02]" 
             />
           </a>
         </div>
 
+        {/* Right Action Icons + User Account + Mobile Menu Trigger */}
         <div
+          className="rn-header-right-group"
           style={{
             display: "flex",
             alignItems: "center",
-              gap: "24px",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
+          <div className="rn-header-action-icons" style={{ display: "flex", alignItems: "center" }}>
             {[
               { Icon: Search, label: "Search" },
-              { Icon: Heart, label: "Wishlist" },
               { Icon: ShoppingBag, label: "Shopping Cart" },
             ].map(({ Icon, label }) => (
               <button
@@ -757,7 +749,7 @@ export default function Header({ data }: HeaderProps) {
             ))}
           </div>
 
-          <div style={{ width: "1px", height: "20px", backgroundColor: textColor, opacity: 0.2 }}></div>
+          <div className="rn-header-divider" style={{ width: "1px", height: "20px", backgroundColor: textColor }}></div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
             {/* User Account / Login — dropdown */}
@@ -1029,6 +1021,51 @@ export default function Header({ data }: HeaderProps) {
               </div>
             </div>
           </div>
+
+          {/* Mobile-Only Navigation Menu Trigger on the Right Corner */}
+          <button
+            type="button"
+            className="rn-header-menu-mobile-btn group"
+            onMouseEnter={preloadCatalogueData}
+            onClick={() => {
+              preloadCatalogueData();
+              setActiveUserMenuLink(null);
+              setUserMenuOpen(true);
+            }}
+            aria-label="Open Navigation Menu"
+            aria-expanded={userMenuOpen}
+            style={{
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              padding: "4px",
+              color: textColor,
+              outline: "none",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "4.5px",
+                width: "22px",
+              }}
+            >
+              {[0, 1, 2].map((line) => (
+                <span
+                  key={line}
+                  style={{
+                    width: "22px",
+                    height: "2.2px",
+                    backgroundColor: textColor,
+                    display: "block",
+                    borderRadius: "1px",
+                    transition: "background-color 0.3s ease",
+                  }}
+                />
+              ))}
+            </div>
+          </button>
         </div>
       </header>
 
@@ -1054,6 +1091,104 @@ export default function Header({ data }: HeaderProps) {
         }}
       >
         <style>{`
+          /* ── Floating Header Navbar Responsive System ── */
+          .rn-header-navbar {
+            height: 100px;
+            padding-left: clamp(28px, 6vw, 110px);
+            padding-right: clamp(28px, 6vw, 110px);
+          }
+
+          .rn-header-left {
+            display: flex;
+          }
+
+          .rn-header-logo-container {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+
+          .rn-header-logo-img {
+            height: 80px;
+            max-height: 90px;
+            width: auto;
+            display: block;
+            object-fit: contain;
+            transition: all 0.3s ease;
+          }
+
+          .rn-header-right-group {
+            gap: 24px;
+          }
+
+          .rn-header-action-icons {
+            gap: 18px;
+          }
+
+          .rn-header-divider {
+            display: block;
+          }
+
+          .rn-header-menu-mobile-btn {
+            display: none !important;
+          }
+
+          /* Mobile / Tablet Responsive Header (max-width: 768px) */
+          @media (max-width: 768px) {
+            .rn-header-navbar {
+              height: 80px !important;
+              padding-left: 14px !important;
+              padding-right: 14px !important;
+              justify-content: space-between !important;
+            }
+
+            /* Hide Desktop Left Menu button on mobile */
+            .rn-header-left {
+              display: none !important;
+            }
+
+            /* Move logo to Left Corner on mobile */
+            .rn-header-logo-container {
+              position: static !important;
+              transform: none !important;
+              left: auto !important;
+              top: auto !important;
+              display: flex !important;
+              align-items: center !important;
+              justify-content: flex-start !important;
+            }
+
+            .rn-header-logo-img {
+              height: 60px !important;
+              max-height: 64px !important;
+            }
+
+            /* Right group on mobile */
+            .rn-header-right-group {
+              gap: 14px !important;
+              margin-left: auto !important;
+            }
+
+            .rn-header-action-icons {
+              gap: 14px !important;
+            }
+
+            .rn-header-divider {
+              display: none !important;
+            }
+
+            /* Show Menu button in Right Corner on mobile */
+            .rn-header-menu-mobile-btn {
+              display: flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+            }
+          }
+
           /* ── Mega Menu & Catalogue Dashboard Responsive System ── */
           .user-menu-backdrop {
             flex: 0 0 24vw;
