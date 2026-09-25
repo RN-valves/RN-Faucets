@@ -30,7 +30,15 @@ export async function GET(request: Request) {
       filter.isVisibleWebsite = { $ne: false };
     }
 
-    const categories = await Category.find(filter).sort({ createdAt: -1 }).lean();
+    const rawCategories = await Category.find(filter).sort({ createdAt: -1 }).lean();
+
+    // Sort categories: items with displayOrder > 0 come first in ascending order (1st, 2nd, 3rd...), then items without displayOrder
+    const categories = rawCategories.sort((a: any, b: any) => {
+      const orderA = a.displayOrder && a.displayOrder > 0 ? a.displayOrder : 999999;
+      const orderB = b.displayOrder && b.displayOrder > 0 ? b.displayOrder : 999999;
+      if (orderA !== orderB) return orderA - orderB;
+      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+    });
 
     const counts = await Product.aggregate([
       { $group: { _id: "$category", count: { $sum: 1 } } },

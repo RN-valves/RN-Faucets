@@ -22,6 +22,7 @@ export interface ICategory extends Document {
   discount?: number;
   tax?: number;
   pdfCatalogue?: string;
+  displayOrder?: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -49,6 +50,7 @@ const CategorySchema = new Schema<ICategory>(
     discount: { type: Number, default: 0 },
     tax: { type: Number, default: 18 },
     pdfCatalogue: { type: String, default: "" },
+    displayOrder: { type: Number, default: 0 },
   },
   { timestamps: true, strict: false }
 );

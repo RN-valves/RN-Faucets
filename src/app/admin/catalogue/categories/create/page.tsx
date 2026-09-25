@@ -150,6 +150,7 @@ export default function CreateCategoryPage() {
   const [catIcon, setCatIcon] = useState("");
   const [catTax, setCatTax] = useState(18);
   const [catDiscount, setCatDiscount] = useState(0);
+  const [catDisplayOrder, setCatDisplayOrder] = useState<number>(0);
   const [catStatus, setCatStatus] = useState<"Active" | "Inactive">("Active");
   const [catIsVisibleWebsite, setCatIsVisibleWebsite] = useState(true);
 
@@ -197,6 +198,7 @@ export default function CreateCategoryPage() {
       icon: catIcon,
       tax: Number(catTax),
       discount: Number(catDiscount),
+      displayOrder: Number(catDisplayOrder),
       status: catStatus,
       isVisibleWebsite: catIsVisibleWebsite,
       productCount: 0,
@@ -407,8 +409,20 @@ export default function CreateCategoryPage() {
               />
             </div>
 
-            {/* Tax, Discount, Status, Visibility */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "14px" }}>
+            {/* Tax, Discount, Order, Status, Visibility */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr", gap: "14px" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textMain, marginBottom: "4px" }}>Display Order / Rank</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={catDisplayOrder}
+                  onChange={(e) => setCatDisplayOrder(Number(e.target.value))}
+                  placeholder="e.g. 1 (Top), 2, 3..."
+                  style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: `1px solid #0077B6`, background: inputBg, color: textMain, fontWeight: 700 }}
+                />
+              </div>
+
               <div>
                 <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textMain, marginBottom: "4px" }}>Category Tax %</label>
                 <input

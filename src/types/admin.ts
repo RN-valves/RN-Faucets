@@ -130,6 +130,7 @@ export interface AdminCategory {
   discount?: number;
   tax?: number;
   pdfCatalogue?: string;
+  displayOrder?: number;
   createdAt?: string;
 }
 

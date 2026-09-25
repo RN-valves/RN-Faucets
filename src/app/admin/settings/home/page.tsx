@@ -375,7 +375,7 @@ export default function AdminHomeSettingPage() {
               <h3 style={{ margin: "0 0 16px 0", color: textMain, fontSize: "16px", borderBottom: `1px solid ${border}`, paddingBottom: "12px" }}>
                 Singleton Branding Assets (Cloudflare R2 Overwrite)
               </h3>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "20px" }}>
                 <R2UploadPicker
                   label="Header Desktop Logo"
                   r2Key="website/home/header/logo.svg"
@@ -390,6 +390,14 @@ export default function AdminHomeSettingPage() {
                   currentUrl={settings.header?.mobileLogo || settings.header?.logo || ""}
                   accept="image/*,.svg"
                   onUploadSuccess={(url) => setSettings({ ...settings, header: { ...settings.header, mobileLogo: url } })}
+                />
+
+                <R2UploadPicker
+                  label="Menu Drawer Video / GIF"
+                  r2Key="website/home/header/menu-video.mp4"
+                  currentUrl={settings.header?.menuVideo || ""}
+                  accept="video/*,image/*,.gif,.mp4,.webm"
+                  onUploadSuccess={(url) => setSettings({ ...settings, header: { ...settings.header, menuVideo: url } })}
                 />
 
                 <R2UploadPicker

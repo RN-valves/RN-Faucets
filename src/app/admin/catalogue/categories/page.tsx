@@ -44,7 +44,7 @@ export default function AdminCategoriesListingPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"All" | "Active" | "Inactive">("All");
   const [visibilityFilter, setVisibilityFilter] = useState<"All" | "Visible" | "Hidden">("All");
-  const [sortBy, setSortBy] = useState<"createdAt" | "name" | "discount" | "tax">("createdAt");
+  const [sortBy, setSortBy] = useState<"displayOrder" | "createdAt" | "name" | "discount" | "tax">("displayOrder");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
 
@@ -94,6 +94,11 @@ export default function AdminCategoriesListingPage() {
     } catch {
       alert("Failed to seed dummy categories.");
     }
+  };
+
+  const handleUpdateDisplayOrder = async (id: string, newOrder: number) => {
+    await updateAdminCategory(id, { displayOrder: newOrder });
+    await loadData();
   };
 
   const handleToggleStatus = async (id: string) => {
@@ -168,6 +173,12 @@ export default function AdminCategoriesListingPage() {
       return matchesQuery && matchesStatus && matchesVis;
     })
     .sort((a, b) => {
+      if (sortBy === "displayOrder") {
+        const orderA = a.displayOrder && a.displayOrder > 0 ? a.displayOrder : 999999;
+        const orderB = b.displayOrder && b.displayOrder > 0 ? b.displayOrder : 999999;
+        if (orderA !== orderB) return orderA - orderB;
+        return (a.name || "").localeCompare(b.name || "");
+      }
       if (sortBy === "name") return a.name.localeCompare(b.name);
       if (sortBy === "discount") return (b.discount || 0) - (a.discount || 0);
       if (sortBy === "tax") return (b.tax || 0) - (a.tax || 0);
@@ -315,6 +326,7 @@ export default function AdminCategoriesListingPage() {
                     onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
                     style={{ padding: "8px 12px", borderRadius: "8px", border: `1px solid ${border}`, background: inputBg, color: textMain, fontSize: "13px", fontWeight: 700 }}
                   >
+                    <option value="displayOrder">Display Order (Rank #1, #2, #3...)</option>
                     <option value="createdAt">Date Created</option>
                     <option value="name">Category Name</option>
                     <option value="discount">Discount %</option>
@@ -330,6 +342,7 @@ export default function AdminCategoriesListingPage() {
                 <thead>
                   <tr style={{ background: tableHeaderBg, borderBottom: `1px solid ${border}`, color: textMuted }}>
                     <th style={{ padding: "14px 20px" }}>CAT ID / Media</th>
+                    <th style={{ padding: "14px 20px" }}>Rank / Order</th>
                     <th style={{ padding: "14px 20px" }}>Name & Slug</th>
                     <th style={{ padding: "14px 20px" }}>SEO Title</th>
                     <th style={{ padding: "14px 20px" }}>Tax %</th>
@@ -349,6 +362,9 @@ export default function AdminCategoriesListingPage() {
                             <AdminShimmer width={44} height={44} borderRadius={8} isDark={isDark} />
                             <AdminShimmer width={65} height={14} isDark={isDark} />
                           </div>
+                        </td>
+                        <td style={{ padding: "14px 20px" }}>
+                          <AdminShimmer width={50} height={26} borderRadius={6} isDark={isDark} />
                         </td>
                         <td style={{ padding: "14px 20px" }}>
                           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -385,7 +401,7 @@ export default function AdminCategoriesListingPage() {
                     ))
                   ) : paginatedCategories.length === 0 ? (
                     <tr>
-                      <td colSpan={9} style={{ padding: "32px", textAlign: "center", color: textMuted }}>
+                      <td colSpan={10} style={{ padding: "32px", textAlign: "center", color: textMuted }}>
                         No categories found matching criteria.
                       </td>
                     </tr>
@@ -414,6 +430,44 @@ export default function AdminCategoriesListingPage() {
                                 CAT{cat.id.slice(-6).toUpperCase()}
                               </Link>
                             </div>
+                          </div>
+                        </td>
+
+                        <td style={{ padding: "14px 20px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <input
+                              type="number"
+                              min="0"
+                              defaultValue={cat.displayOrder || 0}
+                              onBlur={(e) => {
+                                const val = Number(e.target.value);
+                                if (val !== (cat.displayOrder || 0)) {
+                                  handleUpdateDisplayOrder(cat.id, val);
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  (e.target as HTMLInputElement).blur();
+                                }
+                              }}
+                              title="Set rank (1 for Top, 2 for 2nd place...). Press Enter or click away to save."
+                              style={{
+                                width: "54px",
+                                padding: "4px 6px",
+                                borderRadius: "6px",
+                                border: `1.5px solid ${cat.displayOrder && cat.displayOrder > 0 ? "#0077B6" : border}`,
+                                background: inputBg,
+                                color: textMain,
+                                fontWeight: 800,
+                                fontSize: "13px",
+                                textAlign: "center",
+                              }}
+                            />
+                            {cat.displayOrder && cat.displayOrder > 0 ? (
+                              <span style={{ fontSize: "10px", fontWeight: 800, color: "#0077B6", background: "#E0F2FE", padding: "2px 6px", borderRadius: "4px" }}>
+                                #{cat.displayOrder}
+                              </span>
+                            ) : null}
                           </div>
                         </td>
 

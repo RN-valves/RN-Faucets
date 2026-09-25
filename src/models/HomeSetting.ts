@@ -3,6 +3,8 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IHomeSetting extends Document {
   header: {
     logo: string;
+    mobileLogo?: string;
+    menuVideo?: string;
     menuLinks: Array<{ label: string; href: string }>;
   };
   hero: Array<{
@@ -116,6 +118,8 @@ const HomeSettingSchema = new Schema<IHomeSetting>(
   {
     header: {
       logo: { type: String, default: "/rn-header-logo.svg" },
+      mobileLogo: { type: String, default: "" },
+      menuVideo: { type: String, default: "https://jalbath.com/wp-content/uploads/2026/07/Faucet.gif" },
       menuLinks: [
         {
           label: { type: String },

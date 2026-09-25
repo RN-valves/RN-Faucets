@@ -389,31 +389,39 @@ function CatalogueDashboard({
 }
 
 const DEFAULT_LOGO = "/rn-header-logo.svg";
+const DEFAULT_MENU_VIDEO = "https://jalbath.com/wp-content/uploads/2026/07/Faucet.gif";
 
 interface HeaderProps {
   data?: {
     logo?: string;
+    menuVideo?: string;
     menuLinks?: Array<{ label: string; href: string }>;
   };
 }
 
 export default function Header({ data }: HeaderProps) {
   const [logoSrc, setLogoSrc] = useState<string>(data?.logo || DEFAULT_LOGO);
+  const [menuVideoSrc, setMenuVideoSrc] = useState<string>(data?.menuVideo || DEFAULT_MENU_VIDEO);
 
   useEffect(() => {
     if (data?.logo) {
       setLogoSrc(data.logo);
-    } else {
-      fetch("/api/home-setting")
-        .then((res) => res.json())
-        .then((json) => {
-          if (json?.header?.logo) {
-            setLogoSrc(json.header.logo);
-          }
-        })
-        .catch(() => {});
     }
-  }, [data?.logo]);
+    if (data?.menuVideo) {
+      setMenuVideoSrc(data.menuVideo);
+    }
+    fetch("/api/home-setting")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json?.header?.logo && !data?.logo) {
+          setLogoSrc(json.header.logo);
+        }
+        if (json?.header?.menuVideo && !data?.menuVideo) {
+          setMenuVideoSrc(json.header.menuVideo);
+        }
+      })
+      .catch(() => {});
+  }, [data?.logo, data?.menuVideo]);
 
   const router = useRouter();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -598,88 +606,15 @@ export default function Header({ data }: HeaderProps) {
         }}
         className="rn-header-navbar"
       >
-        {/* Left: Navigation Menu Trigger (Desktop) */}
+        {/* Left Corner: Brand Logo (Enlarged and Prominent) */}
         <div
-          className="rn-header-left"
-          style={{
-            alignItems: "center",
-            justifyContent: "flex-start",
-            zIndex: 20,
-            pointerEvents: "auto",
-          }}
-        >
-          <button
-            type="button"
-            onMouseEnter={preloadCatalogueData}
-            onClick={() => {
-              preloadCatalogueData();
-              setActiveUserMenuLink(null);
-              setUserMenuOpen(true);
-            }}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              background: "transparent",
-              border: "none",
-              cursor: "pointer",
-              padding: 0,
-              color: textColor,
-              outline: "none",
-            }}
-            className="group transition-opacity duration-300 hover:opacity-70"
-            aria-label="Open Navigation Menu"
-            aria-expanded={userMenuOpen}
-          >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "5px",
-                width: "20px",
-              }}
-            >
-              {[0, 1, 2].map((line) => (
-                <span
-                  key={line}
-                  style={{
-                    width: "20px",
-                    height: "2px",
-                    backgroundColor: textColor,
-                    display: "block",
-                    borderRadius: "1px",
-                    transition: "background-color 0.3s ease",
-                  }}
-                />
-              ))}
-            </div>
-            <span
-              style={{
-                fontFamily: "'Manrope', system-ui, sans-serif",
-                fontSize: "14px",
-                fontWeight: 600,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                color: textMutedColor,
-                transition: "color 0.3s ease",
-                WebkitFontSmoothing: "antialiased",
-                MozOsxFontSmoothing: "grayscale",
-              }}
-            >
-              MENU
-            </span>
-          </button>
-        </div>
-
-        {/* Center / Left on Mobile: Brand Logo */}
-        <div
-          className="rn-header-logo-container"
+          className="rn-header-left-logo"
           style={{
             zIndex: 20,
             pointerEvents: "auto",
           }}
         >
-          <a href="/" aria-label="RN Valves & Faucets Home" className="flex items-center justify-center cursor-pointer">
+          <a href="/" aria-label="RN Valves & Faucets Home" className="flex items-center justify-start cursor-pointer">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src={logoSrc} 
@@ -690,7 +625,7 @@ export default function Header({ data }: HeaderProps) {
                   target.src = DEFAULT_LOGO;
                 }
               }}
-              className="rn-header-logo-img h-[60px] sm:h-[76px] md:h-[88px] max-h-[92px] w-auto block object-contain transition-all duration-300 hover:opacity-85 hover:scale-[1.02]" 
+              className="rn-header-logo-img h-[72px] sm:h-[90px] md:h-[110px] lg:h-[125px] max-h-[135px] w-auto block object-contain transition-all duration-300 hover:opacity-90 hover:scale-[1.03]" 
             />
           </a>
         </div>
@@ -1022,10 +957,10 @@ export default function Header({ data }: HeaderProps) {
             </div>
           </div>
 
-          {/* Mobile-Only Navigation Menu Trigger on the Right Corner */}
+          {/* Navigation Menu Trigger on the Right Corner */}
           <button
             type="button"
-            className="rn-header-menu-mobile-btn group"
+            className="rn-header-menu-btn group"
             onMouseEnter={preloadCatalogueData}
             onClick={() => {
               preloadCatalogueData();
@@ -1035,10 +970,13 @@ export default function Header({ data }: HeaderProps) {
             aria-label="Open Navigation Menu"
             aria-expanded={userMenuOpen}
             style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
               background: "transparent",
               border: "none",
               cursor: "pointer",
-              padding: "4px",
+              padding: "4px 8px",
               color: textColor,
               outline: "none",
             }}
@@ -1065,6 +1003,22 @@ export default function Header({ data }: HeaderProps) {
                 />
               ))}
             </div>
+            <span
+              className="rn-header-menu-text"
+              style={{
+                fontFamily: "'Manrope', system-ui, sans-serif",
+                fontSize: "13.5px",
+                fontWeight: 700,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: textMutedColor,
+                transition: "color 0.3s ease",
+                WebkitFontSmoothing: "antialiased",
+                MozOsxFontSmoothing: "grayscale",
+              }}
+            >
+              MENU
+            </span>
           </button>
         </div>
       </header>
@@ -1093,28 +1047,23 @@ export default function Header({ data }: HeaderProps) {
         <style>{`
           /* ── Floating Header Navbar Responsive System ── */
           .rn-header-navbar {
-            height: 100px;
-            padding-left: clamp(28px, 6vw, 110px);
-            padding-right: clamp(28px, 6vw, 110px);
-          }
-
-          .rn-header-left {
-            display: flex;
-          }
-
-          .rn-header-logo-container {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
+            height: 110px;
+            padding-left: clamp(24px, 5vw, 90px);
+            padding-right: clamp(24px, 5vw, 90px);
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: space-between;
+          }
+
+          .rn-header-left-logo {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
           }
 
           .rn-header-logo-img {
-            height: 80px;
-            max-height: 90px;
+            height: 96px;
+            max-height: 115px;
             width: auto;
             display: block;
             object-fit: contain;
@@ -1122,10 +1071,15 @@ export default function Header({ data }: HeaderProps) {
           }
 
           .rn-header-right-group {
+            display: flex;
+            align-items: center;
             gap: 24px;
+            margin-left: auto;
           }
 
           .rn-header-action-icons {
+            display: flex;
+            align-items: center;
             gap: 18px;
           }
 
@@ -1133,59 +1087,43 @@ export default function Header({ data }: HeaderProps) {
             display: block;
           }
 
-          .rn-header-menu-mobile-btn {
-            display: none !important;
+          .rn-header-menu-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          }
+
+          .rn-header-menu-text {
+            display: inline-block;
           }
 
           /* Mobile / Tablet Responsive Header (max-width: 768px) */
           @media (max-width: 768px) {
             .rn-header-navbar {
-              height: 80px !important;
+              height: 85px !important;
               padding-left: 14px !important;
               padding-right: 14px !important;
-              justify-content: space-between !important;
-            }
-
-            /* Hide Desktop Left Menu button on mobile */
-            .rn-header-left {
-              display: none !important;
-            }
-
-            /* Move logo to Left Corner on mobile */
-            .rn-header-logo-container {
-              position: static !important;
-              transform: none !important;
-              left: auto !important;
-              top: auto !important;
-              display: flex !important;
-              align-items: center !important;
-              justify-content: flex-start !important;
             }
 
             .rn-header-logo-img {
-              height: 60px !important;
-              max-height: 64px !important;
+              height: 72px !important;
+              max-height: 78px !important;
             }
 
-            /* Right group on mobile */
             .rn-header-right-group {
-              gap: 14px !important;
-              margin-left: auto !important;
+              gap: 12px !important;
             }
 
             .rn-header-action-icons {
-              gap: 14px !important;
+              gap: 12px !important;
             }
 
             .rn-header-divider {
               display: none !important;
             }
 
-            /* Show Menu button in Right Corner on mobile */
-            .rn-header-menu-mobile-btn {
-              display: flex !important;
-              align-items: center !important;
-              justify-content: center !important;
+            .rn-header-menu-text {
+              display: none !important;
             }
           }
 
@@ -1235,7 +1173,10 @@ export default function Header({ data }: HeaderProps) {
             flex: 1;
             min-width: 0;
             height: 100vh;
-            background: #f8fafc;
+            background: #eaf0f6;
+            background-image:
+              radial-gradient(ellipse 95% 80% at 50% 15%, #ffffff 0%, transparent 60%),
+              linear-gradient(180deg, #f4f8fb 0%, #eaf0f6 50%, #dfe7ef 100%);
             padding: 22px 26px;
             box-sizing: border-box;
             border-left: 1px solid rgba(148, 163, 184, 0.3);
@@ -1250,14 +1191,14 @@ export default function Header({ data }: HeaderProps) {
 
           /* ── Larger Categories Column (Left/Middle) ── */
           .catalogue-categories-aside {
-            width: clamp(280px, 22vw, 340px);
-            min-width: clamp(280px, 22vw, 340px);
+            width: clamp(340px, 28vw, 440px);
+            min-width: clamp(340px, 28vw, 440px);
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
             height: calc(100vh - 44px);
             overflow-y: auto;
-            padding-right: 8px;
+            padding-right: 10px;
             flex-shrink: 0;
             scrollbar-width: thin;
             scrollbar-color: rgba(0, 119, 182, 0.35) transparent;
@@ -1279,7 +1220,7 @@ export default function Header({ data }: HeaderProps) {
             margin-bottom: 4px;
           }
           .catalogue-categories-header-title {
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 800;
             letter-spacing: 0.12em;
             text-transform: uppercase;
@@ -1287,32 +1228,32 @@ export default function Header({ data }: HeaderProps) {
             font-family: 'Manrope', system-ui, sans-serif;
           }
           .catalogue-categories-header-count {
-            font-size: 12px;
+            font-size: 12.5px;
             color: #64748B;
-            font-weight: 600;
+            font-weight: 700;
             font-family: 'Manrope', system-ui, sans-serif;
           }
 
           .catalogue-categories-list {
             display: flex;
             flex-direction: column;
-            gap: 9px;
+            gap: 12px;
           }
 
           .catalogue-category-btn {
             display: grid;
-            grid-template-columns: 52px 1fr auto;
+            grid-template-columns: 88px 1fr auto;
             align-items: center;
-            gap: 14px;
-            padding: 10px 14px;
-            border-radius: 14px;
-            border: 1px solid rgba(203, 213, 225, 0.85);
-            background: rgba(255, 255, 255, 0.85);
-            box-shadow: 0 1px 4px rgba(18, 42, 62, 0.05);
+            gap: 16px;
+            padding: 14px 18px;
+            border-radius: 18px;
+            border: 1px solid rgba(203, 213, 225, 0.9);
+            background: rgba(255, 255, 255, 0.92);
+            box-shadow: 0 2px 10px rgba(18, 42, 62, 0.07);
             cursor: pointer;
             text-align: left;
             width: 100%;
-            min-height: 68px;
+            min-height: 98px;
             color: inherit;
             transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
             outline: none;
@@ -1322,23 +1263,23 @@ export default function Header({ data }: HeaderProps) {
             transform: translateX(4px);
             background: #ffffff;
             border-color: #93c5fd;
-            box-shadow: 0 6px 16px rgba(18, 42, 62, 0.09);
+            box-shadow: 0 8px 24px rgba(18, 42, 62, 0.13);
           }
           .catalogue-category-btn.is-active {
-            border: 1.5px solid #00AEEF;
+            border: 2px solid #00AEEF;
             background: linear-gradient(90deg, #ffffff 0%, #e0f2fe 100%);
-            box-shadow: 0 4px 18px rgba(0, 174, 239, 0.2);
+            box-shadow: 0 6px 22px rgba(0, 174, 239, 0.28);
           }
 
           .catalogue-category-thumb {
-            width: 52px;
-            height: 52px;
-            border-radius: 10px;
+            width: 88px;
+            height: 88px;
+            border-radius: 14px;
             background-color: #ffffff;
-            border: 1px solid rgba(148, 163, 184, 0.25);
+            border: 1px solid rgba(148, 163, 184, 0.3);
             flex-shrink: 0;
-            padding: 4px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+            padding: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1347,15 +1288,15 @@ export default function Header({ data }: HeaderProps) {
           }
           .catalogue-category-btn.is-active .catalogue-category-thumb {
             border-color: #00AEEF;
-            box-shadow: 0 2px 8px rgba(0, 174, 239, 0.25);
+            box-shadow: 0 2px 12px rgba(0, 174, 239, 0.32);
           }
 
           .catalogue-category-name {
             margin: 0;
             color: #1e293b;
             font-family: 'Manrope', system-ui, sans-serif;
-            font-size: 14px;
-            font-weight: 600;
+            font-size: 16.5px;
+            font-weight: 700;
             line-height: 1.35;
             display: -webkit-box;
             -webkit-line-clamp: 2;
@@ -1364,11 +1305,11 @@ export default function Header({ data }: HeaderProps) {
           }
           .catalogue-category-btn.is-active .catalogue-category-name {
             color: #0f172a;
-            font-weight: 700;
-            font-size: 14.5px;
+            font-weight: 800;
+            font-size: 17px;
           }
 
-          /* ── Right Column: Subcategories Showcase ── */
+          /* ── Right Column: Subcategories Showcase with Studio Gradient Fill (Like Before) ── */
           .catalogue-subcategories-col {
             flex: 1;
             min-width: 0;
@@ -1445,7 +1386,7 @@ export default function Header({ data }: HeaderProps) {
             box-shadow: 0 6px 18px rgba(0, 174, 239, 0.35);
           }
 
-          /* ── SUB-CARDS GRID: 3 CARDS FOR BIGGER SCREEN, 2 CARDS FOR SMALLER SCREEN ── */
+          /* ── SUB-CARDS GRID: Studio Paper Gradient Fill across Entire Card ── */
           .catalogue-subcategories-grid {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1455,23 +1396,44 @@ export default function Header({ data }: HeaderProps) {
 
           .catalogue-subcat-card {
             display: grid;
-            grid-template-columns: clamp(80px, 32%, 115px) 1fr;
-            min-height: 155px;
-            border-radius: 14px;
+            grid-template-columns: clamp(120px, 40%, 175px) 1fr;
+            min-height: 190px;
+            border-radius: 16px;
             overflow: hidden;
             cursor: pointer;
             text-decoration: none;
+            isolation: isolate;
+            background-color: #9cb1c2;
+            background-image:
+              radial-gradient(ellipse 95% 80% at 50% 28%, #c6d7e5 0%, transparent 62%),
+              radial-gradient(ellipse 70% 50% at 18% 12%, rgba(255, 255, 255, 0.45) 0%, transparent 55%),
+              radial-gradient(ellipse 65% 45% at 85% 88%, rgba(98, 122, 145, 0.55) 0%, transparent 55%),
+              linear-gradient(180deg, #b4c6d4 0%, #9cb1c2 45%, #7e96aa 100%);
+            box-shadow: 0 4px 18px rgba(18, 38, 56, 0.1);
             transition: transform 0.25s ease, box-shadow 0.25s ease;
             box-sizing: border-box;
           }
+          .catalogue-subcat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(18, 42, 62, 0.18);
+          }
+
           .catalogue-subcat-fallback-card {
             grid-column: 1 / -1;
             display: grid;
-            grid-template-columns: clamp(100px, 30%, 150px) 1fr;
-            min-height: 170px;
-            border-radius: 14px;
+            grid-template-columns: clamp(120px, 34%, 180px) 1fr;
+            min-height: 195px;
+            border-radius: 16px;
             overflow: hidden;
             cursor: pointer;
+            isolation: isolate;
+            background-color: #9cb1c2;
+            background-image:
+              radial-gradient(ellipse 95% 80% at 50% 28%, #c6d7e5 0%, transparent 62%),
+              radial-gradient(ellipse 70% 50% at 18% 12%, rgba(255, 255, 255, 0.45) 0%, transparent 55%),
+              radial-gradient(ellipse 65% 45% at 85% 88%, rgba(98, 122, 145, 0.55) 0%, transparent 55%),
+              linear-gradient(180deg, #b4c6d4 0%, #9cb1c2 45%, #7e96aa 100%);
+            box-shadow: 0 4px 18px rgba(18, 38, 56, 0.1);
           }
 
           .catalogue-card-img-panel {
@@ -1482,44 +1444,49 @@ export default function Header({ data }: HeaderProps) {
             overflow: hidden;
             padding: 8px;
             box-sizing: border-box;
+            background: transparent !important;
+            box-shadow: none !important;
           }
           .catalogue-card-img {
             width: 100%;
             height: 100%;
-            max-height: 135px;
+            max-height: 165px;
             object-fit: contain;
-            transform: scale(1.06);
-            transition: transform 0.4s ease;
+            transform: scale(1.1);
+            filter: drop-shadow(0 16px 26px rgba(12, 24, 38, 0.24));
+            transition: transform 0.4s ease, filter 0.4s ease;
           }
           .catalogue-subcat-card:hover .catalogue-card-img {
-            transform: scale(1.15);
+            transform: scale(1.18);
+            filter: drop-shadow(0 20px 32px rgba(12, 24, 38, 0.32));
           }
 
           .catalogue-card-info-panel {
-            padding: 16px 14px;
+            padding: 18px 16px;
             display: flex;
             flex-direction: column;
-            justifyContent: space-between;
+            justify-content: space-between;
             gap: 8px;
             box-sizing: border-box;
             min-width: 0;
+            background: transparent;
           }
 
           .catalogue-card-title {
             margin: 0;
             color: #0a192f;
             font-family: 'Manrope', system-ui, sans-serif;
-            font-size: clamp(14px, 1.1vw, 16.5px);
-            font-weight: 700;
+            font-size: clamp(15.5px, 1.2vw, 17.5px);
+            font-weight: 800;
             line-height: 1.3;
             letter-spacing: -0.01em;
           }
           .catalogue-card-desc {
             margin: 0;
-            color: #1e3a5f;
+            color: #1e293b;
             font-family: 'Manrope', system-ui, sans-serif;
-            font-size: clamp(11.5px, 0.9vw, 12.5px);
-            font-weight: 500;
+            font-size: clamp(12px, 0.95vw, 13px);
+            font-weight: 600;
             line-height: 1.45;
             display: -webkit-box;
             -webkit-line-clamp: 2;
@@ -1528,16 +1495,16 @@ export default function Header({ data }: HeaderProps) {
           }
 
           .catalogue-card-arrow-circle {
-            width: 32px;
-            height: 32px;
+            width: 34px;
+            height: 34px;
             border-radius: 999px;
-            border: 1px solid rgba(0, 119, 182, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.6);
             display: inline-flex;
             align-items: center;
             justify-content: center;
             color: #0077B6;
-            background-color: #ffffff;
-            box-shadow: 0 2px 8px rgba(18, 42, 62, 0.12);
+            background-color: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 2px 8px rgba(18, 42, 62, 0.15);
             transition: all 0.2s ease;
             flex-shrink: 0;
           }
@@ -1556,8 +1523,8 @@ export default function Header({ data }: HeaderProps) {
               gap: 12px !important;
             }
             .catalogue-categories-aside {
-              width: 270px !important;
-              min-width: 270px !important;
+              width: 300px !important;
+              min-width: 300px !important;
             }
             .user-menu-backdrop.is-catalogue-open {
               flex: 0 0 12px !important;
@@ -1580,8 +1547,8 @@ export default function Header({ data }: HeaderProps) {
               gap: 16px !important;
             }
             .catalogue-categories-aside {
-              width: 240px !important;
-              min-width: 240px !important;
+              width: 280px !important;
+              min-width: 280px !important;
             }
             .catalogue-subcategories-col {
               padding-left: 16px !important;
@@ -1651,7 +1618,7 @@ export default function Header({ data }: HeaderProps) {
               width: 100% !important;
               min-width: 100% !important;
               height: auto !important;
-              max-height: 160px !important;
+              max-height: 170px !important;
               flex-direction: row !important;
               overflow-x: auto !important;
               overflow-y: hidden !important;
@@ -1666,10 +1633,16 @@ export default function Header({ data }: HeaderProps) {
               width: 100% !important;
             }
             .catalogue-category-btn {
-              width: 200px !important;
-              min-width: 200px !important;
+              width: 220px !important;
+              min-width: 220px !important;
               flex-shrink: 0 !important;
-              min-height: 60px !important;
+              min-height: 70px !important;
+              grid-template-columns: 56px 1fr auto !important;
+              gap: 10px !important;
+            }
+            .catalogue-category-thumb {
+              width: 56px !important;
+              height: 56px !important;
             }
             .catalogue-subcategories-col {
               width: 100% !important;
@@ -1677,7 +1650,7 @@ export default function Header({ data }: HeaderProps) {
               padding-left: 0 !important;
               border-top: 1px solid rgba(148, 163, 184, 0.25) !important;
               padding-top: 12px !important;
-              height: calc(100vh - 220px) !important;
+              height: calc(100vh - 230px) !important;
             }
             .catalogue-subcategories-grid {
               grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -1692,7 +1665,8 @@ export default function Header({ data }: HeaderProps) {
               gap: 10px !important;
             }
             .catalogue-subcat-card {
-              min-height: 135px !important;
+              min-height: 155px !important;
+              grid-template-columns: clamp(105px, 34%, 130px) 1fr !important;
             }
           }
         `}</style>
@@ -1814,19 +1788,36 @@ export default function Header({ data }: HeaderProps) {
                 justifyContent: "flex-end",
                 alignItems: "flex-start",
                 overflow: "hidden",
+                background: "#020e1f",
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="https://jalbath.com/wp-content/uploads/2026/07/Faucet.gif"
-                alt="Flowing water from a premium faucet"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  objectPosition: "right top",
-                }}
-              />
+              {menuVideoSrc && menuVideoSrc.match(/\.(mp4|webm|mov|m4v)(\?.*)?$/i) ? (
+                <video
+                  src={menuVideoSrc}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    objectPosition: "right top",
+                  }}
+                />
+              ) : (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={menuVideoSrc || DEFAULT_MENU_VIDEO}
+                  alt="Flowing water from a premium faucet"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    objectPosition: "right top",
+                  }}
+                />
+              )}
             </div>
           )}
         </div>

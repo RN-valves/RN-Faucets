@@ -5,6 +5,8 @@ import HomeSetting from "@/models/HomeSetting";
 const DEFAULT_HOME_SETTINGS = {
   header: {
     logo: "/rn-header-logo.svg",
+    mobileLogo: "/rn-header-logo.svg",
+    menuVideo: "https://jalbath.com/wp-content/uploads/2026/07/Faucet.gif",
     menuLinks: [
       { label: "About Us", href: "/about-us" },
       { label: "Catalogues", href: "/catalogues" },
