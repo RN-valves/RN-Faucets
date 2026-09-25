@@ -68,7 +68,13 @@ function preloadCatalogueData() {
     });
 }
 
-function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
+function CatalogueDashboard({
+  onClose,
+  onBack,
+}: {
+  onClose?: () => void;
+  onBack?: () => void;
+}) {
   const router = useRouter();
   const [categories, setCategories] = useState<DynamicCategory[]>(cachedCategories || []);
   const [subcategories, setSubcategories] = useState<DynamicSubcategory[]>(cachedSubcategories || []);
@@ -171,247 +177,110 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
   };
 
   return (
-    <div
-      className="catalogue-canvas"
-      style={{
-        flex: 1,
-        minWidth: 0,
-        height: "100vh",
-        padding: "24px 28px",
-        boxSizing: "border-box",
-        borderLeft: "1px solid rgba(148, 163, 184, 0.3)",
-        display: "flex",
-        gap: "24px",
-      }}
-    >
-      {/* ── 1. Middle Column: Categories List (placed in middle next to menu) ── */}
-      <aside
-        style={{
-          width: "290px",
-          minWidth: "290px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "8px",
-          height: "calc(100vh - 48px)",
-          overflowY: "auto",
-          paddingRight: "8px",
-          flexShrink: 0,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            paddingBottom: "10px",
-            borderBottom: "1px solid rgba(148, 163, 184, 0.25)",
-            marginBottom: "4px",
-          }}
+    <div className="catalogue-canvas">
+      {/* ── Mobile / Tablet Top Bar with Back and Close Controls ── */}
+      <div className="catalogue-mobile-topbar">
+        <button
+          type="button"
+          onClick={onBack}
+          className="catalogue-back-btn"
+          aria-label="Back to main menu"
         >
-          <span
-            style={{
-              fontSize: "11px",
-              fontWeight: 800,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              color: "#0077B6",
-              fontFamily: "'Manrope', system-ui, sans-serif",
-            }}
-          >
+          <ChevronRight size={18} style={{ transform: "rotate(180deg)" }} />
+          <span>Menu</span>
+        </button>
+        <span className="catalogue-topbar-title">Our Products</span>
+        <button
+          type="button"
+          onClick={onClose}
+          className="catalogue-mobile-close-btn"
+          aria-label="Close menu"
+        >
+          <X size={22} />
+        </button>
+      </div>
+
+      {/* ── 1. Categories Column: Left/Middle List ── */}
+      <aside className="catalogue-categories-aside">
+        <div className="catalogue-categories-header">
+          <span className="catalogue-categories-header-title">
             Categories
           </span>
-          <span
-            style={{
-              fontSize: "11px",
-              color: "#64748B",
-              fontWeight: 600,
-              fontFamily: "'Manrope', system-ui, sans-serif",
-            }}
-          >
+          <span className="catalogue-categories-header-count">
             {categories.length} Ranges
           </span>
         </div>
 
-        {loading && categories.length === 0 ? (
-          [1, 2, 3, 4, 5].map((n) => (
-            <div
-              key={n}
-              className="animate-pulse"
-              style={{
-                height: "64px",
-                borderRadius: "14px",
-                background: "rgba(226, 234, 242, 0.8)",
-                border: "1px solid rgba(148, 163, 184, 0.2)",
-              }}
-            />
-          ))
-        ) : categories.map((item, idx) => {
-          const isSelected =
-            activeCategoryId === item.id ||
-            activeCategoryId === (item as any)._id ||
-            activeCategoryId === item.slug;
-          const thumbnailImg = getCategoryThumbnail(item, idx);
-
-          return (
-            <button
-              key={item.id || idx}
-              type="button"
-              onClick={() => setActiveCategoryId(item.id || (item as any)._id || item.slug)}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "50px 1fr auto",
-                alignItems: "center",
-                gap: "12px",
-                padding: "8px 12px",
-                borderRadius: "14px",
-                border: isSelected
-                  ? "1.5px solid #00AEEF"
-                  : "1px solid rgba(203, 213, 225, 0.75)",
-                background: isSelected
-                  ? "linear-gradient(90deg, #ffffff 0%, #e0f2fe 100%)"
-                  : "rgba(255, 255, 255, 0.75)",
-                boxShadow: isSelected
-                  ? "0 4px 16px rgba(0, 174, 239, 0.18)"
-                  : "0 1px 3px rgba(18, 42, 62, 0.04)",
-                cursor: "pointer",
-                textAlign: "left",
-                width: "100%",
-                color: "inherit",
-                transition: "border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease",
-              }}
-              onMouseEnter={(event) => {
-                event.currentTarget.style.transform = "translateX(3px)";
-                if (!isSelected) {
-                  event.currentTarget.style.background = "rgba(255, 255, 255, 0.95)";
-                  event.currentTarget.style.borderColor = "#93c5fd";
-                  event.currentTarget.style.boxShadow = "0 4px 12px rgba(18, 42, 62, 0.08)";
-                }
-              }}
-              onMouseLeave={(event) => {
-                event.currentTarget.style.transform = "translateX(0)";
-                if (!isSelected) {
-                  event.currentTarget.style.background = "rgba(255, 255, 255, 0.75)";
-                  event.currentTarget.style.borderColor = "rgba(203, 213, 225, 0.75)";
-                  event.currentTarget.style.boxShadow = "0 1px 3px rgba(18, 42, 62, 0.04)";
-                }
-              }}
-            >
+        <div className="catalogue-categories-list">
+          {loading && categories.length === 0 ? (
+            [1, 2, 3, 4, 5, 6].map((n) => (
               <div
+                key={n}
+                className="animate-pulse"
                 style={{
-                  width: "50px",
-                  height: "50px",
-                  borderRadius: "10px",
-                  backgroundColor: "#ffffff",
-                  border: isSelected
-                    ? "1.5px solid #00AEEF"
-                    : "1px solid rgba(148, 163, 184, 0.25)",
+                  height: "58px",
+                  borderRadius: "12px",
+                  background: "rgba(226, 234, 242, 0.8)",
+                  border: "1px solid rgba(148, 163, 184, 0.2)",
                   flexShrink: 0,
-                  padding: "4px",
-                  boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  overflow: "hidden",
                 }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={thumbnailImg}
-                  alt={item.name}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "contain",
-                  }}
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = "/api/media/website/catalogue/products/default/image.webp";
-                  }}
-                />
-              </div>
-              <p
-                style={{
-                  margin: 0,
-                  color: isSelected ? "#0f172a" : "#334155",
-                  fontFamily: "'Manrope', system-ui, sans-serif",
-                  fontSize: "13.5px",
-                  fontWeight: isSelected ? 700 : 500,
-                  lineHeight: 1.35,
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical",
-                  overflow: "hidden",
-                }}
-              >
-                {item.name}
-              </p>
-              <ChevronRight
-                size={16}
-                strokeWidth={isSelected ? 2.5 : 2}
-                color={isSelected ? "#00AEEF" : "#94A3B8"}
-                style={{ flexShrink: 0 }}
               />
-            </button>
-          );
-        })}
+            ))
+          ) : categories.map((item, idx) => {
+            const isSelected =
+              activeCategoryId === item.id ||
+              activeCategoryId === (item as any)._id ||
+              activeCategoryId === item.slug;
+            const thumbnailImg = getCategoryThumbnail(item, idx);
+
+            return (
+              <button
+                key={item.id || idx}
+                type="button"
+                onClick={() => setActiveCategoryId(item.id || (item as any)._id || item.slug)}
+                className={`catalogue-category-btn${isSelected ? " is-active" : ""}`}
+              >
+                <div className="catalogue-category-thumb">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={thumbnailImg}
+                    alt={item.name}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "contain",
+                    }}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = "/api/media/website/catalogue/products/default/image.webp";
+                    }}
+                  />
+                </div>
+                <p className="catalogue-category-name">
+                  {item.name}
+                </p>
+                <ChevronRight
+                  size={15}
+                  strokeWidth={isSelected ? 2.5 : 2}
+                  className="catalogue-category-chevron"
+                  color={isSelected ? "#00AEEF" : "#94A3B8"}
+                />
+              </button>
+            );
+          })}
+        </div>
       </aside>
 
-      {/* ── 2. Right Column: Subcategories Showcase (displayed on right) ── */}
-      <div
-        style={{
-          flex: 1,
-          minWidth: 0,
-          display: "flex",
-          flexDirection: "column",
-          gap: "18px",
-          height: "calc(100vh - 48px)",
-          overflowY: "auto",
-          paddingRight: "6px",
-          borderLeft: "1px solid rgba(148, 163, 184, 0.25)",
-          paddingLeft: "24px",
-        }}
-      >
+      {/* ── 2. Right Column: Subcategories Showcase ── */}
+      <div className="catalogue-subcategories-col">
         {/* Header Bar: Category Title & Explore Button */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: "12px",
-            paddingBottom: "14px",
-            borderBottom: "1px solid rgba(148, 163, 184, 0.25)",
-          }}
-        >
-          <div>
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                fontSize: "11px",
-                fontWeight: 700,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                color: "#0077B6",
-                marginBottom: "3px",
-                fontFamily: "'Manrope', system-ui, sans-serif",
-              }}
-            >
+        <div className="catalogue-subcategories-header">
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div className="catalogue-subcategories-subtitle">
               <span>Subcategories</span>
               <span>•</span>
               <span>{activeSubcategories.length} Collections</span>
             </div>
-            <h2
-              style={{
-                margin: 0,
-                color: "#0a192f",
-                fontFamily: "'Manrope', system-ui, sans-serif",
-                fontSize: "24px",
-                fontWeight: 800,
-                letterSpacing: "-0.02em",
-                lineHeight: 1.25,
-              }}
-            >
+            <h2 className="catalogue-subcategories-title">
               {activeCategory?.name ?? "Catalogue Collection"}
             </h2>
           </div>
@@ -420,30 +289,7 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
             <button
               type="button"
               onClick={() => handleNavigate(`/faucets/${activeCategory.slug || activeCategory.id}`)}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "9px 18px",
-                borderRadius: "10px",
-                background: "linear-gradient(90deg, #0077B6 0%, #00AEEF 100%)",
-                color: "#FFFFFF",
-                fontSize: "13px",
-                fontWeight: 700,
-                fontFamily: "'Manrope', system-ui, sans-serif",
-                border: "none",
-                cursor: "pointer",
-                boxShadow: "0 4px 14px rgba(0, 174, 239, 0.3)",
-                transition: "transform 0.2s ease, box-shadow 0.2s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-1px)";
-                e.currentTarget.style.boxShadow = "0 6px 18px rgba(0, 174, 239, 0.35)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 4px 14px rgba(0, 174, 239, 0.25)";
-              }}
+              className="catalogue-view-range-btn"
             >
               <span>View Full Range</span>
               <ChevronRight size={15} />
@@ -452,21 +298,14 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
         </div>
 
         {/* Dynamic Cards Grid */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-            gap: "14px",
-            minWidth: 0,
-          }}
-        >
+        <div className="catalogue-subcategories-grid">
           {loading && categories.length === 0 ? (
-            [1, 2, 3, 4].map((n) => (
+            [1, 2, 3, 4, 5, 6].map((n) => (
               <div
                 key={n}
                 className="animate-pulse"
                 style={{
-                  minHeight: "160px",
+                  minHeight: "145px",
                   borderRadius: "12px",
                   background: "rgba(226, 234, 242, 0.8)",
                   border: "1px solid rgba(148, 163, 184, 0.2)",
@@ -481,103 +320,31 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
               return (
                 <article
                   key={sub.id || idx}
-                  className="subcategory-card group"
+                  className="subcategory-card group catalogue-subcat-card"
                   onClick={() => handleNavigate(`/faucets/${targetSlug}`)}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "38% 1fr",
-                    minHeight: "160px",
-                    overflow: "hidden",
-                    cursor: "pointer",
-                    textDecoration: "none",
-                  }}
                 >
-                  <div
-                    className="product-card__image-panel"
-                    style={{
-                      height: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      overflow: "hidden",
-                      padding: "8px",
-                    }}
-                  >
+                  <div className="catalogue-card-img-panel">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={cardImg}
                       alt={sub.name}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        maxHeight: "135px",
-                        objectFit: "contain",
-                        transform: "scale(1.08)",
-                        transition: "transform 0.4s ease",
-                      }}
-                      className="group-hover:scale-115"
+                      className="catalogue-card-img"
                     />
                   </div>
 
-                  <div
-                    style={{
-                      padding: "16px 14px",
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "space-between",
-                      gap: "10px",
-                    }}
-                  >
-                    <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-                      <h3
-                        style={{
-                          margin: 0,
-                          color: "#0a192f",
-                          fontFamily: "'Manrope', system-ui, sans-serif",
-                          fontSize: "16px",
-                          fontWeight: 700,
-                          lineHeight: 1.3,
-                          letterSpacing: "-0.01em",
-                        }}
-                      >
+                  <div className="catalogue-card-info-panel">
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
+                      <h3 className="catalogue-card-title">
                         {sub.name}
                       </h3>
-                      <p
-                        style={{
-                          margin: 0,
-                          color: "#1e3a5f",
-                          fontFamily: "'Manrope', system-ui, sans-serif",
-                          fontSize: "12.5px",
-                          fontWeight: 500,
-                          lineHeight: 1.45,
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                          overflow: "hidden",
-                        }}
-                      >
+                      <p className="catalogue-card-desc">
                         {sub.description || "Precision engineered collection for modern luxury."}
                       </p>
                     </div>
 
                     <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                      <span
-                        style={{
-                          width: "32px",
-                          height: "32px",
-                          borderRadius: "999px",
-                          border: "1px solid rgba(0, 119, 182, 0.25)",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: "#0077B6",
-                          backgroundColor: "#ffffff",
-                          boxShadow: "0 2px 8px rgba(18, 42, 62, 0.12)",
-                          transition: "all 0.2s ease",
-                        }}
-                        className="group-hover:bg-[#0077B6] group-hover:text-white group-hover:border-[#0077B6]"
-                      >
-                        <ChevronRight size={15} strokeWidth={2.2} />
+                      <span className="catalogue-card-arrow-circle">
+                        <ChevronRight size={14} strokeWidth={2.2} />
                       </span>
                     </div>
                   </div>
@@ -587,79 +354,30 @@ function CatalogueDashboard({ onClose }: { onClose?: () => void }) {
           ) : (
             /* Fallback single collection exploration card if no subcategories exist */
             <article
-              className="subcategory-card group"
+              className="subcategory-card group catalogue-subcat-fallback-card"
               onClick={() => activeCategory && handleNavigate(`/faucets/${activeCategory.slug || activeCategory.id}`)}
-              style={{
-                gridColumn: "1 / -1",
-                display: "grid",
-                gridTemplateColumns: "36% 1fr",
-                minHeight: "190px",
-                overflow: "hidden",
-                cursor: "pointer",
-              }}
             >
-              <div
-                className="product-card__image-panel"
-                style={{
-                  height: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: "12px",
-                }}
-              >
+              <div className="catalogue-card-img-panel">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={getCardImage(activeCategory?.image, 0)}
                   alt={activeCategory?.name || "Range"}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    maxHeight: "160px",
-                    objectFit: "contain",
-                    transform: "scale(1.08)",
-                    transition: "transform 0.4s ease",
-                  }}
-                  className="group-hover:scale-115"
+                  className="catalogue-card-img"
                 />
               </div>
-              <div
-                style={{
-                  padding: "24px 20px",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                  gap: "14px",
-                }}
-              >
+              <div className="catalogue-card-info-panel" style={{ padding: "20px 18px", gap: "12px" }}>
                 <div>
-                  <h3
-                    style={{
-                      margin: "0 0 8px 0",
-                      color: "#1a1a1a",
-                      fontSize: "19px",
-                      fontWeight: 700,
-                      fontFamily: "'Manrope', system-ui, sans-serif",
-                    }}
-                  >
+                  <h3 className="catalogue-card-title" style={{ fontSize: "18px", marginBottom: "6px" }}>
                     {activeCategory?.name}
                   </h3>
-                  <p
-                    style={{
-                      margin: 0,
-                      color: "#475569",
-                      fontSize: "13.5px",
-                      lineHeight: 1.6,
-                      fontFamily: "'Manrope', system-ui, sans-serif",
-                    }}
-                  >
+                  <p className="catalogue-card-desc" style={{ fontSize: "13px", WebkitLineClamp: 3 }}>
                     {activeCategory?.description ||
                       "Browse the complete catalogue range, technical specifications, and available finishes."}
                   </p>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#0077B6", fontWeight: 700, fontSize: "14px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#0077B6", fontWeight: 700, fontSize: "13.5px" }}>
                   <span>Explore Range Products</span>
-                  <ChevronRight size={18} />
+                  <ChevronRight size={16} />
                 </div>
               </div>
             </article>
@@ -1321,10 +1039,11 @@ export default function Header({ data }: HeaderProps) {
         aria-modal={userMenuOpen}
         role="dialog"
         aria-label="User Account Menu"
+        className="user-menu-overlay"
         style={{
           position: "fixed",
           inset: 0,
-          background: "rgba(0,0,0,0.28)",
+          background: "rgba(0,0,0,0.36)",
           backdropFilter: "blur(10px)",
           WebkitBackdropFilter: "blur(10px)",
           display: "flex",
@@ -1334,41 +1053,503 @@ export default function Header({ data }: HeaderProps) {
           transition: "opacity 0.35s ease",
         }}
       >
-        {/* ── Left visible background (24vw) ── */}
+        <style>{`
+          /* ── Mega Menu & Catalogue Dashboard Responsive System ── */
+          .user-menu-backdrop {
+            flex: 0 0 24vw;
+            height: 100%;
+            cursor: pointer;
+            transition: flex 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+          }
+          .user-menu-backdrop.is-catalogue-open {
+            flex: 0 0 clamp(16px, 2.5vw, 48px);
+          }
+
+          .user-menu-slider {
+            flex: 1;
+            display: flex;
+            height: 100%;
+            min-width: 0;
+            overflow: hidden;
+            background: #ffffff;
+            box-shadow: -10px 0 40px rgba(0,0,0,0.3);
+            transition: transform 0.4s ease;
+          }
+
+          .user-menu-panel {
+            width: 330px;
+            min-width: 330px;
+            height: 100vh;
+            overflow-y: auto;
+            background: linear-gradient(180deg, #020e1f 0%, #010813 100%);
+            border-right: 1px solid rgba(0, 174, 239, 0.12);
+            padding: 32px 36px;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            box-sizing: border-box;
+            transition: width 0.3s ease, min-width 0.3s ease, padding 0.3s ease;
+          }
+          .user-menu-panel.is-catalogue-open {
+            width: clamp(220px, 16vw, 270px);
+            min-width: clamp(220px, 16vw, 270px);
+            padding: 28px 22px;
+          }
+
+          .catalogue-canvas {
+            flex: 1;
+            min-width: 0;
+            height: 100vh;
+            background: #f8fafc;
+            padding: 20px 24px;
+            box-sizing: border-box;
+            border-left: 1px solid rgba(148, 163, 184, 0.3);
+            display: flex;
+            gap: 20px;
+            overflow: hidden;
+          }
+
+          .catalogue-mobile-topbar {
+            display: none;
+          }
+
+          .catalogue-categories-aside {
+            width: clamp(220px, 18vw, 270px);
+            min-width: clamp(220px, 18vw, 270px);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            height: calc(100vh - 40px);
+            overflow-y: auto;
+            padding-right: 6px;
+            flex-shrink: 0;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0, 119, 182, 0.3) transparent;
+          }
+          .catalogue-categories-aside::-webkit-scrollbar {
+            width: 4px;
+          }
+          .catalogue-categories-aside::-webkit-scrollbar-thumb {
+            background: rgba(0, 119, 182, 0.3);
+            border-radius: 4px;
+          }
+
+          .catalogue-categories-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+            margin-bottom: 4px;
+          }
+          .catalogue-categories-header-title {
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #0077B6;
+            font-family: 'Manrope', system-ui, sans-serif;
+          }
+          .catalogue-categories-header-count {
+            font-size: 11px;
+            color: #64748B;
+            fontWeight: 600;
+            font-family: 'Manrope', system-ui, sans-serif;
+          }
+
+          .catalogue-categories-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+          }
+
+          .catalogue-category-btn {
+            display: grid;
+            grid-template-columns: 44px 1fr auto;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(203, 213, 225, 0.75);
+            background: rgba(255, 255, 255, 0.75);
+            box-shadow: 0 1px 3px rgba(18, 42, 62, 0.04);
+            cursor: pointer;
+            text-align: left;
+            width: 100%;
+            color: inherit;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            outline: none;
+            box-sizing: border-box;
+          }
+          .catalogue-category-btn:hover {
+            transform: translateX(3px);
+            background: rgba(255, 255, 255, 0.95);
+            border-color: #93c5fd;
+            box-shadow: 0 4px 12px rgba(18, 42, 62, 0.08);
+          }
+          .catalogue-category-btn.is-active {
+            border: 1.5px solid #00AEEF;
+            background: linear-gradient(90deg, #ffffff 0%, #e0f2fe 100%);
+            box-shadow: 0 4px 16px rgba(0, 174, 239, 0.18);
+          }
+
+          .catalogue-category-thumb {
+            width: 44px;
+            height: 44px;
+            border-radius: 9px;
+            background-color: #ffffff;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            flex-shrink: 0;
+            padding: 3px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-sizing: border-box;
+          }
+          .catalogue-category-btn.is-active .catalogue-category-thumb {
+            border-color: #00AEEF;
+          }
+
+          .catalogue-category-name {
+            margin: 0;
+            color: #334155;
+            font-family: 'Manrope', system-ui, sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            line-height: 1.35;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+          }
+          .catalogue-category-btn.is-active .catalogue-category-name {
+            color: #0f172a;
+            font-weight: 700;
+          }
+
+          .catalogue-subcategories-col {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            height: calc(100vh - 40px);
+            overflow-y: auto;
+            padding-right: 6px;
+            border-left: 1px solid rgba(148, 163, 184, 0.25);
+            padding-left: 20px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0, 119, 182, 0.3) transparent;
+          }
+          .catalogue-subcategories-col::-webkit-scrollbar {
+            width: 4px;
+          }
+          .catalogue-subcategories-col::-webkit-scrollbar-thumb {
+            background: rgba(0, 119, 182, 0.3);
+            border-radius: 4px;
+          }
+
+          .catalogue-subcategories-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+          }
+          .catalogue-subcategories-subtitle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #0077B6;
+            margin-bottom: 3px;
+            font-family: 'Manrope', system-ui, sans-serif;
+          }
+          .catalogue-subcategories-title {
+            margin: 0;
+            color: #0a192f;
+            font-family: 'Manrope', system-ui, sans-serif;
+            font-size: clamp(20px, 1.8vw, 25px);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.25;
+          }
+
+          .catalogue-view-range-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 10px;
+            background: linear-gradient(90deg, #0077B6 0%, #00AEEF 100%);
+            color: #FFFFFF;
+            font-size: 12.5px;
+            font-weight: 700;
+            font-family: 'Manrope', system-ui, sans-serif;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0, 174, 239, 0.3);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
+          }
+          .catalogue-view-range-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(0, 174, 239, 0.35);
+          }
+
+          .catalogue-subcategories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 215px), 1fr));
+            gap: 12px;
+            min-width: 0;
+          }
+
+          .catalogue-subcat-card {
+            display: grid;
+            grid-template-columns: clamp(60px, 32%, 95px) 1fr;
+            min-height: clamp(120px, 13vh, 150px);
+            overflow: hidden;
+            cursor: pointer;
+            text-decoration: none;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+          }
+          .catalogue-subcat-fallback-card {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: clamp(90px, 30%, 140px) 1fr;
+            min-height: 160px;
+            overflow: hidden;
+            cursor: pointer;
+          }
+
+          .catalogue-card-img-panel {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 6px;
+            box-sizing: border-box;
+          }
+          .catalogue-card-img {
+            width: 100%;
+            height: 100%;
+            max-height: 120px;
+            object-fit: contain;
+            transform: scale(1.06);
+            transition: transform 0.4s ease;
+          }
+          .catalogue-subcat-card:hover .catalogue-card-img {
+            transform: scale(1.15);
+          }
+
+          .catalogue-card-info-panel {
+            padding: 12px 10px;
+            display: flex;
+            flex-direction: column;
+            justifyContent: space-between;
+            gap: 8px;
+            box-sizing: border-box;
+            min-width: 0;
+          }
+
+          .catalogue-card-title {
+            margin: 0;
+            color: #0a192f;
+            font-family: 'Manrope', system-ui, sans-serif;
+            font-size: clamp(13px, 1vw, 15px);
+            font-weight: 700;
+            line-height: 1.3;
+            letterSpacing: -0.01em;
+          }
+          .catalogue-card-desc {
+            margin: 0;
+            color: #1e3a5f;
+            font-family: 'Manrope', system-ui, sans-serif;
+            font-size: clamp(11px, 0.85vw, 12px);
+            font-weight: 500;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+          }
+
+          .catalogue-card-arrow-circle {
+            width: 28px;
+            height: 28px;
+            border-radius: 999px;
+            border: 1px solid rgba(0, 119, 182, 0.25);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #0077B6;
+            background-color: #ffffff;
+            box-shadow: 0 2px 6px rgba(18, 42, 62, 0.1);
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+          }
+          .catalogue-subcat-card:hover .catalogue-card-arrow-circle {
+            background-color: #0077B6;
+            color: #ffffff;
+            border-color: #0077B6;
+          }
+
+          /* ── Responsive Viewport Breakpoints ── */
+
+          /* 1. Large Screen Desktops & Laptops (1200px - 1440px) */
+          @media (max-width: 1440px) {
+            .user-menu-backdrop.is-catalogue-open {
+              flex: 0 0 16px !important;
+            }
+            .catalogue-canvas {
+              padding: 16px 18px !important;
+              gap: 16px !important;
+            }
+            .catalogue-subcategories-col {
+              padding-left: 16px !important;
+            }
+            .catalogue-subcategories-grid {
+              grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)) !important;
+              gap: 10px !important;
+            }
+          }
+
+          /* 2. Standard Laptops (1024px - 1200px) */
+          @media (max-width: 1200px) {
+            .user-menu-backdrop.is-catalogue-open {
+              flex: 0 0 0px !important;
+              width: 0 !important;
+            }
+            .user-menu-panel.is-catalogue-open {
+              width: 200px !important;
+              min-width: 200px !important;
+              padding: 24px 16px !important;
+            }
+            .catalogue-categories-aside {
+              width: 210px !important;
+              min-width: 210px !important;
+            }
+            .catalogue-subcategories-grid {
+              grid-template-columns: repeat(auto-fill, minmax(min(100%, 185px), 1fr)) !important;
+            }
+          }
+
+          /* 3. Small Screen Desktops & Tablets (max-width: 1023px) */
+          @media (max-width: 1023px) {
+            .user-menu-backdrop {
+              display: none !important;
+            }
+            .user-menu-slider {
+              width: 100vw !important;
+              max-width: 100vw !important;
+            }
+            .user-menu-panel.is-catalogue-open {
+              display: none !important;
+            }
+            .catalogue-mobile-topbar {
+              display: flex !important;
+              align-items: center;
+              justify-content: space-between;
+              padding-bottom: 12px;
+              border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+              margin-bottom: 4px;
+            }
+            .catalogue-back-btn {
+              display: inline-flex;
+              align-items: center;
+              gap: 4px;
+              background: transparent;
+              border: none;
+              color: #0077B6;
+              font-family: 'Manrope', system-ui, sans-serif;
+              font-size: 14px;
+              font-weight: 700;
+              cursor: pointer;
+              padding: 0;
+            }
+            .catalogue-topbar-title {
+              font-family: 'Manrope', system-ui, sans-serif;
+              font-size: 16px;
+              font-weight: 800;
+              color: #0f172a;
+            }
+            .catalogue-mobile-close-btn {
+              background: transparent;
+              border: none;
+              color: #64748B;
+              cursor: pointer;
+              padding: 0;
+              display: flex;
+            }
+            .catalogue-canvas {
+              width: 100vw !important;
+              flex-direction: column !important;
+              height: 100vh !important;
+              padding: 16px !important;
+              gap: 12px !important;
+              border-left: none !important;
+            }
+            .catalogue-categories-aside {
+              width: 100% !important;
+              min-width: 100% !important;
+              height: auto !important;
+              max-height: 160px !important;
+              flex-direction: row !important;
+              overflow-x: auto !important;
+              overflow-y: hidden !important;
+              padding-bottom: 6px !important;
+            }
+            .catalogue-categories-header {
+              display: none !important;
+            }
+            .catalogue-categories-list {
+              flex-direction: row !important;
+              gap: 8px !important;
+              width: 100% !important;
+            }
+            .catalogue-category-btn {
+              width: 180px !important;
+              min-width: 180px !important;
+              flex-shrink: 0 !important;
+            }
+            .catalogue-subcategories-col {
+              width: 100% !important;
+              border-left: none !important;
+              padding-left: 0 !important;
+              border-top: 1px solid rgba(148, 163, 184, 0.25) !important;
+              padding-top: 12px !important;
+              height: calc(100vh - 220px) !important;
+            }
+            .catalogue-subcategories-grid {
+              grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr)) !important;
+            }
+          }
+        `}</style>
+
+        {/* ── Left visible background ── */}
         <div
           onClick={() => setUserMenuOpen(false)}
-          style={{
-            flex: "0 0 24vw",
-            height: "100%",
-            cursor: "pointer",
-          }}
+          className={`user-menu-backdrop${activeUserMenuLink === "Our Products" ? " is-catalogue-open" : ""}`}
         />
 
-        {/* ── Sliding container for Menu + Image ── */}
+        {/* ── Sliding container for Menu + Image / Catalogue ── */}
         <div
+          className={`user-menu-slider${activeUserMenuLink === "Our Products" ? " is-catalogue-open" : ""}`}
           style={{
-            flex: 1,
-            display: "flex",
-            height: "100%",
             transform: userMenuOpen ? "translateX(0)" : "translateX(30px)",
-            transition: "transform 0.4s ease",
           }}
         >
           {/* ── Menu Panel ── */}
-          <div
-            style={{
-              width: "350px",
-              minWidth: "350px",
-              height: "100vh",
-              overflow: "hidden",
-              border: "none",
-              background: "linear-gradient(180deg, #020e1f 0%, #010813 100%)",
-              borderRight: "1px solid rgba(0, 174, 239, 0.12)",
-              padding: "32px 40px",
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
+          <div className={`user-menu-panel${activeUserMenuLink === "Our Products" ? " is-catalogue-open" : ""}`}>
             {/* Close button */}
             <button
               type="button"
@@ -1459,7 +1640,10 @@ export default function Header({ data }: HeaderProps) {
           </div>
 
           {activeUserMenuLink === "Our Products" ? (
-            <CatalogueDashboard onClose={() => setUserMenuOpen(false)} />
+            <CatalogueDashboard
+              onClose={() => setUserMenuOpen(false)}
+              onBack={() => setActiveUserMenuLink(null)}
+            />
           ) : (
             <div
               style={{
