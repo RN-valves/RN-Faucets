@@ -113,8 +113,12 @@ export async function POST(req: Request) {
     let rawKey = "";
     let contentType = req.headers.get("content-type") || "application/octet-stream";
 
-    const headerKey = req.headers.get("x-file-key");
-    const headerFilename = req.headers.get("x-file-name");
+    const urlObj = new URL(req.url);
+    const queryKey = urlObj.searchParams.get("key");
+    const queryFilename = urlObj.searchParams.get("filename");
+
+    const headerKey = req.headers.get("x-file-key") || queryKey;
+    const headerFilename = req.headers.get("x-file-name") || queryFilename;
 
     if (headerKey) {
       // ── Method A: Direct binary stream (bypasses all multipart FormData limits!) ──
@@ -124,34 +128,44 @@ export async function POST(req: Request) {
       buffer = Buffer.from(arrayBuffer);
     } else {
       // ── Method B: Multipart FormData fallback ──
-      let formData: FormData;
       try {
-        formData = await req.formData();
+        const formData = await req.formData();
+        const file = formData.get("file") as File | null;
+        rawKey = (formData.get("key") as string) || "";
+
+        if (!file) {
+          return NextResponse.json(
+            { success: false, error: "No file was received in upload request" },
+            { status: 400 }
+          );
+        }
+        filename = file.name;
+        contentType = file.type || contentType;
+        const arrayBuffer = await file.arrayBuffer();
+        buffer = Buffer.from(arrayBuffer);
       } catch (parseErr: any) {
-        return NextResponse.json(
-          {
-            success: false,
-            error:
-              "Failed to parse file upload body. For large files (>10MB), use direct presigned uploads.",
-            details: parseErr?.message,
-          },
-          { status: 400 }
-        );
+        // Method C: If formData parsing fails, attempt direct arrayBuffer read
+        try {
+          const arrayBuffer = await req.arrayBuffer();
+          if (arrayBuffer.byteLength > 0) {
+            buffer = Buffer.from(arrayBuffer);
+            rawKey = queryKey || "media/upload";
+            filename = queryFilename || "uploaded_file";
+          } else {
+            throw parseErr;
+          }
+        } catch {
+          return NextResponse.json(
+            {
+              success: false,
+              error:
+                "Failed to parse file upload body. Please ensure your upload request contains a valid file or stream.",
+              details: parseErr?.message,
+            },
+            { status: 400 }
+          );
+        }
       }
-
-      const file = formData.get("file") as File | null;
-      rawKey = (formData.get("key") as string) || "";
-
-      if (!file) {
-        return NextResponse.json(
-          { success: false, error: "No file was received in upload request" },
-          { status: 400 }
-        );
-      }
-      filename = file.name;
-      contentType = file.type || contentType;
-      const arrayBuffer = await file.arrayBuffer();
-      buffer = Buffer.from(arrayBuffer);
     }
 
     if (!rawKey) {

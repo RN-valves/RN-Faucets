@@ -670,11 +670,11 @@ export const updateAdminHomeSetting = async (payload: any): Promise<boolean> => 
   }
 };
 
-const SERVER_UPLOAD_MAX_BYTES = 10 * 1024 * 1024; // Next/proxy FormData & body limits kick in around here
+const SERVER_UPLOAD_MAX_BYTES = 500 * 1024 * 1024; // Up to 500MB supported via direct binary stream
 
 export const uploadFileToR2 = async (file: File, key: string): Promise<{ success: boolean; url?: string; key?: string; error?: string }> => {
   try {
-    // 1. Prefer direct browser → R2 via presigned URL (avoids Next.js body size limits)
+    // 1. Prefer direct browser → R2 via presigned URL (bypasses server bandwidth)
     try {
       const presignedParams = new URLSearchParams({
         key,
@@ -704,7 +704,7 @@ export const uploadFileToR2 = async (file: File, key: string): Promise<{ success
           }
 
           console.warn(
-            "Presigned R2 PUT failed:",
+            "Presigned R2 PUT failed (likely CORS or network), falling back to binary stream upload:",
             directUploadRes.status,
             await directUploadRes.text().catch(() => "")
           );
@@ -717,16 +717,7 @@ export const uploadFileToR2 = async (file: File, key: string): Promise<{ success
       console.warn("Presigned upload attempt failed, falling back to server upload:", presignedErr);
     }
 
-    // Large files cannot safely go through the Next.js server — surface a clear error
-    if (file.size > SERVER_UPLOAD_MAX_BYTES) {
-      return {
-        success: false,
-        error:
-          "Direct upload to Cloudflare R2 failed. For files over 10MB, check R2 bucket CORS allows PUT from this site, then try again.",
-      };
-    }
-
-    // 2. Fallback: direct binary POST (avoids multipart FormData parse failures)
+    // 2. Fallback: Direct binary stream POST (bypasses all multipart FormData parser limits up to 500MB)
     const res = await fetch("/api/upload", {
       method: "POST",
       headers: {

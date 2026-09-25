@@ -9,11 +9,23 @@ import HomeClient from "@/components/home/HomeClient";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "RN Valves & Faucets | Luxury Bathware",
-  description: "RN Valves & Faucets - Premium Bath Fittings, Mixers & Sanitaryware",
+  title: "PTMT & CP Tap Manufacturer | Showers & Health Faucets | Bathroom Fittings | RN Valves & Faucets",
+  description:
+    "RN Valves & Faucets – India's leading manufacturer of PTMT taps, CP taps, showers, health faucets, exposed showers, valves, sensor faucets, and bathroom accessories with 7000+ products.",
+  keywords: [
+    "PTMT Taps Manufacturer",
+    "CP Faucets",
+    "Bathroom Fittings India",
+    "Overhead Showers",
+    "Health Faucets",
+    "Sensor Faucets",
+    "Plumbing Valves",
+    "RN Valves & Faucets",
+  ],
   openGraph: {
-    title: "RN Valves & Faucets | Luxury Bathware",
-    description: "RN Valves & Faucets - Premium Bath Fittings, Mixers & Sanitaryware",
+    title: "PTMT & CP Tap Manufacturer | Showers & Health Faucets | Bathroom Fittings | RN Valves & Faucets",
+    description:
+      "RN Valves & Faucets – India's leading manufacturer of PTMT taps, CP taps, showers, health faucets, exposed showers, valves, sensor faucets, and bathroom accessories.",
     url: "https://rnvalves.com",
     siteName: "RN Valves & Faucets",
     images: [
@@ -23,9 +35,24 @@ export const metadata: Metadata = {
         height: 512,
         alt: "RN Valves & Faucets",
       },
+      {
+        url: "https://rnvalves.media/Catalogue/Banner/5.jpg",
+        width: 1200,
+        height: 630,
+        alt: "RN Valves & Faucets Luxury Bath Collection",
+      },
     ],
     locale: "en_IN",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: "@RNValves",
+    creator: "@RNValves",
+    title: "PTMT & CP Tap Manufacturer | Showers & Health Faucets | Bathroom Fittings | RN Valves & Faucets",
+    description:
+      "RN Valves & Faucets – India's leading manufacturer of PTMT taps, CP taps, showers, health faucets, exposed showers, valves, sensor faucets, and bathroom accessories.",
+    images: ["https://rnvalves.media/Catalogue/Banner/5.jpg"],
   },
 };
 

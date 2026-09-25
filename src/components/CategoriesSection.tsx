@@ -351,28 +351,6 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
           color: #000000;
         }
 
-        .luxury-explore-btn {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 9px 20px;
-          border: 1px solid #0F172A;
-          background: transparent;
-          color: #0F172A;
-          font-family: 'Manrope', system-ui, sans-serif;
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.14em;
-          text-transform: uppercase;
-          text-decoration: none;
-          transition: all 0.25s ease;
-        }
-
-        .luxury-explore-btn:hover {
-          background: #0F172A;
-          color: #FFFFFF;
-        }
-
         .luxury-nav-arrow {
           width: 38px;
           height: 38px;
@@ -524,32 +502,26 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
             </h2>
           </div>
 
-          {/* Right Controls: EXPLORE ALL button + Minimal Arrows */}
-          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-            <Link href="/catalogues" className="luxury-explore-btn">
-              EXPLORE ALL
-            </Link>
-
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <button
-                type="button"
-                onClick={() => scrollByAmount("left")}
-                disabled={!canScrollLeft}
-                className="luxury-nav-arrow"
-                aria-label="Previous Categories"
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <button
-                type="button"
-                onClick={() => scrollByAmount("right")}
-                disabled={!canScrollRight}
-                className="luxury-nav-arrow"
-                aria-label="Next Categories"
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>
+          {/* Right Controls: Minimal Navigation Arrows */}
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <button
+              type="button"
+              onClick={() => scrollByAmount("left")}
+              disabled={!canScrollLeft}
+              className="luxury-nav-arrow"
+              aria-label="Previous Categories"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollByAmount("right")}
+              disabled={!canScrollRight}
+              className="luxury-nav-arrow"
+              aria-label="Next Categories"
+            >
+              <ChevronRight size={18} />
+            </button>
           </div>
         </div>
       </div>

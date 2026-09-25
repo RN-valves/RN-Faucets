@@ -27,10 +27,12 @@ const CARD_BG =
 
 const STEP = 340 + 48;
 
-const RING_SIZE = 28;
-const SVG_VP = 28;
-const ARC_R = 11;
-const ARC_STROKE = 2;
+const ACTIVE_RING_SIZE = 38;
+const INACTIVE_RING_SIZE = 10;
+const SVG_VP = ACTIVE_RING_SIZE;
+const OUTER_R = 17;          // hollow outer ring track radius
+const ARC_R = 12;            // thin animated progress arc radius
+const ARC_STROKE = 1.6;
 const CIRCUMFERENCE = 2 * Math.PI * ARC_R;
 
 function DarkProgressDot({
@@ -104,46 +106,51 @@ function DarkProgressDot({
   }, [isActive, isPaused, duration]);
 
   if (!isActive) {
+    /* ── Inactive: sleek hollow dark ring matching homepage style ── */
     return (
       <button
         type="button"
         onClick={onClick}
         aria-label={label}
         style={{
-          width: `${RING_SIZE}px`,
-          height: `${RING_SIZE}px`,
+          width: INACTIVE_RING_SIZE,
+          height: INACTIVE_RING_SIZE,
+          borderRadius: "50%",
+          background: "transparent",
+          border: "1.5px solid rgba(0,0,0,0.32)",
+          flexShrink: 0,
           padding: 0,
           margin: 0,
-          background: "transparent",
-          border: "none",
           cursor: "pointer",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
+          transition: "all 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+          opacity: 0.65,
           outline: "none",
         }}
-      >
-        <div
-          style={{
-            width: "8px",
-            height: "8px",
-            borderRadius: "50%",
-            background: "rgba(0,0,0,0.22)",
-            transition: "all 0.3s ease",
-          }}
-        />
-      </button>
+        onMouseEnter={(e) => {
+          e.currentTarget.style.opacity = "1";
+          e.currentTarget.style.borderColor = "rgba(0,0,0,0.7)";
+          e.currentTarget.style.transform = "scale(1.2)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.opacity = "0.65";
+          e.currentTarget.style.borderColor = "rgba(0,0,0,0.32)";
+          e.currentTarget.style.transform = "scale(1)";
+        }}
+      />
     );
   }
 
+  /* ── Active: outer hollow ring + inner animated arc matching homepage hero ── */
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={label}
       style={{
-        width: `${RING_SIZE}px`,
-        height: `${RING_SIZE}px`,
+        width: ACTIVE_RING_SIZE,
+        height: ACTIVE_RING_SIZE,
+        borderRadius: "50%",
+        flexShrink: 0,
         padding: 0,
         margin: 0,
         background: "transparent",
@@ -157,21 +164,22 @@ function DarkProgressDot({
       }}
     >
       <svg
-        width={RING_SIZE}
-        height={RING_SIZE}
+        width={ACTIVE_RING_SIZE}
+        height={ACTIVE_RING_SIZE}
         viewBox={`0 0 ${SVG_VP} ${SVG_VP}`}
         style={{ transform: "rotate(-90deg)", display: "block" }}
+        aria-hidden="true"
       >
-        {/* Background Track */}
+        {/* Hollow outer dark track */}
         <circle
           cx={SVG_VP / 2}
           cy={SVG_VP / 2}
-          r={ARC_R}
+          r={OUTER_R}
           fill="none"
-          stroke="rgba(0, 0, 0, 0.12)"
+          stroke="rgba(0, 0, 0, 0.16)"
           strokeWidth={1.5}
         />
-        {/* Animated Progress Arc */}
+        {/* Thin dark progress arc inside outer ring */}
         <circle
           ref={circleRef}
           cx={SVG_VP / 2}
@@ -180,17 +188,10 @@ function DarkProgressDot({
           fill="none"
           stroke="#111111"
           strokeWidth={ARC_STROKE}
-          strokeLinecap="round"
+          strokeLinecap="butt"
           strokeDasharray={CIRCUMFERENCE}
           strokeDashoffset={CIRCUMFERENCE}
           style={{ willChange: "stroke-dashoffset" }}
-        />
-        {/* Center Dot */}
-        <circle
-          cx={SVG_VP / 2}
-          cy={SVG_VP / 2}
-          r={3}
-          fill="#111111"
         />
       </svg>
     </button>
@@ -457,6 +458,7 @@ export default function BestSellerCategoriesSection({
   const sectionRef = useRef<HTMLElement>(null);
   const leftContentRef = useRef<HTMLDivElement>(null);
   const sliderTrackRef = useRef<HTMLDivElement>(null);
+  const rightContainerRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const isDraggingRef = useRef(false);
@@ -474,7 +476,19 @@ export default function BestSellerCategoriesSection({
       const targetIndex = Math.max(0, index);
       setVirtualIndex(targetIndex);
 
-      if (!sliderTrackRef.current || isMobile()) return;
+      if (isMobile()) {
+        const cardEl = cardRefs.current[targetIndex % (productsList.length || 1)];
+        if (cardEl && rightContainerRef.current) {
+          const scrollTarget = cardEl.offsetLeft - (window.innerWidth < 640 ? 16 : 24);
+          rightContainerRef.current.scrollTo({
+            left: Math.max(0, scrollTarget),
+            behavior: "smooth",
+          });
+        }
+        return;
+      }
+
+      if (!sliderTrackRef.current) return;
 
       const xOffset = targetIndex * STEP;
 
@@ -504,8 +518,19 @@ export default function BestSellerCategoriesSection({
     slideTo(Math.max(0, virtualIndex - 1));
   }, [slideTo, virtualIndex]);
 
-  // ── Drag & Touch Handlers with real-time responsive tracking ──
+  const handleMobileScroll = () => {
+    if (!isMobile() || !rightContainerRef.current || productsList.length === 0) return;
+    const scrollLeft = rightContainerRef.current.scrollLeft;
+    const cardWidth = 285; // approx mobile card width + gap
+    const activeIdx = Math.round(scrollLeft / cardWidth) % productsList.length;
+    if (activeIdx >= 0 && activeIdx < productsList.length) {
+      setVirtualIndex(activeIdx);
+    }
+  };
+
+  // ── Drag & Touch Handlers with real-time responsive tracking on desktop ──
   const handlePointerDown = (clientX: number) => {
+    if (isMobile()) return;
     isDraggingRef.current = true;
     setIsDragging(true);
     startXRef.current = clientX;
@@ -522,7 +547,7 @@ export default function BestSellerCategoriesSection({
   };
 
   const handlePointerUp = () => {
-    if (!isDraggingRef.current) return;
+    if (!isDraggingRef.current || isMobile()) return;
     isDraggingRef.current = false;
     setIsDragging(false);
 
@@ -614,8 +639,8 @@ export default function BestSellerCategoriesSection({
       onMouseLeave={handlePointerUp}
       style={{
         position: "relative",
-        width: "100vw",
-        height: "100vh",
+        width: "100%",
+        minHeight: "100vh",
         background: "#FFFFFF",
         display: "flex",
         alignItems: "center",
@@ -633,10 +658,10 @@ export default function BestSellerCategoriesSection({
             transform 0.5s cubic-bezier(0.215, 0.61, 0.355, 1);
         }
         .best-seller-card:hover {
-          transform: scale(1.03);
+          transform: translateY(-6px);
         }
         .best-seller-card:hover .best-seller-image-wrap {
-          transform: translateX(-50%) translateY(-10px);
+          transform: translateX(-50%) translateY(-8px) scale(1.03);
         }
         .best-seller-image-wrap {
           transition:
@@ -658,7 +683,7 @@ export default function BestSellerCategoriesSection({
           height: 44px;
           border-radius: 50%;
           background: #ffffff;
-          border: 1px solid #e0e0e0;
+          border: 1.5px solid rgba(0,0,0,0.12);
           padding: 0;
           margin: 0;
           display: inline-flex;
@@ -684,28 +709,28 @@ export default function BestSellerCategoriesSection({
 
         @media (max-width: 1200px) {
           .best-seller-section {
-            padding: 0 40px !important;
+            padding: 100px 36px 40px !important;
           }
           .best-seller-left {
-            width: 30% !important;
+            width: 32% !important;
             padding-right: 24px !important;
           }
           .best-seller-right {
-            width: 70% !important;
+            width: 68% !important;
           }
           .best-seller-heading {
             font-size: clamp(32px, 4.2vw, 48px) !important;
           }
           .best-seller-desc {
-            font-size: clamp(15px, 1.8vw, 20px) !important;
+            font-size: clamp(15px, 1.8vw, 18px) !important;
           }
         }
         @media (max-width: 900px) {
           .best-seller-section {
             flex-direction: column !important;
             height: auto !important;
-            min-height: 100vh;
-            padding: 64px 24px 48px !important;
+            min-height: auto !important;
+            padding: 96px 20px 48px !important;
             align-items: flex-start !important;
             overflow: visible !important;
           }
@@ -713,7 +738,15 @@ export default function BestSellerCategoriesSection({
             width: 100% !important;
             height: auto !important;
             padding-right: 0 !important;
-            margin-bottom: 40px;
+            margin-bottom: 28px !important;
+          }
+          .best-seller-heading {
+            font-size: clamp(30px, 7vw, 42px) !important;
+          }
+          .best-seller-desc {
+            font-size: 15px !important;
+            margin-top: 14px !important;
+            max-width: 100% !important;
           }
           .best-seller-right {
             width: 100% !important;
@@ -721,8 +754,9 @@ export default function BestSellerCategoriesSection({
             overflow-x: auto !important;
             overflow-y: hidden !important;
             -webkit-overflow-scrolling: touch;
-            cursor: grab !important;
             scrollbar-width: none;
+            scroll-snap-type: x mandatory;
+            padding: 8px 4px 20px !important;
           }
           .best-seller-right::-webkit-scrollbar {
             display: none;
@@ -730,14 +764,16 @@ export default function BestSellerCategoriesSection({
           .best-seller-track {
             padding-bottom: 8px;
             transform: none !important;
+            gap: 18px !important;
           }
           .best-seller-card {
-            width: 280px !important;
+            width: 275px !important;
             height: 420px !important;
+            scroll-snap-align: start;
           }
           .best-seller-card.is-featured {
-            width: 320px !important;
-            height: 480px !important;
+            width: 275px !important;
+            height: 420px !important;
           }
         }
       `}</style>
@@ -805,7 +841,7 @@ export default function BestSellerCategoriesSection({
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "6px",
+              gap: "8px",
             }}
             role="group"
             aria-label="Best sellers navigation indicators"
@@ -852,7 +888,9 @@ export default function BestSellerCategoriesSection({
 
       {/* ── RIGHT SIDE: Horizontal Category Cards Slider (72% width) ── */}
       <div
+        ref={rightContainerRef}
         className="best-seller-right"
+        onScroll={handleMobileScroll}
         onMouseDown={(e) => handlePointerDown(e.clientX)}
         onMouseMove={(e) => handlePointerMove(e.clientX)}
         onMouseUp={handlePointerUp}
