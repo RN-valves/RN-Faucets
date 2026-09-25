@@ -5,9 +5,9 @@ import FloatingActionButtons from "@/components/FloatingActionButtons";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://rnvalves.com"),
-  title: "RN Valves & Faucets | Luxury Bathware & Brass Fittings",
+  title: "RN Valves & Faucets | Trusted Bath Fittings Since 2000",
   description:
-    "RN Valves & Faucets - India's leading manufacturer of PTMT taps, CP taps, showers, health faucets, exposed showers, sensor faucets, valves, and luxury bathroom accessories.",
+    "26 years, 5,000+ dealers, one promise: Built for Long Life. PTMT & CP faucets, showers, health faucets, valves and accessories under one roof",
   keywords: [
     "RN Valves & Faucets",
     "PTMT Taps",
@@ -35,9 +35,9 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png?v=3",
   },
   openGraph: {
-    title: "RN Valves & Faucets | Luxury Bathware & Brass Fittings",
+    title: "RN Valves & Faucets | Trusted Bath Fittings Since 2000",
     description:
-      "India's fastest growing modern bathroom solutions company, specializing in Brass & PTMT bath fittings manufacturing with 7000+ products across India.",
+      "26 years, 5,000+ dealers, one promise: Built for Long Life. PTMT & CP faucets, showers, health faucets, valves and accessories under one roof",
     url: "https://rnvalves.com",
     siteName: "RN Valves & Faucets",
     images: [
@@ -61,9 +61,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@RNValves",
     creator: "@RNValves",
-    title: "RN Valves & Faucets | Luxury Bathware & Brass Fittings",
+    title: "RN Valves & Faucets | Trusted Bath Fittings Since 2000",
     description:
-      "India's fastest growing modern bathroom solutions company, specializing in Brass & PTMT bath fittings manufacturing with 7000+ products across India.",
+      "26 years, 5,000+ dealers, one promise: Built for Long Life. PTMT & CP faucets, showers, health faucets, valves and accessories under one roof",
     images: ["https://rnvalves.media/Catalogue/Banner/5.jpg"],
   },
 };

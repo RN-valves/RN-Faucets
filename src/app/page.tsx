@@ -9,9 +9,9 @@ import HomeClient from "@/components/home/HomeClient";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "PTMT & CP Tap Manufacturer | Showers & Health Faucets | Bathroom Fittings | RN Valves & Faucets",
+  title: "RN Valves & Faucets | Trusted Bath Fittings Since 2000",
   description:
-    "RN Valves & Faucets – India's leading manufacturer of PTMT taps, CP taps, showers, health faucets, exposed showers, valves, sensor faucets, and bathroom accessories with 7000+ products.",
+    "26 years, 5,000+ dealers, one promise: Built for Long Life. PTMT & CP faucets, showers, health faucets, valves and accessories under one roof",
   keywords: [
     "PTMT Taps Manufacturer",
     "CP Faucets",
@@ -23,9 +23,9 @@ export const metadata: Metadata = {
     "RN Valves & Faucets",
   ],
   openGraph: {
-    title: "PTMT & CP Tap Manufacturer | Showers & Health Faucets | Bathroom Fittings | RN Valves & Faucets",
+    title: "RN Valves & Faucets | Trusted Bath Fittings Since 2000",
     description:
-      "RN Valves & Faucets – India's leading manufacturer of PTMT taps, CP taps, showers, health faucets, exposed showers, valves, sensor faucets, and bathroom accessories.",
+      "26 years, 5,000+ dealers, one promise: Built for Long Life. PTMT & CP faucets, showers, health faucets, valves and accessories under one roof",
     url: "https://rnvalves.com",
     siteName: "RN Valves & Faucets",
     images: [
@@ -49,9 +49,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@RNValves",
     creator: "@RNValves",
-    title: "PTMT & CP Tap Manufacturer | Showers & Health Faucets | Bathroom Fittings | RN Valves & Faucets",
+    title: "RN Valves & Faucets | Trusted Bath Fittings Since 2000",
     description:
-      "RN Valves & Faucets – India's leading manufacturer of PTMT taps, CP taps, showers, health faucets, exposed showers, valves, sensor faucets, and bathroom accessories.",
+      "26 years, 5,000+ dealers, one promise: Built for Long Life. PTMT & CP faucets, showers, health faucets, valves and accessories under one roof",
     images: ["https://rnvalves.media/Catalogue/Banner/5.jpg"],
   },
 };
