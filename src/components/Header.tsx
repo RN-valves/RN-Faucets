@@ -259,7 +259,7 @@ function CatalogueDashboard({
                   {item.name}
                 </p>
                 <ChevronRight
-                  size={15}
+                  size={17}
                   strokeWidth={isSelected ? 2.5 : 2}
                   className="catalogue-category-chevron"
                   color={isSelected ? "#00AEEF" : "#94A3B8"}
@@ -1062,7 +1062,7 @@ export default function Header({ data }: HeaderProps) {
             transition: flex 0.35s cubic-bezier(0.16, 1, 0.3, 1);
           }
           .user-menu-backdrop.is-catalogue-open {
-            flex: 0 0 clamp(16px, 2.5vw, 48px);
+            flex: 0 0 clamp(16px, 2.5vw, 40px);
           }
 
           .user-menu-slider {
@@ -1077,8 +1077,8 @@ export default function Header({ data }: HeaderProps) {
           }
 
           .user-menu-panel {
-            width: 330px;
-            min-width: 330px;
+            width: 320px;
+            min-width: 320px;
             height: 100vh;
             overflow-y: auto;
             background: linear-gradient(180deg, #020e1f 0%, #010813 100%);
@@ -1091,9 +1091,9 @@ export default function Header({ data }: HeaderProps) {
             transition: width 0.3s ease, min-width 0.3s ease, padding 0.3s ease;
           }
           .user-menu-panel.is-catalogue-open {
-            width: clamp(220px, 16vw, 270px);
-            min-width: clamp(220px, 16vw, 270px);
-            padding: 28px 22px;
+            width: clamp(210px, 15vw, 250px);
+            min-width: clamp(210px, 15vw, 250px);
+            padding: 28px 20px;
           }
 
           .catalogue-canvas {
@@ -1101,11 +1101,11 @@ export default function Header({ data }: HeaderProps) {
             min-width: 0;
             height: 100vh;
             background: #f8fafc;
-            padding: 20px 24px;
+            padding: 22px 26px;
             box-sizing: border-box;
             border-left: 1px solid rgba(148, 163, 184, 0.3);
             display: flex;
-            gap: 20px;
+            gap: 24px;
             overflow: hidden;
           }
 
@@ -1113,24 +1113,25 @@ export default function Header({ data }: HeaderProps) {
             display: none;
           }
 
+          /* ── Larger Categories Column (Left/Middle) ── */
           .catalogue-categories-aside {
-            width: clamp(220px, 18vw, 270px);
-            min-width: clamp(220px, 18vw, 270px);
+            width: clamp(280px, 22vw, 340px);
+            min-width: clamp(280px, 22vw, 340px);
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            height: calc(100vh - 40px);
+            gap: 10px;
+            height: calc(100vh - 44px);
             overflow-y: auto;
-            padding-right: 6px;
+            padding-right: 8px;
             flex-shrink: 0;
             scrollbar-width: thin;
-            scrollbar-color: rgba(0, 119, 182, 0.3) transparent;
+            scrollbar-color: rgba(0, 119, 182, 0.35) transparent;
           }
           .catalogue-categories-aside::-webkit-scrollbar {
             width: 4px;
           }
           .catalogue-categories-aside::-webkit-scrollbar-thumb {
-            background: rgba(0, 119, 182, 0.3);
+            background: rgba(0, 119, 182, 0.35);
             border-radius: 4px;
           }
 
@@ -1138,12 +1139,12 @@ export default function Header({ data }: HeaderProps) {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding-bottom: 10px;
+            padding-bottom: 12px;
             border-bottom: 1px solid rgba(148, 163, 184, 0.25);
             margin-bottom: 4px;
           }
           .catalogue-categories-header-title {
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 800;
             letter-spacing: 0.12em;
             text-transform: uppercase;
@@ -1151,57 +1152,58 @@ export default function Header({ data }: HeaderProps) {
             font-family: 'Manrope', system-ui, sans-serif;
           }
           .catalogue-categories-header-count {
-            font-size: 11px;
+            font-size: 12px;
             color: #64748B;
-            fontWeight: 600;
+            font-weight: 600;
             font-family: 'Manrope', system-ui, sans-serif;
           }
 
           .catalogue-categories-list {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 9px;
           }
 
           .catalogue-category-btn {
             display: grid;
-            grid-template-columns: 44px 1fr auto;
+            grid-template-columns: 52px 1fr auto;
             align-items: center;
-            gap: 10px;
-            padding: 8px 10px;
-            border-radius: 12px;
-            border: 1px solid rgba(203, 213, 225, 0.75);
-            background: rgba(255, 255, 255, 0.75);
-            box-shadow: 0 1px 3px rgba(18, 42, 62, 0.04);
+            gap: 14px;
+            padding: 10px 14px;
+            border-radius: 14px;
+            border: 1px solid rgba(203, 213, 225, 0.85);
+            background: rgba(255, 255, 255, 0.85);
+            box-shadow: 0 1px 4px rgba(18, 42, 62, 0.05);
             cursor: pointer;
             text-align: left;
             width: 100%;
+            min-height: 68px;
             color: inherit;
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
             outline: none;
             box-sizing: border-box;
           }
           .catalogue-category-btn:hover {
-            transform: translateX(3px);
-            background: rgba(255, 255, 255, 0.95);
+            transform: translateX(4px);
+            background: #ffffff;
             border-color: #93c5fd;
-            box-shadow: 0 4px 12px rgba(18, 42, 62, 0.08);
+            box-shadow: 0 6px 16px rgba(18, 42, 62, 0.09);
           }
           .catalogue-category-btn.is-active {
             border: 1.5px solid #00AEEF;
             background: linear-gradient(90deg, #ffffff 0%, #e0f2fe 100%);
-            box-shadow: 0 4px 16px rgba(0, 174, 239, 0.18);
+            box-shadow: 0 4px 18px rgba(0, 174, 239, 0.2);
           }
 
           .catalogue-category-thumb {
-            width: 44px;
-            height: 44px;
-            border-radius: 9px;
+            width: 52px;
+            height: 52px;
+            border-radius: 10px;
             background-color: #ffffff;
             border: 1px solid rgba(148, 163, 184, 0.25);
             flex-shrink: 0;
-            padding: 3px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
+            padding: 4px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1210,14 +1212,15 @@ export default function Header({ data }: HeaderProps) {
           }
           .catalogue-category-btn.is-active .catalogue-category-thumb {
             border-color: #00AEEF;
+            box-shadow: 0 2px 8px rgba(0, 174, 239, 0.25);
           }
 
           .catalogue-category-name {
             margin: 0;
-            color: #334155;
+            color: #1e293b;
             font-family: 'Manrope', system-ui, sans-serif;
-            font-size: 13px;
-            font-weight: 500;
+            font-size: 14px;
+            font-weight: 600;
             line-height: 1.35;
             display: -webkit-box;
             -webkit-line-clamp: 2;
@@ -1227,27 +1230,29 @@ export default function Header({ data }: HeaderProps) {
           .catalogue-category-btn.is-active .catalogue-category-name {
             color: #0f172a;
             font-weight: 700;
+            font-size: 14.5px;
           }
 
+          /* ── Right Column: Subcategories Showcase ── */
           .catalogue-subcategories-col {
             flex: 1;
             min-width: 0;
             display: flex;
             flex-direction: column;
-            gap: 16px;
-            height: calc(100vh - 40px);
+            gap: 18px;
+            height: calc(100vh - 44px);
             overflow-y: auto;
-            padding-right: 6px;
+            padding-right: 8px;
             border-left: 1px solid rgba(148, 163, 184, 0.25);
-            padding-left: 20px;
+            padding-left: 24px;
             scrollbar-width: thin;
-            scrollbar-color: rgba(0, 119, 182, 0.3) transparent;
+            scrollbar-color: rgba(0, 119, 182, 0.35) transparent;
           }
           .catalogue-subcategories-col::-webkit-scrollbar {
             width: 4px;
           }
           .catalogue-subcategories-col::-webkit-scrollbar-thumb {
-            background: rgba(0, 119, 182, 0.3);
+            background: rgba(0, 119, 182, 0.35);
             border-radius: 4px;
           }
 
@@ -1257,7 +1262,7 @@ export default function Header({ data }: HeaderProps) {
             justify-content: space-between;
             flex-wrap: wrap;
             gap: 12px;
-            padding-bottom: 12px;
+            padding-bottom: 14px;
             border-bottom: 1px solid rgba(148, 163, 184, 0.25);
           }
           .catalogue-subcategories-subtitle {
@@ -1276,7 +1281,7 @@ export default function Header({ data }: HeaderProps) {
             margin: 0;
             color: #0a192f;
             font-family: 'Manrope', system-ui, sans-serif;
-            font-size: clamp(20px, 1.8vw, 25px);
+            font-size: clamp(22px, 2vw, 28px);
             font-weight: 800;
             letter-spacing: -0.02em;
             line-height: 1.25;
@@ -1286,11 +1291,11 @@ export default function Header({ data }: HeaderProps) {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 16px;
+            padding: 9px 18px;
             border-radius: 10px;
             background: linear-gradient(90deg, #0077B6 0%, #00AEEF 100%);
             color: #FFFFFF;
-            font-size: 12.5px;
+            font-size: 13px;
             font-weight: 700;
             font-family: 'Manrope', system-ui, sans-serif;
             border: none;
@@ -1305,27 +1310,31 @@ export default function Header({ data }: HeaderProps) {
             box-shadow: 0 6px 18px rgba(0, 174, 239, 0.35);
           }
 
+          /* ── SUB-CARDS GRID: 3 CARDS FOR BIGGER SCREEN, 2 CARDS FOR SMALLER SCREEN ── */
           .catalogue-subcategories-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(min(100%, 215px), 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
             min-width: 0;
           }
 
           .catalogue-subcat-card {
             display: grid;
-            grid-template-columns: clamp(60px, 32%, 95px) 1fr;
-            min-height: clamp(120px, 13vh, 150px);
+            grid-template-columns: clamp(80px, 32%, 115px) 1fr;
+            min-height: 155px;
+            border-radius: 14px;
             overflow: hidden;
             cursor: pointer;
             text-decoration: none;
             transition: transform 0.25s ease, box-shadow 0.25s ease;
+            box-sizing: border-box;
           }
           .catalogue-subcat-fallback-card {
             grid-column: 1 / -1;
             display: grid;
-            grid-template-columns: clamp(90px, 30%, 140px) 1fr;
-            min-height: 160px;
+            grid-template-columns: clamp(100px, 30%, 150px) 1fr;
+            min-height: 170px;
+            border-radius: 14px;
             overflow: hidden;
             cursor: pointer;
           }
@@ -1336,13 +1345,13 @@ export default function Header({ data }: HeaderProps) {
             align-items: center;
             justify-content: center;
             overflow: hidden;
-            padding: 6px;
+            padding: 8px;
             box-sizing: border-box;
           }
           .catalogue-card-img {
             width: 100%;
             height: 100%;
-            max-height: 120px;
+            max-height: 135px;
             object-fit: contain;
             transform: scale(1.06);
             transition: transform 0.4s ease;
@@ -1352,7 +1361,7 @@ export default function Header({ data }: HeaderProps) {
           }
 
           .catalogue-card-info-panel {
-            padding: 12px 10px;
+            padding: 16px 14px;
             display: flex;
             flex-direction: column;
             justifyContent: space-between;
@@ -1365,18 +1374,18 @@ export default function Header({ data }: HeaderProps) {
             margin: 0;
             color: #0a192f;
             font-family: 'Manrope', system-ui, sans-serif;
-            font-size: clamp(13px, 1vw, 15px);
+            font-size: clamp(14px, 1.1vw, 16.5px);
             font-weight: 700;
             line-height: 1.3;
-            letterSpacing: -0.01em;
+            letter-spacing: -0.01em;
           }
           .catalogue-card-desc {
             margin: 0;
             color: #1e3a5f;
             font-family: 'Manrope', system-ui, sans-serif;
-            font-size: clamp(11px, 0.85vw, 12px);
+            font-size: clamp(11.5px, 0.9vw, 12.5px);
             font-weight: 500;
-            line-height: 1.4;
+            line-height: 1.45;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
@@ -1384,8 +1393,8 @@ export default function Header({ data }: HeaderProps) {
           }
 
           .catalogue-card-arrow-circle {
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
             border-radius: 999px;
             border: 1px solid rgba(0, 119, 182, 0.25);
             display: inline-flex;
@@ -1393,7 +1402,7 @@ export default function Header({ data }: HeaderProps) {
             justify-content: center;
             color: #0077B6;
             background-color: #ffffff;
-            box-shadow: 0 2px 6px rgba(18, 42, 62, 0.1);
+            box-shadow: 0 2px 8px rgba(18, 42, 62, 0.12);
             transition: all 0.2s ease;
             flex-shrink: 0;
           }
@@ -1405,46 +1414,51 @@ export default function Header({ data }: HeaderProps) {
 
           /* ── Responsive Viewport Breakpoints ── */
 
-          /* 1. Large Screen Desktops & Laptops (1200px - 1440px) */
-          @media (max-width: 1440px) {
-            .user-menu-backdrop.is-catalogue-open {
-              flex: 0 0 16px !important;
-            }
-            .catalogue-canvas {
-              padding: 16px 18px !important;
-              gap: 16px !important;
-            }
-            .catalogue-subcategories-col {
-              padding-left: 16px !important;
-            }
+          /* 1. Smaller Desktop & Laptops (max-width: 1280px) -> Exactly 2 Cards */
+          @media (max-width: 1280px) {
             .catalogue-subcategories-grid {
-              grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)) !important;
-              gap: 10px !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 12px !important;
+            }
+            .catalogue-categories-aside {
+              width: 270px !important;
+              min-width: 270px !important;
+            }
+            .user-menu-backdrop.is-catalogue-open {
+              flex: 0 0 12px !important;
             }
           }
 
-          /* 2. Standard Laptops (1024px - 1200px) */
-          @media (max-width: 1200px) {
+          /* 2. Standard Laptops (max-width: 1100px) -> 2 Cards */
+          @media (max-width: 1100px) {
             .user-menu-backdrop.is-catalogue-open {
               flex: 0 0 0px !important;
               width: 0 !important;
             }
             .user-menu-panel.is-catalogue-open {
-              width: 200px !important;
-              min-width: 200px !important;
-              padding: 24px 16px !important;
-            }
-            .catalogue-categories-aside {
               width: 210px !important;
               min-width: 210px !important;
+              padding: 24px 16px !important;
+            }
+            .catalogue-canvas {
+              padding: 16px !important;
+              gap: 16px !important;
+            }
+            .catalogue-categories-aside {
+              width: 240px !important;
+              min-width: 240px !important;
+            }
+            .catalogue-subcategories-col {
+              padding-left: 16px !important;
             }
             .catalogue-subcategories-grid {
-              grid-template-columns: repeat(auto-fill, minmax(min(100%, 185px), 1fr)) !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 10px !important;
             }
           }
 
-          /* 3. Small Screen Desktops & Tablets (max-width: 1023px) */
-          @media (max-width: 1023px) {
+          /* 3. Small Screen Desktops & Tablets (max-width: 900px) */
+          @media (max-width: 900px) {
             .user-menu-backdrop {
               display: none !important;
             }
@@ -1517,9 +1531,10 @@ export default function Header({ data }: HeaderProps) {
               width: 100% !important;
             }
             .catalogue-category-btn {
-              width: 180px !important;
-              min-width: 180px !important;
+              width: 200px !important;
+              min-width: 200px !important;
               flex-shrink: 0 !important;
+              min-height: 60px !important;
             }
             .catalogue-subcategories-col {
               width: 100% !important;
@@ -1530,7 +1545,19 @@ export default function Header({ data }: HeaderProps) {
               height: calc(100vh - 220px) !important;
             }
             .catalogue-subcategories-grid {
-              grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr)) !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 10px !important;
+            }
+          }
+
+          /* 4. Mobile Phones (max-width: 640px) */
+          @media (max-width: 640px) {
+            .catalogue-subcategories-grid {
+              grid-template-columns: 1fr !important;
+              gap: 10px !important;
+            }
+            .catalogue-subcat-card {
+              min-height: 135px !important;
             }
           }
         `}</style>
