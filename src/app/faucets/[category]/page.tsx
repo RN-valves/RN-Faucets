@@ -8,6 +8,67 @@ import Header from "@/components/Header";
 import FooterSection from "@/components/FooterSection";
 import { SlidersHorizontal, X } from "lucide-react";
 
+// Convert human size strings (e.g. 1/2", 3/4", 15mm, 25mm, 4", 100mm) into comparable numeric mm values
+function parseSizeValue(sizeStr: string): number {
+  if (!sizeStr) return 999999;
+  const s = sizeStr.toLowerCase().trim();
+
+  // Fraction inch check (e.g. 1/2", 3/4", 1-1/4", 1/2 inch)
+  const fracMatch = s.match(/^(\d+)?\s*(\d+)\/(\d+)/);
+  if (fracMatch) {
+    const whole = fracMatch[1] ? parseFloat(fracMatch[1]) : 0;
+    const num = parseFloat(fracMatch[2]);
+    const den = parseFloat(fracMatch[3]);
+    const inches = whole + (num / den);
+    return inches * 25.4;
+  }
+
+  // Decimal/Integer inch check (e.g. 4", 6", 8", 1", 2.5")
+  const inchMatch = s.match(/^(\d+(?:\.\d+)?)\s*(?:"|inch|in\b)/);
+  if (inchMatch) {
+    return parseFloat(inchMatch[1]) * 25.4;
+  }
+
+  // Millimeter check (e.g. 15mm, 20 mm, 25mm, 100mm)
+  const mmMatch = s.match(/^(\d+(?:\.\d+)?)\s*(?:mm|m\b)/);
+  if (mmMatch) {
+    return parseFloat(mmMatch[1]);
+  }
+
+  // Standalone numbers
+  const numMatch = s.match(/^(\d+(?:\.\d+)?)/);
+  if (numMatch) {
+    const val = parseFloat(numMatch[1]);
+    return val <= 12 ? val * 25.4 : val;
+  }
+
+  return 999999;
+}
+
+const COLOR_ORDER: Record<string, number> = {
+  chrome: 1,
+  "chrome plated": 1,
+  "chrome finish": 1,
+  "chrome black": 2,
+  "black matte": 3,
+  "matte black": 3,
+  black: 3,
+  "rose gold": 4,
+  gold: 5,
+  white: 6,
+  "white gloss": 6,
+  "white matte": 6,
+  ivory: 7,
+};
+
+function getColorPriority(color: string): number {
+  const c = (color || "").toLowerCase().trim();
+  for (const [key, priority] of Object.entries(COLOR_ORDER)) {
+    if (c.includes(key)) return priority;
+  }
+  return 50;
+}
+
 export default function CategoryPage({
   params,
 }: {
@@ -116,7 +177,7 @@ export default function CategoryPage({
       .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }));
   }, [baseProducts]);
 
-  // ── Unique Available Colors and Counts ──
+  // ── Unique Available Colors and Counts (Flagship finishes first) ──
   const colorCounts = useMemo(() => {
     const map = new Map<string, number>();
     baseProducts.forEach((p) => {
@@ -127,10 +188,15 @@ export default function CategoryPage({
     });
     return Array.from(map.entries())
       .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }));
+      .sort((a, b) => {
+        const pA = getColorPriority(a.name);
+        const pB = getColorPriority(b.name);
+        if (pA !== pB) return pA - pB;
+        return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+      });
   }, [baseProducts]);
 
-  // ── Unique Available Sizes and Counts ──
+  // ── Unique Available Sizes and Counts (Smallest to Largest physical dimensions) ──
   const sizeCounts = useMemo(() => {
     const map = new Map<string, number>();
     baseProducts.forEach((p) => {
@@ -141,7 +207,12 @@ export default function CategoryPage({
     });
     return Array.from(map.entries())
       .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }));
+      .sort((a, b) => {
+        const sA = parseSizeValue(a.name);
+        const sB = parseSizeValue(b.name);
+        if (sA !== sB) return sA - sB;
+        return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+      });
   }, [baseProducts]);
 
   // ── Filter Toggle Handlers ──
@@ -205,22 +276,44 @@ export default function CategoryPage({
       if (sortBy === "name_z_a") {
         return (b.name || "").localeCompare(a.name || "", undefined, { numeric: true, sensitivity: "base" });
       }
+      if (sortBy === "size_small_large") {
+        const sA = parseSizeValue(a.size || "");
+        const sB = parseSizeValue(b.size || "");
+        if (sA !== sB) return sA - sB;
+        return (a.name || "").localeCompare(b.name || "");
+      }
+      if (sortBy === "size_large_small") {
+        const sA = parseSizeValue(a.size || "");
+        const sB = parseSizeValue(b.size || "");
+        if (sA !== sB) return sB - sA;
+        return (a.name || "").localeCompare(b.name || "");
+      }
       if (sortBy === "newest") {
         return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
       }
 
       // Default: Recommended Intelligent Grouping
-      // 1. Group by Product Name A to Z with natural numeric comparison
+      // 1. Group by Base Product Name A to Z with natural numeric comparison
       const nameCompare = (a.name || "").localeCompare(b.name || "", undefined, { numeric: true, sensitivity: "base" });
       if (nameCompare !== 0) return nameCompare;
 
-      // 2. Secondary: Article Code / SKU Code numeric order
+      // 2. Secondary: Color finish hierarchy (Chrome standard first, then specialty finishes)
+      const colorA = getColorPriority(a.colorName || "");
+      const colorB = getColorPriority(b.colorName || "");
+      if (colorA !== colorB) return colorA - colorB;
+
+      // 3. Tertiary: Size dimension ascending (15mm -> 20mm -> 25mm / 1/2" -> 3/4" -> 1")
+      const sizeA = parseSizeValue(a.size || "");
+      const sizeB = parseSizeValue(b.size || "");
+      if (sizeA !== sizeB) return sizeA - sizeB;
+
+      // 4. Quaternary: Article Code / SKU Code numeric order
       const artA = String(a.article || a.code || "");
       const artB = String(b.article || b.code || "");
       const artCompare = artA.localeCompare(artB, undefined, { numeric: true, sensitivity: "base" });
       if (artCompare !== 0) return artCompare;
 
-      // 3. Tertiary: Price
+      // 5. Quinary: Price
       return Number(a.inSelling ?? a.price ?? 0) - Number(b.inSelling ?? b.price ?? 0);
     });
   }, [baseProducts, selectedNames, selectedColors, selectedSizes, sortBy]);
@@ -915,6 +1008,8 @@ export default function CategoryPage({
                 }}
               >
                 <option value="recommended">Recommended (Grouped A-Z)</option>
+                <option value="size_small_large">Size: Small to Large</option>
+                <option value="size_large_small">Size: Large to Small</option>
                 <option value="price_low_high">Price: Low to High</option>
                 <option value="price_high_low">Price: High to Low</option>
                 <option value="name_a_z">Name: A to Z</option>
