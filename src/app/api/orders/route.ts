@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Order from "@/models/Order";
 import { requireAdminAuth, requireAuth, escapeRegex, checkRateLimit, getClientIp, sanitizeObject } from "@/lib/security";
+import { sendOrderInvoiceEmail } from "@/lib/email";
 
 export async function GET(request: Request) {
   try {
@@ -126,6 +127,11 @@ export async function POST(request: Request) {
         timeStyle: "short",
       }),
     });
+
+    // Send confirmation & invoice email in background
+    sendOrderInvoiceEmail(order).catch((err) =>
+      console.error("Async invoice email error:", err)
+    );
 
     return NextResponse.json(order, { status: 201 });
   } catch (error: any) {

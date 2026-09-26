@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyRazorpayPaymentSignature } from "@/lib/razorpay";
 import { connectDB } from "@/lib/mongodb";
 import Order from "@/models/Order";
+import { sendOrderInvoiceEmail } from "@/lib/email";
 
 export async function POST(request: Request) {
   try {
@@ -57,6 +58,11 @@ export async function POST(request: Request) {
           }),
       },
       { upsert: true, new: true }
+    );
+
+    // Send confirmation invoice email to customer and admin
+    sendOrderInvoiceEmail(savedOrder).catch((err) =>
+      console.error("Async invoice email error:", err)
     );
 
     return NextResponse.json({

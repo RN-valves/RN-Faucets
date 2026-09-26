@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Order from "@/models/Order";
 import { requireAdminAuth, requireAuth } from "@/lib/security";
+import { sendOrderStatusEmail } from "@/lib/email";
 
 export async function GET(
   request: Request,
@@ -55,6 +56,8 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
+    const previousOrder = await Order.findOne({ $or: [{ _id: id }, { id }] }).lean();
+
     const updated = await Order.findOneAndUpdate(
       { $or: [{ _id: id }, { id }] },
       body,
@@ -62,6 +65,14 @@ export async function PUT(
     ).lean();
 
     if (!updated) return NextResponse.json({ error: "Order not found" }, { status: 404 });
+
+    // If status changed or updated, send status update email in background
+    if (body.status && (!previousOrder || previousOrder.status !== body.status)) {
+      sendOrderStatusEmail(updated, body.status).catch((err) =>
+        console.error("Async status update email error:", err)
+      );
+    }
+
     return NextResponse.json(updated);
   } catch (error: any) {
     console.error("PUT /api/orders/[id] error:", error);

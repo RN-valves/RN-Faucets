@@ -67,6 +67,11 @@ export interface IOrder extends Document {
   razorpayOrderId?: string;
   razorpayPaymentId?: string;
   razorpaySignature?: string;
+  // Package Dimensions
+  packageLength?: number;
+  packageBreadth?: number;
+  packageHeight?: number;
+  packageWeight?: number;
   // Shipping Integration Details
   shippingProvider?: "Shiprocket" | "Shipway" | "Manual" | "Custom" | string;
   shiprocketOrderId?: string | number;
@@ -108,6 +113,10 @@ const OrderSchema = new Schema<IOrder>(
     dispatchDate: { type: String, default: "" },
     vehicleNumber: { type: String, default: "" },
     transportNotes: { type: String, default: "" },
+    packageLength: { type: Number, default: 10 },
+    packageBreadth: { type: Number, default: 10 },
+    packageHeight: { type: Number, default: 10 },
+    packageWeight: { type: Number, default: 0.5 },
     razorpayOrderId: { type: String, default: "" },
     razorpayPaymentId: { type: String, default: "" },
     razorpaySignature: { type: String, default: "" },

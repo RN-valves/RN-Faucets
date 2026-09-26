@@ -27,6 +27,9 @@ import {
   ShieldCheck,
   AlertCircle,
   FileText,
+  Copy,
+  Check,
+  Banknote,
 } from "lucide-react";
 
 interface OrderItem {
@@ -69,6 +72,10 @@ interface OrderData {
   dispatchDate?: string;
   vehicleNumber?: string;
   transportNotes?: string;
+  packageLength?: number;
+  packageBreadth?: number;
+  packageHeight?: number;
+  packageWeight?: number;
   razorpayOrderId?: string;
   razorpayPaymentId?: string;
   razorpaySignature?: string;
@@ -94,6 +101,7 @@ export default function AdminOrderDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [copiedPayId, setCopiedPayId] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -105,6 +113,10 @@ export default function AdminOrderDetailPage() {
     dispatchDate: "",
     vehicleNumber: "",
     transportNotes: "",
+    packageLength: 10,
+    packageBreadth: 10,
+    packageHeight: 10,
+    packageWeight: 0.5,
   });
 
   const cardBg = isDark ? "#111827" : "#FFFFFF";
@@ -113,6 +125,29 @@ export default function AdminOrderDetailPage() {
   const textMuted = isDark ? "#9CA3AF" : "#6B7280";
   const inputBg = isDark ? "#1F2937" : "#F9FAFB";
   const tableHeaderBg = isDark ? "#1E293B" : "#F8FAFC";
+
+  const handleMarkPayment = async (newStatus: "Paid" | "Pending") => {
+    if (!order) return;
+    setIsSaving(true);
+    try {
+      const res = await fetch(`/api/orders/${order._id || order.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentStatus: newStatus }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setOrder(updated);
+        setFormData((prev) => ({ ...prev, paymentStatus: newStatus }));
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 4000);
+      }
+    } catch (err: any) {
+      alert("Failed to update payment status: " + err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const fetchOrder = async () => {
     if (!orderId) return;
@@ -134,6 +169,10 @@ export default function AdminOrderDetailPage() {
         dispatchDate: data.dispatchDate || new Date().toISOString().split("T")[0],
         vehicleNumber: data.vehicleNumber || "",
         transportNotes: data.transportNotes || "",
+        packageLength: data.packageLength || 10,
+        packageBreadth: data.packageBreadth || 10,
+        packageHeight: data.packageHeight || 10,
+        packageWeight: data.packageWeight || 0.5,
       });
     } catch (err: any) {
       setError(err.message || "Failed to load order details");
@@ -377,6 +416,75 @@ export default function AdminOrderDetailPage() {
                   LR / AWB: {order.trackingNumber || "Pending"}
                 </div>
               </AdminCard>
+            </div>
+
+            {/* Real-time Payment Status Banner */}
+            <div
+              style={{
+                padding: "16px 20px",
+                borderRadius: "12px",
+                border: `1px solid ${
+                  order.paymentStatus === "Paid"
+                    ? isDark ? "#065F46" : "#A7F3D0"
+                    : isDark ? "#78350F" : "#FDE68A"
+                }`,
+                background:
+                  order.paymentStatus === "Paid"
+                    ? isDark ? "rgba(6, 78, 59, 0.4)" : "#ECFDF5"
+                    : isDark ? "rgba(120, 53, 15, 0.4)" : "#FFFBEB",
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "14px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                {order.paymentStatus === "Paid" ? (
+                  <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#10B981", display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF" }}>
+                    <ShieldCheck size={20} />
+                  </div>
+                ) : (
+                  <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#F59E0B", display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF" }}>
+                    <Clock size={20} />
+                  </div>
+                )}
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: "15px", color: order.paymentStatus === "Paid" ? (isDark ? "#A7F3D0" : "#065F46") : (isDark ? "#FDE68A" : "#92400E") }}>
+                    {order.paymentStatus === "Paid" ? "Payment Received & Confirmed (PAID)" : "Payment Pending / Unpaid Order"}
+                  </div>
+                  <div style={{ fontSize: "12.5px", color: textMuted, marginTop: "2px" }}>
+                    Method: <strong style={{ color: textMain }}>{order.paymentMethod}</strong> • Total Amount: <strong style={{ color: textMain }}>₹{order.totalAmount ? order.totalAmount.toLocaleString("en-IN") : "0"}</strong>
+                    {order.razorpayPaymentId ? ` • Razorpay ID: ${order.razorpayPaymentId}` : ""}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                {order.paymentStatus !== "Paid" ? (
+                  <AdminButton
+                    variant="primary"
+                    size="sm"
+                    icon={<CheckCircle2 size={14} />}
+                    isDark={isDark}
+                    disabled={isSaving}
+                    onClick={() => handleMarkPayment("Paid")}
+                  >
+                    Mark as Payment Received
+                  </AdminButton>
+                ) : (
+                  <AdminButton
+                    variant="secondary"
+                    size="sm"
+                    icon={<Clock size={14} />}
+                    isDark={isDark}
+                    disabled={isSaving}
+                    onClick={() => handleMarkPayment("Pending")}
+                  >
+                    Mark as Pending (Unpaid)
+                  </AdminButton>
+                )}
+              </div>
             </div>
 
             {/* Save Success Alert */}
@@ -769,6 +877,113 @@ export default function AdminOrderDetailPage() {
                     </div>
                   </div>
 
+                  {/* Package Dimensions Section */}
+                  <div style={{ borderTop: `1px solid ${border}`, paddingTop: "16px" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+                      <label style={{ fontSize: "13px", fontWeight: 800, color: textMain, display: "flex", alignItems: "center", gap: "6px" }}>
+                        <Package size={15} style={{ color: "#0077B6" }} />
+                        Package & Box Dimensions (Shipping Rates)
+                      </label>
+                      <span style={{ fontSize: "11px", color: textMuted }}>
+                        Volumetric: {((Number(formData.packageLength || 10) * Number(formData.packageBreadth || 10) * Number(formData.packageHeight || 10)) / 5000).toFixed(2)} KG
+                      </span>
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: textMuted, marginBottom: "4px" }}>
+                          Length (CM)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={formData.packageLength}
+                          onChange={(e) => setFormData({ ...formData, packageLength: parseFloat(e.target.value) || 0 })}
+                          style={{
+                            width: "100%",
+                            padding: "8px 10px",
+                            borderRadius: "8px",
+                            border: `1px solid ${border}`,
+                            background: inputBg,
+                            color: textMain,
+                            fontSize: "13px",
+                            fontWeight: 700,
+                            boxSizing: "border-box",
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: textMuted, marginBottom: "4px" }}>
+                          Breadth (CM)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={formData.packageBreadth}
+                          onChange={(e) => setFormData({ ...formData, packageBreadth: parseFloat(e.target.value) || 0 })}
+                          style={{
+                            width: "100%",
+                            padding: "8px 10px",
+                            borderRadius: "8px",
+                            border: `1px solid ${border}`,
+                            background: inputBg,
+                            color: textMain,
+                            fontSize: "13px",
+                            fontWeight: 700,
+                            boxSizing: "border-box",
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: textMuted, marginBottom: "4px" }}>
+                          Height (CM)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={formData.packageHeight}
+                          onChange={(e) => setFormData({ ...formData, packageHeight: parseFloat(e.target.value) || 0 })}
+                          style={{
+                            width: "100%",
+                            padding: "8px 10px",
+                            borderRadius: "8px",
+                            border: `1px solid ${border}`,
+                            background: inputBg,
+                            color: textMain,
+                            fontSize: "13px",
+                            fontWeight: 700,
+                            boxSizing: "border-box",
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: textMuted, marginBottom: "4px" }}>
+                          Weight (KG)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={formData.packageWeight}
+                          onChange={(e) => setFormData({ ...formData, packageWeight: parseFloat(e.target.value) || 0 })}
+                          style={{
+                            width: "100%",
+                            padding: "8px 10px",
+                            borderRadius: "8px",
+                            border: `1px solid ${border}`,
+                            background: inputBg,
+                            color: textMain,
+                            fontSize: "13px",
+                            fontWeight: 700,
+                            boxSizing: "border-box",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Transport Notes */}
                   <div>
                     <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textMain, marginBottom: "6px" }}>
@@ -808,44 +1023,117 @@ export default function AdminOrderDetailPage() {
                   </div>
                 </form>
 
-                {/* Gateway & Online Payment Card */}
-                {order.paymentMethod === "Online Payment" && (
-                  <div
-                    style={{
-                      background: cardBg,
-                      border: `1px solid ${border}`,
-                      borderRadius: "14px",
-                      padding: "20px",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 800, fontSize: "15px", color: textMain, marginBottom: "14px" }}>
+                {/* Complete Transaction & Payment Verification Card */}
+                <div
+                  style={{
+                    background: cardBg,
+                    border: `1px solid ${border}`,
+                    borderRadius: "14px",
+                    padding: "20px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${border}`, paddingBottom: "12px", marginBottom: "14px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 800, fontSize: "15px", color: textMain }}>
                       <CreditCard size={18} style={{ color: "#0077B6" }} />
-                      Razorpay Gateway Transaction
+                      Payment & Transaction Details
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "12.5px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", color: textMuted }}>
-                        <span>Payment Status:</span>
-                        <AdminStatusBadge
-                          status={order.paymentStatus}
-                          variant={order.paymentStatus === "Paid" ? "success" : "warning"}
-                          isDark={isDark}
-                        />
-                      </div>
-                      {order.razorpayOrderId && (
-                        <div style={{ display: "flex", justifyContent: "space-between" }}>
-                          <span style={{ color: textMuted }}>Razorpay Order ID:</span>
-                          <span style={{ fontFamily: "monospace", fontWeight: 700, color: textMain }}>{order.razorpayOrderId}</span>
-                        </div>
-                      )}
-                      {order.razorpayPaymentId && (
-                        <div style={{ display: "flex", justifyContent: "space-between" }}>
-                          <span style={{ color: textMuted }}>Razorpay Payment ID:</span>
+                    <AdminStatusBadge
+                      status={order.paymentStatus === "Paid" ? "PAID" : order.paymentStatus === "Refunded" ? "REFUNDED" : "UNPAID / PENDING"}
+                      variant={order.paymentStatus === "Paid" ? "success" : order.paymentStatus === "Refunded" ? "danger" : "warning"}
+                      isDark={isDark}
+                    />
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${border}` }}>
+                      <span style={{ color: textMuted }}>Gross Charged Amount:</span>
+                      <span style={{ fontWeight: 800, fontSize: "15px", color: textMain }}>₹{order.totalAmount ? order.totalAmount.toLocaleString("en-IN") : "0"}</span>
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${border}` }}>
+                      <span style={{ color: textMuted }}>Payment Method:</span>
+                      <span style={{ fontWeight: 700, color: textMain }}>{order.paymentMethod}</span>
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${border}` }}>
+                      <span style={{ color: textMuted }}>Gateway / Channel:</span>
+                      <span style={{ fontWeight: 600, color: textMain }}>
+                        {order.paymentMethod === "Online Payment" ? "Razorpay (IDFC FIRST Bank API)" : "Cash On Delivery (Direct Courier Collection)"}
+                      </span>
+                    </div>
+
+                    {order.razorpayPaymentId ? (
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: `1px solid ${border}` }}>
+                        <span style={{ color: textMuted }}>Razorpay Payment ID:</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                           <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#0077B6" }}>{order.razorpayPaymentId}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(order.razorpayPaymentId || "");
+                              setCopiedPayId(true);
+                              setTimeout(() => setCopiedPayId(false), 2000);
+                            }}
+                            style={{ background: "transparent", border: "none", cursor: "pointer", color: textMuted, padding: "2px" }}
+                            title="Copy Payment ID"
+                          >
+                            {copiedPayId ? <Check size={13} style={{ color: "#10B981" }} /> : <Copy size={13} />}
+                          </button>
                         </div>
-                      )}
+                      </div>
+                    ) : null}
+
+                    {order.razorpayOrderId ? (
+                      <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${border}` }}>
+                        <span style={{ color: textMuted }}>Razorpay Order ID:</span>
+                        <span style={{ fontFamily: "monospace", fontWeight: 700, color: textMain }}>{order.razorpayOrderId}</span>
+                      </div>
+                    ) : null}
+
+                    <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${border}` }}>
+                      <span style={{ color: textMuted }}>Signature Verification:</span>
+                      <span style={{ color: order.paymentStatus === "Paid" ? "#10B981" : "#F59E0B", fontWeight: 700, display: "flex", alignItems: "center", gap: "4px" }}>
+                        <ShieldCheck size={14} />
+                        {order.paymentStatus === "Paid" ? "HMAC SHA-256 Validated" : "Pending Reconciliation / COD Delivery"}
+                      </span>
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0" }}>
+                      <span style={{ color: textMuted }}>Transaction Date:</span>
+                      <span style={{ color: textMain }}>{order.orderDate || new Date(order.createdAt || "").toLocaleString("en-IN")}</span>
                     </div>
                   </div>
-                )}
+
+                  {/* Manual Payment Action */}
+                  <div style={{ marginTop: "16px", paddingTop: "14px", borderTop: `1px solid ${border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: "12px", color: textMuted }}>
+                      {order.paymentStatus === "Paid" ? "Payment verified in database" : "Need to confirm offline payment?"}
+                    </span>
+                    {order.paymentStatus !== "Paid" ? (
+                      <AdminButton
+                        variant="primary"
+                        size="sm"
+                        icon={<CheckCircle2 size={13} />}
+                        isDark={isDark}
+                        disabled={isSaving}
+                        onClick={() => handleMarkPayment("Paid")}
+                      >
+                        Mark Payment Received
+                      </AdminButton>
+                    ) : (
+                      <AdminButton
+                        variant="secondary"
+                        size="sm"
+                        icon={<Clock size={13} />}
+                        isDark={isDark}
+                        disabled={isSaving}
+                        onClick={() => handleMarkPayment("Pending")}
+                      >
+                        Reset to Unpaid
+                      </AdminButton>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>

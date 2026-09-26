@@ -382,15 +382,17 @@ function OrdersContent() {
       accessor: (o: OrderData) => (
         <div>
           <div style={{ fontWeight: 800 }}>₹{o.totalAmount.toLocaleString("en-IN")}</div>
-          <div style={{ fontSize: "11.5px", display: "flex", alignItems: "center", gap: "4px" }}>
+          <div style={{ fontSize: "11px", display: "flex", alignItems: "center", gap: "5px", marginTop: "2px" }}>
             <span
               style={{
-                color: o.paymentStatus === "Paid" ? "#16A34A" : o.paymentStatus === "Refunded" ? "#DC2626" : "#F59E0B",
-                fontWeight: 700,
+                color: o.paymentStatus === "Paid" ? "#16A34A" : o.paymentStatus === "Refunded" ? "#DC2626" : "#D97706",
+                fontWeight: 800,
+                fontSize: "11px",
               }}
             >
-              ● {o.paymentStatus}
+              ● {o.paymentStatus === "Paid" ? "PAID" : "UNPAID"}
             </span>
+            <span style={{ color: textMuted, fontSize: "10.5px" }}>({o.paymentMethod === "Online Payment" ? "Prepaid" : "COD"})</span>
           </div>
         </div>
       ),
