@@ -124,6 +124,12 @@ function CategoryPageContent({ category }: { category: string }) {
   const [minPriceInput, setMinPriceInput] = useState<string>("");
   const [maxPriceInput, setMaxPriceInput] = useState<string>("");
   const [isPriceExpanded, setIsPriceExpanded] = useState<boolean>(true);
+  const [isProductsExpanded, setIsProductsExpanded] = useState<boolean>(true);
+  const [isColorsExpanded, setIsColorsExpanded] = useState<boolean>(true);
+  const [isSizesExpanded, setIsSizesExpanded] = useState<boolean>(true);
+  const [isCollectionsExpanded, setIsCollectionsExpanded] = useState<boolean>(true);
+  const [isSubcategoriesExpanded, setIsSubcategoriesExpanded] = useState<boolean>(true);
+  const [isAllCategoriesExpanded, setIsAllCategoriesExpanded] = useState<boolean>(true);
   const [sortBy, setSortBy] = useState<string>("recommended");
 
   // Infinite Scroll Pagination State (25 items per chunk)
@@ -519,491 +525,594 @@ function CategoryPageContent({ category }: { category: string }) {
   // Reusable Filter Content Element (used in desktop sidebar + mobile drawer)
   const renderFilterContent = () => (
     <>
-      {/* ── 1: PRICE RANGE FILTER ── */}
-      <div style={{ marginBottom: "24px" }}>
+      {/* ── 1: PRICE RANGE FILTER CARD ── */}
+      <div className="filter-card">
         <div
           onClick={() => setIsPriceExpanded((prev) => !prev)}
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            cursor: "pointer",
-            userSelect: "none",
-            paddingBottom: "8px",
-          }}
+          className="filter-card-header"
         >
-          <span
-            style={{
-              fontFamily: "'Manrope', system-ui, sans-serif",
-              fontSize: "15px",
-              fontWeight: 400,
-              color: "#1e293b",
-            }}
-          >
-            Price
-          </span>
+          <span className="filter-card-title">Price</span>
           <button
             type="button"
-            style={{
-              background: "none",
-              border: "none",
-              fontSize: "18px",
-              fontWeight: 400,
-              color: "#334155",
-              cursor: "pointer",
-              padding: "0 4px",
-              lineHeight: 1,
-            }}
+            className="filter-card-toggle"
             aria-label={isPriceExpanded ? "Collapse price filter" : "Expand price filter"}
           >
             {isPriceExpanded ? "—" : "+"}
           </button>
         </div>
 
-        {/* Divider line under header */}
-        <div style={{ height: "1px", backgroundColor: "#e2e8f0", marginBottom: "14px" }} />
-
         {isPriceExpanded && (
-          <div style={{ padding: "0 2px" }}>
-            {/* Price values (Min on left, Max on right) */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "12px",
-                fontFamily: "'Manrope', system-ui, sans-serif",
-                fontSize: "15px",
-                fontWeight: 400,
-                color: "#1e293b",
-              }}
-            >
-              <span>{currentMin}</span>
-              <span>{currentMax}</span>
-            </div>
-
-            {/* Dual Slider Track */}
-            <div
-              style={{
-                position: "relative",
-                width: "100%",
-                height: "24px",
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              {/* Base Track */}
+          <>
+            <div className="filter-card-divider" />
+            <div style={{ padding: "2px 2px 4px" }}>
+              {/* Price values (Min on left, Max on right) */}
               <div
                 style={{
-                  position: "absolute",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "14px",
+                  fontFamily: "'Manrope', system-ui, sans-serif",
+                  fontSize: "15px",
+                  fontWeight: 500,
+                  color: "#1e293b",
+                }}
+              >
+                <span>{currentMin}</span>
+                <span>{currentMax}</span>
+              </div>
+
+              {/* Dual Slider Track */}
+              <div
+                style={{
+                  position: "relative",
                   width: "100%",
-                  height: "6px",
-                  backgroundColor: "#e5e7eb",
-                  borderRadius: "3px",
+                  height: "24px",
+                  display: "flex",
+                  alignItems: "center",
                 }}
-              />
+              >
+                {/* Base Track */}
+                <div
+                  style={{
+                    position: "absolute",
+                    width: "100%",
+                    height: "6px",
+                    backgroundColor: "#e5e7eb",
+                    borderRadius: "3px",
+                  }}
+                />
 
-              {/* Active Highlighted Track */}
-              <div
-                style={{
-                  position: "absolute",
-                  left: `${minPercent}%`,
-                  width: `${Math.max(0, maxPercent - minPercent)}%`,
-                  height: "6px",
-                  backgroundColor: "#cbd5e1",
-                  borderRadius: "3px",
-                }}
-              />
+                {/* Active Highlighted Track */}
+                <div
+                  style={{
+                    position: "absolute",
+                    left: `${minPercent}%`,
+                    width: `${Math.max(0, maxPercent - minPercent)}%`,
+                    height: "6px",
+                    backgroundColor: "#cbd5e1",
+                    borderRadius: "3px",
+                  }}
+                />
 
-              {/* Min Range Input */}
-              <input
-                type="range"
-                min={minAvailablePrice}
-                max={maxAvailablePrice}
-                step={1}
-                value={currentMin}
-                onChange={handleMinPriceChange}
-                className="price-dual-range-input"
-                style={{
-                  zIndex: currentMin > maxAvailablePrice - (maxAvailablePrice - minAvailablePrice) * 0.05 ? 20 : 10,
-                }}
-              />
+                {/* Min Range Input */}
+                <input
+                  type="range"
+                  min={minAvailablePrice}
+                  max={maxAvailablePrice}
+                  step={1}
+                  value={currentMin}
+                  onChange={handleMinPriceChange}
+                  className="price-dual-range-input"
+                  style={{
+                    zIndex: currentMin > maxAvailablePrice - (maxAvailablePrice - minAvailablePrice) * 0.05 ? 20 : 10,
+                  }}
+                />
 
-              {/* Max Range Input */}
-              <input
-                type="range"
-                min={minAvailablePrice}
-                max={maxAvailablePrice}
-                step={1}
-                value={currentMax}
-                onChange={handleMaxPriceChange}
-                className="price-dual-range-input"
-                style={{
-                  zIndex: 15,
-                }}
-              />
+                {/* Max Range Input */}
+                <input
+                  type="range"
+                  min={minAvailablePrice}
+                  max={maxAvailablePrice}
+                  step={1}
+                  value={currentMax}
+                  onChange={handleMaxPriceChange}
+                  className="price-dual-range-input"
+                  style={{
+                    zIndex: 15,
+                  }}
+                />
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
 
-      {/* ── 2: PRODUCTS (Family Types) ── */}
+      {/* ── 2: PRODUCTS (Family Types) CARD ── */}
       {productNameCounts.length > 0 && (
-        <div style={{ marginBottom: "24px", paddingTop: "16px", borderTop: "1px solid #f1f5f9" }}>
+        <div className="filter-card">
           <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "12px",
-            }}
+            onClick={() => setIsProductsExpanded((prev) => !prev)}
+            className="filter-card-header"
           >
-            <h3 className="filter-section-heading">PRODUCTS</h3>
-            {hasActiveFilters && (
-              <button
-                onClick={clearAllFilters}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <span className="filter-card-title">Products</span>
+              {selectedNames.length > 0 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedNames([]);
+                  }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#0284c7",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    padding: 0,
+                    textDecoration: "underline",
+                  }}
+                >
+                  Clear ({selectedNames.length})
+                </button>
+              )}
+            </div>
+            <button
+              type="button"
+              className="filter-card-toggle"
+              aria-label={isProductsExpanded ? "Collapse products filter" : "Expand products filter"}
+            >
+              {isProductsExpanded ? "—" : "+"}
+            </button>
+          </div>
+
+          {isProductsExpanded && (
+            <>
+              <div className="filter-card-divider" />
+              <div
                 style={{
-                  background: "none",
-                  border: "none",
-                  color: "#0284c7",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  padding: 0,
-                  textDecoration: "underline",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
+                  maxHeight: "240px",
+                  overflowY: "auto",
+                  paddingRight: "6px",
                 }}
               >
-                Clear all
-              </button>
-            )}
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "8px",
-              maxHeight: "220px",
-              overflowY: "auto",
-              paddingRight: "6px",
-            }}
-          >
-            {productNameCounts.map(({ name, count }) => {
-              const isChecked = selectedNames.includes(name);
-              return (
-                <label
-                  key={name}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: "8px",
-                    fontSize: "13px",
-                    fontFamily: "'Manrope', system-ui, sans-serif",
-                    color: isChecked ? "#0f172a" : "#334155",
-                    fontWeight: isChecked ? 600 : 400,
-                    cursor: "pointer",
-                    lineHeight: 1.35,
-                    userSelect: "none",
-                    padding: "3px 0",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => toggleNameFilter(name)}
+                {productNameCounts.map(({ name, count }) => {
+                  const isChecked = selectedNames.includes(name);
+                  return (
+                    <label
+                      key={name}
+                      className="filter-row"
                       style={{
-                        width: "16px",
-                        height: "16px",
-                        cursor: "pointer",
-                        accentColor: "#0284c7",
-                        flexShrink: 0,
+                        color: isChecked ? "#0f172a" : "#334155",
+                        fontWeight: isChecked ? 600 : 400,
+                        backgroundColor: isChecked ? "#f0f9ff" : "transparent",
                       }}
-                    />
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {name}
-                    </span>
-                  </div>
-                  <span className="filter-count-badge">( {count} )</span>
-                </label>
-              );
-            })}
-          </div>
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => toggleNameFilter(name)}
+                          style={{
+                            width: "17px",
+                            height: "17px",
+                            cursor: "pointer",
+                            accentColor: "#0284c7",
+                            flexShrink: 0,
+                          }}
+                        />
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "13.5px" }}>
+                          {name}
+                        </span>
+                      </div>
+                      <span className="filter-count-badge">( {count} )</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
       )}
 
-      {/* ── 3: AVAILABLE COLORS / FINISHES ── */}
+      {/* ── 3: AVAILABLE COLORS / FINISHES CARD ── */}
       {colorCounts.length > 0 && (
-        <div style={{ marginBottom: "24px", paddingTop: "16px", borderTop: "1px solid #f1f5f9" }}>
-          <h3 className="filter-section-heading">AVAILABLE COLORS</h3>
-
+        <div className="filter-card">
           <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "8px",
-              maxHeight: "200px",
-              overflowY: "auto",
-              paddingRight: "6px",
-            }}
+            onClick={() => setIsColorsExpanded((prev) => !prev)}
+            className="filter-card-header"
           >
-            {colorCounts.map(({ name, count }) => {
-              const isChecked = selectedColors.includes(name);
-              const swatch = COLOR_SWATCHES[name.toLowerCase()] || "#94a3b8";
-
-              return (
-                <label
-                  key={name}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: "8px",
-                    fontSize: "13px",
-                    fontFamily: "'Manrope', system-ui, sans-serif",
-                    color: isChecked ? "#0f172a" : "#334155",
-                    fontWeight: isChecked ? 600 : 400,
-                    cursor: "pointer",
-                    lineHeight: 1.35,
-                    userSelect: "none",
-                    padding: "3px 0",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => toggleColorFilter(name)}
-                      style={{
-                        width: "16px",
-                        height: "16px",
-                        cursor: "pointer",
-                        accentColor: "#0284c7",
-                        flexShrink: 0,
-                      }}
-                    />
-                    <span
-                      style={{
-                        width: "12px",
-                        height: "12px",
-                        borderRadius: "50%",
-                        background: swatch,
-                        border: "1px solid rgba(0,0,0,0.15)",
-                        display: "inline-block",
-                        flexShrink: 0,
-                      }}
-                    />
-                    <span>{name}</span>
-                  </div>
-                  <span className="filter-count-badge">( {count} )</span>
-                </label>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ── 4: AVAILABLE SIZES ── */}
-      {sizeCounts.length > 0 && (
-        <div style={{ marginBottom: "24px", paddingTop: "16px", borderTop: "1px solid #f1f5f9" }}>
-          <h3 className="filter-section-heading">AVAILABLE SIZES</h3>
-
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "8px",
-              maxHeight: "180px",
-              overflowY: "auto",
-              paddingRight: "6px",
-            }}
-          >
-            {sizeCounts.map(({ name, count }) => {
-              const isChecked = selectedSizes.includes(name);
-              return (
-                <label
-                  key={name}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: "8px",
-                    fontSize: "13px",
-                    fontFamily: "'Manrope', system-ui, sans-serif",
-                    color: isChecked ? "#0f172a" : "#334155",
-                    fontWeight: isChecked ? 600 : 400,
-                    cursor: "pointer",
-                    lineHeight: 1.35,
-                    userSelect: "none",
-                    padding: "3px 0",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => toggleSizeFilter(name)}
-                      style={{
-                        width: "16px",
-                        height: "16px",
-                        cursor: "pointer",
-                        accentColor: "#0284c7",
-                        flexShrink: 0,
-                      }}
-                    />
-                    <span>{name}</span>
-                  </div>
-                  <span className="filter-count-badge">( {count} )</span>
-                </label>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ── 5: COLLECTIONS / SERIES ── */}
-      {collectionCounts.length > 1 && (
-        <div style={{ marginBottom: "24px", paddingTop: "16px", borderTop: "1px solid #f1f5f9" }}>
-          <h3 className="filter-section-heading">COLLECTIONS</h3>
-
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "8px",
-              maxHeight: "180px",
-              overflowY: "auto",
-              paddingRight: "6px",
-            }}
-          >
-            {collectionCounts.map(({ name, count }) => {
-              const isChecked = selectedCollections.includes(name);
-              return (
-                <label
-                  key={name}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: "8px",
-                    fontSize: "13px",
-                    fontFamily: "'Manrope', system-ui, sans-serif",
-                    color: isChecked ? "#0f172a" : "#334155",
-                    fontWeight: isChecked ? 600 : 400,
-                    cursor: "pointer",
-                    lineHeight: 1.35,
-                    userSelect: "none",
-                    padding: "3px 0",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => toggleCollectionFilter(name)}
-                      style={{
-                        width: "16px",
-                        height: "16px",
-                        cursor: "pointer",
-                        accentColor: "#0284c7",
-                        flexShrink: 0,
-                      }}
-                    />
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {name}
-                    </span>
-                  </div>
-                  <span className="filter-count-badge">( {count} )</span>
-                </label>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ── 6: SUBCATEGORIES ── */}
-      {relatedSubcategories.length > 0 && (
-        <div style={{ marginBottom: "24px", paddingTop: "16px", borderTop: "1px solid #f1f5f9" }}>
-          <h3 className="filter-section-heading">{parentCategoryHeading}</h3>
-
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "8px",
-            }}
-          >
-            {relatedSubcategories.map((sub) => {
-              const subSlug = sub.slug || sub.id;
-              const isCurrentSub =
-                subSlug === category ||
-                (sub.name && sub.name.toLowerCase() === displayTitle.toLowerCase());
-
-              return (
-                <div
-                  key={sub.id || sub.slug}
-                  onClick={() => {
-                    setIsMobileFilterOpen(false);
-                    router.push(`/faucets/${subSlug}`);
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <span className="filter-card-title">Available Colors</span>
+              {selectedColors.length > 0 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedColors([]);
                   }}
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: "8px",
-                    fontSize: "13px",
-                    fontFamily: "'Manrope', system-ui, sans-serif",
-                    color: isCurrentSub ? "#0284c7" : "#334155",
-                    fontWeight: isCurrentSub ? 700 : 400,
+                    background: "none",
+                    border: "none",
+                    color: "#0284c7",
+                    fontSize: "12px",
+                    fontWeight: 600,
                     cursor: "pointer",
-                    lineHeight: 1.35,
-                    userSelect: "none",
-                    padding: "3px 0",
+                    padding: 0,
+                    textDecoration: "underline",
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
-                    <input
-                      type="checkbox"
-                      checked={isCurrentSub}
-                      readOnly
-                      style={{
-                        width: "16px",
-                        height: "16px",
-                        cursor: "pointer",
-                        accentColor: "#0284c7",
-                        flexShrink: 0,
-                      }}
-                    />
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {sub.name}
-                    </span>
-                  </div>
-                  <span className="filter-count-badge">( {sub.productCount || 0} )</span>
-                </div>
-              );
-            })}
+                  Clear ({selectedColors.length})
+                </button>
+              )}
+            </div>
+            <button
+              type="button"
+              className="filter-card-toggle"
+              aria-label={isColorsExpanded ? "Collapse colors filter" : "Expand colors filter"}
+            >
+              {isColorsExpanded ? "—" : "+"}
+            </button>
           </div>
-        </div>
-      )}
 
-      {/* ── 7: ALL CATEGORIES ── */}
-      {allCategories.length > 0 && (
-        <div style={{ paddingTop: "16px", borderTop: "1px solid #f1f5f9" }}>
-          <h3 className="filter-section-heading">ALL CATEGORIES</h3>
-
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-            {allCategories.map((cat) => (
-              <Link
-                key={cat.id || cat.slug}
-                href={`/faucets/${cat.slug || cat.id}`}
-                onClick={() => setIsMobileFilterOpen(false)}
-                className="category-pill"
+          {isColorsExpanded && (
+            <>
+              <div className="filter-card-divider" />
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
+                  maxHeight: "220px",
+                  overflowY: "auto",
+                  paddingRight: "6px",
+                }}
               >
-                {cat.name}
-              </Link>
-            ))}
+                {colorCounts.map(({ name, count }) => {
+                  const isChecked = selectedColors.includes(name);
+                  const swatch = COLOR_SWATCHES[name.toLowerCase()] || "#94a3b8";
+
+                  return (
+                    <label
+                      key={name}
+                      className="filter-row"
+                      style={{
+                        color: isChecked ? "#0f172a" : "#334155",
+                        fontWeight: isChecked ? 600 : 400,
+                        backgroundColor: isChecked ? "#f0f9ff" : "transparent",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => toggleColorFilter(name)}
+                          style={{
+                            width: "17px",
+                            height: "17px",
+                            cursor: "pointer",
+                            accentColor: "#0284c7",
+                            flexShrink: 0,
+                          }}
+                        />
+                        <span
+                          style={{
+                            width: "14px",
+                            height: "14px",
+                            borderRadius: "50%",
+                            background: swatch,
+                            border: "1px solid rgba(0,0,0,0.15)",
+                            display: "inline-block",
+                            flexShrink: 0,
+                            boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
+                          }}
+                        />
+                        <span style={{ fontSize: "13.5px" }}>{name}</span>
+                      </div>
+                      <span className="filter-count-badge">( {count} )</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── 4: AVAILABLE SIZES CARD ── */}
+      {sizeCounts.length > 0 && (
+        <div className="filter-card">
+          <div
+            onClick={() => setIsSizesExpanded((prev) => !prev)}
+            className="filter-card-header"
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <span className="filter-card-title">Available Sizes</span>
+              {selectedSizes.length > 0 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedSizes([]);
+                  }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#0284c7",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    padding: 0,
+                    textDecoration: "underline",
+                  }}
+                >
+                  Clear ({selectedSizes.length})
+                </button>
+              )}
+            </div>
+            <button
+              type="button"
+              className="filter-card-toggle"
+              aria-label={isSizesExpanded ? "Collapse sizes filter" : "Expand sizes filter"}
+            >
+              {isSizesExpanded ? "—" : "+"}
+            </button>
           </div>
+
+          {isSizesExpanded && (
+            <>
+              <div className="filter-card-divider" />
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
+                  maxHeight: "200px",
+                  overflowY: "auto",
+                  paddingRight: "6px",
+                }}
+              >
+                {sizeCounts.map(({ name, count }) => {
+                  const isChecked = selectedSizes.includes(name);
+                  return (
+                    <label
+                      key={name}
+                      className="filter-row"
+                      style={{
+                        color: isChecked ? "#0f172a" : "#334155",
+                        fontWeight: isChecked ? 600 : 400,
+                        backgroundColor: isChecked ? "#f0f9ff" : "transparent",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => toggleSizeFilter(name)}
+                          style={{
+                            width: "17px",
+                            height: "17px",
+                            cursor: "pointer",
+                            accentColor: "#0284c7",
+                            flexShrink: 0,
+                          }}
+                        />
+                        <span style={{ fontSize: "13.5px" }}>{name}</span>
+                      </div>
+                      <span className="filter-count-badge">( {count} )</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── 5: COLLECTIONS / SERIES CARD ── */}
+      {collectionCounts.length > 1 && (
+        <div className="filter-card">
+          <div
+            onClick={() => setIsCollectionsExpanded((prev) => !prev)}
+            className="filter-card-header"
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <span className="filter-card-title">Collections</span>
+              {selectedCollections.length > 0 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedCollections([]);
+                  }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#0284c7",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    padding: 0,
+                    textDecoration: "underline",
+                  }}
+                >
+                  Clear ({selectedCollections.length})
+                </button>
+              )}
+            </div>
+            <button
+              type="button"
+              className="filter-card-toggle"
+              aria-label={isCollectionsExpanded ? "Collapse collections filter" : "Expand collections filter"}
+            >
+              {isCollectionsExpanded ? "—" : "+"}
+            </button>
+          </div>
+
+          {isCollectionsExpanded && (
+            <>
+              <div className="filter-card-divider" />
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
+                  maxHeight: "200px",
+                  overflowY: "auto",
+                  paddingRight: "6px",
+                }}
+              >
+                {collectionCounts.map(({ name, count }) => {
+                  const isChecked = selectedCollections.includes(name);
+                  return (
+                    <label
+                      key={name}
+                      className="filter-row"
+                      style={{
+                        color: isChecked ? "#0f172a" : "#334155",
+                        fontWeight: isChecked ? 600 : 400,
+                        backgroundColor: isChecked ? "#f0f9ff" : "transparent",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => toggleCollectionFilter(name)}
+                          style={{
+                            width: "17px",
+                            height: "17px",
+                            cursor: "pointer",
+                            accentColor: "#0284c7",
+                            flexShrink: 0,
+                          }}
+                        />
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "13.5px" }}>
+                          {name}
+                        </span>
+                      </div>
+                      <span className="filter-count-badge">( {count} )</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── 6: SUBCATEGORIES CARD ── */}
+      {relatedSubcategories.length > 0 && (
+        <div className="filter-card">
+          <div
+            onClick={() => setIsSubcategoriesExpanded((prev) => !prev)}
+            className="filter-card-header"
+          >
+            <span className="filter-card-title">{parentCategoryHeading}</span>
+            <button
+              type="button"
+              className="filter-card-toggle"
+              aria-label={isSubcategoriesExpanded ? "Collapse category filter" : "Expand category filter"}
+            >
+              {isSubcategoriesExpanded ? "—" : "+"}
+            </button>
+          </div>
+
+          {isSubcategoriesExpanded && (
+            <>
+              <div className="filter-card-divider" />
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
+                  maxHeight: "240px",
+                  overflowY: "auto",
+                  paddingRight: "6px",
+                }}
+              >
+                {relatedSubcategories.map((sub) => {
+                  const subSlug = sub.slug || sub.id;
+                  const isCurrentSub =
+                    subSlug === category ||
+                    (sub.name && sub.name.toLowerCase() === displayTitle.toLowerCase());
+
+                  return (
+                    <div
+                      key={sub.id || sub.slug}
+                      onClick={() => {
+                        setIsMobileFilterOpen(false);
+                        router.push(`/faucets/${subSlug}`);
+                      }}
+                      className="filter-row"
+                      style={{
+                        color: isCurrentSub ? "#0284c7" : "#334155",
+                        fontWeight: isCurrentSub ? 700 : 400,
+                        backgroundColor: isCurrentSub ? "#f0f9ff" : "transparent",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+                        <input
+                          type="checkbox"
+                          checked={isCurrentSub}
+                          readOnly
+                          style={{
+                            width: "17px",
+                            height: "17px",
+                            cursor: "pointer",
+                            accentColor: "#0284c7",
+                            flexShrink: 0,
+                          }}
+                        />
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "13.5px" }}>
+                          {sub.name}
+                        </span>
+                      </div>
+                      <span className="filter-count-badge">( {sub.productCount || 0} )</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── 7: ALL CATEGORIES CARD ── */}
+      {allCategories.length > 0 && (
+        <div className="filter-card">
+          <div
+            onClick={() => setIsAllCategoriesExpanded((prev) => !prev)}
+            className="filter-card-header"
+          >
+            <span className="filter-card-title">All Categories</span>
+            <button
+              type="button"
+              className="filter-card-toggle"
+              aria-label={isAllCategoriesExpanded ? "Collapse all categories" : "Expand all categories"}
+            >
+              {isAllCategoriesExpanded ? "—" : "+"}
+            </button>
+          </div>
+
+          {isAllCategoriesExpanded && (
+            <>
+              <div className="filter-card-divider" />
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                {allCategories.map((cat) => (
+                  <Link
+                    key={cat.id || cat.slug}
+                    href={`/faucets/${cat.slug || cat.id}`}
+                    onClick={() => setIsMobileFilterOpen(false)}
+                    className="category-pill"
+                  >
+                    {cat.name}
+                  </Link>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
     </>
@@ -1036,7 +1145,7 @@ function CategoryPageContent({ category }: { category: string }) {
         }
 
         .desktop-filter-sidebar {
-          width: 280px;
+          width: 330px;
           flex-shrink: 0;
           display: block;
           position: sticky;
@@ -1053,6 +1162,74 @@ function CategoryPageContent({ category }: { category: string }) {
         .desktop-filter-sidebar::-webkit-scrollbar-thumb {
           background: #cbd5e1;
           border-radius: 999px;
+        }
+
+        .filter-card {
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          padding: 16px 18px 14px;
+          margin-bottom: 16px;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .filter-card:hover {
+          border-color: #cbd5e1;
+        }
+
+        .filter-card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          cursor: pointer;
+          user-select: none;
+        }
+
+        .filter-card-title {
+          font-family: 'Manrope', system-ui, sans-serif;
+          font-size: 15px;
+          font-weight: 500;
+          color: #1e293b;
+          letter-spacing: -0.01em;
+          margin: 0;
+        }
+
+        .filter-card-toggle {
+          background: none;
+          border: none;
+          font-size: 18px;
+          font-weight: 400;
+          color: #64748b;
+          cursor: pointer;
+          padding: 0 2px;
+          line-height: 1;
+        }
+
+        .filter-card-divider {
+          height: 1px;
+          background-color: #f1f5f9;
+          margin: 12px 0 14px 0;
+        }
+
+        .filter-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          font-size: 13.5px;
+          font-family: 'Manrope', system-ui, sans-serif;
+          color: #334155;
+          cursor: pointer;
+          user-select: none;
+          padding: 6px 8px;
+          border-radius: 6px;
+          transition: background-color 0.15s ease;
+        }
+
+        .filter-row:hover {
+          background-color: #f8fafc;
+          color: #0f172a;
         }
 
         .mobile-filter-trigger-btn {
