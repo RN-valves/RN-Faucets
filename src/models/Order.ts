@@ -90,6 +90,7 @@ export interface IOrder extends Document {
   codCharge?: number;
   transportContact?: string;
   transportAttachment?: string;
+  transportUrl?: string;
   manifest_ids?: string | number;
   awbCode?: string;
   trackingUrl?: string;
@@ -144,6 +145,7 @@ const OrderSchema = new Schema<IOrder>(
     codCharge: { type: Number, default: 0 },
     transportContact: { type: String, default: "" },
     transportAttachment: { type: String, default: "" },
+    transportUrl: { type: String, default: "" },
     manifest_ids: { type: Schema.Types.Mixed, default: null },
     razorpayOrderId: { type: String, default: "" },
     razorpayPaymentId: { type: String, default: "" },
