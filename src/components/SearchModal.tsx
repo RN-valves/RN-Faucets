@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, TrendingUp, Clock, Sparkles, Search, ArrowRight } from "lucide-react";
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -20,6 +20,7 @@ interface ProductItem {
   subcategoryId?: string;
   subcategoryName?: string;
   article?: string;
+  image?: string;
 }
 
 interface CategoryItem {
@@ -31,6 +32,32 @@ interface CategoryItem {
   type?: "category" | "subcategory";
 }
 
+const SEARCH_PLACEHOLDER_WORDS = [
+  "Search Faucets...",
+  "Search Diverters...",
+  "Search Pillar Cocks...",
+  "Search Overhead Showers...",
+  "Search Single Lever Mixers...",
+  "Search Marble Finish Faucets...",
+  "Search Basin Mixers...",
+  "Search Bath Accessories...",
+];
+
+const TRENDING_SEARCHES = [
+  "Divertor",
+  "Pillar Cock",
+  "Single Lever",
+  "Basin Mixer",
+  "Overhead Shower",
+  "Marble Finish",
+  "Black-Chrome Dual",
+  "Angle Valve",
+  "Health Faucet",
+  "Concealed Stop Cock",
+];
+
+const RECENT_SEARCHES_STORAGE_KEY = "rn_recent_searches";
+
 export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -40,6 +67,42 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const [products, setProducts] = useState<ProductItem[]>([]);
   const [matchingCategories, setMatchingCategories] = useState<CategoryItem[]>([]);
   const [allCategories, setAllCategories] = useState<CategoryItem[]>([]);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+
+  // Typewriter placeholder states
+  const [placeholderText, setPlaceholderText] = useState("");
+  const [wordIdx, setWordIdx] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Load recent searches from localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem(RECENT_SEARCHES_STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) setRecentSearches(parsed.slice(0, 6));
+        }
+      } catch {}
+    }
+  }, [isOpen]);
+
+  const saveRecentSearch = (searchTerm: string) => {
+    if (!searchTerm || !searchTerm.trim()) return;
+    const term = searchTerm.trim();
+    try {
+      const updated = [term, ...recentSearches.filter((s) => s.toLowerCase() !== term.toLowerCase())].slice(0, 6);
+      setRecentSearches(updated);
+      localStorage.setItem(RECENT_SEARCHES_STORAGE_KEY, JSON.stringify(updated));
+    } catch {}
+  };
+
+  const clearRecentSearches = () => {
+    setRecentSearches([]);
+    try {
+      localStorage.removeItem(RECENT_SEARCHES_STORAGE_KEY);
+    } catch {}
+  };
 
   // Pre-fetch categories & subcategories once
   useEffect(() => {
@@ -92,6 +155,31 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
       isMounted = false;
     };
   }, []);
+
+  // Jaquar-Style Auto-Type Animation Effect
+  useEffect(() => {
+    if (!isOpen || query.length > 0) return;
+
+    const currentWord = SEARCH_PLACEHOLDER_WORDS[wordIdx];
+    const typingSpeed = isDeleting ? 35 : 75;
+
+    const timer = setTimeout(() => {
+      if (!isDeleting) {
+        setPlaceholderText(currentWord.substring(0, placeholderText.length + 1));
+        if (placeholderText.length + 1 === currentWord.length) {
+          setTimeout(() => setIsDeleting(true), 1800); // Pause on completed word
+        }
+      } else {
+        setPlaceholderText(currentWord.substring(0, placeholderText.length - 1));
+        if (placeholderText.length === 0) {
+          setIsDeleting(false);
+          setWordIdx((prev) => (prev + 1) % SEARCH_PLACEHOLDER_WORDS.length);
+        }
+      }
+    }, typingSpeed);
+
+    return () => clearTimeout(timer);
+  }, [isOpen, placeholderText, isDeleting, wordIdx, query]);
 
   // Auto-focus input when opened
   useEffect(() => {
@@ -235,6 +323,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
   const handleProductClick = useCallback(
     (product: ProductItem) => {
+      saveRecentSearch(product.name);
       onClose();
       const catSegment = (product.subcategoryId || product.category || "all")
         .toString()
@@ -243,11 +332,12 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
       const prodCode = product.code || product.id;
       router.push(`/faucets/${encodeURIComponent(catSegment)}/${encodeURIComponent(prodCode)}`);
     },
-    [onClose, router]
+    [onClose, router, recentSearches]
   );
 
   const handleCategoryClick = useCallback(
     (item: CategoryItem) => {
+      saveRecentSearch(item.name);
       onClose();
       if (item.type === "subcategory") {
         router.push(`/faucets/${encodeURIComponent(item.slug || item.id)}`);
@@ -255,8 +345,16 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
         router.push(`/${encodeURIComponent(item.slug || item.id)}`);
       }
     },
-    [onClose, router]
+    [onClose, router, recentSearches]
   );
+
+  const handleSearchSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!query.trim()) return;
+    saveRecentSearch(query);
+    onClose();
+    router.push(`/faucets/all?search=${encodeURIComponent(query.trim())}`);
+  };
 
   if (!isOpen) return null;
 
@@ -271,14 +369,14 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
           position: "fixed",
           inset: 0,
           zIndex: 99998,
-          backgroundColor: "rgba(0, 0, 0, 0.35)",
-          backdropFilter: "blur(2px)",
-          WebkitBackdropFilter: "blur(2px)",
+          backgroundColor: "rgba(0, 0, 0, 0.45)",
+          backdropFilter: "blur(3px)",
+          WebkitBackdropFilter: "blur(3px)",
           transition: "opacity 0.25s ease",
         }}
       />
 
-      {/* ── Top White Search Bar Overlay (Matches Screenshot Exactly) ── */}
+      {/* ── Top White Search Bar Overlay (Jaquar-grade interactive search) ── */}
       <div
         role="dialog"
         aria-modal="true"
@@ -290,14 +388,14 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
           right: 0,
           zIndex: 99999,
           backgroundColor: "#FFFFFF",
-          boxShadow: "0 6px 24px rgba(0, 0, 0, 0.12)",
-          paddingTop: "14px",
-          paddingBottom: hasResults ? "36px" : "16px",
+          boxShadow: "0 10px 30px rgba(0, 0, 0, 0.15)",
+          paddingTop: "18px",
+          paddingBottom: "36px",
           paddingLeft: "24px",
           paddingRight: "24px",
           fontFamily: "'Manrope', system-ui, sans-serif",
           transition: "all 0.25s ease",
-          maxHeight: "85vh",
+          maxHeight: "88vh",
           overflowY: "auto",
         }}
       >
@@ -311,79 +409,110 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
             justifyContent: "center",
           }}
         >
-          {/* Centered Pill Search Input */}
-          <div
+          {/* Centered Form with Pill Search Input */}
+          <form
+            onSubmit={handleSearchSubmit}
             style={{
               position: "relative",
               width: "100%",
-              maxWidth: "600px",
+              maxWidth: "680px",
             }}
           >
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search products or categories.."
+            <div
               style={{
+                position: "relative",
+                display: "flex",
+                alignItems: "center",
                 width: "100%",
-                height: "38px",
-                borderRadius: "9999px",
-                border: "1px solid #71717a",
-                paddingLeft: "20px",
-                paddingRight: query ? "40px" : "20px",
-                fontSize: "14px",
-                color: "#18181b",
-                outline: "none",
-                backgroundColor: "#FFFFFF",
-                boxSizing: "border-box",
-                fontFamily: "inherit",
               }}
-            />
-
-            {/* Loading / Clear Icon */}
-            {loading ? (
-              <span
+            >
+              <Search
+                size={18}
                 style={{
                   position: "absolute",
-                  right: "14px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  display: "flex",
-                  alignItems: "center",
-                  color: "#71717a",
+                  left: "16px",
+                  color: "#94a3b8",
+                  pointerEvents: "none",
                 }}
-              >
-                <Loader2 size={16} className="animate-spin" />
-              </span>
-            ) : query ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setQuery("");
-                  inputRef.current?.focus();
-                }}
-                aria-label="Clear query"
+              />
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={placeholderText || "Search products or categories..."}
                 style={{
-                  position: "absolute",
-                  right: "14px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: 0,
-                  display: "flex",
-                  alignItems: "center",
-                  color: "#71717a",
+                  width: "100%",
+                  height: "44px",
+                  borderRadius: "9999px",
+                  border: "1.5px solid #cbd5e1",
+                  paddingLeft: "44px",
+                  paddingRight: query ? "44px" : "20px",
+                  fontSize: "14.5px",
+                  fontWeight: 500,
+                  color: "#0f172a",
+                  outline: "none",
+                  backgroundColor: "#f8fafc",
+                  boxSizing: "border-box",
+                  fontFamily: "inherit",
+                  transition: "border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease",
                 }}
-              >
-                <X size={16} />
-              </button>
-            ) : null}
-          </div>
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "#0077b6";
+                  e.currentTarget.style.backgroundColor = "#FFFFFF";
+                  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(0, 119, 182, 0.12)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "#cbd5e1";
+                  e.currentTarget.style.backgroundColor = "#f8fafc";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              />
 
-          {/* Close 'X' Button on Far Right (Top right corner) */}
+              {/* Loading / Clear Icon */}
+              {loading ? (
+                <span
+                  style={{
+                    position: "absolute",
+                    right: "16px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    display: "flex",
+                    alignItems: "center",
+                    color: "#0077b6",
+                  }}
+                >
+                  <Loader2 size={18} className="animate-spin" />
+                </span>
+              ) : query ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuery("");
+                    inputRef.current?.focus();
+                  }}
+                  aria-label="Clear query"
+                  style={{
+                    position: "absolute",
+                    right: "14px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    color: "#94a3b8",
+                  }}
+                >
+                  <X size={18} />
+                </button>
+              ) : null}
+            </div>
+          </form>
+
+          {/* Close 'X' Button on Far Right */}
           <button
             type="button"
             onClick={onClose}
@@ -396,18 +525,178 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
               background: "transparent",
               border: "none",
               cursor: "pointer",
-              padding: "4px",
+              padding: "6px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "#18181b",
+              color: "#334155",
+              borderRadius: "50%",
+              transition: "background 0.2s ease, color 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#f1f5f9";
+              e.currentTarget.style.color = "#0f172a";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "transparent";
+              e.currentTarget.style.color = "#334155";
             }}
           >
-            <X size={26} strokeWidth={1.5} />
+            <X size={26} strokeWidth={1.75} />
           </button>
         </div>
 
-        {/* ── Two Column Results Area: Products & Categories ── */}
+        {/* ── Empty State: Popular Trending Searches & Recent Searches ── */}
+        {!hasResults && (
+          <div
+            style={{
+              maxWidth: "860px",
+              margin: "32px auto 0",
+              boxSizing: "border-box",
+            }}
+          >
+            {/* Recent Searches */}
+            {recentSearches.length > 0 && (
+              <div style={{ marginBottom: "28px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: "12px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      color: "#64748b",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                    }}
+                  >
+                    <Clock size={15} /> Recent Searches
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearRecentSearches}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: "#94a3b8",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      padding: 0,
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "#ef4444")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "#94a3b8")}
+                  >
+                    Clear All
+                  </button>
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                  {recentSearches.map((term, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => {
+                        setQuery(term);
+                        inputRef.current?.focus();
+                      }}
+                      style={{
+                        padding: "6px 14px",
+                        borderRadius: "20px",
+                        backgroundColor: "#f1f5f9",
+                        border: "1px solid #e2e8f0",
+                        color: "#334155",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        transition: "all 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "#e2e8f0";
+                        e.currentTarget.style.color = "#0077b6";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "#f1f5f9";
+                        e.currentTarget.style.color = "#334155";
+                      }}
+                    >
+                      <Clock size={12} style={{ opacity: 0.6 }} /> {term}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Trending & Popular Searches */}
+            <div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  color: "#64748b",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  marginBottom: "12px",
+                }}
+              >
+                <TrendingUp size={15} color="#0077b6" /> Popular Searches
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                {TRENDING_SEARCHES.map((item, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setQuery(item);
+                      inputRef.current?.focus();
+                    }}
+                    style={{
+                      padding: "7px 16px",
+                      borderRadius: "20px",
+                      backgroundColor: "#f8fafc",
+                      border: "1px solid #e2e8f0",
+                      color: "#1e293b",
+                      fontSize: "13.5px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#0077b6";
+                      e.currentTarget.style.borderColor = "#0077b6";
+                      e.currentTarget.style.color = "#FFFFFF";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "#f8fafc";
+                      e.currentTarget.style.borderColor = "#e2e8f0";
+                      e.currentTarget.style.color = "#1e293b";
+                    }}
+                  >
+                    <Sparkles size={12} style={{ opacity: 0.8 }} /> {item}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Active Search Results: Products & Categories ── */}
         {hasResults && (
           <div
             style={{
@@ -420,19 +709,28 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
               boxSizing: "border-box",
             }}
           >
-            {/* ── Left Column: Products: ── */}
+            {/* ── Left Column: Products ── */}
             <div>
-              <h3
+              <div
                 style={{
-                  fontSize: "20px",
-                  fontWeight: 700,
-                  color: "#0f172a",
-                  margin: "0 0 16px 0",
-                  fontFamily: "inherit",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "16px",
                 }}
               >
-                Products:
-              </h3>
+                <h3
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: 700,
+                    color: "#0f172a",
+                    margin: 0,
+                    fontFamily: "inherit",
+                  }}
+                >
+                  Products ({products.length})
+                </h3>
+              </div>
 
               {loading ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
@@ -472,7 +770,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                           style={{
                             background: "transparent",
                             border: "none",
-                            padding: 0,
+                            padding: "4px 0",
                             margin: 0,
                             textAlign: "left",
                             cursor: "pointer",
@@ -483,23 +781,39 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                             alignItems: "flex-start",
                             gap: "8px",
                             fontFamily: "inherit",
-                            transition: "color 0.15s ease",
+                            transition: "all 0.15s ease",
+                            width: "100%",
                           }}
                           onMouseEnter={(e) => {
                             (e.currentTarget as HTMLButtonElement).style.color = "#0077b6";
-                            (e.currentTarget as HTMLButtonElement).style.textDecoration = "underline";
+                            (e.currentTarget as HTMLButtonElement).style.paddingLeft = "4px";
                           }}
                           onMouseLeave={(e) => {
                             (e.currentTarget as HTMLButtonElement).style.color = "#1e293b";
-                            (e.currentTarget as HTMLButtonElement).style.textDecoration = "none";
+                            (e.currentTarget as HTMLButtonElement).style.paddingLeft = "0px";
                           }}
                         >
-                          <span style={{ color: "#475569", flexShrink: 0, fontSize: "16px" }}>•</span>
-                          <span>
-                            {p.name}
+                          <span style={{ color: "#0077b6", flexShrink: 0, fontSize: "16px" }}>•</span>
+                          <span style={{ flex: 1 }}>
+                            <span style={{ fontWeight: 600 }}>{p.name}</span>
                             {codePart ? (
-                              <span style={{ color: "#64748b", marginLeft: "4px" }}>
-                                ({codePart})
+                              <span
+                                style={{
+                                  fontSize: "12px",
+                                  backgroundColor: "#f1f5f9",
+                                  color: "#475569",
+                                  padding: "2px 6px",
+                                  borderRadius: "4px",
+                                  marginLeft: "6px",
+                                  fontWeight: 500,
+                                }}
+                              >
+                                {codePart}
+                              </span>
+                            ) : null}
+                            {p.price && p.price > 0 ? (
+                              <span style={{ fontSize: "12.5px", color: "#0077b6", fontWeight: 700, marginLeft: "8px" }}>
+                                ₹{p.price}
                               </span>
                             ) : null}
                           </span>
@@ -515,19 +829,28 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
               )}
             </div>
 
-            {/* ── Right Column: Categories: ── */}
+            {/* ── Right Column: Categories ── */}
             <div>
-              <h3
+              <div
                 style={{
-                  fontSize: "20px",
-                  fontWeight: 700,
-                  color: "#0f172a",
-                  margin: "0 0 16px 0",
-                  fontFamily: "inherit",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "16px",
                 }}
               >
-                Categories:
-              </h3>
+                <h3
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: 700,
+                    color: "#0f172a",
+                    margin: 0,
+                    fontFamily: "inherit",
+                  }}
+                >
+                  Categories ({matchingCategories.length})
+                </h3>
+              </div>
 
               {loading ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
@@ -565,7 +888,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                         style={{
                           background: "transparent",
                           border: "none",
-                          padding: 0,
+                          padding: "4px 0",
                           margin: 0,
                           textAlign: "left",
                           cursor: "pointer",
@@ -576,22 +899,23 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                           alignItems: "flex-start",
                           gap: "8px",
                           fontFamily: "inherit",
-                          transition: "color 0.15s ease",
+                          transition: "all 0.15s ease",
+                          width: "100%",
                         }}
                         onMouseEnter={(e) => {
                           (e.currentTarget as HTMLButtonElement).style.color = "#0077b6";
-                          (e.currentTarget as HTMLButtonElement).style.textDecoration = "underline";
+                          (e.currentTarget as HTMLButtonElement).style.paddingLeft = "4px";
                         }}
                         onMouseLeave={(e) => {
                           (e.currentTarget as HTMLButtonElement).style.color = "#1e293b";
-                          (e.currentTarget as HTMLButtonElement).style.textDecoration = "none";
+                          (e.currentTarget as HTMLButtonElement).style.paddingLeft = "0px";
                         }}
                       >
-                        <span style={{ color: "#475569", flexShrink: 0, fontSize: "16px" }}>•</span>
+                        <span style={{ color: "#0077b6", flexShrink: 0, fontSize: "16px" }}>•</span>
                         <span>
-                          {c.name}
+                          <span style={{ fontWeight: 600 }}>{c.name}</span>
                           {c.count !== undefined && c.count > 0 ? (
-                            <span style={{ color: "#64748b", marginLeft: "4px" }}>
+                            <span style={{ color: "#64748b", marginLeft: "4px", fontSize: "12px" }}>
                               ({c.count})
                             </span>
                           ) : null}
@@ -606,6 +930,39 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                 </p>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Bottom View All Link when search query is entered */}
+        {hasResults && !loading && (
+          <div
+            style={{
+              maxWidth: "860px",
+              margin: "24px auto 0",
+              textAlign: "center",
+              borderTop: "1px solid #f1f5f9",
+              paddingTop: "16px",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => handleSearchSubmit()}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "#0077b6",
+                fontSize: "14px",
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+              onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+            >
+              View all results for "{query}" <ArrowRight size={15} />
+            </button>
           </div>
         )}
       </div>

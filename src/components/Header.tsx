@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ChevronRight, Search, ShoppingBag, User, X, Shield, LogOut } from "lucide-react";
 import SearchModal from "./SearchModal";
+import JaquarSearchBar from "./JaquarSearchBar";
 import { getCartItems } from "@/utils/cart";
 import { getCustomerSession, clearCustomerSession, CustomerSession } from "@/utils/customerAuth";
 import { getAdminAuth, logoutAdmin } from "@/utils/adminStore";
@@ -638,50 +639,55 @@ export default function Header({ data }: HeaderProps) {
             alignItems: "center",
           }}
         >
+          {/* Jaquar Style Embedded Search Bar (Desktop / Tablet) */}
+          <div className="hidden md:block mr-3">
+            <JaquarSearchBar isDarkBg={isDarkBg} />
+          </div>
+
           <div className="rn-header-action-icons" style={{ display: "flex", alignItems: "center" }}>
-            {[
-              { Icon: Search, label: "Search" },
-              { Icon: ShoppingBag, label: "Shopping Cart" },
-            ].map(({ Icon, label }) => (
-              <button
-                key={label}
-                type="button"
-                onClick={() => {
-                  if (label === "Search") {
-                    setSearchOpen(true);
-                  } else if (label === "Shopping Cart") {
-                    router.push("/cart");
-                  }
-                }}
-                aria-label={label}
-                style={{ background: "transparent", border: "none", padding: 0, position: "relative" }}
-                className="cursor-pointer transition-opacity duration-300 hover:opacity-70 flex items-center justify-center"
-              >
-                <Icon size={22} strokeWidth={1.6} color={iconColor} style={{ transition: "color 0.3s ease" }} />
-                {label === "Shopping Cart" && cartCount > 0 && (
-                  <span
-                    style={{
-                      position: "absolute",
-                      top: "-6px",
-                      right: "-8px",
-                      background: "#00AEEF",
-                      color: "#FFFFFF",
-                      fontSize: "10px",
-                      fontWeight: "bold",
-                      borderRadius: "50%",
-                      width: "16px",
-                      height: "16px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      zIndex: 10,
-                    }}
-                  >
-                    {cartCount}
-                  </span>
-                )}
-              </button>
-            ))}
+            {/* Mobile Only Search Icon */}
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              aria-label="Search"
+              style={{ background: "transparent", border: "none", padding: 0, position: "relative" }}
+              className="md:hidden cursor-pointer transition-opacity duration-300 hover:opacity-70 flex items-center justify-center"
+            >
+              <Search size={22} strokeWidth={1.6} color={iconColor} style={{ transition: "color 0.3s ease" }} />
+            </button>
+
+            {/* Shopping Cart Icon */}
+            <button
+              type="button"
+              onClick={() => router.push("/cart")}
+              aria-label="Shopping Cart"
+              style={{ background: "transparent", border: "none", padding: 0, position: "relative" }}
+              className="cursor-pointer transition-opacity duration-300 hover:opacity-70 flex items-center justify-center"
+            >
+              <ShoppingBag size={22} strokeWidth={1.6} color={iconColor} style={{ transition: "color 0.3s ease" }} />
+              {cartCount > 0 && (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: "-6px",
+                    right: "-8px",
+                    background: "#00AEEF",
+                    color: "#FFFFFF",
+                    fontSize: "10px",
+                    fontWeight: "bold",
+                    borderRadius: "50%",
+                    width: "16px",
+                    height: "16px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    zIndex: 10,
+                  }}
+                >
+                  {cartCount}
+                </span>
+              )}
+            </button>
           </div>
 
           <div className="rn-header-divider" style={{ width: "1px", height: "20px", backgroundColor: textColor }}></div>

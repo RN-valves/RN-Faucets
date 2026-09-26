@@ -42,16 +42,10 @@ export const metadata: Metadata = {
     siteName: "RN Valves & Faucets",
     images: [
       {
-        url: "/apple-touch-icon.png?v=3",
-        width: 512,
-        height: 512,
-        alt: "RN Valves & Faucets",
-      },
-      {
-        url: "https://rnvalves.media/Catalogue/Banner/5.jpg",
+        url: "/apple-touch-icon.png?v=4",
         width: 1200,
         height: 630,
-        alt: "RN Valves & Faucets Luxury Collection",
+        alt: "RN Valves & Faucets",
       },
     ],
     locale: "en_IN",
@@ -64,7 +58,7 @@ export const metadata: Metadata = {
     title: "RN Valves & Faucets | Trusted Bath Fittings Since 2000",
     description:
       "26 years, 5,000+ dealers, one promise: Built for Long Life. PTMT & CP faucets, showers, health faucets, valves and accessories under one roof",
-    images: ["https://rnvalves.media/Catalogue/Banner/5.jpg"],
+    images: ["/apple-touch-icon.png?v=4"],
   },
 };
 
