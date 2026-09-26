@@ -392,10 +392,19 @@ export default function AdminOrderDetailPage() {
     const filename = `${cleanId}_Invoice.pdf`;
 
     try {
-      if (!(window as any).html2pdf) {
+      if (!(window as any).html2canvas) {
         await new Promise((resolve, reject) => {
           const script = document.createElement("script");
-          script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+          script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+          script.onload = resolve;
+          script.onerror = reject;
+          document.body.appendChild(script);
+        });
+      }
+      if (!(window as any).jspdf) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
           script.onload = resolve;
           script.onerror = reject;
           document.body.appendChild(script);
@@ -417,18 +426,9 @@ export default function AdminOrderDetailPage() {
         })
       );
 
-      // Temporarily bring to foreground top:0 to guarantee full pixel capture regardless of scroll position
-      const prevPos = element.style.position;
-      const prevLeft = element.style.left;
-      const prevTop = element.style.top;
-      const prevZ = element.style.zIndex;
-      const prevVis = element.style.visibility;
-      const prevOp = element.style.opacity;
-
-      element.style.position = "fixed";
+      // Temporarily bring to viewport top:0 at z-index 999999 for snapshot
       element.style.left = "0px";
       element.style.top = "0px";
-      element.style.zIndex = "999999";
       element.style.visibility = "visible";
       element.style.opacity = "1";
 
@@ -438,53 +438,30 @@ export default function AdminOrderDetailPage() {
       const jspdfModule = (window as any).jspdf || window;
       const jsPDF = jspdfModule.jsPDF || (window as any).jsPDF;
 
-      if (html2canvas && jsPDF) {
-        const canvas = await html2canvas(element, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: "#FFFFFF",
-          width: element.offsetWidth || 800,
-          height: element.offsetHeight,
-        });
+      const canvas = await html2canvas(element, {
+        scale: 2.5,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#FFFFFF",
+        width: element.offsetWidth || 800,
+        height: element.offsetHeight,
+      });
 
-        element.style.position = prevPos;
-        element.style.left = prevLeft;
-        element.style.top = prevTop;
-        element.style.zIndex = prevZ;
-        element.style.visibility = prevVis;
-        element.style.opacity = prevOp;
+      element.style.left = "-99999px";
 
-        const imgData = canvas.toDataURL("image/jpeg", 0.98);
-        const pdf = new jsPDF({
-          orientation: "portrait",
-          unit: "mm",
-          format: "a4",
-        });
+      const imgData = canvas.toDataURL("image/jpeg", 0.98);
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
 
-        const pdfW = pdf.internal.pageSize.getWidth();
-        const pdfH = pdf.internal.pageSize.getHeight();
-        const imgH = (canvas.height * (pdfW - 10)) / canvas.width;
+      const pdfW = pdf.internal.pageSize.getWidth ? pdf.internal.pageSize.getWidth() : 210;
+      const pdfH = pdf.internal.pageSize.getHeight ? pdf.internal.pageSize.getHeight() : 297;
+      const imgH = (canvas.height * (pdfW - 10)) / canvas.width;
 
-        pdf.addImage(imgData, "JPEG", 5, 5, pdfW - 10, Math.min(imgH, pdfH - 10));
-        pdf.save(filename);
-      } else {
-        const opt = {
-          margin: [5, 5, 5, 5],
-          filename: filename,
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, logging: false },
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        };
-        await (window as any).html2pdf().set(opt).from(element).save();
-
-        element.style.position = prevPos;
-        element.style.left = prevLeft;
-        element.style.top = prevTop;
-        element.style.zIndex = prevZ;
-        element.style.visibility = prevVis;
-        element.style.opacity = prevOp;
-      }
+      pdf.addImage(imgData, "JPEG", 5, 5, pdfW - 10, Math.min(imgH, pdfH - 10));
+      pdf.save(filename);
     } catch (e: any) {
       console.error("Direct PDF download failed, falling back to window print:", e);
       const oldTitle = document.title;
@@ -517,11 +494,20 @@ export default function AdminOrderDetailPage() {
         });
       }
 
-      // 2. Ensure html2pdf bundle (html2canvas & jsPDF) is loaded
-      if (!(window as any).html2pdf) {
+      // 2. Ensure html2canvas and jspdf are loaded
+      if (!(window as any).html2canvas) {
         await new Promise((resolve, reject) => {
           const script = document.createElement("script");
-          script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+          script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+          script.onload = resolve;
+          script.onerror = reject;
+          document.body.appendChild(script);
+        });
+      }
+      if (!(window as any).jspdf) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
           script.onload = resolve;
           script.onerror = reject;
           document.body.appendChild(script);
@@ -530,6 +516,12 @@ export default function AdminOrderDetailPage() {
 
       const element = document.getElementById("direct-order-manifest-template");
       if (!element) throw new Error("Manifest template element not found");
+
+      // Temporarily bring to viewport top:0 at z-index 999999 for snapshot
+      element.style.left = "0px";
+      element.style.top = "0px";
+      element.style.visibility = "visible";
+      element.style.opacity = "1";
 
       // Render Barcodes
       try {
@@ -551,86 +543,36 @@ export default function AdminOrderDetailPage() {
         console.error("Barcode rendering error:", err);
       }
 
-      // Wait for any images
-      const images = Array.from(element.querySelectorAll("img"));
-      await Promise.all(
-        images.map((img) => {
-          if (img.complete) return Promise.resolve();
-          return new Promise((res) => {
-            img.onload = res;
-            img.onerror = res;
-          });
-        })
-      );
-
-      // Temporarily bring to foreground top:0 to guarantee full pixel capture regardless of scroll position
-      const prevPos = element.style.position;
-      const prevLeft = element.style.left;
-      const prevTop = element.style.top;
-      const prevZ = element.style.zIndex;
-      const prevVis = element.style.visibility;
-      const prevOp = element.style.opacity;
-
-      element.style.position = "fixed";
-      element.style.left = "0px";
-      element.style.top = "0px";
-      element.style.zIndex = "999999";
-      element.style.visibility = "visible";
-      element.style.opacity = "1";
-
-      await new Promise((r) => setTimeout(r, 60));
+      await new Promise((r) => setTimeout(r, 80));
 
       const html2canvas = (window as any).html2canvas;
       const jspdfModule = (window as any).jspdf || window;
       const jsPDF = jspdfModule.jsPDF || (window as any).jsPDF;
 
-      if (html2canvas && jsPDF) {
-        const canvas = await html2canvas(element, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: "#FFFFFF",
-          width: element.offsetWidth || 500,
-          height: element.offsetHeight,
-        });
+      const canvas = await html2canvas(element, {
+        scale: 2.5,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#FFFFFF",
+        width: element.offsetWidth || 500,
+        height: element.offsetHeight,
+      });
 
-        element.style.position = prevPos;
-        element.style.left = prevLeft;
-        element.style.top = prevTop;
-        element.style.zIndex = prevZ;
-        element.style.visibility = prevVis;
-        element.style.opacity = prevOp;
+      element.style.left = "-99999px";
 
-        const imgData = canvas.toDataURL("image/jpeg", 0.98);
-        const pdf = new jsPDF({
-          orientation: "portrait",
-          unit: "mm",
-          format: [105, 150], // 4x6 inch thermal shipping label
-        });
+      const imgData = canvas.toDataURL("image/jpeg", 0.98);
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: [105, 150], // 4x6 inch thermal shipping label
+      });
 
-        const pdfW = pdf.internal.pageSize.getWidth();
-        const pdfH = pdf.internal.pageSize.getHeight();
-        const imgH = (canvas.height * (pdfW - 4)) / canvas.width;
+      const pdfW = pdf.internal.pageSize.getWidth ? pdf.internal.pageSize.getWidth() : 105;
+      const pdfH = pdf.internal.pageSize.getHeight ? pdf.internal.pageSize.getHeight() : 150;
+      const imgH = (canvas.height * (pdfW - 4)) / canvas.width;
 
-        pdf.addImage(imgData, "JPEG", 2, 2, pdfW - 4, Math.min(imgH, pdfH - 4));
-        pdf.save(filename);
-      } else {
-        const opt = {
-          margin: [2, 2, 2, 2],
-          filename: filename,
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, logging: false },
-          jsPDF: { unit: "mm", format: [105, 150], orientation: "portrait" },
-        };
-        await (window as any).html2pdf().set(opt).from(element).save();
-
-        element.style.position = prevPos;
-        element.style.left = prevLeft;
-        element.style.top = prevTop;
-        element.style.zIndex = prevZ;
-        element.style.visibility = prevVis;
-        element.style.opacity = prevOp;
-      }
+      pdf.addImage(imgData, "JPEG", 2, 2, pdfW - 4, Math.min(imgH, pdfH - 4));
+      pdf.save(filename);
     } catch (e: any) {
       console.error("Direct Manifest download failed, falling back to window print:", e);
       window.print();
@@ -2136,7 +2078,7 @@ export default function AdminOrderDetailPage() {
           id="direct-order-invoice-template"
           style={{
             position: "fixed",
-            left: 0,
+            left: "-99999px",
             top: 0,
             width: "800px",
             background: "#FFFFFF",
@@ -2146,7 +2088,7 @@ export default function AdminOrderDetailPage() {
             lineHeight: 1.45,
             padding: "28px 32px",
             boxSizing: "border-box",
-            zIndex: -9999,
+            zIndex: 999999,
             pointerEvents: "none",
           }}
         >
@@ -2310,7 +2252,7 @@ export default function AdminOrderDetailPage() {
           id="direct-order-manifest-template"
           style={{
             position: "fixed",
-            left: 0,
+            left: "-99999px",
             top: 0,
             width: "500px",
             backgroundColor: "#FFFFFF",
@@ -2318,7 +2260,7 @@ export default function AdminOrderDetailPage() {
             fontFamily: "Arial, Helvetica, sans-serif",
             boxSizing: "border-box",
             border: "2.5px solid #000000",
-            zIndex: -9999,
+            zIndex: 999999,
             pointerEvents: "none",
             fontSize: "11.5px",
             lineHeight: "1.35",
