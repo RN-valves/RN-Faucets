@@ -123,6 +123,7 @@ function CategoryPageContent({ category }: { category: string }) {
   const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
   const [minPriceInput, setMinPriceInput] = useState<string>("");
   const [maxPriceInput, setMaxPriceInput] = useState<string>("");
+  const [isPriceExpanded, setIsPriceExpanded] = useState<boolean>(true);
   const [sortBy, setSortBy] = useState<string>("recommended");
 
   // Infinite Scroll Pagination State (25 items per chunk)
@@ -499,126 +500,151 @@ function CategoryPageContent({ category }: { category: string }) {
     );
   }, [categoryData, allCategories]);
 
+  const currentMin = minPriceInput !== "" ? Number(minPriceInput) : minAvailablePrice;
+  const currentMax = maxPriceInput !== "" ? Number(maxPriceInput) : maxAvailablePrice;
+  const priceSpan = Math.max(1, maxAvailablePrice - minAvailablePrice);
+  const minPercent = Math.max(0, Math.min(100, ((currentMin - minAvailablePrice) / priceSpan) * 100));
+  const maxPercent = Math.max(0, Math.min(100, ((currentMax - minAvailablePrice) / priceSpan) * 100));
+
+  const handleMinPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = Math.min(Number(e.target.value), currentMax);
+    setMinPriceInput(val === minAvailablePrice && currentMax === maxAvailablePrice ? "" : String(val));
+  };
+
+  const handleMaxPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = Math.max(Number(e.target.value), currentMin);
+    setMaxPriceInput(val === maxAvailablePrice && currentMin === minAvailablePrice ? "" : String(val));
+  };
+
   // Reusable Filter Content Element (used in desktop sidebar + mobile drawer)
   const renderFilterContent = () => (
     <>
       {/* ── 1: PRICE RANGE FILTER ── */}
       <div style={{ marginBottom: "24px" }}>
         <div
+          onClick={() => setIsPriceExpanded((prev) => !prev)}
           style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: "12px",
+            cursor: "pointer",
+            userSelect: "none",
+            paddingBottom: "8px",
           }}
         >
-          <h3 className="filter-section-heading">PRICE ( ₹ )</h3>
-          {(minPriceInput || maxPriceInput) && (
-            <button
-              onClick={() => {
-                setMinPriceInput("");
-                setMaxPriceInput("");
-              }}
+          <span
+            style={{
+              fontFamily: "'Manrope', system-ui, sans-serif",
+              fontSize: "15px",
+              fontWeight: 400,
+              color: "#1e293b",
+            }}
+          >
+            Price
+          </span>
+          <button
+            type="button"
+            style={{
+              background: "none",
+              border: "none",
+              fontSize: "18px",
+              fontWeight: 400,
+              color: "#334155",
+              cursor: "pointer",
+              padding: "0 4px",
+              lineHeight: 1,
+            }}
+            aria-label={isPriceExpanded ? "Collapse price filter" : "Expand price filter"}
+          >
+            {isPriceExpanded ? "—" : "+"}
+          </button>
+        </div>
+
+        {/* Divider line under header */}
+        <div style={{ height: "1px", backgroundColor: "#e2e8f0", marginBottom: "14px" }} />
+
+        {isPriceExpanded && (
+          <div style={{ padding: "0 2px" }}>
+            {/* Price values (Min on left, Max on right) */}
+            <div
               style={{
-                background: "none",
-                border: "none",
-                color: "#0284c7",
-                fontSize: "12px",
-                fontWeight: 600,
-                cursor: "pointer",
-                padding: 0,
-                textDecoration: "underline",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "12px",
+                fontFamily: "'Manrope', system-ui, sans-serif",
+                fontSize: "15px",
+                fontWeight: 400,
+                color: "#1e293b",
               }}
             >
-              Reset
-            </button>
-          )}
-        </div>
+              <span>{currentMin}</span>
+              <span>{currentMax}</span>
+            </div>
 
-        {/* Min & Max Price Input Fields */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-          <div style={{ flex: 1, position: "relative" }}>
-            <span style={{ position: "absolute", left: "8px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#64748b", fontWeight: 700 }}>₹</span>
-            <input
-              type="number"
-              placeholder={String(minAvailablePrice)}
-              value={minPriceInput}
-              onChange={(e) => setMinPriceInput(e.target.value)}
+            {/* Dual Slider Track */}
+            <div
               style={{
+                position: "relative",
                 width: "100%",
-                padding: "6px 8px 6px 20px",
-                borderRadius: "6px",
-                border: "1px solid #cbd5e1",
-                fontSize: "12.5px",
-                fontFamily: "'Manrope', system-ui, sans-serif",
-                color: "#0f172a",
-                boxSizing: "border-box",
-                outline: "none",
+                height: "24px",
+                display: "flex",
+                alignItems: "center",
               }}
-            />
-          </div>
-          <span style={{ color: "#94a3b8", fontWeight: 600, fontSize: "12px" }}>to</span>
-          <div style={{ flex: 1, position: "relative" }}>
-            <span style={{ position: "absolute", left: "8px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#64748b", fontWeight: 700 }}>₹</span>
-            <input
-              type="number"
-              placeholder={String(maxAvailablePrice)}
-              value={maxPriceInput}
-              onChange={(e) => setMaxPriceInput(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "6px 8px 6px 20px",
-                borderRadius: "6px",
-                border: "1px solid #cbd5e1",
-                fontSize: "12.5px",
-                fontFamily: "'Manrope', system-ui, sans-serif",
-                color: "#0f172a",
-                boxSizing: "border-box",
-                outline: "none",
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Quick Price Range Chips */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-          {[
-            { label: "Under ₹1,000", min: "", max: "1000" },
-            { label: "₹1,000 – ₹3,000", min: "1000", max: "3000" },
-            { label: "₹3,000 – ₹7,000", min: "3000", max: "7000" },
-            { label: "₹7,000+", min: "7000", max: "" },
-          ].map((range, idx) => {
-            const isRangeActive = minPriceInput === range.min && maxPriceInput === range.max;
-            return (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => {
-                  if (isRangeActive) {
-                    setMinPriceInput("");
-                    setMaxPriceInput("");
-                  } else {
-                    setMinPriceInput(range.min);
-                    setMaxPriceInput(range.max);
-                  }
-                }}
+            >
+              {/* Base Track */}
+              <div
                 style={{
-                  padding: "4px 8px",
-                  borderRadius: "999px",
-                  border: isRangeActive ? "1px solid #0284c7" : "1px solid #e2e8f0",
-                  backgroundColor: isRangeActive ? "#e0f2fe" : "#f8fafc",
-                  color: isRangeActive ? "#0369a1" : "#475569",
-                  fontSize: "11px",
-                  fontWeight: isRangeActive ? 700 : 500,
-                  cursor: "pointer",
-                  transition: "all 0.15s ease",
+                  position: "absolute",
+                  width: "100%",
+                  height: "6px",
+                  backgroundColor: "#e5e7eb",
+                  borderRadius: "3px",
                 }}
-              >
-                {range.label}
-              </button>
-            );
-          })}
-        </div>
+              />
+
+              {/* Active Highlighted Track */}
+              <div
+                style={{
+                  position: "absolute",
+                  left: `${minPercent}%`,
+                  width: `${Math.max(0, maxPercent - minPercent)}%`,
+                  height: "6px",
+                  backgroundColor: "#cbd5e1",
+                  borderRadius: "3px",
+                }}
+              />
+
+              {/* Min Range Input */}
+              <input
+                type="range"
+                min={minAvailablePrice}
+                max={maxAvailablePrice}
+                step={1}
+                value={currentMin}
+                onChange={handleMinPriceChange}
+                className="price-dual-range-input"
+                style={{
+                  zIndex: currentMin > maxAvailablePrice - (maxAvailablePrice - minAvailablePrice) * 0.05 ? 20 : 10,
+                }}
+              />
+
+              {/* Max Range Input */}
+              <input
+                type="range"
+                min={minAvailablePrice}
+                max={maxAvailablePrice}
+                step={1}
+                value={currentMax}
+                onChange={handleMaxPriceChange}
+                className="price-dual-range-input"
+                style={{
+                  zIndex: 15,
+                }}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── 2: PRODUCTS (Family Types) ── */}
@@ -1193,6 +1219,55 @@ function CategoryPageContent({ category }: { category: string }) {
           background-color: #0f172a;
           color: #ffffff;
           border-color: #0f172a;
+        }
+
+        .price-dual-range-input {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 100%;
+          pointer-events: none;
+          -webkit-appearance: none;
+          appearance: none;
+          background: transparent;
+          margin: 0;
+          padding: 0;
+          outline: none;
+        }
+
+        .price-dual-range-input::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          pointer-events: auto;
+          width: 15px;
+          height: 20px;
+          background-color: #f8fafc;
+          border: 1.5px solid #cbd5e1;
+          border-radius: 4px;
+          cursor: ew-resize;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+          transition: border-color 0.15s ease, background-color 0.15s ease;
+        }
+
+        .price-dual-range-input::-webkit-slider-thumb:hover {
+          border-color: #94a3b8;
+          background-color: #ffffff;
+        }
+
+        .price-dual-range-input::-webkit-slider-thumb:active {
+          border-color: #64748b;
+          background-color: #ffffff;
+        }
+
+        .price-dual-range-input::-moz-range-thumb {
+          pointer-events: auto;
+          width: 15px;
+          height: 20px;
+          background-color: #f8fafc;
+          border: 1.5px solid #cbd5e1;
+          border-radius: 4px;
+          cursor: ew-resize;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
         }
       `}</style>
 
