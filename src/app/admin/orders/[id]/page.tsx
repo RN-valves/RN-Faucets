@@ -404,11 +404,32 @@ export default function AdminOrderDetailPage() {
       const element = document.getElementById("direct-order-invoice-template");
       if (!element) throw new Error("Invoice template element not found");
 
+      // Wait for any images to complete loading
+      const images = Array.from(element.querySelectorAll("img"));
+      await Promise.all(
+        images.map((img) => {
+          if (img.complete) return Promise.resolve();
+          return new Promise((res) => {
+            img.onload = res;
+            img.onerror = res;
+          });
+        })
+      );
+
       const opt = {
         margin: [5, 5, 5, 5],
         filename: filename,
         image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          scrollY: 0,
+          scrollX: 0,
+          x: 0,
+          y: 0,
+          windowWidth: 800,
+          logging: false,
+        },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
       };
 
@@ -1855,7 +1876,7 @@ export default function AdminOrderDetailPage() {
           id="direct-order-invoice-template"
           style={{
             position: "fixed",
-            left: "-9999px",
+            left: 0,
             top: 0,
             width: "800px",
             background: "#FFFFFF",
@@ -1865,7 +1886,8 @@ export default function AdminOrderDetailPage() {
             lineHeight: 1.45,
             padding: "28px 32px",
             boxSizing: "border-box",
-            zIndex: -999,
+            zIndex: -9999,
+            pointerEvents: "none",
           }}
         >
           {/* Header */}
