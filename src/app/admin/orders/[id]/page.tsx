@@ -14,6 +14,7 @@ import {
   Clock,
   AlertCircle,
   ExternalLink,
+  Loader2,
 } from "lucide-react";
 
 interface OrderItem {
@@ -120,6 +121,7 @@ export default function AdminOrderDetailPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
   // Form States
   const [status, setStatus] = useState("Pending");
@@ -380,6 +382,48 @@ export default function AdminOrderDetailPage() {
     }
   };
 
+  // Direct Download PDF Handler
+  const handleDirectDownloadPDF = async () => {
+    if (!order) return;
+    setIsDownloadingPdf(true);
+    const orderNum = order.id.replace(/-/g, "").replace(/^RNORD|^RNOD|^ORD|^OD|^#/i, "");
+    const cleanId = order.id ? (order.id.startsWith("RNOD") ? order.id : `RNOD${orderNum}`) : `RNOD${orderNum}`;
+    const filename = `${cleanId}_Invoice.pdf`;
+
+    try {
+      if (!(window as any).html2pdf) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+          script.onload = resolve;
+          script.onerror = reject;
+          document.body.appendChild(script);
+        });
+      }
+
+      const element = document.getElementById("direct-order-invoice-template");
+      if (!element) throw new Error("Invoice template element not found");
+
+      const opt = {
+        margin: [5, 5, 5, 5],
+        filename: filename,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      };
+
+      await (window as any).html2pdf().set(opt).from(element).save();
+    } catch (e: any) {
+      console.error("Direct PDF download failed, falling back to window print:", e);
+      const oldTitle = document.title;
+      document.title = filename.replace(/\.pdf$/, "");
+      window.print();
+      document.title = oldTitle;
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
+
   const isPaid = order?.paymentStatus === "Paid";
   const hasShippingAssigned = Boolean(order?.trackingNumber || (order?.deliveryCharge && order.deliveryCharge > 0));
 
@@ -537,25 +581,35 @@ export default function AdminOrderDetailPage() {
                   <ArrowLeft size={14} /> Back
                 </Link>
 
-                <Link
-                  href={`/admin/orders/${order._id || order.id}/invoice?download=true`}
-                  target="_blank"
+                <button
+                  type="button"
+                  onClick={handleDirectDownloadPDF}
+                  disabled={isDownloadingPdf}
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "6px",
                     padding: "6px 14px",
-                    background: "transparent",
-                    color: "#DC3545",
-                    border: "1px solid #DC3545",
+                    background: "#0077B6",
+                    color: "#FFF",
+                    border: "1px solid #0077B6",
                     borderRadius: "4px",
                     fontSize: "13px",
                     fontWeight: 700,
-                    textDecoration: "none",
+                    cursor: isDownloadingPdf ? "not-allowed" : "pointer",
+                    opacity: isDownloadingPdf ? 0.7 : 1,
                   }}
                 >
-                  <FileText size={14} /> Download Order PDF
-                </Link>
+                  {isDownloadingPdf ? (
+                    <>
+                      <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Downloading PDF...
+                    </>
+                  ) : (
+                    <>
+                      <Download size={14} /> Download Order PDF
+                    </>
+                  )}
+                </button>
 
                 {hasShippingAssigned && (
                   <button
@@ -1794,6 +1848,179 @@ export default function AdminOrderDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Hidden Invoice Template for Direct 1-Click PDF Generation */}
+      {order && (
+        <div
+          id="direct-order-invoice-template"
+          style={{
+            position: "fixed",
+            left: "-9999px",
+            top: 0,
+            width: "800px",
+            background: "#FFFFFF",
+            color: "#111827",
+            fontFamily: "'Times New Roman', Times, serif",
+            fontSize: "13.5px",
+            lineHeight: 1.45,
+            padding: "28px 32px",
+            boxSizing: "border-box",
+            zIndex: -999,
+          }}
+        >
+          {/* Header */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", paddingBottom: "12px" }}>
+            <div style={{ width: "58%" }}>
+              <h4 style={{ margin: "0 0 8px 0", fontSize: "16px", fontWeight: 800, color: "#000000", letterSpacing: "0.3px" }}>
+                RN FAUCETS PRIVATE LIMITED
+              </h4>
+              <p style={{ margin: "3px 0", fontSize: "13px", color: "#222222" }}>Address: B-68 Site-4 Industrial Area, Sahibabad Ghaziabad-201010</p>
+              <p style={{ margin: "3px 0", fontSize: "13px", color: "#222222" }}>Phone: 1800123400400</p>
+              <p style={{ margin: "3px 0", fontSize: "13px", color: "#222222" }}>Email: enquiry@rnvalves.com</p>
+              <p style={{ margin: "3px 0", fontSize: "13px", color: "#222222" }}>
+                website: <span style={{ color: "#0044cc", textDecoration: "underline" }}>www.rnvalves.com</span>
+              </p>
+              <p style={{ margin: "3px 0", fontSize: "13px", color: "#222222" }}>
+                <strong>GSTIN No.: 09AAKCR3772K1ZR</strong>
+              </p>
+            </div>
+
+            <div style={{ width: "40%", textAlign: "right", display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+              <div style={{ marginBottom: "8px" }}>
+                <img
+                  src="/users/images/logoc.png"
+                  alt="RN Valves & Faucets"
+                  width={100}
+                  style={{ width: "100px", height: "auto", display: "block", marginLeft: "auto", objectFit: "contain" }}
+                />
+              </div>
+              <h2 style={{ margin: "4px 0 2px 0", fontSize: "22px", fontWeight: 800, color: "#000000" }}>
+                RNOD #{order.id ? (order.id.replace(/\D/g, "") || order.id) : ""}
+              </h2>
+              <p style={{ margin: "2px 0", fontSize: "13px", color: "#333333" }}>
+                Date: {order.createdAt ? new Date(order.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+              </p>
+            </div>
+          </div>
+
+          {/* Bill To */}
+          <div style={{ marginTop: "24px" }}>
+            <h2 style={{ fontSize: "18px", fontWeight: 800, margin: "0 0 8px 0", color: "#000000" }}>Bill To:</h2>
+            <p style={{ margin: "3px 0", fontSize: "13px", fontWeight: 600, color: "#222222" }}>
+              {order.shippingAddress?.firstName || order.customerName || "—"} {order.shippingAddress?.lastName || ""}
+            </p>
+            <p style={{ margin: "3px 0", fontSize: "13px", color: "#222222" }}>
+              {order.shippingAddress?.address ? `${order.shippingAddress.address}, ` : ""}
+              {order.shippingAddress?.city ? `${order.shippingAddress.city}, ` : ""}
+              {order.shippingAddress?.state ? `${order.shippingAddress.state} ` : ""}
+              {order.shippingAddress?.pinCode ? `${order.shippingAddress.pinCode}` : ""}
+            </p>
+            <p style={{ margin: "3px 0", fontSize: "13px", color: "#222222" }}>
+              Phone: {order.shippingAddress?.phone || order.customerPhone || "—"}
+            </p>
+            <p style={{ margin: "3px 0", fontSize: "13px", color: "#222222" }}>
+              Email: {order.shippingAddress?.email || order.customerEmail || "noreply@rnvalves.com"}
+            </p>
+          </div>
+
+          {/* Order Details Table */}
+          <div style={{ marginTop: "24px" }}>
+            <h2 style={{ fontSize: "18px", fontWeight: 800, margin: "0 0 8px 0", color: "#000000" }}>Order Details:</h2>
+            <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "10px" }}>
+              <thead>
+                <tr>
+                  <th style={{ border: "1px solid #cccccc", padding: "8px 10px", textAlign: "left", paddingLeft: "14px", backgroundColor: "#f0f0f0", fontWeight: 800, color: "#000000", fontSize: "12.5px" }}>
+                    Product Description
+                  </th>
+                  <th style={{ border: "1px solid #cccccc", padding: "8px 10px", width: "120px", textAlign: "center", backgroundColor: "#f0f0f0", fontWeight: 800, color: "#000000", fontSize: "12.5px" }}>
+                    Code
+                  </th>
+                  <th style={{ border: "1px solid #cccccc", padding: "8px 10px", width: "90px", textAlign: "center", backgroundColor: "#f0f0f0", fontWeight: 800, color: "#000000", fontSize: "12.5px" }}>
+                    HSN
+                  </th>
+                  <th style={{ border: "1px solid #cccccc", padding: "8px 10px", width: "60px", textAlign: "center", backgroundColor: "#f0f0f0", fontWeight: 800, color: "#000000", fontSize: "12.5px" }}>
+                    QTY
+                  </th>
+                  <th style={{ border: "1px solid #cccccc", padding: "8px 10px", width: "90px", textAlign: "center", backgroundColor: "#f0f0f0", fontWeight: 800, color: "#000000", fontSize: "12.5px" }}>
+                    Unit Price
+                  </th>
+                  <th style={{ border: "1px solid #cccccc", padding: "8px 10px", width: "90px", textAlign: "center", backgroundColor: "#f0f0f0", fontWeight: 800, color: "#000000", fontSize: "12.5px" }}>
+                    Total
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {(order.items || []).map((item, idx) => (
+                  <tr key={idx}>
+                    <td style={{ border: "1px solid #cccccc", padding: "8px 10px", textAlign: "left", paddingLeft: "14px", fontSize: "12.5px", color: "#111827" }}>
+                      {item.name} {item.color ? `(${item.color})` : ""}
+                    </td>
+                    <td style={{ border: "1px solid #cccccc", padding: "8px 10px", textAlign: "center", fontSize: "12.5px", color: "#111827" }}>
+                      {item.code || item.id || "—"}
+                    </td>
+                    <td style={{ border: "1px solid #cccccc", padding: "8px 10px", textAlign: "center", fontSize: "12.5px", color: "#111827" }}>
+                      84818090
+                    </td>
+                    <td style={{ border: "1px solid #cccccc", padding: "8px 10px", textAlign: "center", fontSize: "12.5px", color: "#111827" }}>
+                      {item.quantity}
+                    </td>
+                    <td style={{ border: "1px solid #cccccc", padding: "8px 10px", textAlign: "center", fontSize: "12.5px", color: "#111827" }}>
+                      {item.price}
+                    </td>
+                    <td style={{ border: "1px solid #cccccc", padding: "8px 10px", textAlign: "center", fontSize: "12.5px", color: "#111827" }}>
+                      {(item.price * item.quantity).toFixed(item.price % 1 === 0 ? 0 : 2)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th colSpan={5} style={{ border: "1px solid #cccccc", padding: "8px 10px", textAlign: "right", paddingRight: "16px", backgroundColor: "#f0f0f0", fontWeight: 800, fontSize: "12.5px", color: "#000000" }}>
+                    Subtotal:
+                  </th>
+                  <td style={{ border: "1px solid #cccccc", padding: "8px 10px", textAlign: "center", fontWeight: 800, fontSize: "12.5px", color: "#111827" }}>
+                    {(order.items || []).reduce((acc, it) => acc + (it.price || 0) * (it.quantity || 1), 0).toFixed((order.items || []).reduce((acc, it) => acc + (it.price || 0) * (it.quantity || 1), 0) % 1 === 0 ? 0 : 2)}
+                  </td>
+                </tr>
+                {(order.discountAmount || 0) > 0 && (
+                  <tr>
+                    <th colSpan={5} style={{ border: "1px solid #cccccc", padding: "8px 10px", textAlign: "right", paddingRight: "16px", backgroundColor: "#f0f0f0", fontWeight: 800, fontSize: "12.5px", color: "#000000" }}>
+                      Discount:
+                    </th>
+                    <td style={{ border: "1px solid #cccccc", padding: "8px 10px", textAlign: "center", color: "#16a34a", fontWeight: "bold", fontSize: "12.5px" }}>
+                      - {(order.discountAmount || 0).toFixed(2)}
+                    </td>
+                  </tr>
+                )}
+                <tr>
+                  <th colSpan={5} style={{ border: "1px solid #cccccc", padding: "8px 10px", textAlign: "right", paddingRight: "16px", backgroundColor: "#f0f0f0", fontWeight: 800, fontSize: "12.5px", color: "#000000" }}>
+                    Shipping Charges:
+                  </th>
+                  <td style={{ border: "1px solid #cccccc", padding: "8px 10px", textAlign: "center", fontWeight: 800, fontSize: "12.5px", color: "#111827" }}>
+                    {order.shippingAmount || order.deliveryCharge || 0}
+                  </td>
+                </tr>
+                <tr>
+                  <th colSpan={5} style={{ border: "1px solid #cccccc", padding: "8px 10px", textAlign: "right", paddingRight: "16px", backgroundColor: "#f0f0f0", fontWeight: 800, fontSize: "12.5px", color: "#000000" }}>
+                    Total:
+                  </th>
+                  <td style={{ border: "1px solid #cccccc", padding: "8px 10px", textAlign: "center", fontWeight: "bold", fontSize: "12.5px", color: "#111827" }}>
+                    {(order.totalAmount || (order.items || []).reduce((acc, it) => acc + (it.price || 0) * (it.quantity || 1), 0)).toFixed((order.totalAmount || 0) % 1 === 0 ? 0 : 2)}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          {/* Payment Terms */}
+          <div style={{ marginTop: "24px", paddingTop: "6px" }}>
+            <h2 style={{ fontSize: "18px", fontWeight: 800, margin: "0 0 8px 0", color: "#000000" }}>Payment Terms:</h2>
+            <p style={{ margin: "4px 0", fontSize: "13px", color: "#222222" }}>
+              Payment Method: <strong>{order.paymentMethod === "Cash on Delivery" ? "COD" : order.paymentStatus === "Paid" ? "Prepaid" : order.paymentMethod || "Prepaid"}</strong>
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
