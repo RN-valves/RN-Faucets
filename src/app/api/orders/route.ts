@@ -84,14 +84,19 @@ export async function GET(request: Request) {
 
     // Auto-normalize any random large 6-digit order IDs in background to maintain sequential consistency
     const unsequencedOrders = await Order.find({
-      id: { $regex: /^RNOD\d{6}$/i },
-    }).sort({ createdAt: 1 });
+      $or: [
+        { id: { $regex: /\d{6}/ } },
+        { id: { $regex: /813901|914697/ } },
+        { legacyId: { $gte: 100000 } },
+      ],
+    }).sort({ createdAt: 1, _id: 1 });
 
     if (unsequencedOrders.length > 0) {
       const highestSequential = await Order.findOne({
+        id: { $not: { $regex: /\d{6}/ } },
         $or: [
           { legacyId: { $gt: 0, $lt: 100000 } },
-          { id: { $regex: /^RNOD\d{1,5}$/i } },
+          { id: { $regex: /^(RNOD|RN-ORD-)\d{1,5}$/i } },
         ],
       })
         .sort({ legacyId: -1, createdAt: -1 })
@@ -134,9 +139,10 @@ export async function GET(request: Request) {
 
 async function getNextSequentialOrderId(): Promise<{ id: string; legacyId: number }> {
   const highestSequential = await Order.findOne({
+    id: { $not: { $regex: /\d{6}/ } },
     $or: [
       { legacyId: { $gt: 0, $lt: 100000 } },
-      { id: { $regex: /^RNOD\d{1,5}$/i } },
+      { id: { $regex: /^(RNOD|RN-ORD-)\d{1,5}$/i } },
     ],
   })
     .sort({ legacyId: -1, createdAt: -1 })
