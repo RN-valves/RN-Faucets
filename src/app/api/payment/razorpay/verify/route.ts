@@ -65,10 +65,10 @@ export async function POST(request: Request) {
 
     const savedOrder = await Order.findOneAndUpdate(
       { $or: [{ id: orderId }, { uuid: orderData?.uuid }] },
-      { id: orderId },
       {
         ...orderData,
         id: orderId,
+        legacyId: legacyId || undefined,
         paymentStatus: "Paid",
         paymentMethod: "Online Payment",
         status: "Processing",
