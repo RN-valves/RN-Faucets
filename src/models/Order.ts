@@ -43,9 +43,17 @@ export interface IOrder extends Document {
     image: string;
   }[];
   totalAmount: number;
-  paymentMethod: "Online Payment" | "Cash on Delivery" | "Store Pickup";
-  paymentStatus: "Paid" | "Pending" | "Refunded";
-  status: "Pending" | "Processing" | "Shipped" | "Delivered" | "Cancelled";
+  paymentMethod: "Online Payment" | "Cash on Delivery" | "Store Pickup" | string;
+  paymentStatus: "Paid" | "Pending" | "Refunded" | string;
+  status:
+    | "Pending"
+    | "Processing"
+    | "In-Progress"
+    | "In-Transit"
+    | "Shipped"
+    | "Delivered"
+    | "Cancelled"
+    | string;
   shippingAddress: {
     firstName: string;
     lastName?: string;
