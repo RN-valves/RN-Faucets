@@ -40,7 +40,7 @@ export async function POST(
       shipping_provider === "shiprocket"
         ? `https://shiprocket.co/tracking/${awb}`
         : `https://rnvalves.shipway.com/track`;
-    const shippingLabelUrl = `https://shipway-s3.s3.ap-south-1.amazonaws.com/shipping_labels/${awb}_thermal.pdf`;
+    const shippingLabelUrl = `/admin/orders/${order._id || order.id || id}`;
 
     order.packageLength = Number(box_length) || 10;
     order.packageBreadth = Number(box_breadth) || 10;

@@ -467,19 +467,19 @@ export default function AdminOrderDetailPage() {
         });
       }
 
-      // Render Barcodes
+      // Render Barcodes to canvas
       try {
         (window as any).JsBarcode("#manifest-barcode-awb", awbCode, {
           format: "CODE128",
-          width: 1.6,
-          height: 42,
+          width: 2,
+          height: 44,
           displayValue: false,
           margin: 0,
         });
         (window as any).JsBarcode("#manifest-barcode-order", cleanId, {
           format: "CODE128",
-          width: 1.6,
-          height: 42,
+          width: 2,
+          height: 44,
           displayValue: false,
           margin: 0,
         });
@@ -514,7 +514,7 @@ export default function AdminOrderDetailPage() {
       );
 
       const opt = {
-        margin: [4, 4, 4, 4],
+        margin: [2, 2, 2, 2],
         filename: filename,
         image: { type: "jpeg", quality: 0.98 },
         html2canvas: {
@@ -524,10 +524,10 @@ export default function AdminOrderDetailPage() {
           scrollX: 0,
           x: 0,
           y: 0,
-          windowWidth: 540,
+          windowWidth: 520,
           logging: false,
         },
-        jsPDF: { unit: "mm", format: [110, 165], orientation: "portrait" },
+        jsPDF: { unit: "mm", format: [105, 150], orientation: "portrait" },
       };
 
       await (window as any).html2pdf().set(opt).from(element).save();
@@ -558,15 +558,15 @@ export default function AdminOrderDetailPage() {
         const awbCode = order.trackingNumber || `JH${orderNum.padStart(8, "0")}IN`;
         (window as any).JsBarcode("#manifest-barcode-awb", awbCode, {
           format: "CODE128",
-          width: 1.6,
-          height: 42,
+          width: 2,
+          height: 44,
           displayValue: false,
           margin: 0,
         });
         (window as any).JsBarcode("#manifest-barcode-order", cleanId, {
           format: "CODE128",
-          width: 1.6,
-          height: 42,
+          width: 2,
+          height: 44,
           displayValue: false,
           margin: 0,
         });
@@ -1916,31 +1916,41 @@ export default function AdminOrderDetailPage() {
                           </td>
                         </tr>
 
-                        {order.transportAttachment && (
-                          <tr>
-                            <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
-                              Shipping Label PDF
-                            </th>
-                            <td style={{ padding: "8px 12px" }}>
-                              <a
-                                href={order.transportAttachment}
-                                target="_blank"
-                                style={{
-                                  padding: "4px 12px",
-                                  border: "1px solid #198754",
-                                  color: "#198754",
-                                  borderRadius: "4px",
-                                  fontSize: "12px",
-                                  fontWeight: 700,
-                                  textDecoration: "none",
-                                  display: "inline-block",
-                                }}
-                              >
-                                Download Label PDF
-                              </a>
-                            </td>
-                          </tr>
-                        )}
+                        <tr>
+                          <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                            Shipping Label PDF
+                          </th>
+                          <td style={{ padding: "8px 12px" }}>
+                            <button
+                              type="button"
+                              onClick={handleDirectDownloadManifest}
+                              disabled={isDownloadingManifest}
+                              style={{
+                                padding: "4px 14px",
+                                border: "1px solid #198754",
+                                background: "#198754",
+                                color: "#FFF",
+                                borderRadius: "4px",
+                                fontSize: "12px",
+                                fontWeight: 700,
+                                cursor: isDownloadingManifest ? "not-allowed" : "pointer",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "6px",
+                              }}
+                            >
+                              {isDownloadingManifest ? (
+                                <>
+                                  <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> Generating...
+                                </>
+                              ) : (
+                                <>
+                                  <Download size={12} /> Download Label PDF
+                                </>
+                              )}
+                            </button>
+                          </td>
+                        </tr>
                       </tbody>
                     </table>
                   )}
@@ -2270,7 +2280,7 @@ export default function AdminOrderDetailPage() {
                 {order.courierPartner || "India Post-Business Parcel_2.0"}
               </div>
               <div style={{ display: "flex", justifyContent: "center", margin: "2px 0" }}>
-                <svg id="manifest-barcode-awb" style={{ maxHeight: "42px", width: "100%" }}></svg>
+                <canvas id="manifest-barcode-awb" style={{ maxHeight: "42px", maxWidth: "100%" }}></canvas>
               </div>
               <div style={{ fontSize: "11px", fontWeight: "700", letterSpacing: "0.5px" }}>
                 {order.trackingNumber || `JH${(order.id.replace(/\D/g, "") || "04277305").padStart(8, "0")}IN`}
@@ -2304,7 +2314,7 @@ export default function AdminOrderDetailPage() {
                 Order #: RNOD{order.id.replace(/\D/g, "") || order.id}
               </div>
               <div style={{ display: "flex", justifyContent: "center", margin: "2px 0" }}>
-                <svg id="manifest-barcode-order" style={{ maxHeight: "42px", width: "100%" }}></svg>
+                <canvas id="manifest-barcode-order" style={{ maxHeight: "42px", maxWidth: "100%" }}></canvas>
               </div>
               <div style={{ fontSize: "11px", marginTop: "3px" }}>
                 Invoice No.: Retail000{order.id.replace(/\D/g, "") || "16"}
