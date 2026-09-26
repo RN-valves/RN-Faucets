@@ -82,6 +82,38 @@ export async function GET(request: Request) {
       query.status = status;
     }
 
+    // Auto-normalize any random large 6-digit order IDs in background to maintain sequential consistency
+    const unsequencedOrders = await Order.find({
+      id: { $regex: /^RNOD\d{6}$/i },
+    }).sort({ createdAt: 1 });
+
+    if (unsequencedOrders.length > 0) {
+      const highestSequential = await Order.findOne({
+        $or: [
+          { legacyId: { $gt: 0, $lt: 100000 } },
+          { id: { $regex: /^RNOD\d{1,5}$/i } },
+        ],
+      })
+        .sort({ legacyId: -1, createdAt: -1 })
+        .lean();
+
+      let nextBase = 829;
+      if (highestSequential) {
+        const idNum = parseInt(highestSequential.id?.replace(/\D/g, "") || "0");
+        const legNum = highestSequential.legacyId || 0;
+        const validMax = Math.max(idNum < 100000 ? idNum : 0, legNum < 100000 ? legNum : 0);
+        if (validMax > nextBase) nextBase = validMax;
+      }
+
+      for (const ord of unsequencedOrders) {
+        nextBase += 1;
+        await Order.findByIdAndUpdate(ord._id, {
+          id: `RNOD${nextBase}`,
+          legacyId: nextBase,
+        });
+      }
+    }
+
     const orders = await Order.find(query).sort({ createdAt: -1 }).lean();
 
     const counts = {
@@ -100,6 +132,31 @@ export async function GET(request: Request) {
   }
 }
 
+async function getNextSequentialOrderId(): Promise<{ id: string; legacyId: number }> {
+  const highestSequential = await Order.findOne({
+    $or: [
+      { legacyId: { $gt: 0, $lt: 100000 } },
+      { id: { $regex: /^RNOD\d{1,5}$/i } },
+    ],
+  })
+    .sort({ legacyId: -1, createdAt: -1 })
+    .lean();
+
+  let maxNum = 829;
+  if (highestSequential) {
+    const idNum = parseInt(highestSequential.id?.replace(/\D/g, "") || "0");
+    const legNum = highestSequential.legacyId || 0;
+    const valid = Math.max(idNum < 100000 ? idNum : 0, legNum < 100000 ? legNum : 0);
+    if (valid > maxNum) maxNum = valid;
+  }
+
+  const nextNum = maxNum + 1;
+  return {
+    id: `RNOD${nextNum}`,
+    legacyId: nextNum,
+  };
+}
+
 export async function POST(request: Request) {
   try {
     const ip = getClientIp(request);
@@ -115,11 +172,23 @@ export async function POST(request: Request) {
     const rawBody = await request.json();
     const body = sanitizeObject(rawBody);
 
-    const orderId = body.id ? body.id.replace(/-/g, "").replace(/ORD/i, "OD") : `RNOD${Math.floor(10000 + Math.random() * 90000)}`;
+    const rawId = body.id ? body.id.replace(/-/g, "").replace(/ORD/i, "OD") : "";
+    const numPart = parseInt(rawId.replace(/\D/g, "") || "0");
+
+    let orderId = rawId;
+    let legacyId = body.legacyId;
+
+    // If no order ID or if it was generated with a random 6-digit number, use sequential number
+    if (!orderId || numPart >= 100000) {
+      const seq = await getNextSequentialOrderId();
+      orderId = seq.id;
+      legacyId = seq.legacyId;
+    }
 
     const order = await Order.create({
       ...body,
       id: orderId,
+      legacyId: legacyId || numPart || undefined,
       status: body.status || "Pending",
       paymentStatus: body.paymentStatus || (body.paymentMethod === "Online Payment" ? "Paid" : "Pending"),
       orderDate: new Date().toLocaleString("en-IN", {

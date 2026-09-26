@@ -465,9 +465,9 @@ export default function CheckoutPage() {
           body: JSON.stringify(orderPayload),
         });
 
+        const createdOrder = await res.json();
         if (!res.ok) {
-          const errData = await res.json();
-          throw new Error(errData.error || "Failed to place COD order");
+          throw new Error(createdOrder.error || "Failed to place COD order");
         }
 
         localStorage.setItem(
@@ -477,7 +477,7 @@ export default function CheckoutPage() {
             total: finalTotal,
             paymentMethod: "Cash on Delivery",
             paymentStatus: "Pending",
-            orderId: generatedOrderId,
+            orderId: createdOrder.id || generatedOrderId,
             orderNote,
             shipping: orderPayload.shippingAddress,
           })

@@ -36,10 +36,35 @@ export async function POST(request: Request) {
 
     await connectDB();
 
-    const rawId = orderData?.id || `RNOD${Math.floor(100000 + Math.random() * 900000)}`;
-    const orderId = rawId.replace(/-/g, "").replace(/ORD/i, "OD");
+    let rawId = orderData?.id ? orderData.id.replace(/-/g, "").replace(/ORD/i, "OD") : "";
+    let legacyId = orderData?.legacyId;
+    const numPart = parseInt(rawId.replace(/\D/g, "") || "0");
+
+    if (!rawId || numPart >= 100000) {
+      const highestSequential = await Order.findOne({
+        $or: [
+          { legacyId: { $gt: 0, $lt: 100000 } },
+          { id: { $regex: /^RNOD\d{1,5}$/i } },
+        ],
+      })
+        .sort({ legacyId: -1, createdAt: -1 })
+        .lean();
+
+      let maxNum = 829;
+      if (highestSequential) {
+        const idNum = parseInt(highestSequential.id?.replace(/\D/g, "") || "0");
+        const legNum = highestSequential.legacyId || 0;
+        const valid = Math.max(idNum < 100000 ? idNum : 0, legNum < 100000 ? legNum : 0);
+        if (valid > maxNum) maxNum = valid;
+      }
+      legacyId = maxNum + 1;
+      rawId = `RNOD${legacyId}`;
+    }
+
+    const orderId = rawId;
 
     const savedOrder = await Order.findOneAndUpdate(
+      { $or: [{ id: orderId }, { uuid: orderData?.uuid }] },
       { id: orderId },
       {
         ...orderData,
