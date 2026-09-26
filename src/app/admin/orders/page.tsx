@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import AdminHeader from "@/components/admin/AdminHeader";
 import { useAdminTheme } from "@/app/admin/layout";
@@ -152,6 +152,57 @@ function OrdersContent() {
     cancelled: 0,
   });
 
+  // Orders Pagination State
+  const [orderPage, setOrderPage] = useState(1);
+  const [orderPageSize, setOrderPageSize] = useState(25);
+
+  // Pagination calculation
+  const totalOrdersCount = orders.length;
+  const totalOrderPages = orderPageSize === 0 ? 1 : Math.ceil(totalOrdersCount / orderPageSize) || 1;
+  const effectiveOrderPage = Math.min(Math.max(1, orderPage), totalOrderPages);
+
+  const paginatedOrders = useMemo(() => {
+    if (orderPageSize === 0) return orders;
+    const start = (effectiveOrderPage - 1) * orderPageSize;
+    return orders.slice(start, start + orderPageSize);
+  }, [orders, effectiveOrderPage, orderPageSize]);
+
+  const orderStartIndex =
+    orderPageSize === 0 ? 1 : totalOrdersCount === 0 ? 0 : (effectiveOrderPage - 1) * orderPageSize + 1;
+  const orderEndIndex =
+    orderPageSize === 0 ? totalOrdersCount : Math.min(effectiveOrderPage * orderPageSize, totalOrdersCount);
+
+  const orderPaginationRange = useMemo(() => {
+    if (totalOrderPages <= 7) {
+      return Array.from({ length: totalOrderPages }, (_, i) => i + 1);
+    }
+    const pages: (number | string)[] = [];
+    if (effectiveOrderPage <= 4) {
+      pages.push(1, 2, 3, 4, 5, "...", totalOrderPages);
+    } else if (effectiveOrderPage >= totalOrderPages - 3) {
+      pages.push(
+        1,
+        "...",
+        totalOrderPages - 4,
+        totalOrderPages - 3,
+        totalOrderPages - 2,
+        totalOrderPages - 1,
+        totalOrderPages
+      );
+    } else {
+      pages.push(
+        1,
+        "...",
+        effectiveOrderPage - 1,
+        effectiveOrderPage,
+        effectiveOrderPage + 1,
+        "...",
+        totalOrderPages
+      );
+    }
+    return pages;
+  }, [effectiveOrderPage, totalOrderPages]);
+
   // Modal inspection & tracking state
   const [selectedOrder, setSelectedOrder] = useState<OrderData | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -235,6 +286,7 @@ function OrdersContent() {
 
   useEffect(() => {
     if (mainTab === "orders") {
+      setOrderPage(1);
       fetchOrders();
     } else {
       fetchPayments();
@@ -669,9 +721,132 @@ function OrdersContent() {
               isDark={isDark}
               loading={loadingOrders}
               columns={orderColumns}
-              data={orders}
+              data={paginatedOrders}
               keyExtractor={(o) => o._id || o.id}
             />
+
+            {/* Orders Bottom Pagination Bar */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "14px 20px",
+                background: cardBg,
+                border: `1px solid ${border}`,
+                borderRadius: "10px",
+                flexWrap: "wrap",
+                gap: "12px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: textMuted }}>
+                <select
+                  value={orderPageSize}
+                  onChange={(e) => {
+                    setOrderPageSize(Number(e.target.value));
+                    setOrderPage(1);
+                  }}
+                  style={{
+                    padding: "4px 8px",
+                    borderRadius: "4px",
+                    border: `1px solid ${border}`,
+                    background: inputBg,
+                    color: textMain,
+                    fontSize: "12px",
+                    outline: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                  <option value={0}>All</option>
+                </select>
+                <span>Orders per page</span>
+              </div>
+
+              <div style={{ fontSize: "12.5px", color: textMuted }}>
+                Showing <strong style={{ color: textMain }}>{orderStartIndex}</strong> to{" "}
+                <strong style={{ color: textMain }}>{orderEndIndex}</strong> of{" "}
+                <strong style={{ color: textMain }}>{totalOrdersCount}</strong> orders
+              </div>
+
+              {orderPageSize > 0 && totalOrderPages > 1 && (
+                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  <button
+                    type="button"
+                    disabled={effectiveOrderPage <= 1}
+                    onClick={() => setOrderPage((p) => Math.max(1, p - 1))}
+                    style={{
+                      padding: "4px 8px",
+                      borderRadius: "4px",
+                      border: `1px solid ${border}`,
+                      background: inputBg,
+                      color: effectiveOrderPage <= 1 ? textMuted : textMain,
+                      cursor: effectiveOrderPage <= 1 ? "not-allowed" : "pointer",
+                      fontSize: "12px",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                    title="Previous Page"
+                  >
+                    <ChevronLeft size={14} />
+                  </button>
+
+                  {orderPaginationRange.map((page, i) => {
+                    if (page === "...") {
+                      return (
+                        <span key={`dots-${i}`} style={{ padding: "0 4px", color: textMuted, fontSize: "12px" }}>
+                          ...
+                        </span>
+                      );
+                    }
+
+                    const isCurrent = page === effectiveOrderPage;
+                    return (
+                      <button
+                        key={`page-${page}`}
+                        type="button"
+                        onClick={() => setOrderPage(Number(page))}
+                        style={{
+                          padding: "4px 10px",
+                          borderRadius: "4px",
+                          border: isCurrent ? "none" : `1px solid ${border}`,
+                          background: isCurrent ? "#0077B6" : inputBg,
+                          color: isCurrent ? "#FFFFFF" : textMain,
+                          fontWeight: isCurrent ? 700 : 500,
+                          cursor: "pointer",
+                          fontSize: "12px",
+                        }}
+                      >
+                        {page}
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    type="button"
+                    disabled={effectiveOrderPage >= totalOrderPages}
+                    onClick={() => setOrderPage((p) => Math.min(totalOrderPages, p + 1))}
+                    style={{
+                      padding: "4px 8px",
+                      borderRadius: "4px",
+                      border: `1px solid ${border}`,
+                      background: inputBg,
+                      color: effectiveOrderPage >= totalOrderPages ? textMuted : textMain,
+                      cursor: effectiveOrderPage >= totalOrderPages ? "not-allowed" : "pointer",
+                      fontSize: "12px",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                    title="Next Page"
+                  >
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
