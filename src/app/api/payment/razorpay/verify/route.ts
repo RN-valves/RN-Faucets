@@ -36,8 +36,8 @@ export async function POST(request: Request) {
 
     await connectDB();
 
-    const orderId =
-      orderData?.id || `RN-ORD-${Math.floor(100000 + Math.random() * 900000)}`;
+    const rawId = orderData?.id || `RNOD${Math.floor(100000 + Math.random() * 900000)}`;
+    const orderId = rawId.replace(/-/g, "").replace(/ORD/i, "OD");
 
     const savedOrder = await Order.findOneAndUpdate(
       { id: orderId },

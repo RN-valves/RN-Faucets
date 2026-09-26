@@ -237,7 +237,7 @@ export default function AdminHeader({
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 <div style={{ fontSize: "12px", color: textMain }}>
-                  <span style={{ fontWeight: 700, color: "#0077B6" }}>New Order RN-ORD-98421</span> received for ₹6,150.
+                  <span style={{ fontWeight: 700, color: "#0077B6" }}>New Order RNOD98421</span> received for ₹6,150.
                   <div style={{ fontSize: "10px", color: textMuted, marginTop: "2px" }}>10 mins ago</div>
                 </div>
                 <div style={{ fontSize: "12px", color: textMain }}>

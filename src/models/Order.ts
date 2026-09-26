@@ -67,6 +67,12 @@ export interface IOrder extends Document {
   razorpayOrderId?: string;
   razorpayPaymentId?: string;
   razorpaySignature?: string;
+  pay_link_id?: string;
+  pay_link_url?: string;
+  payment_data?: string;
+  payment_key?: string;
+  payment_term?: string;
+  fulfillment_type?: string;
   // Package Dimensions
   packageLength?: number;
   packageBreadth?: number;
@@ -77,6 +83,14 @@ export interface IOrder extends Document {
   shiprocketOrderId?: string | number;
   shiprocketShipmentId?: string | number;
   shipwayOrderId?: string | number;
+  carrierId?: string;
+  deliveryCharge?: number;
+  gstCharge?: number;
+  totalDeliveryCharge?: number;
+  codCharge?: number;
+  transportContact?: string;
+  transportAttachment?: string;
+  manifest_ids?: string | number;
   awbCode?: string;
   trackingUrl?: string;
   orderDate: string;
@@ -106,6 +120,12 @@ const OrderSchema = new Schema<IOrder>(
     paymentMethod: { type: String, default: "Online Payment" },
     paymentStatus: { type: String, default: "Pending" },
     status: { type: String, default: "Pending" },
+    fulfillment_type: { type: String, default: "Delivery" },
+    payment_term: { type: String, default: "Prepaid" },
+    payment_key: { type: String, default: "" },
+    pay_link_id: { type: String, default: "" },
+    pay_link_url: { type: String, default: "" },
+    payment_data: { type: String, default: "" },
     shippingAddress: { type: ShippingAddressSchema, required: true },
     courierPartner: { type: String, default: "" },
     trackingNumber: { type: String, default: "" },
@@ -117,6 +137,14 @@ const OrderSchema = new Schema<IOrder>(
     packageBreadth: { type: Number, default: 10 },
     packageHeight: { type: Number, default: 10 },
     packageWeight: { type: Number, default: 0.5 },
+    carrierId: { type: String, default: "" },
+    deliveryCharge: { type: Number, default: 0 },
+    gstCharge: { type: Number, default: 0 },
+    totalDeliveryCharge: { type: Number, default: 0 },
+    codCharge: { type: Number, default: 0 },
+    transportContact: { type: String, default: "" },
+    transportAttachment: { type: String, default: "" },
+    manifest_ids: { type: Schema.Types.Mixed, default: null },
     razorpayOrderId: { type: String, default: "" },
     razorpayPaymentId: { type: String, default: "" },
     razorpaySignature: { type: String, default: "" },

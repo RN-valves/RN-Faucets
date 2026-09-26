@@ -108,17 +108,63 @@ export function verifyRazorpayPaymentSignature({
 /**
  * Fetches details of a payment from Razorpay
  */
-export async function fetchRazorpayPayment(paymentId: string) {
+/**
+ * Creates a Razorpay Payment Link
+ */
+export async function createRazorpayPaymentLink({
+  amount,
+  referenceId,
+  description,
+  customer,
+}: {
+  amount: number;
+  referenceId?: string;
+  description?: string;
+  customer: {
+    name: string;
+    contact: string;
+    email?: string;
+  };
+}) {
   const { keyId, keySecret } = getRazorpayCredentials();
-  if (!keyId || !keySecret) throw new Error("Razorpay credentials missing");
+  if (!keyId || !keySecret) throw new Error("Razorpay credentials missing in environment");
 
+  const amountInPaise = Math.round(amount * 100);
   const authHeader = `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString("base64")}`;
-  const response = await fetch(`https://api.razorpay.com/v1/payments/${paymentId}`, {
-    method: "GET",
+
+  const response = await fetch("https://api.razorpay.com/v1/payment_links", {
+    method: "POST",
     headers: {
+      "Content-Type": "application/json",
       Authorization: authHeader,
     },
+    body: JSON.stringify({
+      amount: amountInPaise,
+      currency: "INR",
+      accept_partial: false,
+      reference_id: referenceId,
+      description: description || `RN Valves Order ${referenceId || ""}`,
+      customer: {
+        name: customer.name || "Customer",
+        contact: customer.contact ? customer.contact.replace(/\D/g, "").slice(-10) : "9999999999",
+        email: customer.email && customer.email.includes("@") ? customer.email : "ecommerce@rnvalves.com",
+      },
+      notify: {
+        sms: true,
+        email: true,
+        whatsapp: true,
+      },
+      reminder_enable: true,
+      notes: {
+        company: "RN Valves & Faucets",
+      },
+    }),
   });
 
-  return response.json();
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error?.description || "Failed to create Razorpay Payment Link");
+  }
+
+  return data;
 }

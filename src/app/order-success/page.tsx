@@ -40,13 +40,14 @@ export default function OrderSuccessPage() {
       try {
         const parsed = JSON.parse(stored);
         setOrderInfo(parsed);
-        setOrderNumber(parsed.orderId || parsed.id || `RN-ORD-${Math.floor(100000 + Math.random() * 900000)}`);
+        const rawId = parsed.orderId || parsed.id || `RNOD${Math.floor(100000 + Math.random() * 900000)}`;
+        setOrderNumber(rawId.replace(/-/g, "").replace(/ORD/i, "OD"));
       } catch (e) {
         console.error(e);
-        setOrderNumber(`RN-ORD-${Math.floor(100000 + Math.random() * 900000)}`);
+        setOrderNumber(`RNOD${Math.floor(100000 + Math.random() * 900000)}`);
       }
     } else {
-      setOrderNumber(`RN-ORD-${Math.floor(100000 + Math.random() * 900000)}`);
+      setOrderNumber(`RNOD${Math.floor(100000 + Math.random() * 900000)}`);
     }
 
     // Clear cart items in localStorage

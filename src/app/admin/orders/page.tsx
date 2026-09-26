@@ -344,18 +344,21 @@ function OrdersContent() {
   const orderColumns: Column<OrderData>[] = [
     {
       header: "Order ID & Date",
-      accessor: (o: OrderData) => (
-        <div
-          onClick={() => router.push(`/admin/orders/${o._id || o.id}`)}
-          style={{ cursor: "pointer" }}
-          title="Click to view full order & dispatch details"
-        >
-          <div style={{ fontWeight: 800, color: "#0077B6", textDecoration: "underline", textUnderlineOffset: "3px" }}>
-            {o.id}
+      accessor: (o: OrderData) => {
+        const cleanId = o.id ? o.id.replace(/-/g, "").replace(/ORD/i, "OD") : "RNOD";
+        return (
+          <div
+            onClick={() => router.push(`/admin/orders/${o._id || o.id}`)}
+            style={{ cursor: "pointer" }}
+            title="Click to view full order & dispatch details"
+          >
+            <div style={{ fontWeight: 800, color: "#0077B6", textDecoration: "underline", textUnderlineOffset: "3px" }}>
+              {cleanId}
+            </div>
+            <div style={{ fontSize: "11.5px", opacity: 0.7 }}>{o.orderDate}</div>
           </div>
-          <div style={{ fontSize: "11.5px", opacity: 0.7 }}>{o.orderDate}</div>
-        </div>
-      ),
+        );
+      },
     },
     {
       header: "Customer Info",

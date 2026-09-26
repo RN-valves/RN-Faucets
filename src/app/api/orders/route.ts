@@ -115,7 +115,7 @@ export async function POST(request: Request) {
     const rawBody = await request.json();
     const body = sanitizeObject(rawBody);
 
-    const orderId = body.id || `RN-ORD-${Math.floor(10000 + Math.random() * 90000)}`;
+    const orderId = body.id ? body.id.replace(/-/g, "").replace(/ORD/i, "OD") : `RNOD${Math.floor(10000 + Math.random() * 90000)}`;
 
     const order = await Order.create({
       ...body,

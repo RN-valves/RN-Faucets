@@ -5,85 +5,103 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAdminTheme } from "@/app/admin/layout";
 import AdminHeader from "@/components/admin/AdminHeader";
-import AdminCard from "@/components/admin/ui/AdminCard";
-import AdminButton from "@/components/admin/ui/AdminButton";
-import AdminStatusBadge from "@/components/admin/ui/AdminStatusBadge";
 import {
   ArrowLeft,
-  Printer,
-  Truck,
-  Package,
-  User,
-  MapPin,
-  CreditCard,
-  Calendar,
-  Phone,
-  Mail,
-  CheckCircle2,
-  Clock,
-  Save,
-  Trash2,
-  ExternalLink,
-  ShieldCheck,
-  AlertCircle,
   FileText,
-  Copy,
-  Check,
-  Banknote,
+  Printer,
+  Edit,
+  Download,
+  Clock,
+  AlertCircle,
+  ExternalLink,
 } from "lucide-react";
 
 interface OrderItem {
-  id?: string;
+  id?: string | number;
+  order_id?: string | number;
   name: string;
   code?: string;
   color?: string;
+  size?: string;
   price: number;
   quantity: number;
+  lbhWeight?: string | number;
+  total_amount?: number;
   image?: string;
+  createdAt?: string;
 }
 
 interface ShippingAddress {
-  firstName: string;
+  firstName?: string;
   lastName?: string;
-  phone: string;
+  phone?: string;
   email?: string;
-  address: string;
-  city: string;
-  state: string;
-  pinCode: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  pinCode?: string;
   country?: string;
+}
+
+interface OrderLog {
+  id?: string | number;
+  user_name?: string;
+  created_at?: string;
+  change_value?: string;
+  change_type?: string;
 }
 
 interface OrderData {
   _id: string;
   id: string;
-  customerName: string;
-  customerPhone: string;
+  uuid?: string;
+  customerName?: string;
+  customerPhone?: string;
   customerEmail?: string;
   items: OrderItem[];
   totalAmount: number;
-  paymentMethod: string;
+  paymentMethod?: string;
   paymentStatus: "Paid" | "Pending" | "Refunded";
-  status: "Pending" | "Processing" | "Shipped" | "Delivered" | "Cancelled";
-  shippingAddress: ShippingAddress;
+  status: "Pending" | "Processing" | "In-Progress" | "In-Transit" | "Shipped" | "Delivered" | "Cancelled";
+  fulfillment_type?: string;
+  payment_term?: string;
+  payment_key?: string;
+  pay_link_id?: string;
+  pay_link_url?: string;
+  payment_data?: string;
+  shippingAddress?: ShippingAddress;
   courierPartner?: string;
   trackingNumber?: string;
   lrNumber?: string;
   dispatchDate?: string;
   vehicleNumber?: string;
   transportNotes?: string;
+  note?: string;
+  courierSlipUrl?: string;
   packageLength?: number;
   packageBreadth?: number;
   packageHeight?: number;
   packageWeight?: number;
+  shippingProvider?: string;
+  carrierId?: string;
+  deliveryCharge?: number;
+  gstCharge?: number;
+  totalDeliveryCharge?: number;
+  codCharge?: number;
+  transportContact?: string;
+  transportUrl?: string;
+  transportAttachment?: string;
+  manifest_ids?: string | number;
   razorpayOrderId?: string;
   razorpayPaymentId?: string;
   razorpaySignature?: string;
-  orderDate: string;
+  orderDate?: string;
   deliveryEstimate?: string;
   discountCode?: string;
   discountAmount?: number;
   shippingAmount?: number;
+  timeline?: OrderLog[];
+  logs?: OrderLog[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -100,54 +118,28 @@ export default function AdminOrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [copiedPayId, setCopiedPayId] = useState(false);
 
-  // Form State
-  const [formData, setFormData] = useState({
-    status: "Pending" as OrderData["status"],
-    paymentStatus: "Pending" as OrderData["paymentStatus"],
-    courierPartner: "VRL Logistics",
-    trackingNumber: "",
-    lrNumber: "",
-    dispatchDate: "",
-    vehicleNumber: "",
-    transportNotes: "",
-    packageLength: 10,
-    packageBreadth: 10,
-    packageHeight: 10,
-    packageWeight: 0.5,
-  });
+  // Form States
+  const [status, setStatus] = useState("Pending");
+  const [paymentNote, setPaymentNote] = useState("");
+  const [deliveryNote, setDeliveryNote] = useState("");
+  const [boxLength, setBoxLength] = useState<number>(10);
+  const [boxBreadth, setBoxBreadth] = useState<number>(10);
+  const [boxHeight, setBoxHeight] = useState<number>(10);
+  const [boxWeight, setBoxWeight] = useState<number>(0.5);
+  const [shippingGateway, setShippingGateway] = useState<"shiprocket" | "shipway">("shipway");
+  const [isCalculatingRate, setIsCalculatingRate] = useState(false);
+  const [carrierOptions, setCarrierOptions] = useState<any[]>([]);
+  const [selectedCarrierId, setSelectedCarrierId] = useState("");
 
   const cardBg = isDark ? "#111827" : "#FFFFFF";
-  const border = isDark ? "#1F2937" : "#E5E7EB";
-  const textMain = isDark ? "#F9FAFB" : "#111827";
-  const textMuted = isDark ? "#9CA3AF" : "#6B7280";
-  const inputBg = isDark ? "#1F2937" : "#F9FAFB";
-  const tableHeaderBg = isDark ? "#1E293B" : "#F8FAFC";
-
-  const handleMarkPayment = async (newStatus: "Paid" | "Pending") => {
-    if (!order) return;
-    setIsSaving(true);
-    try {
-      const res = await fetch(`/api/orders/${order._id || order.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentStatus: newStatus }),
-      });
-      if (res.ok) {
-        const updated = await res.json();
-        setOrder(updated);
-        setFormData((prev) => ({ ...prev, paymentStatus: newStatus }));
-        setSaveSuccess(true);
-        setTimeout(() => setSaveSuccess(false), 4000);
-      }
-    } catch (err: any) {
-      alert("Failed to update payment status: " + err.message);
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  const border = isDark ? "#1F2937" : "#DEE2E6";
+  const textMain = isDark ? "#F9FAFB" : "#212529";
+  const textMuted = isDark ? "#9CA3AF" : "#6C757D";
+  const headerBg = isDark ? "#1F2937" : "#F8F9FA";
+  const inputBg = isDark ? "#1F2937" : "#FFFFFF";
 
   const fetchOrder = async () => {
     if (!orderId) return;
@@ -160,20 +152,11 @@ export default function AdminOrderDetailPage() {
       }
       const data: OrderData = await res.json();
       setOrder(data);
-      setFormData({
-        status: data.status || "Pending",
-        paymentStatus: data.paymentStatus || "Pending",
-        courierPartner: data.courierPartner || "VRL Logistics",
-        trackingNumber: data.trackingNumber || "",
-        lrNumber: data.lrNumber || "",
-        dispatchDate: data.dispatchDate || new Date().toISOString().split("T")[0],
-        vehicleNumber: data.vehicleNumber || "",
-        transportNotes: data.transportNotes || "",
-        packageLength: data.packageLength || 10,
-        packageBreadth: data.packageBreadth || 10,
-        packageHeight: data.packageHeight || 10,
-        packageWeight: data.packageWeight || 0.5,
-      });
+      setStatus(data.status || "Pending");
+      setBoxLength(data.packageLength || 10);
+      setBoxBreadth(data.packageBreadth || 10);
+      setBoxHeight(data.packageHeight || 10);
+      setBoxWeight(data.packageWeight || 0.5);
     } catch (err: any) {
       setError(err.message || "Failed to load order details");
     } finally {
@@ -185,28 +168,29 @@ export default function AdminOrderDetailPage() {
     fetchOrder();
   }, [orderId]);
 
-  const handleSave = async (e?: React.FormEvent) => {
+  // Status update
+  const handleUpdateStatus = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!order) return;
     setIsSaving(true);
-    setSaveSuccess(false);
-
     try {
       const res = await fetch(`/api/orders/${order._id || order.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          status,
+          packageLength: boxLength,
+          packageBreadth: boxBreadth,
+          packageHeight: boxHeight,
+          packageWeight: boxWeight,
+        }),
       });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || "Failed to save order");
+      if (res.ok) {
+        const updated = await res.json();
+        setOrder(updated);
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
       }
-
-      const updated = await res.json();
-      setOrder(updated);
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 4000);
     } catch (err: any) {
       alert("Error saving: " + err.message);
     } finally {
@@ -214,111 +198,234 @@ export default function AdminOrderDetailPage() {
     }
   };
 
-  const handlePrint = () => {
-    window.print();
+  // Generate live Razorpay payment link dynamically
+  const handleGeneratePaymentLink = async () => {
+    if (!order) return;
+    setIsGeneratingLink(true);
+    try {
+      const res = await fetch(`/api/orders/${order._id || order.id}/payment-link`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to generate payment link");
+      }
+      if (data.order) {
+        setOrder(data.order);
+      } else {
+        fetchOrder();
+      }
+      alert(`Razorpay Payment Link generated successfully!\nURL: ${data.pay_link_url}`);
+    } catch (err: any) {
+      alert("Error generating payment link: " + err.message);
+    } finally {
+      setIsGeneratingLink(false);
+    }
   };
 
-  const handleDelete = async () => {
+  // Confirm payment received manually
+  const handleMarkPaymentReceived = async () => {
     if (!order) return;
-    if (!confirm(`Are you sure you want to delete order ${order.id}? This action cannot be undone.`)) {
-      return;
-    }
+    if (!confirm("Confirm payment received?")) return;
+    setIsSaving(true);
     try {
       const res = await fetch(`/api/orders/${order._id || order.id}`, {
-        method: "DELETE",
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paymentStatus: "Paid",
+          payment_key: paymentNote || "Direct Confirmed",
+          note: paymentNote ? `${order.note || ""}\n[Payment Received: ${paymentNote}]`.trim() : order.note,
+        }),
       });
       if (res.ok) {
-        alert("Order deleted successfully.");
-        router.push("/admin/orders");
-      } else {
-        alert("Failed to delete order.");
+        const updated = await res.json();
+        setOrder(updated);
+        setPaymentNote("");
+        alert("Payment marked as received successfully!");
       }
     } catch (err: any) {
-      alert("Error deleting order: " + err.message);
+      alert("Failed to mark payment: " + err.message);
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const subtotal = (order?.items || []).reduce(
-    (acc, item) => acc + (item.price || 0) * (item.quantity || 1),
-    0
-  );
+  // Store pickup complete
+  const handleCompleteStorePickup = async () => {
+    if (!order) return;
+    if (!confirm("Customer collected from shop?")) return;
+    setIsSaving(true);
+    try {
+      const res = await fetch(`/api/orders/${order._id || order.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "Delivered",
+          fulfillment_type: "Store Pickup",
+          courierPartner: "Store Counter Pickup",
+        }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setOrder(updated);
+        alert("Order marked as Completed (Store Pickup).");
+      }
+    } catch (err: any) {
+      alert("Failed to update pickup: " + err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Complete without shipway
+  const handleCompleteWithoutShipway = async () => {
+    if (!order) return;
+    if (!confirm("Complete order without Shipway?")) return;
+    setIsSaving(true);
+    try {
+      const res = await fetch(`/api/orders/${order._id || order.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "Shipped",
+          fulfillment_type: "Direct Delivery",
+          courierPartner: "Direct Courier / Hand Delivery",
+          transportNotes: deliveryNote || "Direct hand delivery / own courier",
+        }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setOrder(updated);
+        setDeliveryNote("");
+        alert("Order completed without Shipway.");
+      }
+    } catch (err: any) {
+      alert("Failed to complete order: " + err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Live Carrier Rate calculation
+  const handleCalculateCarrierRates = async () => {
+    if (!order) return;
+    if (boxLength <= 0 || boxBreadth <= 0 || boxHeight <= 0 || boxWeight <= 0) {
+      alert("Please enter valid package Length, Breadth, Height and Weight.");
+      return;
+    }
+    setIsCalculatingRate(true);
+    try {
+      const res = await fetch(`/api/orders/${order._id || order.id}/carrier-rate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          length: boxLength,
+          breadth: boxBreadth,
+          height: boxHeight,
+          weight: boxWeight,
+          shipping_provider: shippingGateway,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to calculate carrier rates");
+      if (data.rates && data.rates.length > 0) {
+        setCarrierOptions(data.rates);
+        setSelectedCarrierId(data.rates[0].carrier_id);
+      } else {
+        alert("No carrier rates found for destination pincode.");
+      }
+    } catch (err: any) {
+      alert("Error calculating rates: " + err.message);
+    } finally {
+      setIsCalculatingRate(false);
+    }
+  };
+
+  // Assign Carrier and generate shipment label
+  const handleAssignCarrierSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!order) return;
+    const selected = carrierOptions.find((c) => c.carrier_id === selectedCarrierId) || carrierOptions[0];
+    if (!selected) {
+      alert("Please click 'Calculate Rates' and select a courier partner first.");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const res = await fetch(`/api/orders/${order._id || order.id}/carrier-assign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          box_length: boxLength,
+          box_breadth: boxBreadth,
+          box_height: boxHeight,
+          box_weight: boxWeight,
+          carrier_id: selected.carrier_id,
+          courier_name: selected.courier_name,
+          delivery_charge: selected.delivery_charge,
+          cod_charge: selected.cod_charge || 0,
+          shipping_provider: shippingGateway,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to assign carrier");
+      if (data.order) setOrder(data.order);
+      else fetchOrder();
+      alert(data.message || "Shipping label generated successfully!");
+    } catch (err: any) {
+      alert("Failed to assign carrier: " + err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const isPaid = order?.paymentStatus === "Paid";
+  const hasShippingAssigned = Boolean(order?.trackingNumber || (order?.deliveryCharge && order.deliveryCharge > 0));
+
+  // Customer personal fields
+  const customerName = order?.customerName || order?.shippingAddress?.firstName || "—";
+  const customerPhone = order?.customerPhone || order?.shippingAddress?.phone || "—";
+  const customerEmail = order?.customerEmail || order?.shippingAddress?.email || "—";
+  const customerCity = order?.shippingAddress?.city || "";
+  const customerState = order?.shippingAddress?.state || "";
+  const customerCountry = order?.shippingAddress?.country || "India";
+  const customerPincode = order?.shippingAddress?.pinCode || "—";
+  const customerUUID = order?.uuid || order?.id || "—";
+
+  // Shipping recipient fields
+  const shipName = `${order?.shippingAddress?.firstName || ""} ${order?.shippingAddress?.lastName || ""}`.trim() || customerName;
+  const shipPhone = order?.shippingAddress?.phone || customerPhone;
+  const shipEmail = order?.shippingAddress?.email || customerEmail;
+  const shipCity = order?.shippingAddress?.city || "";
+  const shipState = order?.shippingAddress?.state || "";
+  const shipPincode = order?.shippingAddress?.pinCode || "—";
+  const shipBookingAddress = order?.shippingAddress?.address
+    ? `${order.shippingAddress.address}, ${shipCity} - ${shipState} - ${shipPincode}`
+    : "—";
+
+  // Combined logs
+  const logsList = order?.timeline || order?.logs || [];
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", width: "100%" }}>
-      {/* Header Bar */}
+    <div style={{ minHeight: "100vh", background: isDark ? "#0B0F17" : "#F4F6F9" }}>
       <AdminHeader
-        title={`Order Details: ${order?.id || orderId}`}
-        subtitle="Manage dispatch tracking, fulfillment status, payment confirmation, and delivery details."
+        title="Dashboard"
+        subtitle="Home / Order Details"
         onRefresh={fetchOrder}
         theme={theme}
         onToggleTheme={toggleTheme}
       />
 
-      <main style={{ padding: "28px", maxWidth: "1400px", margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
-        {/* Navigation & Actions Top Bar */}
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "12px",
-            marginBottom: "24px",
-          }}
-          className="no-print"
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <Link href="/admin/orders">
-              <AdminButton variant="secondary" size="md" icon={<ArrowLeft size={16} />} isDark={isDark}>
-                Back to Orders List
-              </AdminButton>
-            </Link>
-            {order && (
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <AdminStatusBadge
-                  status={order.status}
-                  variant={
-                    order.status === "Delivered"
-                      ? "success"
-                      : order.status === "Cancelled"
-                      ? "danger"
-                      : "warning"
-                  }
-                  isDark={isDark}
-                />
-                <AdminStatusBadge
-                  status={order.paymentStatus === "Paid" ? "Payment Paid" : "Payment Pending"}
-                  variant={order.paymentStatus === "Paid" ? "success" : "warning"}
-                  isDark={isDark}
-                />
-              </div>
-            )}
-          </div>
+      <div style={{ padding: "16px 32px 6px", fontSize: "13px", color: textMuted }}>
+        <Link href="/admin/dashboard" style={{ color: "#0077B6", textDecoration: "none" }}>Dashboard</Link>
+        <span style={{ margin: "0 6px" }}>/</span>
+        <Link href="/admin/orders" style={{ color: "#0077B6", textDecoration: "none" }}>Home</Link>
+        <span style={{ margin: "0 6px" }}>/</span>
+        <span style={{ color: textMain, fontWeight: 600 }}>Order Details</span>
+      </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <Link href={`/admin/orders/${order?._id || order?.id || orderId}/invoice`} target="_blank">
-              <AdminButton variant="secondary" size="md" icon={<FileText size={16} />} isDark={isDark}>
-                View Proforma Bill
-              </AdminButton>
-            </Link>
-            <AdminButton
-              variant="primary"
-              size="md"
-              icon={<Printer size={16} />}
-              isDark={isDark}
-              onClick={() => {
-                window.open(`/admin/orders/${order?._id || order?.id || orderId}/invoice`, "_blank");
-              }}
-            >
-              Print Invoice / Slip
-            </AdminButton>
-            <AdminButton variant="danger" size="md" icon={<Trash2 size={16} />} isDark={isDark} onClick={handleDelete}>
-              Delete Order
-            </AdminButton>
-          </div>
-        </div>
-
-        {/* Loading / Error States */}
+      <div style={{ padding: "16px 32px 32px", maxWidth: "1500px", margin: "0 auto" }}>
         {loading && (
           <div
             style={{
@@ -326,7 +433,7 @@ export default function AdminOrderDetailPage() {
               textAlign: "center",
               background: cardBg,
               border: `1px solid ${border}`,
-              borderRadius: "14px",
+              borderRadius: "4px",
               color: textMuted,
             }}
           >
@@ -341,821 +448,1329 @@ export default function AdminOrderDetailPage() {
               padding: "40px",
               textAlign: "center",
               background: cardBg,
-              border: "1px solid #EF4444",
-              borderRadius: "14px",
-              color: "#EF4444",
+              border: "1px solid #DC3545",
+              borderRadius: "4px",
+              color: "#DC3545",
             }}
           >
             <AlertCircle size={36} style={{ margin: "0 auto 12px" }} />
             <h3>{error}</h3>
             <div style={{ marginTop: "16px" }}>
-              <Link href="/admin/orders">
-                <AdminButton variant="primary" size="md" isDark={isDark}>
-                  Return to Orders
-                </AdminButton>
+              <Link
+                href="/admin/orders"
+                style={{
+                  padding: "8px 16px",
+                  background: "#0077B6",
+                  color: "#FFF",
+                  borderRadius: "4px",
+                  textDecoration: "none",
+                  fontWeight: 600,
+                }}
+              >
+                Return to Orders
               </Link>
             </div>
           </div>
         )}
 
-        {/* Order Full View Content */}
         {order && !loading && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-            {/* KPI Summary Strip */}
+          <div
+            style={{
+              background: cardBg,
+              border: `1px solid ${border}`,
+              borderRadius: "4px",
+              padding: "20px 24px",
+              boxShadow: "0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2)",
+            }}
+          >
+            {/* Top Action Bar */}
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                gap: "16px",
-              }}
-            >
-              <AdminCard isDark={isDark}>
-                <div style={{ fontSize: "12px", fontWeight: 700, color: textMuted, textTransform: "uppercase" }}>
-                  Total Order Value
-                </div>
-                <div style={{ fontSize: "24px", fontWeight: 800, color: "#0077B6", marginTop: "4px" }}>
-                  ₹{order.totalAmount ? order.totalAmount.toLocaleString("en-IN") : "0"}
-                </div>
-                <div style={{ fontSize: "11px", color: textMuted, marginTop: "2px" }}>
-                  Payment: <strong style={{ color: textMain }}>{order.paymentMethod}</strong>
-                </div>
-              </AdminCard>
-
-              <AdminCard isDark={isDark}>
-                <div style={{ fontSize: "12px", fontWeight: 700, color: textMuted, textTransform: "uppercase" }}>
-                  Placed Date & Time
-                </div>
-                <div style={{ fontSize: "18px", fontWeight: 800, color: textMain, marginTop: "4px" }}>
-                  {order.orderDate || new Date(order.createdAt || "").toLocaleDateString("en-IN")}
-                </div>
-                <div style={{ fontSize: "11px", color: textMuted, marginTop: "2px" }}>
-                  Est Delivery: {order.deliveryEstimate || "4-8 business days"}
-                </div>
-              </AdminCard>
-
-              <AdminCard isDark={isDark}>
-                <div style={{ fontSize: "12px", fontWeight: 700, color: textMuted, textTransform: "uppercase" }}>
-                  Customer Name
-                </div>
-                <div style={{ fontSize: "18px", fontWeight: 800, color: textMain, marginTop: "4px" }}>
-                  {order.customerName}
-                </div>
-                <div style={{ fontSize: "11px", color: textMuted, marginTop: "2px" }}>
-                  {order.customerPhone}
-                </div>
-              </AdminCard>
-
-              <AdminCard isDark={isDark}>
-                <div style={{ fontSize: "12px", fontWeight: 700, color: textMuted, textTransform: "uppercase" }}>
-                  Transport Carrier
-                </div>
-                <div style={{ fontSize: "18px", fontWeight: 800, color: textMain, marginTop: "4px" }}>
-                  {order.courierPartner || "Not Assigned"}
-                </div>
-                <div style={{ fontSize: "11px", color: textMuted, marginTop: "2px" }}>
-                  LR / AWB: {order.trackingNumber || "Pending"}
-                </div>
-              </AdminCard>
-            </div>
-
-            {/* Real-time Payment Status Banner */}
-            <div
-              style={{
-                padding: "16px 20px",
-                borderRadius: "12px",
-                border: `1px solid ${
-                  order.paymentStatus === "Paid"
-                    ? isDark ? "#065F46" : "#A7F3D0"
-                    : isDark ? "#78350F" : "#FDE68A"
-                }`,
-                background:
-                  order.paymentStatus === "Paid"
-                    ? isDark ? "rgba(6, 78, 59, 0.4)" : "#ECFDF5"
-                    : isDark ? "rgba(120, 53, 15, 0.4)" : "#FFFBEB",
                 display: "flex",
                 flexWrap: "wrap",
                 alignItems: "center",
                 justifyContent: "space-between",
-                gap: "14px",
+                marginBottom: "20px",
+                borderBottom: `1px solid ${border}`,
+                paddingBottom: "14px",
+                gap: "12px",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                {order.paymentStatus === "Paid" ? (
-                  <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#10B981", display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF" }}>
-                    <ShieldCheck size={20} />
-                  </div>
-                ) : (
-                  <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#F59E0B", display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF" }}>
-                    <Clock size={20} />
-                  </div>
-                )}
-                <div>
-                  <div style={{ fontWeight: 800, fontSize: "15px", color: order.paymentStatus === "Paid" ? (isDark ? "#A7F3D0" : "#065F46") : (isDark ? "#FDE68A" : "#92400E") }}>
-                    {order.paymentStatus === "Paid" ? "Payment Received & Confirmed (PAID)" : "Payment Pending / Unpaid Order"}
-                  </div>
-                  <div style={{ fontSize: "12.5px", color: textMuted, marginTop: "2px" }}>
-                    Method: <strong style={{ color: textMain }}>{order.paymentMethod}</strong> • Total Amount: <strong style={{ color: textMain }}>₹{order.totalAmount ? order.totalAmount.toLocaleString("en-IN") : "0"}</strong>
-                    {order.razorpayPaymentId ? ` • Razorpay ID: ${order.razorpayPaymentId}` : ""}
-                  </div>
-                </div>
-              </div>
+              <h4 style={{ margin: 0, fontSize: "22px", fontWeight: 700, color: textMain }}>
+                #RNOD{order.id.replace(/\D/g, "") || order.id}
+              </h4>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                {order.paymentStatus !== "Paid" ? (
-                  <AdminButton
-                    variant="primary"
-                    size="sm"
-                    icon={<CheckCircle2 size={14} />}
-                    isDark={isDark}
-                    disabled={isSaving}
-                    onClick={() => handleMarkPayment("Paid")}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
+                <Link
+                  href="/admin/orders"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "6px 14px",
+                    background: "#FFC107",
+                    color: "#212529",
+                    borderRadius: "4px",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    textDecoration: "none",
+                  }}
+                >
+                  <ArrowLeft size={14} /> Back
+                </Link>
+
+                <Link
+                  href={`/admin/orders/${order._id || order.id}/invoice`}
+                  target="_blank"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "6px 14px",
+                    background: "transparent",
+                    color: "#DC3545",
+                    border: "1px solid #DC3545",
+                    borderRadius: "4px",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    textDecoration: "none",
+                  }}
+                >
+                  <FileText size={14} /> Download Order PDF
+                </Link>
+
+                {hasShippingAssigned && (
+                  <button
+                    onClick={() => window.print()}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "6px 14px",
+                      background: "transparent",
+                      color: "#DC3545",
+                      border: "1px solid #DC3545",
+                      borderRadius: "4px",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
                   >
-                    Mark as Payment Received
-                  </AdminButton>
-                ) : (
-                  <AdminButton
-                    variant="secondary"
-                    size="sm"
-                    icon={<Clock size={14} />}
-                    isDark={isDark}
-                    disabled={isSaving}
-                    onClick={() => handleMarkPayment("Pending")}
+                    <FileText size={14} /> Generate Manifest
+                  </button>
+                )}
+
+                {order.status === "Pending" && (
+                  <button
+                    onClick={() => {
+                      const noteInput = prompt("Edit internal note for order:", order.note || "");
+                      if (noteInput !== null) {
+                        fetch(`/api/orders/${order._id || order.id}`, {
+                          method: "PUT",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ note: noteInput }),
+                        }).then(() => fetchOrder());
+                      }
+                    }}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "6px 14px",
+                      background: "#212529",
+                      color: "#FFF",
+                      borderRadius: "4px",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      border: "none",
+                      cursor: "pointer",
+                    }}
                   >
-                    Mark as Pending (Unpaid)
-                  </AdminButton>
+                    Edit Order <Edit size={14} />
+                  </button>
                 )}
               </div>
             </div>
 
-            {/* Save Success Alert */}
-            {saveSuccess && (
+            {/* SECTION 1: Personal Details & Shipping Details (2-Column Table Format) */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
+              {/* Personal Details */}
+              <div>
+                <div
+                  style={{
+                    border: `1px solid ${border}`,
+                    borderBottom: "none",
+                    padding: "8px 12px",
+                    textAlign: "center",
+                    background: headerBg,
+                  }}
+                >
+                  <strong style={{ color: textMain, fontSize: "14px" }}>Personal Details</strong>
+                </div>
+                <table style={{ width: "100%", borderCollapse: "collapse", border: `1px solid ${border}`, fontSize: "13px" }}>
+                  <tbody>
+                    <tr style={{ borderBottom: `1px solid ${border}` }}>
+                      <th style={{ width: "180px", padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                        Name
+                      </th>
+                      <td style={{ padding: "8px 12px", color: textMain, fontWeight: 600 }}>{customerName}</td>
+                    </tr>
+                    <tr style={{ borderBottom: `1px solid ${border}` }}>
+                      <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                        Mobile
+                      </th>
+                      <td style={{ padding: "8px 12px", color: textMain }}>{customerPhone}</td>
+                    </tr>
+                    <tr style={{ borderBottom: `1px solid ${border}` }}>
+                      <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                        Email
+                      </th>
+                      <td style={{ padding: "8px 12px", color: textMain }}>{customerEmail}</td>
+                    </tr>
+                    <tr style={{ borderBottom: `1px solid ${border}` }}>
+                      <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                        City-State-Country
+                      </th>
+                      <td style={{ padding: "8px 12px", color: textMain }}>
+                        {customerCity || customerState ? `${customerCity.toUpperCase()} - ${customerState.toUpperCase()} - ${customerCountry}` : "—"}
+                      </td>
+                    </tr>
+                    <tr style={{ borderBottom: `1px solid ${border}` }}>
+                      <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                        Pincode
+                      </th>
+                      <td style={{ padding: "8px 12px", color: textMain }}>{customerPincode}</td>
+                    </tr>
+                    <tr>
+                      <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                        UUID
+                      </th>
+                      <td style={{ padding: "8px 12px", color: textMain, fontFamily: "monospace" }}>
+                        {customerUUID}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Shipping Details */}
+              <div>
+                <div
+                  style={{
+                    border: `1px solid ${border}`,
+                    borderBottom: "none",
+                    padding: "8px 12px",
+                    textAlign: "center",
+                    background: headerBg,
+                  }}
+                >
+                  <strong style={{ color: textMain, fontSize: "14px" }}>Shipping Details</strong>
+                </div>
+                <table style={{ width: "100%", borderCollapse: "collapse", border: `1px solid ${border}`, fontSize: "13px" }}>
+                  <tbody>
+                    <tr style={{ borderBottom: `1px solid ${border}` }}>
+                      <th style={{ width: "180px", padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                        Name
+                      </th>
+                      <td style={{ padding: "8px 12px", color: textMain, fontWeight: 600 }}>{shipName}</td>
+                    </tr>
+                    <tr style={{ borderBottom: `1px solid ${border}` }}>
+                      <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                        Mobile
+                      </th>
+                      <td style={{ padding: "8px 12px", color: textMain }}>{shipPhone}</td>
+                    </tr>
+                    <tr style={{ borderBottom: `1px solid ${border}` }}>
+                      <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                        Email
+                      </th>
+                      <td style={{ padding: "8px 12px", color: textMain }}>{shipEmail}</td>
+                    </tr>
+                    <tr style={{ borderBottom: `1px solid ${border}` }}>
+                      <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                        City-State
+                      </th>
+                      <td style={{ padding: "8px 12px", color: textMain }}>
+                        {shipCity || shipState ? `${shipCity.toUpperCase()} - ${shipState.toUpperCase()}` : "—"}
+                      </td>
+                    </tr>
+                    <tr style={{ borderBottom: `1px solid ${border}` }}>
+                      <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                        Pincode
+                      </th>
+                      <td style={{ padding: "8px 12px", color: textMain }}>{shipPincode}</td>
+                    </tr>
+                    <tr>
+                      <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                        Booking Address
+                      </th>
+                      <td style={{ padding: "8px 12px", color: textMain, fontSize: "12px", lineHeight: 1.4 }}>
+                        {shipBookingAddress}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* SECTION 2: Order Details Table */}
+            <div style={{ marginBottom: "20px" }}>
               <div
                 style={{
-                  padding: "14px 20px",
-                  background: isDark ? "#064E3B" : "#ECFDF5",
-                  border: "1px solid #10B981",
-                  borderRadius: "10px",
-                  color: isDark ? "#A7F3D0" : "#065F46",
-                  fontSize: "13.5px",
-                  fontWeight: 600,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
+                  border: `1px solid ${border}`,
+                  borderBottom: "none",
+                  padding: "8px 12px",
+                  textAlign: "center",
+                  background: headerBg,
                 }}
               >
-                <CheckCircle2 size={18} /> Order and Transport Tracking details updated successfully!
+                <strong style={{ color: textMain, fontSize: "14px" }}>Order Details</strong>
               </div>
-            )}
+              <table style={{ width: "100%", borderCollapse: "collapse", border: `1px solid ${border}`, fontSize: "13px" }}>
+                <tbody>
+                  <tr style={{ borderBottom: `1px solid ${border}` }}>
+                    <th style={{ width: "180px", padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                      Order Number
+                    </th>
+                    <td style={{ width: "32%", padding: "8px 12px", color: textMain, fontWeight: 700, borderRight: `1px solid ${border}` }}>
+                      #OD{order.id.replace(/\D/g, "") || order.id}
+                    </td>
+                    <th style={{ width: "180px", padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                      Order Unique Id
+                    </th>
+                    <td style={{ padding: "8px 12px", color: textMain, fontFamily: "monospace" }}>
+                      {order.uuid || order.id}
+                    </td>
+                  </tr>
 
-            {/* 2-Column Main Workspace */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
-                gap: "24px",
-                alignItems: "start",
-              }}
-            >
-              {/* LEFT COLUMN: Items, Customer, Delivery Address */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-                {/* Ordered Items Table */}
+                  <tr style={{ borderBottom: `1px solid ${border}` }}>
+                    <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                      Discount Code
+                    </th>
+                    <td style={{ padding: "8px 12px", color: textMain, borderRight: `1px solid ${border}` }}>
+                      {order.discountCode || "—"}
+                    </td>
+                    <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                      Discount Amount
+                    </th>
+                    <td style={{ padding: "8px 12px", color: "#198754", fontWeight: 700, fontSize: "15px" }}>
+                      ₹{order.discountAmount ? Number(order.discountAmount).toLocaleString("en-IN") : "0"}
+                    </td>
+                  </tr>
+
+                  <tr style={{ borderBottom: `1px solid ${border}` }}>
+                    <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                      Shipping Amount
+                    </th>
+                    <td style={{ padding: "8px 12px", color: textMain, fontWeight: 700, fontSize: "15px", borderRight: `1px solid ${border}` }}>
+                      ₹{order.shippingAmount || "0"}
+                    </td>
+                    <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                      Total Amount
+                    </th>
+                    <td style={{ padding: "8px 12px", color: textMain, fontWeight: 800, fontSize: "20px" }}>
+                      ₹{order.totalAmount ? Number(order.totalAmount).toLocaleString("en-IN") : "0"}
+                    </td>
+                  </tr>
+
+                  <tr style={{ borderBottom: `1px solid ${border}` }}>
+                    <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                      Status
+                    </th>
+                    <td
+                      style={{
+                        padding: "8px 12px",
+                        fontSize: "17px",
+                        fontWeight: 800,
+                        color: order.status === "Cancelled" ? "#DC3545" : order.status === "Delivered" ? "#198754" : "#0D6EFD",
+                        borderRight: `1px solid ${border}`,
+                      }}
+                    >
+                      {order.status}
+                    </td>
+                    <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                      Fulfillment
+                    </th>
+                    <td style={{ padding: "8px 12px", color: textMain, fontWeight: 700, fontSize: "15px" }}>
+                      {order.fulfillment_type || "Delivery"}
+                    </td>
+                  </tr>
+
+                  <tr style={{ borderBottom: `1px solid ${border}` }}>
+                    <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                      Is Payment?
+                    </th>
+                    <td style={{ padding: "8px 12px", color: textMain, fontWeight: 700, borderRight: `1px solid ${border}` }}>
+                      {isPaid ? "Yes" : "No"}
+                    </td>
+                    <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                      Payment Terms
+                    </th>
+                    <td style={{ padding: "8px 12px", color: textMain, fontWeight: 700, fontSize: "15px" }}>
+                      {order.payment_term || (order.paymentMethod === "Online Payment" ? "Prepaid" : "COD")}
+                    </td>
+                  </tr>
+
+                  <tr style={{ borderBottom: `1px solid ${border}` }}>
+                    <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                      Payment Key
+                    </th>
+                    <td colSpan={3} style={{ padding: "8px 12px", color: textMain, fontFamily: "monospace", fontSize: "12px" }}>
+                      {order.razorpayPaymentId || order.payment_key || "—"}
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                      Note
+                    </th>
+                    <td style={{ padding: "8px 12px", borderRight: `1px solid ${border}` }}>
+                      <textarea
+                        rows={4}
+                        disabled
+                        value={order.note || order.transportNotes || ""}
+                        placeholder="No notes added"
+                        style={{
+                          width: "100%",
+                          padding: "8px",
+                          borderRadius: "4px",
+                          border: `1px solid ${border}`,
+                          background: inputBg,
+                          color: textMuted,
+                          fontSize: "12px",
+                          boxSizing: "border-box",
+                        }}
+                      />
+                    </td>
+                    <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                      Courier Slip
+                    </th>
+                    <td style={{ padding: "8px 12px" }}>
+                      {order.courierSlipUrl || order.transportAttachment ? (
+                        <a href={order.courierSlipUrl || order.transportAttachment} target="_blank">
+                          <img
+                            src={order.courierSlipUrl || order.transportAttachment}
+                            alt="Courier Slip"
+                            style={{ width: "120px", border: `1px solid ${border}`, borderRadius: "4px" }}
+                          />
+                        </a>
+                      ) : (
+                        <span style={{ color: textMuted, fontSize: "12px" }}>No slip attached</span>
+                      )}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              {/* Payment Details Subtable */}
+              <table style={{ width: "100%", borderCollapse: "collapse", border: `1px solid ${border}`, borderTop: "none", fontSize: "13px" }}>
+                <thead>
+                  <tr style={{ background: headerBg, borderBottom: `1px solid ${border}` }}>
+                    <th colSpan={4} style={{ padding: "8px", textAlign: "center", color: textMain, fontSize: "14px" }}>
+                      <strong>Payment Details</strong>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: `1px solid ${border}` }}>
+                    <th style={{ width: "180px", padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                      Payment Link Id
+                    </th>
+                    <td style={{ width: "32%", padding: "8px 12px", color: textMain, borderRight: `1px solid ${border}`, fontFamily: "monospace" }}>
+                      {order.pay_link_id || "—"}
+                    </td>
+                    <th style={{ width: "180px", padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                      Payment URL
+                    </th>
+                    <td style={{ padding: "8px 12px", color: textMain }}>
+                      {order.pay_link_url ? (
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <span style={{ fontFamily: "monospace", fontSize: "12px" }}>{order.pay_link_url}</span>
+                          <a
+                            href={order.pay_link_url}
+                            target="_blank"
+                            style={{
+                              padding: "4px 10px",
+                              background: "#212529",
+                              color: "#FFF",
+                              borderRadius: "4px",
+                              fontSize: "12px",
+                              fontWeight: 700,
+                              textDecoration: "none",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            Click for Payment
+                          </a>
+                        </div>
+                      ) : (
+                        <span style={{ color: textMuted }}>—</span>
+                      )}
+                    </td>
+                  </tr>
+
+                  {order.razorpayPaymentId || order.payment_key ? (
+                    <tr style={{ borderBottom: `1px solid ${border}` }}>
+                      <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                        Payment Id
+                      </th>
+                      <td style={{ padding: "8px 12px", color: textMain, borderRight: `1px solid ${border}`, fontFamily: "monospace" }}>
+                        {order.razorpayPaymentId || order.payment_key || "—"}
+                      </td>
+                      <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                        Payment Ref. Id
+                      </th>
+                      <td style={{ padding: "8px 12px", color: textMain }}>
+                        <span style={{ fontFamily: "monospace" }}>{order.uuid || order.id}</span>
+                        <strong style={{ color: isPaid ? "#198754" : "#DC3545", marginLeft: "6px" }}>
+                          ({isPaid ? "paid" : "pending"})
+                        </strong>
+                      </td>
+                    </tr>
+                  ) : null}
+
+                  {order.payment_data ? (
+                    <tr style={{ borderBottom: `1px solid ${border}` }}>
+                      <td colSpan={4} style={{ padding: "10px 12px", background: isDark ? "#0D1117" : "#F8F9FA", color: textMuted, fontFamily: "monospace", fontSize: "11.5px", wordBreak: "break-all" }}>
+                        {order.payment_data}
+                      </td>
+                    </tr>
+                  ) : null}
+
+                  {!order.pay_link_id && (
+                    <tr>
+                      <td colSpan={2} style={{ padding: "8px 12px", color: textMuted }}>
+                        Generate Payment Link
+                      </td>
+                      <td colSpan={2} style={{ padding: "8px 12px" }}>
+                        <button
+                          onClick={handleGeneratePaymentLink}
+                          disabled={isGeneratingLink}
+                          style={{
+                            padding: "4px 14px",
+                            background: "#212529",
+                            color: "#FFF",
+                            borderRadius: "4px",
+                            fontSize: "12px",
+                            fontWeight: 700,
+                            border: "none",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {isGeneratingLink ? "Generating Link..." : "Generate"}
+                        </button>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* SECTION 3: Order Products Detail (col-lg-9) & Order Logs (col-lg-3) */}
+            <div style={{ display: "grid", gridTemplateColumns: "3fr 1fr", gap: "20px", marginBottom: "20px" }}>
+              {/* Order Products Detail */}
+              <div>
                 <div
                   style={{
-                    background: cardBg,
                     border: `1px solid ${border}`,
-                    borderRadius: "14px",
-                    overflow: "hidden",
+                    borderBottom: "none",
+                    padding: "8px 12px",
+                    textAlign: "center",
+                    background: headerBg,
                   }}
                 >
-                  <div
-                    style={{
-                      padding: "16px 20px",
-                      borderBottom: `1px solid ${border}`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 800, fontSize: "15px", color: textMain }}>
-                      <Package size={18} style={{ color: "#0077B6" }} />
-                      Ordered Items ({order.items?.length || 0})
-                    </div>
-                  </div>
-
-                  <div style={{ overflowX: "auto" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
-                      <thead>
-                        <tr style={{ background: tableHeaderBg, borderBottom: `1px solid ${border}`, textAlign: "left" }}>
-                          <th style={{ padding: "12px 16px", color: textMuted }}>Item</th>
-                          <th style={{ padding: "12px 16px", color: textMuted }}>Finish</th>
-                          <th style={{ padding: "12px 16px", color: textMuted, textAlign: "center" }}>Qty</th>
-                          <th style={{ padding: "12px 16px", color: textMuted, textAlign: "right" }}>Price</th>
-                          <th style={{ padding: "12px 16px", color: textMuted, textAlign: "right" }}>Total</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(order.items || []).map((item, idx) => (
+                  <strong style={{ color: textMain, fontSize: "14px" }}>Order Products Detail</strong>
+                </div>
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", border: `1px solid ${border}`, fontSize: "12.5px" }}>
+                    <thead>
+                      <tr style={{ background: headerBg, borderBottom: `1px solid ${border}` }}>
+                        <th style={{ padding: "8px", borderRight: `1px solid ${border}`, color: textMain }}>Id</th>
+                        <th style={{ padding: "8px", borderRight: `1px solid ${border}`, color: textMain }}>OrderId</th>
+                        <th style={{ padding: "8px", borderRight: `1px solid ${border}`, color: textMain, textAlign: "left" }}>Product Name</th>
+                        <th style={{ padding: "8px", borderRight: `1px solid ${border}`, color: textMain }}>Product Code</th>
+                        <th style={{ padding: "8px", borderRight: `1px solid ${border}`, color: textMain }}>Color</th>
+                        <th style={{ padding: "8px", borderRight: `1px solid ${border}`, color: textMain }}>Size</th>
+                        <th style={{ padding: "8px", borderRight: `1px solid ${border}`, color: textMain }}>Price</th>
+                        <th style={{ padding: "8px", borderRight: `1px solid ${border}`, color: textMain }}>LBH-Weight</th>
+                        <th style={{ padding: "8px", borderRight: `1px solid ${border}`, color: textMain }}>Qty</th>
+                        <th style={{ padding: "8px", borderRight: `1px solid ${border}`, color: textMain }}>Amount</th>
+                        <th style={{ padding: "8px", color: textMain }}>Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {order.items && order.items.length > 0 ? (
+                        order.items.map((item, idx) => (
                           <tr key={idx} style={{ borderBottom: `1px solid ${border}` }}>
-                            <td style={{ padding: "14px 16px" }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                                {item.image ? (
-                                  <img
-                                    src={item.image}
-                                    alt={item.name}
-                                    style={{ width: "42px", height: "42px", objectFit: "cover", borderRadius: "6px", border: `1px solid ${border}` }}
-                                  />
-                                ) : (
-                                  <div
-                                    style={{
-                                      width: "42px",
-                                      height: "42px",
-                                      borderRadius: "6px",
-                                      background: inputBg,
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      color: textMuted,
-                                    }}
-                                  >
-                                    <Package size={18} />
-                                  </div>
-                                )}
-                                <div>
-                                  <div style={{ fontWeight: 700, color: textMain }}>{item.name}</div>
-                                  {item.code && <div style={{ fontSize: "11px", color: textMuted }}>SKU: {item.code}</div>}
-                                </div>
-                              </div>
+                            <td style={{ padding: "8px", textAlign: "center", borderRight: `1px solid ${border}`, color: textMain }}>
+                              {item.id || idx + 1}
                             </td>
-                            <td style={{ padding: "14px 16px", color: textMain }}>
-                              {item.color || "Standard"}
+                            <td style={{ padding: "8px", textAlign: "center", borderRight: `1px solid ${border}`, color: textMain }}>
+                              {order.id.replace(/\D/g, "") || order.id}
                             </td>
-                            <td style={{ padding: "14px 16px", textAlign: "center", fontWeight: 700, color: textMain }}>
+                            <td style={{ padding: "8px", textAlign: "left", borderRight: `1px solid ${border}`, color: textMain, fontWeight: 600 }}>
+                              {item.name}
+                            </td>
+                            <td style={{ padding: "8px", textAlign: "center", borderRight: `1px solid ${border}`, color: textMain, fontFamily: "monospace" }}>
+                              {item.code || "—"}
+                            </td>
+                            <td style={{ padding: "8px", textAlign: "center", borderRight: `1px solid ${border}`, color: textMain }}>
+                              {item.color || "—"}
+                            </td>
+                            <td style={{ padding: "8px", textAlign: "center", borderRight: `1px solid ${border}`, color: textMain }}>
+                              {item.size || "—"}
+                            </td>
+                            <td style={{ padding: "8px", textAlign: "right", borderRight: `1px solid ${border}`, color: textMain }}>
+                              {item.price}
+                            </td>
+                            <td style={{ padding: "8px", textAlign: "center", borderRight: `1px solid ${border}`, color: textMain }}>
+                              {item.lbhWeight || "0"}
+                            </td>
+                            <td style={{ padding: "8px", textAlign: "center", borderRight: `1px solid ${border}`, color: textMain, fontWeight: 700 }}>
                               {item.quantity}
                             </td>
-                            <td style={{ padding: "14px 16px", textAlign: "right", color: textMain }}>
-                              ₹{item.price ? item.price.toLocaleString("en-IN") : "0"}
+                            <td style={{ padding: "8px", textAlign: "right", borderRight: `1px solid ${border}`, color: textMain, fontWeight: 700 }}>
+                              {item.price * item.quantity}
                             </td>
-                            <td style={{ padding: "14px 16px", textAlign: "right", fontWeight: 800, color: textMain }}>
-                              ₹{((item.price || 0) * (item.quantity || 1)).toLocaleString("en-IN")}
+                            <td style={{ padding: "8px", textAlign: "center", color: textMain, fontSize: "11px", whiteSpace: "nowrap" }}>
+                              {order.orderDate || new Date(order.createdAt || "").toLocaleDateString("en-IN")}
                             </td>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Financial Summary */}
-                  <div style={{ padding: "18px 20px", background: inputBg, borderTop: `1px solid ${border}` }}>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxWidth: "340px", marginLeft: "auto", fontSize: "13px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", color: textMuted }}>
-                        <span>Subtotal:</span>
-                        <span style={{ fontWeight: 600, color: textMain }}>₹{subtotal.toLocaleString("en-IN")}</span>
-                      </div>
-                      {order.discountAmount ? (
-                        <div style={{ display: "flex", justifyContent: "space-between", color: "#10B981" }}>
-                          <span>Discount {order.discountCode ? `(${order.discountCode})` : ""}:</span>
-                          <span>-₹{order.discountAmount.toLocaleString("en-IN")}</span>
-                        </div>
-                      ) : null}
-                      <div style={{ display: "flex", justifyContent: "space-between", color: textMuted }}>
-                        <span>Shipping & Delivery:</span>
-                        <span style={{ fontWeight: 600, color: textMain }}>
-                          {order.shippingAmount ? `₹${order.shippingAmount.toLocaleString("en-IN")}` : "FREE"}
-                        </span>
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          paddingTop: "8px",
-                          borderTop: `1px solid ${border}`,
-                          fontSize: "16px",
-                          fontWeight: 800,
-                          color: textMain,
-                        }}
-                      >
-                        <span>Grand Total:</span>
-                        <span style={{ color: "#0077B6" }}>₹{order.totalAmount ? order.totalAmount.toLocaleString("en-IN") : "0"}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Customer Information Card */}
-                <div
-                  style={{
-                    background: cardBg,
-                    border: `1px solid ${border}`,
-                    borderRadius: "14px",
-                    padding: "20px",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 800, fontSize: "15px", color: textMain, marginBottom: "16px" }}>
-                    <User size={18} style={{ color: "#0077B6" }} />
-                    Customer & Contact Details
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", fontSize: "13px" }}>
-                    <div>
-                      <div style={{ color: textMuted, fontSize: "11px", fontWeight: 700, textTransform: "uppercase" }}>Full Name</div>
-                      <div style={{ fontWeight: 700, color: textMain, marginTop: "2px" }}>{order.customerName}</div>
-                    </div>
-                    <div>
-                      <div style={{ color: textMuted, fontSize: "11px", fontWeight: 700, textTransform: "uppercase" }}>Phone Number</div>
-                      <a href={`tel:${order.customerPhone}`} style={{ color: "#0077B6", fontWeight: 700, marginTop: "2px", display: "flex", alignItems: "center", gap: "4px" }}>
-                        <Phone size={12} /> {order.customerPhone}
-                      </a>
-                    </div>
-                    <div>
-                      <div style={{ color: textMuted, fontSize: "11px", fontWeight: 700, textTransform: "uppercase" }}>Email Address</div>
-                      <a href={`mailto:${order.customerEmail || ""}`} style={{ color: textMain, marginTop: "2px", display: "flex", alignItems: "center", gap: "4px" }}>
-                        <Mail size={12} /> {order.customerEmail || "N/A"}
-                      </a>
-                    </div>
-                    <div>
-                      <div style={{ color: textMuted, fontSize: "11px", fontWeight: 700, textTransform: "uppercase" }}>Order Identification</div>
-                      <div style={{ fontFamily: "monospace", fontWeight: 700, color: textMain, marginTop: "2px" }}>{order.id}</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Shipping & Delivery Address Card */}
-                <div
-                  style={{
-                    background: cardBg,
-                    border: `1px solid ${border}`,
-                    borderRadius: "14px",
-                    padding: "20px",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 800, fontSize: "15px", color: textMain, marginBottom: "16px" }}>
-                    <MapPin size={18} style={{ color: "#0077B6" }} />
-                    Shipping & Delivery Destination
-                  </div>
-                  <div style={{ fontSize: "13.5px", color: textMain, lineHeight: 1.6 }}>
-                    <div style={{ fontWeight: 800, fontSize: "14px" }}>
-                      {order.shippingAddress?.firstName} {order.shippingAddress?.lastName || ""}
-                    </div>
-                    <div style={{ color: textMuted }}>{order.shippingAddress?.address}</div>
-                    <div style={{ color: textMain, fontWeight: 600 }}>
-                      {order.shippingAddress?.city}, {order.shippingAddress?.state} - {order.shippingAddress?.pinCode}
-                    </div>
-                    <div style={{ color: textMuted, fontSize: "12px", marginTop: "4px" }}>
-                      Country: {order.shippingAddress?.country || "India"} | Contact: {order.shippingAddress?.phone}
-                    </div>
-                  </div>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={11} style={{ padding: "16px", textAlign: "center", color: textMuted }}>
+                            No items found for this order.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
-              {/* RIGHT COLUMN: Dispatch & Transport Management Form */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-                {/* Form Card */}
-                <form
-                  onSubmit={handleSave}
+              {/* Order Logs */}
+              <div>
+                <div
                   style={{
-                    background: cardBg,
                     border: `1px solid ${border}`,
-                    borderRadius: "14px",
-                    padding: "24px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "20px",
+                    borderBottom: "none",
+                    padding: "8px 12px",
+                    textAlign: "center",
+                    background: headerBg,
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${border}`, paddingBottom: "14px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 800, fontSize: "16px", color: textMain }}>
-                      <Truck size={20} style={{ color: "#0077B6" }} />
-                      Order Fulfillment & Dispatch Control
-                    </div>
-                  </div>
-
-                  {/* Order Status & Payment Status */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <strong style={{ color: textMain, fontSize: "14px" }}>Order Logs</strong>
+                </div>
+                <div
+                  style={{
+                    border: `1px solid ${border}`,
+                    maxHeight: "260px",
+                    overflowY: "auto",
+                    padding: "10px",
+                    fontSize: "12px",
+                    lineHeight: 1.6,
+                    background: inputBg,
+                  }}
+                >
+                  {logsList.length > 0 ? (
+                    logsList.map((log, idx) => (
+                      <div key={idx} style={{ paddingBottom: "8px", borderBottom: `1px solid ${border}`, marginBottom: "8px" }}>
+                        <div style={{ fontWeight: 700, color: textMain }}>{log.user_name || "System"}</div>
+                        <div style={{ color: textMuted, fontSize: "11px" }}>{log.created_at ? new Date(log.created_at).toLocaleString("en-IN") : "—"}</div>
+                        <div style={{ color: textMain }}>
+                          <strong>{log.change_value}</strong> ({log.change_type})
+                        </div>
+                      </div>
+                    ))
+                  ) : (
                     <div>
-                      <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textMain, marginBottom: "6px" }}>
-                        Fulfillment Status
+                      <div style={{ fontWeight: 700, color: textMain }}>{customerName}</div>
+                      <div style={{ color: textMuted, fontSize: "11px" }}>{order.orderDate || new Date(order.createdAt || "").toLocaleString("en-IN")}</div>
+                      <div style={{ color: textMain }}>
+                        <strong>{order.status}</strong> (status)
+                      </div>
+                      {isPaid && (
+                        <div style={{ paddingTop: "8px", borderTop: `1px solid ${border}`, marginTop: "8px" }}>
+                          <div style={{ fontWeight: 700, color: textMain }}>RAZORPAY</div>
+                          <div style={{ color: "#198754" }}>
+                            <strong>Paid</strong> (paymentStatus)
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 4: Transport Details Table */}
+            <div style={{ marginBottom: "20px" }}>
+              <div
+                style={{
+                  border: `1px solid ${border}`,
+                  borderBottom: "none",
+                  padding: "8px 12px",
+                  textAlign: "center",
+                  background: headerBg,
+                }}
+              >
+                <strong style={{ color: textMain, fontSize: "14px" }}>Transport Details</strong>
+              </div>
+              <table style={{ width: "100%", borderCollapse: "collapse", border: `1px solid ${border}`, fontSize: "13px" }}>
+                <tbody>
+                  <tr style={{ borderBottom: `1px solid ${border}` }}>
+                    <th style={{ width: "180px", padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                      Transport Name
+                    </th>
+                    <td style={{ width: "32%", padding: "8px 12px", color: textMain, fontWeight: 700, borderRight: `1px solid ${border}` }}>
+                      {order.courierPartner || "—"}
+                    </td>
+                    <th style={{ width: "180px", padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                      Transport Contact
+                    </th>
+                    <td style={{ padding: "8px 12px", color: textMain }}>
+                      {order.transportContact || "—"}
+                    </td>
+                  </tr>
+
+                  <tr style={{ borderBottom: `1px solid ${border}` }}>
+                    <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                      Transport Tracking URL
+                    </th>
+                    <td colSpan={3} style={{ padding: "8px 12px", color: textMain }}>
+                      {order.transportUrl ? (
+                        <a
+                          href={order.transportUrl}
+                          target="_blank"
+                          style={{ color: "#0D6EFD", textDecoration: "none" }}
+                        >
+                          {order.transportUrl}
+                        </a>
+                      ) : (
+                        <span style={{ color: textMuted }}>—</span>
+                      )}
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                      Transport Slip
+                    </th>
+                    <td style={{ padding: "8px 12px", borderRight: `1px solid ${border}` }}>
+                      {order.transportAttachment ? (
+                        <a
+                          href={order.transportAttachment}
+                          target="_blank"
+                          style={{ color: "#0D6EFD", fontWeight: 600 }}
+                        >
+                          Download Slip
+                        </a>
+                      ) : (
+                        <span style={{ color: textMuted }}>—</span>
+                      )}
+                    </td>
+                    <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                      Transport Tracking ID
+                    </th>
+                    <td style={{ padding: "8px 12px", color: textMain, fontFamily: "monospace", fontWeight: 700 }}>
+                      {order.trackingNumber || "—"}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* SECTION 5: Payment & Fulfillment Action Card */}
+            <div style={{ marginBottom: "20px" }}>
+              <div
+                style={{
+                  border: `1px solid ${border}`,
+                  borderBottom: "none",
+                  padding: "8px 12px",
+                  background: headerBg,
+                }}
+              >
+                <strong style={{ color: textMain, fontSize: "14px" }}>Payment &amp; Fulfillment</strong>
+              </div>
+              <div style={{ border: `1px solid ${border}`, padding: "16px", background: cardBg }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                  <tbody>
+                    <tr style={{ borderBottom: `1px solid ${border}` }}>
+                      <th style={{ width: "200px", padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                        Payment
+                      </th>
+                      <td style={{ padding: "8px 12px", borderRight: `1px solid ${border}` }}>
+                        <span
+                          style={{
+                            display: "inline-block",
+                            padding: "4px 12px",
+                            borderRadius: "4px",
+                            background: isPaid ? "#198754" : "#DC3545",
+                            color: "#FFF",
+                            fontWeight: 700,
+                            fontSize: "12px",
+                          }}
+                        >
+                          {isPaid ? "Received" : "Pending"}
+                        </span>
+                      </td>
+                      <th style={{ width: "200px", padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                        Fulfillment
+                      </th>
+                      <td style={{ padding: "8px 12px", color: textMain, fontWeight: 600 }}>
+                        {order.fulfillment_type || "Delivery"}
+                      </td>
+                    </tr>
+
+                    {!isPaid && (
+                      <tr style={{ borderBottom: `1px solid ${border}` }}>
+                        <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                          Confirm Payment
+                        </th>
+                        <td colSpan={3} style={{ padding: "8px 12px" }}>
+                          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                            <input
+                              type="text"
+                              placeholder="Payment note (Cash / UPI / bank ref)"
+                              value={paymentNote}
+                              onChange={(e) => setPaymentNote(e.target.value)}
+                              style={{
+                                flex: 1,
+                                padding: "6px 10px",
+                                borderRadius: "4px",
+                                border: `1px solid ${border}`,
+                                background: inputBg,
+                                color: textMain,
+                                fontSize: "13px",
+                              }}
+                            />
+                            <button
+                              onClick={handleMarkPaymentReceived}
+                              style={{
+                                padding: "6px 16px",
+                                background: "#198754",
+                                color: "#FFF",
+                                border: "none",
+                                borderRadius: "4px",
+                                fontWeight: 700,
+                                fontSize: "13px",
+                                cursor: "pointer",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              Mark Payment Received
+                            </button>
+                          </div>
+                          <div style={{ fontSize: "11px", color: textMuted, marginTop: "4px" }}>
+                            Use when payment done but Razorpay link was not created.
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+
+                    <tr style={{ borderBottom: `1px solid ${border}` }}>
+                      <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                        Store Pickup
+                      </th>
+                      <td colSpan={3} style={{ padding: "8px 12px" }}>
+                        <button
+                          onClick={handleCompleteStorePickup}
+                          style={{
+                            padding: "6px 14px",
+                            background: "#0DCAF0",
+                            color: "#000",
+                            border: "none",
+                            borderRadius: "4px",
+                            fontWeight: 700,
+                            fontSize: "13px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          Complete — Picked Up from Shop
+                        </button>
+                        <span style={{ fontSize: "11.5px", color: textMuted, marginLeft: "10px" }}>
+                          Paid online, customer collects at shop. No Shipway.
+                        </span>
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                        Without Shipway
+                      </th>
+                      <td colSpan={3} style={{ padding: "8px 12px" }}>
+                        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                          <input
+                            type="text"
+                            placeholder="Delivery note (optional)"
+                            value={deliveryNote}
+                            onChange={(e) => setDeliveryNote(e.target.value)}
+                            style={{
+                              flex: 1,
+                              padding: "6px 10px",
+                              borderRadius: "4px",
+                              border: `1px solid ${border}`,
+                              background: inputBg,
+                              color: textMain,
+                              fontSize: "13px",
+                            }}
+                          />
+                          <button
+                            onClick={handleCompleteWithoutShipway}
+                            style={{
+                              padding: "6px 16px",
+                              background: "#0D6EFD",
+                              color: "#FFF",
+                              border: "none",
+                              borderRadius: "4px",
+                              fontWeight: 700,
+                              fontSize: "13px",
+                              cursor: "pointer",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            Complete — No Shipway
+                          </button>
+                        </div>
+                        <div style={{ fontSize: "11px", color: textMuted, marginTop: "4px" }}>
+                          Hand delivery / own courier. No Shipway label needed.
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* SECTION 6: Process Order Shipping (Shiprocket & Shipway) */}
+            <div style={{ marginBottom: "20px" }}>
+              <div
+                style={{
+                  border: `1px solid ${border}`,
+                  borderBottom: "none",
+                  padding: "8px 12px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  background: headerBg,
+                }}
+              >
+                <strong style={{ color: textMain, fontSize: "14px" }}>
+                  Process Order Shipping (Shiprocket &amp; Shipway)
+                </strong>
+                {order.transportAttachment && (
+                  <a
+                    href={order.transportAttachment}
+                    target="_blank"
+                    style={{
+                      padding: "4px 12px",
+                      background: "#198754",
+                      color: "#FFF",
+                      borderRadius: "4px",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      textDecoration: "none",
+                    }}
+                  >
+                    <Download size={12} style={{ display: "inline", marginRight: "4px" }} /> Download Shipping Label
+                  </a>
+                )}
+              </div>
+
+              <div style={{ border: `1px solid ${border}`, padding: "16px", background: cardBg }}>
+                <form onSubmit={handleAssignCarrierSubmit}>
+                  {/* Gateway Radio Selector (when not assigned yet) */}
+                  {!hasShippingAssigned && (
+                    <div style={{ marginBottom: "16px" }}>
+                      <label style={{ display: "block", fontSize: "13px", fontWeight: 700, color: textMain, marginBottom: "6px" }}>
+                        Choose Shipping Gateway:
                       </label>
-                      <select
-                        value={formData.status}
-                        onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                      <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontWeight: 700, color: "#0D6EFD" }}>
+                          <input
+                            type="radio"
+                            name="shipping_gateway"
+                            value="shiprocket"
+                            checked={shippingGateway === "shiprocket"}
+                            onChange={() => {
+                              setShippingGateway("shiprocket");
+                              setCarrierOptions([]);
+                            }}
+                          />
+                          Shiprocket
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontWeight: 700, color: "#198754" }}>
+                          <input
+                            type="radio"
+                            name="shipping_gateway"
+                            value="shipway"
+                            checked={shippingGateway === "shipway"}
+                            onChange={() => {
+                              setShippingGateway("shipway");
+                              setCarrierOptions([]);
+                            }}
+                          />
+                          Shipway
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Dimension Inputs */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "14px", marginBottom: "16px" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textMain, marginBottom: "4px" }}>
+                        Package Length (CM)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        disabled={hasShippingAssigned}
+                        value={boxLength}
+                        onChange={(e) => setBoxLength(parseFloat(e.target.value) || 0)}
                         style={{
                           width: "100%",
-                          padding: "10px 12px",
-                          borderRadius: "8px",
+                          padding: "8px 10px",
+                          borderRadius: "4px",
+                          border: `1px solid ${border}`,
+                          background: inputBg,
+                          color: textMain,
+                          fontSize: "13px",
+                          boxSizing: "border-box",
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textMain, marginBottom: "4px" }}>
+                        Package Breadth (CM)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        disabled={hasShippingAssigned}
+                        value={boxBreadth}
+                        onChange={(e) => setBoxBreadth(parseFloat(e.target.value) || 0)}
+                        style={{
+                          width: "100%",
+                          padding: "8px 10px",
+                          borderRadius: "4px",
+                          border: `1px solid ${border}`,
+                          background: inputBg,
+                          color: textMain,
+                          fontSize: "13px",
+                          boxSizing: "border-box",
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textMain, marginBottom: "4px" }}>
+                        Package Height (CM)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        disabled={hasShippingAssigned}
+                        value={boxHeight}
+                        onChange={(e) => setBoxHeight(parseFloat(e.target.value) || 0)}
+                        style={{
+                          width: "100%",
+                          padding: "8px 10px",
+                          borderRadius: "4px",
+                          border: `1px solid ${border}`,
+                          background: inputBg,
+                          color: textMain,
+                          fontSize: "13px",
+                          boxSizing: "border-box",
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textMain, marginBottom: "4px" }}>
+                        Package Weight (Kg)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        disabled={hasShippingAssigned}
+                        value={boxWeight}
+                        onChange={(e) => setBoxWeight(parseFloat(e.target.value) || 0)}
+                        style={{
+                          width: "100%",
+                          padding: "8px 10px",
+                          borderRadius: "4px",
+                          border: `1px solid ${border}`,
+                          background: inputBg,
+                          color: textMain,
+                          fontSize: "13px",
+                          boxSizing: "border-box",
+                        }}
+                      />
+                    </div>
+
+                    {!hasShippingAssigned && (
+                      <div style={{ display: "flex", alignItems: "flex-end" }}>
+                        <button
+                          type="button"
+                          onClick={handleCalculateCarrierRates}
+                          disabled={isCalculatingRate}
+                          style={{
+                            width: "100%",
+                            padding: "8px 14px",
+                            background: "#FFC107",
+                            color: "#212529",
+                            border: "none",
+                            borderRadius: "4px",
+                            fontWeight: 700,
+                            fontSize: "13px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {isCalculatingRate ? "Calculating..." : "Calculate Rates"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Courier selection dropdown (when rates are fetched and not yet assigned) */}
+                  {!hasShippingAssigned && carrierOptions.length > 0 && (
+                    <div style={{ marginBottom: "16px" }}>
+                      <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textMain, marginBottom: "4px" }}>
+                        Select Courier Partner
+                      </label>
+                      <select
+                        value={selectedCarrierId}
+                        onChange={(e) => setSelectedCarrierId(e.target.value)}
+                        style={{
+                          width: "100%",
+                          padding: "8px 12px",
+                          borderRadius: "4px",
                           border: `1px solid ${border}`,
                           background: inputBg,
                           color: textMain,
                           fontSize: "13px",
                           fontWeight: 700,
-                          cursor: "pointer",
+                          marginBottom: "12px",
                         }}
                       >
-                        <option value="Pending">Pending</option>
-                        <option value="Processing">Processing</option>
-                        <option value="Shipped">Shipped</option>
-                        <option value="Delivered">Delivered</option>
-                        <option value="Cancelled">Cancelled</option>
+                        {carrierOptions.map((opt) => (
+                          <option key={opt.carrier_id} value={opt.carrier_id}>
+                            {opt.courier_name} — Delivery: ₹{opt.delivery_charge} | Total: ₹{opt.total_delivery_charge}
+                          </option>
+                        ))}
                       </select>
-                    </div>
 
-                    <div>
-                      <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textMain, marginBottom: "6px" }}>
-                        Payment Status
-                      </label>
-                      <select
-                        value={formData.paymentStatus}
-                        onChange={(e) => setFormData({ ...formData, paymentStatus: e.target.value as any })}
+                      <button
+                        type="submit"
+                        disabled={isSaving}
                         style={{
-                          width: "100%",
-                          padding: "10px 12px",
-                          borderRadius: "8px",
-                          border: `1px solid ${border}`,
-                          background: inputBg,
-                          color: textMain,
+                          padding: "8px 20px",
+                          background: "#0D6EFD",
+                          color: "#FFF",
+                          border: "none",
+                          borderRadius: "4px",
                           fontSize: "13px",
                           fontWeight: 700,
                           cursor: "pointer",
                         }}
                       >
-                        <option value="Pending">Pending (Unpaid)</option>
-                        <option value="Paid">Paid / Captured</option>
-                        <option value="Refunded">Refunded</option>
-                      </select>
+                        {isSaving ? "Generating..." : "Generate Shipping Label"}
+                      </button>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Transport Carrier & LR / Tracking */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textMain, marginBottom: "6px" }}>
-                        Courier / Transport Partner
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.courierPartner}
-                        onChange={(e) => setFormData({ ...formData, courierPartner: e.target.value })}
-                        placeholder="e.g. VRL Logistics, DTDC, Delhivery..."
-                        style={{
-                          width: "100%",
-                          padding: "10px 12px",
-                          borderRadius: "8px",
-                          border: `1px solid ${border}`,
-                          background: inputBg,
-                          color: textMain,
-                          fontSize: "13px",
-                          boxSizing: "border-box",
-                        }}
-                      />
-                    </div>
+                  {/* Calculated Rates / Assigned Carrier Details */}
+                  {hasShippingAssigned && (
+                    <table style={{ width: "100%", borderCollapse: "collapse", border: `1px solid ${border}`, fontSize: "13px" }}>
+                      <tbody>
+                        <tr style={{ borderBottom: `1px solid ${border}` }}>
+                          <th style={{ width: "200px", padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                            Gateway
+                          </th>
+                          <td style={{ padding: "8px 12px" }}>
+                            <span
+                              style={{
+                                padding: "4px 10px",
+                                borderRadius: "4px",
+                                background: order.shippingProvider === "Shiprocket" ? "#0D6EFD" : "#198754",
+                                color: "#FFF",
+                                fontWeight: 700,
+                                fontSize: "12px",
+                              }}
+                            >
+                              {order.shippingProvider || "Shipway"}
+                            </span>
+                          </td>
+                        </tr>
 
-                    <div>
-                      <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textMain, marginBottom: "6px" }}>
-                        LR Number / Tracking AWB
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.trackingNumber}
-                        onChange={(e) => setFormData({ ...formData, trackingNumber: e.target.value })}
-                        placeholder="e.g. VRL-987654321 / AWB-..."
-                        style={{
-                          width: "100%",
-                          padding: "10px 12px",
-                          borderRadius: "8px",
-                          border: `1px solid ${border}`,
-                          background: inputBg,
-                          color: textMain,
-                          fontSize: "13px",
-                          fontFamily: "monospace",
-                          boxSizing: "border-box",
-                        }}
-                      />
-                    </div>
-                  </div>
+                        <tr style={{ borderBottom: `1px solid ${border}` }}>
+                          <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                            Carrier ID / Code
+                          </th>
+                          <td style={{ padding: "8px 12px", color: textMain }}>
+                            {order.carrierId || "—"}
+                          </td>
+                        </tr>
 
-                  {/* Dispatch Date & Vehicle */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textMain, marginBottom: "6px" }}>
-                        Dispatch Date
-                      </label>
-                      <input
-                        type="date"
-                        value={formData.dispatchDate}
-                        onChange={(e) => setFormData({ ...formData, dispatchDate: e.target.value })}
-                        style={{
-                          width: "100%",
-                          padding: "10px 12px",
-                          borderRadius: "8px",
-                          border: `1px solid ${border}`,
-                          background: inputBg,
-                          color: textMain,
-                          fontSize: "13px",
-                          boxSizing: "border-box",
-                        }}
-                      />
-                    </div>
+                        <tr style={{ borderBottom: `1px solid ${border}` }}>
+                          <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                            Courier Name
+                          </th>
+                          <td style={{ padding: "8px 12px", color: textMain, fontWeight: 700 }}>
+                            {order.courierPartner || "—"}
+                          </td>
+                        </tr>
 
-                    <div>
-                      <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textMain, marginBottom: "6px" }}>
-                        Vehicle / Carrier Number
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.vehicleNumber}
-                        onChange={(e) => setFormData({ ...formData, vehicleNumber: e.target.value })}
-                        placeholder="e.g. DL-01-AB-1234"
-                        style={{
-                          width: "100%",
-                          padding: "10px 12px",
-                          borderRadius: "8px",
-                          border: `1px solid ${border}`,
-                          background: inputBg,
-                          color: textMain,
-                          fontSize: "13px",
-                          boxSizing: "border-box",
-                        }}
-                      />
-                    </div>
-                  </div>
+                        <tr style={{ borderBottom: `1px solid ${border}` }}>
+                          <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                            AWB / Tracking Number
+                          </th>
+                          <td style={{ padding: "8px 12px", color: textMain }}>
+                            <strong style={{ fontFamily: "monospace" }}>{order.trackingNumber || "—"}</strong>
+                            {order.transportUrl && (
+                              <>
+                                <span style={{ margin: "0 8px" }}>|</span>
+                                <a href={order.transportUrl} target="_blank" style={{ color: "#0DCAF0", fontWeight: 700 }}>
+                                  Track Parcel
+                                </a>
+                              </>
+                            )}
+                          </td>
+                        </tr>
 
-                  {/* Package Dimensions Section */}
-                  <div style={{ borderTop: `1px solid ${border}`, paddingTop: "16px" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-                      <label style={{ fontSize: "13px", fontWeight: 800, color: textMain, display: "flex", alignItems: "center", gap: "6px" }}>
-                        <Package size={15} style={{ color: "#0077B6" }} />
-                        Package & Box Dimensions (Shipping Rates)
-                      </label>
-                      <span style={{ fontSize: "11px", color: textMuted }}>
-                        Volumetric: {((Number(formData.packageLength || 10) * Number(formData.packageBreadth || 10) * Number(formData.packageHeight || 10)) / 5000).toFixed(2)} KG
-                      </span>
-                    </div>
+                        <tr style={{ borderBottom: `1px solid ${border}` }}>
+                          <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                            Delivery Charge
+                          </th>
+                          <td style={{ padding: "8px 12px", color: textMain }}>
+                            ₹{order.deliveryCharge ?? "0"}
+                          </td>
+                        </tr>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px" }}>
-                      <div>
-                        <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: textMuted, marginBottom: "4px" }}>
-                          Length (CM)
-                        </label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={formData.packageLength}
-                          onChange={(e) => setFormData({ ...formData, packageLength: parseFloat(e.target.value) || 0 })}
-                          style={{
-                            width: "100%",
-                            padding: "8px 10px",
-                            borderRadius: "8px",
-                            border: `1px solid ${border}`,
-                            background: inputBg,
-                            color: textMain,
-                            fontSize: "13px",
-                            fontWeight: 700,
-                            boxSizing: "border-box",
-                          }}
-                        />
-                      </div>
+                        <tr style={{ borderBottom: `1px solid ${border}` }}>
+                          <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                            GST Charge (18%)
+                          </th>
+                          <td style={{ padding: "8px 12px", color: textMain }}>
+                            ₹{order.gstCharge ?? "0"}
+                          </td>
+                        </tr>
 
-                      <div>
-                        <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: textMuted, marginBottom: "4px" }}>
-                          Breadth (CM)
-                        </label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={formData.packageBreadth}
-                          onChange={(e) => setFormData({ ...formData, packageBreadth: parseFloat(e.target.value) || 0 })}
-                          style={{
-                            width: "100%",
-                            padding: "8px 10px",
-                            borderRadius: "8px",
-                            border: `1px solid ${border}`,
-                            background: inputBg,
-                            color: textMain,
-                            fontSize: "13px",
-                            fontWeight: 700,
-                            boxSizing: "border-box",
-                          }}
-                        />
-                      </div>
+                        <tr style={{ borderBottom: `1px solid ${border}` }}>
+                          <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                            Total Delivery Amount
+                          </th>
+                          <td style={{ padding: "8px 12px", color: "#0D6EFD", fontWeight: 800, fontSize: "16px" }}>
+                            ₹{order.totalDeliveryCharge ?? (order.deliveryCharge ? (order.deliveryCharge * 1.18).toFixed(2) : "0")}
+                          </td>
+                        </tr>
 
-                      <div>
-                        <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: textMuted, marginBottom: "4px" }}>
-                          Height (CM)
-                        </label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={formData.packageHeight}
-                          onChange={(e) => setFormData({ ...formData, packageHeight: parseFloat(e.target.value) || 0 })}
-                          style={{
-                            width: "100%",
-                            padding: "8px 10px",
-                            borderRadius: "8px",
-                            border: `1px solid ${border}`,
-                            background: inputBg,
-                            color: textMain,
-                            fontSize: "13px",
-                            fontWeight: 700,
-                            boxSizing: "border-box",
-                          }}
-                        />
-                      </div>
+                        {order.transportAttachment && (
+                          <tr>
+                            <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                              Shipping Label PDF
+                            </th>
+                            <td style={{ padding: "8px 12px" }}>
+                              <a
+                                href={order.transportAttachment}
+                                target="_blank"
+                                style={{
+                                  padding: "4px 12px",
+                                  border: "1px solid #198754",
+                                  color: "#198754",
+                                  borderRadius: "4px",
+                                  fontSize: "12px",
+                                  fontWeight: 700,
+                                  textDecoration: "none",
+                                  display: "inline-block",
+                                }}
+                              >
+                                Download Label PDF
+                              </a>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  )}
+                </form>
+              </div>
+            </div>
 
-                      <div>
-                        <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: textMuted, marginBottom: "4px" }}>
-                          Weight (KG)
-                        </label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={formData.packageWeight}
-                          onChange={(e) => setFormData({ ...formData, packageWeight: parseFloat(e.target.value) || 0 })}
-                          style={{
-                            width: "100%",
-                            padding: "8px 10px",
-                            borderRadius: "8px",
-                            border: `1px solid ${border}`,
-                            background: inputBg,
-                            color: textMain,
-                            fontSize: "13px",
-                            fontWeight: 700,
-                            boxSizing: "border-box",
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
+            {/* SECTION 7: Order Actions Card */}
+            <div>
+              <div
+                style={{
+                  border: `1px solid ${border}`,
+                  borderBottom: "none",
+                  padding: "8px 12px",
+                  background: headerBg,
+                }}
+              >
+                <strong style={{ color: textMain, fontSize: "14px" }}>Order Actions</strong>
+              </div>
 
-                  {/* Transport Notes */}
-                  <div>
+              <div style={{ border: `1px solid ${border}`, padding: "16px", background: cardBg }}>
+                <form onSubmit={handleUpdateStatus}>
+                  <div style={{ maxWidth: "320px", marginBottom: "16px" }}>
                     <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textMain, marginBottom: "6px" }}>
-                      Internal Dispatch & Transport Notes
+                      Order Status
                     </label>
-                    <textarea
-                      rows={3}
-                      value={formData.transportNotes}
-                      onChange={(e) => setFormData({ ...formData, transportNotes: e.target.value })}
-                      placeholder="Add any instructions, invoice docket references, or notes for the transport team..."
+                    <select
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value as any)}
                       style={{
                         width: "100%",
-                        padding: "10px 12px",
-                        borderRadius: "8px",
+                        padding: "8px 12px",
+                        borderRadius: "4px",
                         border: `1px solid ${border}`,
                         background: inputBg,
                         color: textMain,
                         fontSize: "13px",
-                        boxSizing: "border-box",
-                        fontFamily: "inherit",
+                        fontWeight: 700,
                       }}
-                    />
-                  </div>
-
-                  {/* Save Button */}
-                  <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
-                    <AdminButton
-                      type="submit"
-                      variant="primary"
-                      size="lg"
-                      icon={<Save size={16} />}
-                      isDark={isDark}
-                      disabled={isSaving}
                     >
-                      {isSaving ? "Saving Changes..." : "Save Transport & Status Details"}
-                    </AdminButton>
-                  </div>
-                </form>
-
-                {/* Complete Transaction & Payment Verification Card */}
-                <div
-                  style={{
-                    background: cardBg,
-                    border: `1px solid ${border}`,
-                    borderRadius: "14px",
-                    padding: "20px",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${border}`, paddingBottom: "12px", marginBottom: "14px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: 800, fontSize: "15px", color: textMain }}>
-                      <CreditCard size={18} style={{ color: "#0077B6" }} />
-                      Payment & Transaction Details
-                    </div>
-                    <AdminStatusBadge
-                      status={order.paymentStatus === "Paid" ? "PAID" : order.paymentStatus === "Refunded" ? "REFUNDED" : "UNPAID / PENDING"}
-                      variant={order.paymentStatus === "Paid" ? "success" : order.paymentStatus === "Refunded" ? "danger" : "warning"}
-                      isDark={isDark}
-                    />
+                      <option value="Pending">Pending</option>
+                      <option value="Processing">Processing</option>
+                      <option value="In-Progress">In-Progress</option>
+                      <option value="In-Transit">In-Transit</option>
+                      <option value="Shipped">Shipped</option>
+                      <option value="Delivered">Delivered</option>
+                      <option value="Cancelled">Cancelled</option>
+                    </select>
                   </div>
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${border}` }}>
-                      <span style={{ color: textMuted }}>Gross Charged Amount:</span>
-                      <span style={{ fontWeight: 800, fontSize: "15px", color: textMain }}>₹{order.totalAmount ? order.totalAmount.toLocaleString("en-IN") : "0"}</span>
-                    </div>
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    style={{
+                      padding: "8px 20px",
+                      background: "#212529",
+                      color: "#FFF",
+                      border: "none",
+                      borderRadius: "4px",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {isSaving ? "Saving Details..." : "Save Details"}
+                  </button>
 
-                    <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${border}` }}>
-                      <span style={{ color: textMuted }}>Payment Method:</span>
-                      <span style={{ fontWeight: 700, color: textMain }}>{order.paymentMethod}</span>
-                    </div>
-
-                    <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${border}` }}>
-                      <span style={{ color: textMuted }}>Gateway / Channel:</span>
-                      <span style={{ fontWeight: 600, color: textMain }}>
-                        {order.paymentMethod === "Online Payment" ? "Razorpay (IDFC FIRST Bank API)" : "Cash On Delivery (Direct Courier Collection)"}
-                      </span>
-                    </div>
-
-                    {order.razorpayPaymentId ? (
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: `1px solid ${border}` }}>
-                        <span style={{ color: textMuted }}>Razorpay Payment ID:</span>
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                          <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#0077B6" }}>{order.razorpayPaymentId}</span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              navigator.clipboard.writeText(order.razorpayPaymentId || "");
-                              setCopiedPayId(true);
-                              setTimeout(() => setCopiedPayId(false), 2000);
-                            }}
-                            style={{ background: "transparent", border: "none", cursor: "pointer", color: textMuted, padding: "2px" }}
-                            title="Copy Payment ID"
-                          >
-                            {copiedPayId ? <Check size={13} style={{ color: "#10B981" }} /> : <Copy size={13} />}
-                          </button>
-                        </div>
-                      </div>
-                    ) : null}
-
-                    {order.razorpayOrderId ? (
-                      <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${border}` }}>
-                        <span style={{ color: textMuted }}>Razorpay Order ID:</span>
-                        <span style={{ fontFamily: "monospace", fontWeight: 700, color: textMain }}>{order.razorpayOrderId}</span>
-                      </div>
-                    ) : null}
-
-                    <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${border}` }}>
-                      <span style={{ color: textMuted }}>Signature Verification:</span>
-                      <span style={{ color: order.paymentStatus === "Paid" ? "#10B981" : "#F59E0B", fontWeight: 700, display: "flex", alignItems: "center", gap: "4px" }}>
-                        <ShieldCheck size={14} />
-                        {order.paymentStatus === "Paid" ? "HMAC SHA-256 Validated" : "Pending Reconciliation / COD Delivery"}
-                      </span>
-                    </div>
-
-                    <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0" }}>
-                      <span style={{ color: textMuted }}>Transaction Date:</span>
-                      <span style={{ color: textMain }}>{order.orderDate || new Date(order.createdAt || "").toLocaleString("en-IN")}</span>
-                    </div>
-                  </div>
-
-                  {/* Manual Payment Action */}
-                  <div style={{ marginTop: "16px", paddingTop: "14px", borderTop: `1px solid ${border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: "12px", color: textMuted }}>
-                      {order.paymentStatus === "Paid" ? "Payment verified in database" : "Need to confirm offline payment?"}
+                  {saveSuccess && (
+                    <span style={{ color: "#198754", fontSize: "13px", fontWeight: 700, marginLeft: "12px" }}>
+                      ✓ Saved successfully!
                     </span>
-                    {order.paymentStatus !== "Paid" ? (
-                      <AdminButton
-                        variant="primary"
-                        size="sm"
-                        icon={<CheckCircle2 size={13} />}
-                        isDark={isDark}
-                        disabled={isSaving}
-                        onClick={() => handleMarkPayment("Paid")}
-                      >
-                        Mark Payment Received
-                      </AdminButton>
-                    ) : (
-                      <AdminButton
-                        variant="secondary"
-                        size="sm"
-                        icon={<Clock size={13} />}
-                        isDark={isDark}
-                        disabled={isSaving}
-                        onClick={() => handleMarkPayment("Pending")}
-                      >
-                        Reset to Unpaid
-                      </AdminButton>
-                    )}
-                  </div>
-                </div>
+                  )}
+                </form>
               </div>
             </div>
           </div>
         )}
-      </main>
-
-      {/* Print Styles */}
-      <style jsx global>{`
-        @media print {
-          .no-print, nav, header, aside {
-            display: none !important;
-          }
-          body {
-            background: #ffffff !important;
-            color: #000000 !important;
-          }
-          main {
-            padding: 0 !important;
-            max-width: 100% !important;
-          }
-        }
-      `}</style>
+      </div>
     </div>
   );
 }

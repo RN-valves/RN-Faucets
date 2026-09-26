@@ -1141,7 +1141,7 @@ export default function CustomerDetailPage({
                         }}
                       >
                         <td style={{ padding: "10px 14px", fontFamily: "monospace", fontWeight: 800, color: "#0284C7" }}>
-                          {ord.id.startsWith("RN-ORD") ? `#OD${ord.id.slice(-3)}` : ord.id}
+                          {ord.id ? ord.id.replace(/-/g, "").replace(/ORD/i, "OD") : ord.id}
                         </td>
                         <td style={{ padding: "10px 14px", whiteSpace: "nowrap" }}>
                           {ord.orderDate || formatDate(ord.createdAt)}

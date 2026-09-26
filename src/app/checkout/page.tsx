@@ -39,7 +39,7 @@ interface Address {
 const SAVED_ADDRESSES_KEY = "rn_saved_addresses";
 
 function generateOrderId(): string {
-  return `RN-ORD-${Math.floor(100000 + Math.random() * 900000)}`;
+  return `RNOD${Math.floor(100000 + Math.random() * 900000)}`;
 }
 
 export default function CheckoutPage() {

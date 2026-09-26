@@ -361,7 +361,7 @@ async function migrateToDatabase(targetName, uri, sqlData, dryRun = false) {
     const paymentStatus = o.is_payment === '1' || status === 'Delivered' ? 'Paid' : (status === 'Cancelled' ? 'Pending' : 'Pending');
 
     return {
-      id: `RN-ORD-${legacyId}`,
+      id: `RNOD${legacyId}`,
       legacyId: legacyId,
       uuid: o.uuid || '',
       userId: parseInt(o.user_id) || 0,

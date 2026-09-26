@@ -117,7 +117,7 @@ export default function OrderInvoicePage() {
     );
   }
 
-  const orderNum = order.id.replace(/^RN-ORD-/, "").replace(/^#/, "");
+  const orderNum = order.id.replace(/-/g, "").replace(/^RNORD|^RNOD|^ORD|^OD|^#/i, "");
 
   return (
     <div className="invoice-page-wrapper">
