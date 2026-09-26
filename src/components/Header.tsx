@@ -584,7 +584,34 @@ export default function Header({ data }: HeaderProps) {
 
   return (
     <>
-      {/* ── Top Floating Navigation Bar ── */}
+      {/* ── Prominent Floating Brand Logo (Separated from Header Flow so header stays slim & close to top) ── */}
+      <div
+        className="rn-floating-brand-logo"
+        style={{
+          position: "fixed",
+          top: "4px",
+          left: "clamp(16px, 4vw, 70px)",
+          zIndex: 10000,
+          pointerEvents: "auto",
+        }}
+      >
+        <a href="/" aria-label="RN Valves & Faucets Home" className="flex items-center justify-start cursor-pointer">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img 
+            src={logoSrc} 
+            alt="RN Valves & Faucets" 
+            onError={(e) => {
+              const target = e.currentTarget;
+              if (!target.src.endsWith(DEFAULT_LOGO)) {
+                target.src = DEFAULT_LOGO;
+              }
+            }}
+            className="rn-header-logo-img h-[95px] sm:h-[120px] md:h-[145px] lg:h-[165px] max-h-[175px] w-auto block object-contain transition-all duration-300 hover:opacity-95 hover:scale-[1.03] drop-shadow-sm" 
+          />
+        </a>
+      </div>
+
+      {/* ── Top Floating Navigation Bar (Slim & Close to Top) ── */}
       <header
         style={{
           position: "fixed",
@@ -599,7 +626,7 @@ export default function Header({ data }: HeaderProps) {
           boxShadow: boxShadowStyle,
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
+          justifyContent: "flex-end",
           boxSizing: "border-box",
           pointerEvents: "auto",
           color: textColor,
@@ -607,30 +634,6 @@ export default function Header({ data }: HeaderProps) {
         }}
         className="rn-header-navbar"
       >
-        {/* Left Corner: Brand Logo (Enlarged and Prominent) */}
-        <div
-          className="rn-header-left-logo"
-          style={{
-            zIndex: 20,
-            pointerEvents: "auto",
-          }}
-        >
-          <a href="/" aria-label="RN Valves & Faucets Home" className="flex items-center justify-start cursor-pointer">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img 
-              src={logoSrc} 
-              alt="RN Valves & Faucets" 
-              onError={(e) => {
-                const target = e.currentTarget;
-                if (!target.src.endsWith(DEFAULT_LOGO)) {
-                  target.src = DEFAULT_LOGO;
-                }
-              }}
-              className="rn-header-logo-img h-[72px] sm:h-[90px] md:h-[110px] lg:h-[125px] max-h-[135px] w-auto block object-contain transition-all duration-300 hover:opacity-90 hover:scale-[1.03]" 
-            />
-          </a>
-        </div>
-
         {/* Right Action Icons + User Account + Mobile Menu Trigger */}
         <div
           className="rn-header-right-group"
@@ -1053,23 +1056,25 @@ export default function Header({ data }: HeaderProps) {
         <style>{`
           /* ── Floating Header Navbar Responsive System ── */
           .rn-header-navbar {
-            height: 110px;
-            padding-left: clamp(24px, 5vw, 90px);
-            padding-right: clamp(24px, 5vw, 90px);
+            height: 56px;
+            padding-left: clamp(20px, 4vw, 80px);
+            padding-right: clamp(20px, 4vw, 80px);
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-end;
           }
 
-          .rn-header-left-logo {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
+          .rn-floating-brand-logo {
+            position: fixed;
+            top: 4px;
+            left: clamp(20px, 4vw, 80px);
+            z-index: 10000;
+            pointer-events: auto;
           }
 
           .rn-header-logo-img {
-            height: 96px;
-            max-height: 115px;
+            height: 125px;
+            max-height: 155px;
             width: auto;
             display: block;
             object-fit: contain;
@@ -1079,14 +1084,14 @@ export default function Header({ data }: HeaderProps) {
           .rn-header-right-group {
             display: flex;
             align-items: center;
-            gap: 24px;
+            gap: 20px;
             margin-left: auto;
           }
 
           .rn-header-action-icons {
             display: flex;
             align-items: center;
-            gap: 18px;
+            gap: 16px;
           }
 
           .rn-header-divider {
@@ -1106,22 +1111,27 @@ export default function Header({ data }: HeaderProps) {
           /* Mobile / Tablet Responsive Header (max-width: 768px) */
           @media (max-width: 768px) {
             .rn-header-navbar {
-              height: 85px !important;
-              padding-left: 14px !important;
-              padding-right: 14px !important;
+              height: 52px !important;
+              padding-left: 12px !important;
+              padding-right: 12px !important;
+            }
+
+            .rn-floating-brand-logo {
+              top: 2px !important;
+              left: 12px !important;
             }
 
             .rn-header-logo-img {
-              height: 72px !important;
-              max-height: 78px !important;
+              height: 85px !important;
+              max-height: 95px !important;
             }
 
             .rn-header-right-group {
-              gap: 12px !important;
+              gap: 10px !important;
             }
 
             .rn-header-action-icons {
-              gap: 12px !important;
+              gap: 10px !important;
             }
 
             .rn-header-divider {

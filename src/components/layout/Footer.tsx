@@ -51,7 +51,6 @@ const PinterestIcon = () => (
 const NAV_COLUMN_1 = [
   { label: "About Us", href: "/about-us" },
   { label: "Blogs", href: "/blogs" },
-  { label: "Catalogues", href: "/catalogues" },
   { label: "Our CSR", href: "/corporate-social-responsibility" },
 ];
 const NAV_COLUMN_2 = [

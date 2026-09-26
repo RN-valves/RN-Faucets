@@ -122,6 +122,7 @@ export default function AdminOrderDetailPage() {
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [isDownloadingManifest, setIsDownloadingManifest] = useState(false);
 
   // Form States
   const [status, setStatus] = useState("Pending");
@@ -445,6 +446,135 @@ export default function AdminOrderDetailPage() {
     }
   };
 
+  // Direct Download Manifest / Shipping Label Handler
+  const handleDirectDownloadManifest = async () => {
+    if (!order) return;
+    setIsDownloadingManifest(true);
+    const orderNum = order.id.replace(/-/g, "").replace(/^RNORD|^RNOD|^ORD|^OD|^#/i, "");
+    const cleanId = order.id ? (order.id.startsWith("RNOD") ? order.id : `RNOD${orderNum}`) : `RNOD${orderNum}`;
+    const awbCode = order.trackingNumber || `JH${orderNum.padStart(8, "0")}IN`;
+    const filename = `${cleanId}_Shipping_Label.pdf`;
+
+    try {
+      // Load JsBarcode if not loaded
+      if (!(window as any).JsBarcode) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js";
+          script.onload = resolve;
+          script.onerror = reject;
+          document.body.appendChild(script);
+        });
+      }
+
+      // Render Barcodes
+      try {
+        (window as any).JsBarcode("#manifest-barcode-awb", awbCode, {
+          format: "CODE128",
+          width: 1.6,
+          height: 42,
+          displayValue: false,
+          margin: 0,
+        });
+        (window as any).JsBarcode("#manifest-barcode-order", cleanId, {
+          format: "CODE128",
+          width: 1.6,
+          height: 42,
+          displayValue: false,
+          margin: 0,
+        });
+      } catch (err) {
+        console.error("Barcode rendering error:", err);
+      }
+
+      // Load html2pdf if not loaded
+      if (!(window as any).html2pdf) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+          script.onload = resolve;
+          script.onerror = reject;
+          document.body.appendChild(script);
+        });
+      }
+
+      const element = document.getElementById("direct-order-manifest-template");
+      if (!element) throw new Error("Manifest template element not found");
+
+      // Wait for any images to complete loading
+      const images = Array.from(element.querySelectorAll("img"));
+      await Promise.all(
+        images.map((img) => {
+          if (img.complete) return Promise.resolve();
+          return new Promise((res) => {
+            img.onload = res;
+            img.onerror = res;
+          });
+        })
+      );
+
+      const opt = {
+        margin: [4, 4, 4, 4],
+        filename: filename,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          scrollY: 0,
+          scrollX: 0,
+          x: 0,
+          y: 0,
+          windowWidth: 540,
+          logging: false,
+        },
+        jsPDF: { unit: "mm", format: [110, 165], orientation: "portrait" },
+      };
+
+      await (window as any).html2pdf().set(opt).from(element).save();
+    } catch (e: any) {
+      console.error("Direct Manifest download failed, falling back to window print:", e);
+      window.print();
+    } finally {
+      setIsDownloadingManifest(false);
+    }
+  };
+
+  // Pre-render barcodes when order loads
+  useEffect(() => {
+    if (!order) return;
+    const renderBarcodes = async () => {
+      try {
+        if (!(window as any).JsBarcode) {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement("script");
+            script.src = "https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js";
+            script.onload = resolve;
+            script.onerror = reject;
+            document.body.appendChild(script);
+          });
+        }
+        const orderNum = order.id.replace(/-/g, "").replace(/^RNORD|^RNOD|^ORD|^OD|^#/i, "");
+        const cleanId = order.id ? (order.id.startsWith("RNOD") ? order.id : `RNOD${orderNum}`) : `RNOD${orderNum}`;
+        const awbCode = order.trackingNumber || `JH${orderNum.padStart(8, "0")}IN`;
+        (window as any).JsBarcode("#manifest-barcode-awb", awbCode, {
+          format: "CODE128",
+          width: 1.6,
+          height: 42,
+          displayValue: false,
+          margin: 0,
+        });
+        (window as any).JsBarcode("#manifest-barcode-order", cleanId, {
+          format: "CODE128",
+          width: 1.6,
+          height: 42,
+          displayValue: false,
+          margin: 0,
+        });
+      } catch {}
+    };
+    renderBarcodes();
+  }, [order]);
+
   const isPaid = order?.paymentStatus === "Paid";
   const hasShippingAssigned = Boolean(order?.trackingNumber || (order?.deliveryCharge && order.deliveryCharge > 0));
 
@@ -632,26 +762,35 @@ export default function AdminOrderDetailPage() {
                   )}
                 </button>
 
-                {hasShippingAssigned && (
-                  <button
-                    onClick={() => window.print()}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      padding: "6px 14px",
-                      background: "transparent",
-                      color: "#DC3545",
-                      border: "1px solid #DC3545",
-                      borderRadius: "4px",
-                      fontSize: "13px",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                    }}
-                  >
-                    <FileText size={14} /> Generate Manifest
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={handleDirectDownloadManifest}
+                  disabled={isDownloadingManifest}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "6px 14px",
+                    background: "#DC3545",
+                    color: "#FFF",
+                    border: "1px solid #DC3545",
+                    borderRadius: "4px",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    cursor: isDownloadingManifest ? "not-allowed" : "pointer",
+                    opacity: isDownloadingManifest ? 0.7 : 1,
+                  }}
+                >
+                  {isDownloadingManifest ? (
+                    <>
+                      <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Generating Manifest...
+                    </>
+                  ) : (
+                    <>
+                      <FileText size={14} /> Generate Manifest
+                    </>
+                  )}
+                </button>
 
                 {order.status === "Pending" && (
                   <button
@@ -1457,23 +1596,34 @@ export default function AdminOrderDetailPage() {
                 <strong style={{ color: textMain, fontSize: "14px" }}>
                   Process Order Shipping (Shiprocket &amp; Shipway)
                 </strong>
-                {order.transportAttachment && (
-                  <a
-                    href={order.transportAttachment}
-                    target="_blank"
-                    style={{
-                      padding: "4px 12px",
-                      background: "#198754",
-                      color: "#FFF",
-                      borderRadius: "4px",
-                      fontSize: "12px",
-                      fontWeight: 700,
-                      textDecoration: "none",
-                    }}
-                  >
-                    <Download size={12} style={{ display: "inline", marginRight: "4px" }} /> Download Shipping Label
-                  </a>
-                )}
+                <button
+                  type="button"
+                  onClick={handleDirectDownloadManifest}
+                  disabled={isDownloadingManifest}
+                  style={{
+                    padding: "5px 14px",
+                    background: "#198754",
+                    color: "#FFF",
+                    borderRadius: "4px",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    border: "none",
+                    cursor: isDownloadingManifest ? "not-allowed" : "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                >
+                  {isDownloadingManifest ? (
+                    <>
+                      <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> Generating Label...
+                    </>
+                  ) : (
+                    <>
+                      <Download size={12} /> Download Shipping Label (Thermal / PDF)
+                    </>
+                  )}
+                </button>
               </div>
 
               <div style={{ border: `1px solid ${border}`, padding: "16px", background: cardBg }}>
@@ -2040,6 +2190,182 @@ export default function AdminOrderDetailPage() {
             <p style={{ margin: "4px 0", fontSize: "13px", color: "#222222" }}>
               Payment Method: <strong>{order.paymentMethod === "Cash on Delivery" ? "COD" : order.paymentStatus === "Paid" ? "Prepaid" : order.paymentMethod || "Prepaid"}</strong>
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden Shipping Manifest / Thermal Label Template (Matches Exact Shipping Label Design) */}
+      {order && (
+        <div
+          id="direct-order-manifest-template"
+          style={{
+            position: "fixed",
+            left: 0,
+            top: 0,
+            width: "500px",
+            backgroundColor: "#FFFFFF",
+            color: "#000000",
+            fontFamily: "Arial, Helvetica, sans-serif",
+            boxSizing: "border-box",
+            border: "2.5px solid #000000",
+            zIndex: -9999,
+            pointerEvents: "none",
+            fontSize: "11.5px",
+            lineHeight: "1.35",
+          }}
+        >
+          {/* 1. TOP SECTION: Ship To & RN Logo */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "12px 14px", borderBottom: "2px solid #000000" }}>
+            <div style={{ width: "68%" }}>
+              <div style={{ fontSize: "14px", fontWeight: "900", color: "#000000", marginBottom: "3px" }}>
+                Ship To
+              </div>
+              <div style={{ fontSize: "13px", fontWeight: "700", fontStyle: "italic", color: "#000000", marginBottom: "3px" }}>
+                {order.shippingAddress?.firstName || order.customerName || "Valued Customer"} {order.shippingAddress?.lastName || ""}
+              </div>
+              <div style={{ fontSize: "11.5px", fontStyle: "italic", color: "#000000", lineHeight: "1.35" }}>
+                {order.shippingAddress?.address ? `${order.shippingAddress.address}, ` : ""}
+                {order.shippingAddress?.city ? `${order.shippingAddress.city}, ` : ""}
+                {order.shippingAddress?.state ? `${order.shippingAddress.state} ` : ""}
+                {order.shippingAddress?.pinCode ? `${order.shippingAddress.pinCode} ` : ""}
+                {order.shippingAddress?.state ? `${order.shippingAddress.state}-${order.shippingAddress.pinCode || ''} ` : ""}
+                {order.shippingAddress?.city ? `${order.shippingAddress.city}, ` : ""}
+                {order.shippingAddress?.state ? `${order.shippingAddress.state}, ` : ""}
+                {order.shippingAddress?.country || "India"} {order.shippingAddress?.pinCode || ""}
+              </div>
+              <div style={{ fontSize: "12px", fontStyle: "italic", fontWeight: "600", marginTop: "4px", color: "#000000" }}>
+                Phone No.: {order.shippingAddress?.phone || order.customerPhone || "—"}
+              </div>
+            </div>
+
+            <div style={{ width: "30%", textAlign: "right", display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+              <img
+                src="/users/images/logoc.png"
+                alt="RN Valves & Faucets"
+                style={{ width: "95px", height: "auto", objectFit: "contain", display: "block", marginLeft: "auto" }}
+              />
+            </div>
+          </div>
+
+          {/* 2. MIDDLE SECTION: Dimensions, Payment & Tracking Barcode */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderBottom: "2px solid #000000" }}>
+            <div style={{ width: "48%", fontSize: "11px", lineHeight: "1.4" }}>
+              <div>
+                Dimensions: {(order.packageLength || 17).toFixed(2)}*{(order.packageBreadth || 11).toFixed(2)}*{(order.packageHeight || 10).toFixed(2)}(cm)
+              </div>
+              <div style={{ margin: "2px 0" }}>
+                Payment: <strong>{order.paymentMethod === "Cash on Delivery" ? "COD" : "PREPAID"}</strong>
+              </div>
+              <div>
+                ORDER TOTAL: {Math.round(order.totalAmount || (order.items || []).reduce((acc, it) => acc + (it.price || 0) * (it.quantity || 1), 0))} INR
+              </div>
+              <div style={{ margin: "2px 0" }}>
+                Weight: {(order.packageWeight || 0.5).toFixed(2)} kg
+              </div>
+              <div>eWaybill No.: N/A</div>
+            </div>
+
+            <div style={{ width: "50%", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <div style={{ fontSize: "13px", fontWeight: "700", marginBottom: "4px" }}>
+                {order.courierPartner || "India Post-Business Parcel_2.0"}
+              </div>
+              <div style={{ display: "flex", justifyContent: "center", margin: "2px 0" }}>
+                <svg id="manifest-barcode-awb" style={{ maxHeight: "42px", width: "100%" }}></svg>
+              </div>
+              <div style={{ fontSize: "11px", fontWeight: "700", letterSpacing: "0.5px" }}>
+                {order.trackingNumber || `JH${(order.id.replace(/\D/g, "") || "04277305").padStart(8, "0")}IN`}
+              </div>
+              <div style={{ fontSize: "10.5px", color: "#333", marginTop: "2px" }}>Routing Code: NA</div>
+            </div>
+          </div>
+
+          {/* 3. SHIPPED BY & ORDER BARCODE SECTION */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "10px 14px", borderBottom: "2px solid #000000" }}>
+            <div style={{ width: "52%", fontSize: "11px", lineHeight: "1.3" }}>
+              <div style={{ fontSize: "12px", fontWeight: "900", marginBottom: "2px" }}>
+                Shipped By <span style={{ fontSize: "10.5px", fontWeight: "400" }}>(If undelivered, return to)</span>
+              </div>
+              <div style={{ fontStyle: "italic", fontWeight: "700", marginBottom: "2px" }}>
+                Shivam Dubey
+              </div>
+              <div style={{ fontStyle: "italic", color: "#111", fontSize: "10.5px" }}>
+                Basement, B-68, site-4, Sahibabad Ghaziabad 201010 Site 4, Sahibabad Industrial Area Site 4, Sahibabad, Ghaziabad, Uttar Pradesh 201010, India Ghaziabad 201010
+              </div>
+              <div style={{ fontStyle: "italic", fontWeight: "700", marginTop: "3px" }}>
+                GSTIN: 09AAKCR3772K1ZR
+              </div>
+              <div style={{ fontStyle: "italic" }}>
+                Phone No.: 9315603920
+              </div>
+            </div>
+
+            <div style={{ width: "46%", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <div style={{ fontSize: "13px", fontWeight: "700", marginBottom: "4px" }}>
+                Order #: RNOD{order.id.replace(/\D/g, "") || order.id}
+              </div>
+              <div style={{ display: "flex", justifyContent: "center", margin: "2px 0" }}>
+                <svg id="manifest-barcode-order" style={{ maxHeight: "42px", width: "100%" }}></svg>
+              </div>
+              <div style={{ fontSize: "11px", marginTop: "3px" }}>
+                Invoice No.: Retail000{order.id.replace(/\D/g, "") || "16"}
+              </div>
+              <div style={{ fontSize: "11px" }}>
+                Invoice Date: {new Date(order.createdAt || Date.now()).toISOString().split("T")[0]}
+              </div>
+            </div>
+          </div>
+
+          {/* 4. PRODUCTS BREAKDOWN TABLE */}
+          <div style={{ borderBottom: "2px solid #000000" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "10.5px", textAlign: "center" }}>
+              <thead>
+                <tr style={{ borderBottom: "1.5px solid #000000", fontWeight: "800" }}>
+                  <th style={{ borderRight: "1.5px solid #000000", padding: "5px 6px", textAlign: "left", width: "40%" }}>Product Name &amp; SKU</th>
+                  <th style={{ borderRight: "1.5px solid #000000", padding: "5px 4px", width: "14%" }}>HSN</th>
+                  <th style={{ borderRight: "1.5px solid #000000", padding: "5px 4px", width: "8%" }}>Qty</th>
+                  <th style={{ borderRight: "1.5px solid #000000", padding: "5px 4px", width: "12%" }}>Unit Price</th>
+                  <th style={{ borderRight: "1.5px solid #000000", padding: "5px 4px", width: "12%" }}>Taxable Value</th>
+                  <th style={{ borderRight: "1.5px solid #000000", padding: "5px 4px", width: "7%" }}>IGST</th>
+                  <th style={{ padding: "5px 4px", width: "12%" }}>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(order.items || []).map((item, idx) => (
+                  <tr key={idx} style={{ borderBottom: "1px solid #ddd" }}>
+                    <td style={{ borderRight: "1.5px solid #000000", padding: "5px 6px", textAlign: "left" }}>
+                      {item.name} {item.color ? `(${item.color})` : ""}<br />
+                      <span style={{ fontSize: "9.5px", color: "#333" }}>SKU: {item.code || item.id || "RNALP28G19"}</span>
+                    </td>
+                    <td style={{ borderRight: "1.5px solid #000000", padding: "5px 4px" }}>84818090</td>
+                    <td style={{ borderRight: "1.5px solid #000000", padding: "5px 4px", fontWeight: "700" }}>{item.quantity}</td>
+                    <td style={{ borderRight: "1.5px solid #000000", padding: "5px 4px" }}>{item.price.toFixed(2)}</td>
+                    <td style={{ borderRight: "1.5px solid #000000", padding: "5px 4px" }}>{(item.price * item.quantity).toFixed(2)}</td>
+                    <td style={{ borderRight: "1.5px solid #000000", padding: "5px 4px" }}>0.00</td>
+                    <td style={{ padding: "5px 4px", fontWeight: "700" }}>{(item.price * item.quantity).toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* 5. LEGAL NOTICE */}
+          <div style={{ padding: "8px 12px", fontSize: "10px", lineHeight: "1.35", borderBottom: "2px solid #000000", color: "#111" }}>
+            All disputes are subject to Uttar Pradesh jurisdiction only. Goods once sold will only be taken back or exchanged as per the store&apos;s exchange/return policy.
+          </div>
+
+          {/* 6. BOTTOM FOOTER & POWERED BY */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px" }}>
+            <div style={{ fontSize: "9.5px", fontWeight: "800", color: "#000" }}>
+              THIS IS AN AUTO-GENERATED LABEL AND DOES NOT NEED SIGNATURE.
+            </div>
+            <div style={{ textAlign: "right", fontSize: "9px", color: "#444" }}>
+              Powered By:<br />
+              <strong style={{ fontSize: "11px", color: "#6b21a8" }}>Shiprocket</strong>
+            </div>
+          </div>
+
+          <div style={{ textAlign: "center", fontSize: "13px", fontWeight: "700", padding: "4px 0 6px" }}>
+            1/1
           </div>
         </div>
       )}

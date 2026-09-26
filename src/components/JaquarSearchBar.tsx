@@ -164,7 +164,7 @@ export default function JaquarSearchBar({ isDarkBg = false }: JaquarSearchBarPro
         // Combine and deduplicate
         const combined = Array.from(
           new Set([...presetMatches, ...apiMatches])
-        ).slice(0, 11);
+        ).slice(0, 8);
 
         setSuggestions(combined);
       } catch (err) {
@@ -201,7 +201,8 @@ export default function JaquarSearchBar({ isDarkBg = false }: JaquarSearchBarPro
       style={{
         position: "relative",
         width: "100%",
-        maxWidth: "240px",
+        maxWidth: "360px",
+        minWidth: "260px",
         fontFamily: "'Manrope', system-ui, sans-serif",
       }}
       className="jaquar-search-container"
@@ -221,19 +222,20 @@ export default function JaquarSearchBar({ isDarkBg = false }: JaquarSearchBarPro
           aria-label="Search products"
           style={{
             width: "100%",
-            height: "36px",
+            height: "42px",
             borderRadius: "9999px",
-            border: `1px solid ${inputBorder}`,
+            border: `1.5px solid ${inputBorder}`,
             background: inputBg,
             color: textColor,
-            paddingLeft: "16px",
-            paddingRight: "36px",
-            fontSize: "13px",
+            paddingLeft: "20px",
+            paddingRight: "44px",
+            fontSize: "14px",
             fontWeight: 400,
             outline: "none",
             boxSizing: "border-box",
             transition: "all 0.25s ease",
             backdropFilter: isDarkBg ? "blur(8px)" : "none",
+            boxShadow: isOpen ? "0 4px 16px rgba(0,0,0,0.08)" : "none",
           }}
         />
 
@@ -243,7 +245,7 @@ export default function JaquarSearchBar({ isDarkBg = false }: JaquarSearchBarPro
           aria-label="Submit search"
           style={{
             position: "absolute",
-            right: "10px",
+            right: "14px",
             top: "50%",
             transform: "translateY(-50%)",
             background: "transparent",
@@ -257,9 +259,9 @@ export default function JaquarSearchBar({ isDarkBg = false }: JaquarSearchBarPro
           }}
         >
           {loading ? (
-            <Loader2 size={16} className="animate-spin" />
+            <Loader2 size={19} className="animate-spin" />
           ) : (
-            <Search size={16} strokeWidth={1.75} />
+            <Search size={19} strokeWidth={1.8} />
           )}
         </button>
       </form>
@@ -272,15 +274,14 @@ export default function JaquarSearchBar({ isDarkBg = false }: JaquarSearchBarPro
             top: "calc(100% + 4px)",
             left: 0,
             width: "100%",
-            minWidth: "240px",
+            minWidth: "100%",
             backgroundColor: "#FFFFFF",
-            borderRadius: "0 0 6px 6px",
-            boxShadow: "0 10px 25px rgba(0, 0, 0, 0.12)",
+            borderRadius: "0 0 8px 8px",
+            boxShadow: "0 12px 30px rgba(0, 0, 0, 0.14)",
             border: "1px solid #e5e7eb",
             borderTop: "none",
             zIndex: 99999,
-            maxHeight: "360px",
-            overflowY: "auto",
+            overflow: "hidden",
             animation: "fadeInDropdown 0.15s ease",
           }}
         >
@@ -298,12 +299,12 @@ export default function JaquarSearchBar({ isDarkBg = false }: JaquarSearchBarPro
                   style={{
                     width: "100%",
                     textAlign: "left",
-                    padding: "9px 16px",
+                    padding: "11px 20px",
                     background: "transparent",
                     border: "none",
                     cursor: "pointer",
-                    fontSize: "13px",
-                    color: "#475569",
+                    fontSize: "14px",
+                    color: "#334155",
                     fontWeight: 400,
                     textTransform: "lowercase",
                     display: "block",
@@ -314,11 +315,13 @@ export default function JaquarSearchBar({ isDarkBg = false }: JaquarSearchBarPro
                     e.currentTarget.style.backgroundColor = "#f8fafc";
                     e.currentTarget.style.color = "#0f172a";
                     e.currentTarget.style.fontWeight = "500";
+                    e.currentTarget.style.paddingLeft = "24px";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = "transparent";
-                    e.currentTarget.style.color = "#475569";
+                    e.currentTarget.style.color = "#334155";
                     e.currentTarget.style.fontWeight = "400";
+                    e.currentTarget.style.paddingLeft = "20px";
                   }}
                 >
                   {item}
