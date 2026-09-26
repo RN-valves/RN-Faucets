@@ -201,11 +201,11 @@ export default function JaquarSearchBar({ isDarkBg = false }: JaquarSearchBarPro
       style={{
         position: "relative",
         width: "100%",
-        maxWidth: "360px",
-        minWidth: "260px",
+        maxWidth: "580px",
+        minWidth: "320px",
         fontFamily: "'Manrope', system-ui, sans-serif",
       }}
-      className="jaquar-search-container"
+      className="jaquar-search-container w-[320px] md:w-[380px] lg:w-[480px] xl:w-[580px]"
     >
       {/* Search Input Form (Pill Shape) */}
       <form onSubmit={handleSubmit} style={{ position: "relative", width: "100%", margin: 0 }}>

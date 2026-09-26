@@ -643,7 +643,7 @@ export default function Header({ data }: HeaderProps) {
           }}
         >
           {/* Jaquar Style Embedded Search Bar (Desktop / Tablet) */}
-          <div className="hidden md:block mr-3">
+          <div className="hidden md:block mr-4 flex-1 max-w-[580px]">
             <JaquarSearchBar isDarkBg={isDarkBg} />
           </div>
 

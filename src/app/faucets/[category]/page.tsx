@@ -2,11 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState, useEffect, use, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect, use, useMemo, useRef, Suspense } from "react";
 import Header from "@/components/Header";
 import FooterSection from "@/components/FooterSection";
-import { SlidersHorizontal, X } from "lucide-react";
+import { SlidersHorizontal, X, Search, RotateCcw, Loader2 } from "lucide-react";
 
 // Convert human size strings (e.g. 1/2", 3/4", 15mm, 25mm, 4", 100mm) into comparable numeric mm values
 function parseSizeValue(sizeStr: string): number {
@@ -19,7 +19,7 @@ function parseSizeValue(sizeStr: string): number {
     const whole = fracMatch[1] ? parseFloat(fracMatch[1]) : 0;
     const num = parseFloat(fracMatch[2]);
     const den = parseFloat(fracMatch[3]);
-    const inches = whole + (num / den);
+    const inches = whole + num / den;
     return inches * 25.4;
   }
 
@@ -61,6 +61,22 @@ const COLOR_ORDER: Record<string, number> = {
   ivory: 7,
 };
 
+const COLOR_SWATCHES: Record<string, string> = {
+  chrome: "linear-gradient(135deg, #e2e8f0 0%, #94a3b8 50%, #cbd5e1 100%)",
+  "chrome plated": "linear-gradient(135deg, #e2e8f0 0%, #94a3b8 50%, #cbd5e1 100%)",
+  "chrome finish": "linear-gradient(135deg, #e2e8f0 0%, #94a3b8 50%, #cbd5e1 100%)",
+  "chrome black": "linear-gradient(135deg, #1e293b 0%, #475569 50%, #0f172a 100%)",
+  "matte black": "#18181b",
+  "black matte": "#18181b",
+  black: "#09090b",
+  "rose gold": "linear-gradient(135deg, #fbcfe8 0%, #f472b6 50%, #fb7185 100%)",
+  gold: "linear-gradient(135deg, #fef08a 0%, #eab308 50%, #ca8a04 100%)",
+  white: "#ffffff",
+  "white gloss": "#ffffff",
+  "white matte": "#f8fafc",
+  ivory: "#fef3c7",
+};
+
 function getColorPriority(color: string): number {
   const c = (color || "").toLowerCase().trim();
   for (const [key, priority] of Object.entries(COLOR_ORDER)) {
@@ -73,61 +89,96 @@ function getColorPriority(color: string): number {
 function getBaseProductName(name: string): string {
   if (!name) return "";
   let base = name;
-  base = base.replace(/,\s*(Nickel Plated|Brass Finish|Chrome Finish|Chrome Plated|Chrome Black|Chrome|Matte Black|Black Matte|Black|Rose Gold|Gold|White Gloss|White Matte|White|Ivory).*$/i, "");
-  base = base.replace(/\s*-\s*(Nickel Plated|Brass Finish|Chrome Finish|Chrome Plated|Chrome Black|Chrome|Matte Black|Black Matte|Black|Rose Gold|Gold|White Gloss|White Matte|White|Ivory).*$/i, "");
-  base = base.replace(/\s*\((Nickel Plated|Brass Finish|Chrome Finish|Chrome Plated|Chrome Black|Chrome|Matte Black|Black Matte|Black|Rose Gold|Gold|White Gloss|White Matte|White|Ivory)\)/i, "");
+  base = base.replace(
+    /,\s*(Nickel Plated|Brass Finish|Chrome Finish|Chrome Plated|Chrome Black|Chrome|Matte Black|Black Matte|Black|Rose Gold|Gold|White Gloss|White Matte|White|Ivory).*$/i,
+    ""
+  );
+  base = base.replace(
+    /\s*-\s*(Nickel Plated|Brass Finish|Chrome Finish|Chrome Plated|Chrome Black|Chrome|Matte Black|Black Matte|Black|Rose Gold|Gold|White Gloss|White Matte|White|Ivory).*$/i,
+    ""
+  );
+  base = base.replace(
+    /\s*\((Nickel Plated|Brass Finish|Chrome Finish|Chrome Plated|Chrome Black|Chrome|Matte Black|Black Matte|Black|Rose Gold|Gold|White Gloss|White Matte|White|Ivory)\)/i,
+    ""
+  );
   return base.trim();
 }
 
-export default function CategoryPage({
-  params,
-}: {
-  params: Promise<{ category: string }>;
-}) {
-  const { category } = use(params);
+function CategoryPageContent({ category }: { category: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams.get("search") || searchParams.get("q") || "";
 
   const [categoryData, setCategoryData] = useState<any>(null);
   const [dbProducts, setDbProducts] = useState<any[]>([]);
   const [allCategories, setAllCategories] = useState<any[]>([]);
   const [relatedSubcategories, setRelatedSubcategories] = useState<any[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   // Filter & Sort states
   const [selectedNames, setSelectedNames] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
+  const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
+  const [minPriceInput, setMinPriceInput] = useState<string>("");
+  const [maxPriceInput, setMaxPriceInput] = useState<string>("");
   const [sortBy, setSortBy] = useState<string>("recommended");
 
+  // Infinite Scroll Pagination State (25 items per chunk)
+  const [visibleCount, setVisibleCount] = useState<number>(25);
+  const scrollTriggerRef = useRef<HTMLDivElement>(null);
+
+  // Reset pagination when category, search, or filters change
+  useEffect(() => {
+    setVisibleCount(25);
+  }, [category, searchQuery, selectedNames, selectedColors, selectedSizes, selectedCollections, minPriceInput, maxPriceInput, sortBy]);
+
+  // Load Data
   useEffect(() => {
     async function loadData() {
+      setIsLoadingProducts(true);
       try {
         let activeSub: any = null;
         let activeCat: any = null;
 
-        const subRes = await fetch(`/api/subcategories/${category}`);
-        const subData = subRes.ok ? await subRes.json() : null;
-        if (subData && !subData.error) {
-          activeSub = subData;
-          setCategoryData(subData);
-        } else {
-          const catRes = await fetch(`/api/categories/${category}`);
-          const catData = catRes.ok ? await catRes.json() : null;
-          if (catData && !catData.error) {
-            activeCat = catData;
-            setCategoryData(catData);
+        if (category && category !== "all") {
+          const subRes = await fetch(`/api/subcategories/${category}`);
+          const subData = subRes.ok ? await subRes.json() : null;
+          if (subData && !subData.error) {
+            activeSub = subData;
+            setCategoryData(subData);
+          } else {
+            const catRes = await fetch(`/api/categories/${category}`);
+            const catData = catRes.ok ? await catRes.json() : null;
+            if (catData && !catData.error) {
+              activeCat = catData;
+              setCategoryData(catData);
+            }
           }
         }
 
-        const prodRes = await fetch(`/api/products?subcategory=${category}`);
+        // Fetch products based on category / search query
+        let url = "/api/products";
+        if (searchQuery) {
+          url = `/api/products?q=${encodeURIComponent(searchQuery)}`;
+          if (category && category !== "all") {
+            url += `&category=${encodeURIComponent(category)}`;
+          }
+        } else if (category && category !== "all") {
+          url = `/api/products?subcategory=${encodeURIComponent(category)}`;
+        }
+
+        const prodRes = await fetch(url);
         if (prodRes.ok) {
           const prodData = await prodRes.json();
           const items = prodData.products || prodData;
-          if (Array.isArray(items) && items.length > 0) {
+          if (Array.isArray(items)) {
             setDbProducts(items);
           }
         }
 
+        // Fetch category & subcategory navigation lists
         const allCatRes = await fetch("/api/categories");
         if (allCatRes.ok) {
           const catList = await allCatRes.json();
@@ -140,12 +191,20 @@ export default function CategoryPage({
         if (allSubRes.ok) {
           const subList = await allSubRes.json();
           if (Array.isArray(subList)) {
-            const parentCatName = activeSub?.categoryName || activeCat?.name || "PTMT | High Grade Engineering Polymer Faucets";
+            const parentCatName =
+              activeSub?.categoryName ||
+              activeCat?.name ||
+              "PTMT | High Grade Engineering Polymer Faucets";
             const parentCatId = activeSub?.categoryId || activeCat?.id || activeCat?._id;
 
             const filtered = subList.filter((s) => {
               if (parentCatId && String(s.categoryId) === String(parentCatId)) return true;
-              if (s.categoryName && parentCatName && s.categoryName.toLowerCase().trim() === parentCatName.toLowerCase().trim()) return true;
+              if (
+                s.categoryName &&
+                parentCatName &&
+                s.categoryName.toLowerCase().trim() === parentCatName.toLowerCase().trim()
+              )
+                return true;
               return false;
             });
 
@@ -153,11 +212,13 @@ export default function CategoryPage({
           }
         }
       } catch (err) {
-        console.error("Error fetching category data:", err);
+        console.error("Error fetching category products:", err);
+      } finally {
+        setIsLoadingProducts(false);
       }
     }
     loadData();
-  }, [category]);
+  }, [category, searchQuery]);
 
   // Lock body scroll when mobile filter is open
   useEffect(() => {
@@ -173,6 +234,23 @@ export default function CategoryPage({
 
   const baseProducts = dbProducts;
 
+  // Compute Min & Max Price bounds across all loaded products
+  const { minAvailablePrice, maxAvailablePrice } = useMemo(() => {
+    let min = Infinity;
+    let max = 0;
+    baseProducts.forEach((p) => {
+      const pr = Number(p.inSelling ?? p.price ?? 0);
+      if (pr > 0) {
+        if (pr < min) min = pr;
+        if (pr > max) max = pr;
+      }
+    });
+    return {
+      minAvailablePrice: min === Infinity ? 0 : min,
+      maxAvailablePrice: max === 0 ? 10000 : max,
+    };
+  }, [baseProducts]);
+
   // ── Unique Product Names and Counts ──
   const productNameCounts = useMemo(() => {
     const map = new Map<string, number>();
@@ -187,7 +265,7 @@ export default function CategoryPage({
       .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }));
   }, [baseProducts]);
 
-  // ── Unique Available Colors and Counts (Flagship finishes first) ──
+  // ── Unique Available Colors and Counts ──
   const colorCounts = useMemo(() => {
     const map = new Map<string, number>();
     baseProducts.forEach((p) => {
@@ -206,7 +284,7 @@ export default function CategoryPage({
       });
   }, [baseProducts]);
 
-  // ── Unique Available Sizes and Counts (Smallest to Largest physical dimensions) ──
+  // ── Unique Available Sizes and Counts ──
   const sizeCounts = useMemo(() => {
     const map = new Map<string, number>();
     baseProducts.forEach((p) => {
@@ -223,6 +301,20 @@ export default function CategoryPage({
         if (sA !== sB) return sA - sB;
         return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
       });
+  }, [baseProducts]);
+
+  // ── Unique Available Collections / Series ──
+  const collectionCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    baseProducts.forEach((p) => {
+      const col = (p.collectionName || p.series || p.subcategoryName || "").trim();
+      if (col && col !== "-") {
+        map.set(col, (map.get(col) || 0) + 1);
+      }
+    });
+    return Array.from(map.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [baseProducts]);
 
   // ── Filter Toggle Handlers ──
@@ -244,19 +336,40 @@ export default function CategoryPage({
     );
   };
 
+  const toggleCollectionFilter = (col: string) => {
+    setSelectedCollections((prev) =>
+      prev.includes(col) ? prev.filter((c) => c !== col) : [...prev, col]
+    );
+  };
+
   const clearAllFilters = () => {
     setSelectedNames([]);
     setSelectedColors([]);
     setSelectedSizes([]);
+    setSelectedCollections([]);
+    setMinPriceInput("");
+    setMaxPriceInput("");
   };
 
   const activeFilterCount =
-    selectedNames.length + selectedColors.length + selectedSizes.length;
+    selectedNames.length +
+    selectedColors.length +
+    selectedSizes.length +
+    selectedCollections.length +
+    (minPriceInput ? 1 : 0) +
+    (maxPriceInput ? 1 : 0);
   const hasActiveFilters = activeFilterCount > 0;
 
   // ── Filtered & Intelligently Sorted Products ──
   const displayedProducts = useMemo(() => {
+    const minP = parseFloat(minPriceInput);
+    const maxP = parseFloat(maxPriceInput);
+
     const filtered = baseProducts.filter((p) => {
+      const price = Number(p.inSelling ?? p.price ?? 0);
+      if (!isNaN(minP) && price < minP) return false;
+      if (!isNaN(maxP) && price > maxP) return false;
+
       if (selectedNames.length > 0 && !selectedNames.includes((p.name || "").trim())) {
         return false;
       }
@@ -264,6 +377,12 @@ export default function CategoryPage({
         return false;
       }
       if (selectedSizes.length > 0 && !selectedSizes.includes((p.size || "").trim())) {
+        return false;
+      }
+      if (
+        selectedCollections.length > 0 &&
+        !selectedCollections.includes((p.collectionName || p.series || p.subcategoryName || "").trim())
+      ) {
         return false;
       }
       return true;
@@ -302,45 +421,68 @@ export default function CategoryPage({
         return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
       }
 
-      // Default: Recommended Intelligent Grouping (Grouped A-Z, Finish & Size)
-      // 1. Group by Base Product Family Name (e.g. "Angle Cock", "Bib Cock", etc.)
+      // Default: Recommended Intelligent Grouping
       const baseA = getBaseProductName(a.name || "");
       const baseB = getBaseProductName(b.name || "");
       const baseCompare = baseA.localeCompare(baseB, undefined, { numeric: true, sensitivity: "base" });
       if (baseCompare !== 0) return baseCompare;
 
-      // 2. Physical Size dimension ascending (15mm -> 20mm -> 25mm / 1/2" -> 3/4" -> 1")
       const sizeA = parseSizeValue(a.size || "");
       const sizeB = parseSizeValue(b.size || "");
       if (sizeA !== sizeB) return sizeA - sizeB;
 
-      // 3. Color finish hierarchy (Chrome standard first, then specialty finishes)
       const colorA = getColorPriority(a.colorName || a.name || "");
       const colorB = getColorPriority(b.colorName || b.name || "");
       if (colorA !== colorB) return colorA - colorB;
 
-      // 4. Exact full name if there are distinct sub-variants
       const fullNameCompare = (a.name || "").localeCompare(b.name || "", undefined, { numeric: true, sensitivity: "base" });
       if (fullNameCompare !== 0) return fullNameCompare;
 
-      // 5. Article Code / SKU Code numeric order
       const artA = String(a.article || a.code || "");
       const artB = String(b.article || b.code || "");
       const artCompare = artA.localeCompare(artB, undefined, { numeric: true, sensitivity: "base" });
       if (artCompare !== 0) return artCompare;
 
-      // 6. Price
       return Number(a.inSelling ?? a.price ?? 0) - Number(b.inSelling ?? b.price ?? 0);
     });
-  }, [baseProducts, selectedNames, selectedColors, selectedSizes, sortBy]);
+  }, [baseProducts, selectedNames, selectedColors, selectedSizes, selectedCollections, minPriceInput, maxPriceInput, sortBy]);
+
+  // Infinite Scroll Slice (25 items per chunk)
+  const visibleProducts = useMemo(() => {
+    return displayedProducts.slice(0, visibleCount);
+  }, [displayedProducts, visibleCount]);
+
+  const hasMoreProducts = visibleCount < displayedProducts.length;
+
+  // IntersectionObserver to automatically load next 25 products as user scrolls
+  useEffect(() => {
+    const trigger = scrollTriggerRef.current;
+    if (!trigger || !hasMoreProducts) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount((prev) => prev + 25);
+        }
+      },
+      { rootMargin: "350px" }
+    );
+
+    observer.observe(trigger);
+    return () => observer.disconnect();
+  }, [hasMoreProducts]);
 
   const formatCategoryTitle = (cat: string) => {
+    if (!cat || cat === "all") return "All Products";
     return cat.charAt(0).toUpperCase() + cat.slice(1).replace(/-/g, " ");
   };
 
   const DEFAULT_HERO_IMAGE = "/api/media/website/catalogue/products/default/image.webp";
 
-  const displayTitle = categoryData?.name || formatCategoryTitle(category);
+  const displayTitle = searchQuery
+    ? `Search: "${searchQuery}"`
+    : categoryData?.name || formatCategoryTitle(category);
+
   const heroImage = categoryData?.banner || categoryData?.image || DEFAULT_HERO_IMAGE;
   const parentCategoryHeading =
     categoryData?.categoryName ||
@@ -352,14 +494,15 @@ export default function CategoryPage({
     return allCategories.find(
       (c) =>
         (categoryData.categoryId && String(c.id) === String(categoryData.categoryId)) ||
-        (categoryData.categoryName && c.name?.toLowerCase().trim() === categoryData.categoryName?.toLowerCase().trim())
+        (categoryData.categoryName &&
+          c.name?.toLowerCase().trim() === categoryData.categoryName?.toLowerCase().trim())
     );
   }, [categoryData, allCategories]);
 
   // Reusable Filter Content Element (used in desktop sidebar + mobile drawer)
   const renderFilterContent = () => (
     <>
-      {/* ── 1: PRODUCTS ── */}
+      {/* ── 1: PRICE RANGE FILTER ── */}
       <div style={{ marginBottom: "24px" }}>
         <div
           style={{
@@ -369,10 +512,13 @@ export default function CategoryPage({
             marginBottom: "12px",
           }}
         >
-          <h3 className="filter-section-heading">PRODUCTS</h3>
-          {hasActiveFilters && (
+          <h3 className="filter-section-heading">PRICE ( ₹ )</h3>
+          {(minPriceInput || maxPriceInput) && (
             <button
-              onClick={clearAllFilters}
+              onClick={() => {
+                setMinPriceInput("");
+                setMaxPriceInput("");
+              }}
               style={{
                 background: "none",
                 border: "none",
@@ -384,63 +530,184 @@ export default function CategoryPage({
                 textDecoration: "underline",
               }}
             >
-              Clear all
+              Reset
             </button>
           )}
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "8px",
-          }}
-        >
-          {productNameCounts.map(({ name, count }) => {
-            const isChecked = selectedNames.includes(name);
+        {/* Min & Max Price Input Fields */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+          <div style={{ flex: 1, position: "relative" }}>
+            <span style={{ position: "absolute", left: "8px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#64748b", fontWeight: 700 }}>₹</span>
+            <input
+              type="number"
+              placeholder={String(minAvailablePrice)}
+              value={minPriceInput}
+              onChange={(e) => setMinPriceInput(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "6px 8px 6px 20px",
+                borderRadius: "6px",
+                border: "1px solid #cbd5e1",
+                fontSize: "12.5px",
+                fontFamily: "'Manrope', system-ui, sans-serif",
+                color: "#0f172a",
+                boxSizing: "border-box",
+                outline: "none",
+              }}
+            />
+          </div>
+          <span style={{ color: "#94a3b8", fontWeight: 600, fontSize: "12px" }}>to</span>
+          <div style={{ flex: 1, position: "relative" }}>
+            <span style={{ position: "absolute", left: "8px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#64748b", fontWeight: 700 }}>₹</span>
+            <input
+              type="number"
+              placeholder={String(maxAvailablePrice)}
+              value={maxPriceInput}
+              onChange={(e) => setMaxPriceInput(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "6px 8px 6px 20px",
+                borderRadius: "6px",
+                border: "1px solid #cbd5e1",
+                fontSize: "12.5px",
+                fontFamily: "'Manrope', system-ui, sans-serif",
+                color: "#0f172a",
+                boxSizing: "border-box",
+                outline: "none",
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Quick Price Range Chips */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+          {[
+            { label: "Under ₹1,000", min: "", max: "1000" },
+            { label: "₹1,000 – ₹3,000", min: "1000", max: "3000" },
+            { label: "₹3,000 – ₹7,000", min: "3000", max: "7000" },
+            { label: "₹7,000+", min: "7000", max: "" },
+          ].map((range, idx) => {
+            const isRangeActive = minPriceInput === range.min && maxPriceInput === range.max;
             return (
-              <label
-                key={name}
+              <button
+                key={idx}
+                type="button"
+                onClick={() => {
+                  if (isRangeActive) {
+                    setMinPriceInput("");
+                    setMaxPriceInput("");
+                  } else {
+                    setMinPriceInput(range.min);
+                    setMaxPriceInput(range.max);
+                  }
+                }}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "8px",
-                  fontSize: "13px",
-                  fontFamily: "'Manrope', system-ui, sans-serif",
-                  color: isChecked ? "#0f172a" : "#334155",
-                  fontWeight: isChecked ? 600 : 400,
+                  padding: "4px 8px",
+                  borderRadius: "999px",
+                  border: isRangeActive ? "1px solid #0284c7" : "1px solid #e2e8f0",
+                  backgroundColor: isRangeActive ? "#e0f2fe" : "#f8fafc",
+                  color: isRangeActive ? "#0369a1" : "#475569",
+                  fontSize: "11px",
+                  fontWeight: isRangeActive ? 700 : 500,
                   cursor: "pointer",
-                  lineHeight: 1.35,
-                  userSelect: "none",
-                  padding: "3px 0",
+                  transition: "all 0.15s ease",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => toggleNameFilter(name)}
-                    style={{
-                      width: "16px",
-                      height: "16px",
-                      cursor: "pointer",
-                      accentColor: "#0284c7",
-                      flexShrink: 0,
-                    }}
-                  />
-                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {name}
-                  </span>
-                </div>
-                <span className="filter-count-badge">( {count} )</span>
-              </label>
+                {range.label}
+              </button>
             );
           })}
         </div>
       </div>
 
-      {/* ── 2: AVAILABLE COLORS ── */}
+      {/* ── 2: PRODUCTS (Family Types) ── */}
+      {productNameCounts.length > 0 && (
+        <div style={{ marginBottom: "24px", paddingTop: "16px", borderTop: "1px solid #f1f5f9" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "12px",
+            }}
+          >
+            <h3 className="filter-section-heading">PRODUCTS</h3>
+            {hasActiveFilters && (
+              <button
+                onClick={clearAllFilters}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#0284c7",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  padding: 0,
+                  textDecoration: "underline",
+                }}
+              >
+                Clear all
+              </button>
+            )}
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px",
+              maxHeight: "220px",
+              overflowY: "auto",
+              paddingRight: "6px",
+            }}
+          >
+            {productNameCounts.map(({ name, count }) => {
+              const isChecked = selectedNames.includes(name);
+              return (
+                <label
+                  key={name}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "8px",
+                    fontSize: "13px",
+                    fontFamily: "'Manrope', system-ui, sans-serif",
+                    color: isChecked ? "#0f172a" : "#334155",
+                    fontWeight: isChecked ? 600 : 400,
+                    cursor: "pointer",
+                    lineHeight: 1.35,
+                    userSelect: "none",
+                    padding: "3px 0",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => toggleNameFilter(name)}
+                      style={{
+                        width: "16px",
+                        height: "16px",
+                        cursor: "pointer",
+                        accentColor: "#0284c7",
+                        flexShrink: 0,
+                      }}
+                    />
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {name}
+                    </span>
+                  </div>
+                  <span className="filter-count-badge">( {count} )</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── 3: AVAILABLE COLORS / FINISHES ── */}
       {colorCounts.length > 0 && (
         <div style={{ marginBottom: "24px", paddingTop: "16px", borderTop: "1px solid #f1f5f9" }}>
           <h3 className="filter-section-heading">AVAILABLE COLORS</h3>
@@ -450,10 +717,15 @@ export default function CategoryPage({
               display: "flex",
               flexDirection: "column",
               gap: "8px",
+              maxHeight: "200px",
+              overflowY: "auto",
+              paddingRight: "6px",
             }}
           >
             {colorCounts.map(({ name, count }) => {
               const isChecked = selectedColors.includes(name);
+              const swatch = COLOR_SWATCHES[name.toLowerCase()] || "#94a3b8";
+
               return (
                 <label
                   key={name}
@@ -485,6 +757,17 @@ export default function CategoryPage({
                         flexShrink: 0,
                       }}
                     />
+                    <span
+                      style={{
+                        width: "12px",
+                        height: "12px",
+                        borderRadius: "50%",
+                        background: swatch,
+                        border: "1px solid rgba(0,0,0,0.15)",
+                        display: "inline-block",
+                        flexShrink: 0,
+                      }}
+                    />
                     <span>{name}</span>
                   </div>
                   <span className="filter-count-badge">( {count} )</span>
@@ -495,7 +778,7 @@ export default function CategoryPage({
         </div>
       )}
 
-      {/* ── 3: AVAILABLE SIZES ── */}
+      {/* ── 4: AVAILABLE SIZES ── */}
       {sizeCounts.length > 0 && (
         <div style={{ marginBottom: "24px", paddingTop: "16px", borderTop: "1px solid #f1f5f9" }}>
           <h3 className="filter-section-heading">AVAILABLE SIZES</h3>
@@ -505,6 +788,9 @@ export default function CategoryPage({
               display: "flex",
               flexDirection: "column",
               gap: "8px",
+              maxHeight: "180px",
+              overflowY: "auto",
+              paddingRight: "6px",
             }}
           >
             {sizeCounts.map(({ name, count }) => {
@@ -550,7 +836,67 @@ export default function CategoryPage({
         </div>
       )}
 
-      {/* ── 4: SUBCATEGORIES ── */}
+      {/* ── 5: COLLECTIONS / SERIES ── */}
+      {collectionCounts.length > 1 && (
+        <div style={{ marginBottom: "24px", paddingTop: "16px", borderTop: "1px solid #f1f5f9" }}>
+          <h3 className="filter-section-heading">COLLECTIONS</h3>
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px",
+              maxHeight: "180px",
+              overflowY: "auto",
+              paddingRight: "6px",
+            }}
+          >
+            {collectionCounts.map(({ name, count }) => {
+              const isChecked = selectedCollections.includes(name);
+              return (
+                <label
+                  key={name}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "8px",
+                    fontSize: "13px",
+                    fontFamily: "'Manrope', system-ui, sans-serif",
+                    color: isChecked ? "#0f172a" : "#334155",
+                    fontWeight: isChecked ? 600 : 400,
+                    cursor: "pointer",
+                    lineHeight: 1.35,
+                    userSelect: "none",
+                    padding: "3px 0",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => toggleCollectionFilter(name)}
+                      style={{
+                        width: "16px",
+                        height: "16px",
+                        cursor: "pointer",
+                        accentColor: "#0284c7",
+                        flexShrink: 0,
+                      }}
+                    />
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {name}
+                    </span>
+                  </div>
+                  <span className="filter-count-badge">( {count} )</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── 6: SUBCATEGORIES ── */}
       {relatedSubcategories.length > 0 && (
         <div style={{ marginBottom: "24px", paddingTop: "16px", borderTop: "1px solid #f1f5f9" }}>
           <h3 className="filter-section-heading">{parentCategoryHeading}</h3>
@@ -615,7 +961,7 @@ export default function CategoryPage({
         </div>
       )}
 
-      {/* ── 5: ALL CATEGORIES ── */}
+      {/* ── 7: ALL CATEGORIES ── */}
       {allCategories.length > 0 && (
         <div style={{ paddingTop: "16px", borderTop: "1px solid #f1f5f9" }}>
           <h3 className="filter-section-heading">ALL CATEGORIES</h3>
@@ -646,180 +992,176 @@ export default function CategoryPage({
         .category-hero-container {
           position: relative;
           width: 100%;
-          height: 100vh;
+          height: ${searchQuery ? "38vh" : "100vh"};
+          min-height: ${searchQuery ? "260px" : "480px"};
           overflow: hidden;
-          background-color: #000000;
-        }
-        @media (max-width: 768px) {
-          .category-hero-container {
-            height: 48vh;
-            min-height: 280px;
-          }
         }
 
         .category-content-container {
-          padding: 36px 40px 80px;
-          max-width: 1640px;
+          max-width: 1540px;
           margin: 0 auto;
-          background-color: #ffffff;
+          padding: 40px 32px 100px;
         }
+
         @media (max-width: 768px) {
           .category-content-container {
-            padding: 20px 16px 60px;
+            padding: 24px 16px 80px;
           }
         }
 
         .desktop-filter-sidebar {
           width: 280px;
           flex-shrink: 0;
-          border-right: 1px solid #f0f0f0;
-          padding-right: 22px;
-          padding-bottom: 40px;
           display: block;
+          position: sticky;
+          top: 80px;
+          max-height: calc(100vh - 100px);
+          overflow-y: auto;
+          padding-right: 14px;
+          scrollbar-width: thin;
         }
-        @media (max-width: 1024px) {
-          .desktop-filter-sidebar {
-            display: none;
-          }
+
+        .desktop-filter-sidebar::-webkit-scrollbar {
+          width: 5px;
+        }
+        .desktop-filter-sidebar::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 999px;
         }
 
         .mobile-filter-trigger-btn {
           display: none;
         }
+
         @media (max-width: 1024px) {
+          .desktop-filter-sidebar {
+            display: none !important;
+          }
           .mobile-filter-trigger-btn {
-            display: inline-flex;
+            display: inline-flex !important;
             align-items: center;
             gap: 8px;
-            background-color: #ffffff;
-            border: 1px solid #d1d5db;
+            padding: 8px 16px;
+            background-color: #0f172a;
+            color: #ffffff;
             border-radius: 8px;
-            padding: 7px 14px;
             font-family: 'Manrope', system-ui, sans-serif;
             font-size: 13px;
-            font-weight: 600;
-            color: #111111;
+            font-weight: 700;
+            border: none;
             cursor: pointer;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.12);
           }
         }
 
         .products-grid-responsive {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 24px;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 28px 24px;
         }
+
+        @media (min-width: 1600px) {
+          .products-grid-responsive {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 32px 28px;
+          }
+        }
+
         @media (max-width: 1200px) {
           .products-grid-responsive {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 18px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 20px 16px;
           }
         }
+
         @media (max-width: 640px) {
           .products-grid-responsive {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-          }
-        }
-        @media (max-width: 360px) {
-          .products-grid-responsive {
-            grid-template-columns: repeat(1, 1fr);
-            gap: 16px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px 10px;
           }
         }
 
         .product-card-responsive {
-          text-decoration: none;
-          padding: 24px 20px 20px;
           display: flex;
           flex-direction: column;
-          min-height: 560px;
-          box-sizing: border-box;
-          cursor: pointer;
+          background: #ffffff;
+          border: 1px solid #f1f5f9;
+          border-radius: 12px;
+          padding: 14px;
+          transition: all 0.25s ease;
           position: relative;
-          transition: transform 0.35s ease, box-shadow 0.35s ease;
-          user-select: text;
-          -webkit-user-select: text;
+          cursor: pointer;
         }
-        .product-card-responsive ::selection {
-          background-color: #bae6fd;
-          color: #0f172a;
-        }
-        @media (max-width: 640px) {
-          .product-card-responsive {
-            padding: 14px 10px 14px;
-            min-height: 380px;
-          }
+
+        .product-card-responsive:hover {
+          border-color: #cbd5e1;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+          transform: translateY(-2px);
         }
 
         .product-card-img-panel {
-          flex: 1 1 auto;
+          position: relative;
           width: 100%;
-          min-height: 260px;
+          height: 230px;
           display: flex;
           align-items: center;
           justify-content: center;
+          background-color: #f8fafc;
+          border-radius: 8px;
           overflow: hidden;
-          padding: 4px 4px 10px;
-          box-sizing: border-box;
+          padding: 12px;
         }
+
         @media (max-width: 640px) {
           .product-card-img-panel {
-            min-height: 160px;
-            height: 180px;
-            padding: 2px 2px 6px;
+            height: 165px;
+            padding: 8px;
           }
         }
 
         .product-card-title {
           font-family: 'Manrope', system-ui, sans-serif;
-          font-size: 15px;
-          font-weight: 500;
-          line-height: 1.4;
-          color: #1a1a1a;
-          margin: 0 0 8px 0;
+          font-size: 14px;
+          font-weight: 600;
+          line-height: 1.35;
+          color: #0f172a;
+          margin: 0 0 4px 0;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
-          min-height: 42px;
-          user-select: text;
-          -webkit-user-select: text;
-          cursor: text;
+          min-height: 38px;
         }
+
         @media (max-width: 640px) {
           .product-card-title {
             font-size: 12.5px;
-            line-height: 1.3;
             min-height: 34px;
-            margin-bottom: 6px;
           }
         }
 
         .product-card-price {
           font-family: 'Manrope', system-ui, sans-serif;
-          font-size: 21px;
-          font-weight: 700;
-          line-height: 1.1;
-          color: #1a1a1a;
-          user-select: text;
-          -webkit-user-select: text;
-          cursor: text;
+          font-size: 17px;
+          font-weight: 800;
+          color: #0f172a;
+          letter-spacing: -0.01em;
         }
+
         @media (max-width: 640px) {
           .product-card-price {
-            font-size: 16px;
+            font-size: 14px;
           }
         }
 
         .filter-section-heading {
           font-family: 'Manrope', system-ui, sans-serif;
-          font-size: 13px;
+          font-size: 12.5px;
           font-weight: 800;
-          letter-spacing: 0.04em;
+          letter-spacing: 0.05em;
           color: #0f172a;
           text-transform: uppercase;
-          margin: 0 0 12px 0;
+          margin: 0 0 10px 0;
           line-height: 1.35;
         }
 
@@ -829,19 +1171,19 @@ export default function CategoryPage({
           padding: 1px 6px;
           font-size: 11px;
           font-weight: 700;
-          color: #0f172a;
+          color: #64748b;
           background-color: #ffffff;
           flex-shrink: 0;
         }
 
         .category-pill {
           display: inline-block;
-          border: 1px solid #0f172a;
+          border: 1px solid #e2e8f0;
           border-radius: 999px;
           padding: 5px 12px;
           font-size: 11.5px;
           font-weight: 500;
-          color: #0f172a;
+          color: #334155;
           text-decoration: none;
           background-color: #ffffff;
           transition: all 0.15s ease;
@@ -850,10 +1192,11 @@ export default function CategoryPage({
         .category-pill:hover {
           background-color: #0f172a;
           color: #ffffff;
+          border-color: #0f172a;
         }
       `}</style>
 
-      {/* ── 1. Fullscreen Hero Section ── */}
+      {/* ── 1. Fullscreen / Hero Section ── */}
       <section data-header-theme="dark" className="category-hero-container">
         <Image
           src={heroImage}
@@ -873,7 +1216,7 @@ export default function CategoryPage({
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.15) 50%, transparent 100%)",
+              "linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.25) 50%, transparent 100%)",
             pointerEvents: "none",
           }}
         />
@@ -882,7 +1225,7 @@ export default function CategoryPage({
         <div
           style={{
             position: "absolute",
-            bottom: "8vh",
+            bottom: searchQuery ? "4vh" : "8vh",
             left: 0,
             right: 0,
             textAlign: "center",
@@ -890,11 +1233,16 @@ export default function CategoryPage({
             padding: "0 16px",
           }}
         >
+          {searchQuery && (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(255,255,255,0.15)", backdropFilter: "blur(6px)", padding: "4px 14px", borderRadius: "999px", color: "#ffffff", fontSize: "12px", fontWeight: 700, marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              <Search size={13} /> Product Search Results
+            </div>
+          )}
           <h1
             style={{
               fontFamily: "'Manrope', system-ui, sans-serif",
-              fontSize: "clamp(28px, 4.5vw, 56px)",
-              fontWeight: 500,
+              fontSize: searchQuery ? "clamp(24px, 3.5vw, 42px)" : "clamp(28px, 4.5vw, 56px)",
+              fontWeight: 600,
               color: "#ffffff",
               letterSpacing: "-0.02em",
               margin: 0,
@@ -902,6 +1250,11 @@ export default function CategoryPage({
           >
             {displayTitle}
           </h1>
+          {searchQuery && (
+            <p style={{ color: "rgba(255,255,255,0.85)", fontSize: "14px", marginTop: "6px", fontFamily: "'Manrope', system-ui, sans-serif" }}>
+              Found {displayedProducts.length} matching products
+            </p>
+          )}
         </div>
       </section>
 
@@ -914,7 +1267,7 @@ export default function CategoryPage({
             fontFamily: "'Manrope', system-ui, sans-serif",
             fontSize: "13px",
             color: "#64748B",
-            marginBottom: "24px",
+            marginBottom: "20px",
             display: "flex",
             alignItems: "center",
             gap: "8px",
@@ -923,35 +1276,35 @@ export default function CategoryPage({
             paddingBottom: "4px",
           }}
         >
-          <Link
-            href="/"
-            style={{ color: "#64748B", textDecoration: "none" }}
-          >
+          <Link href="/" style={{ color: "#64748B", textDecoration: "none" }}>
             Home
           </Link>
           <span style={{ color: "#CBD5E1" }}>/</span>
-          {parentCategory ? (
+          {searchQuery ? (
             <>
-              <Link
-                href={`/${parentCategory.slug}`}
-                style={{ color: "#64748B", textDecoration: "none" }}
-              >
+              <Link href="/faucets/all" style={{ color: "#64748B", textDecoration: "none" }}>
+                Products
+              </Link>
+              <span style={{ color: "#CBD5E1" }}>/</span>
+              <span style={{ color: "#0F172A", fontWeight: 600 }}>Search</span>
+            </>
+          ) : parentCategory ? (
+            <>
+              <Link href={`/${parentCategory.slug}`} style={{ color: "#64748B", textDecoration: "none" }}>
                 {parentCategory.name}
               </Link>
               <span style={{ color: "#CBD5E1" }}>/</span>
+              <span style={{ color: "#0F172A", fontWeight: 600 }}>{displayTitle}</span>
             </>
           ) : (
             <>
-              <Link
-                href="/faucets"
-                style={{ color: "#64748B", textDecoration: "none" }}
-              >
+              <Link href="/faucets/all" style={{ color: "#64748B", textDecoration: "none" }}>
                 Faucets
               </Link>
               <span style={{ color: "#CBD5E1" }}>/</span>
+              <span style={{ color: "#0F172A", fontWeight: 600 }}>{displayTitle}</span>
             </>
           )}
-          <span style={{ color: "#0F172A", fontWeight: 600 }}>{displayTitle}</span>
         </nav>
 
         {/* Tab & Controls Bar */}
@@ -962,7 +1315,7 @@ export default function CategoryPage({
             alignItems: "center",
             borderBottom: "1px solid #e5e7eb",
             paddingBottom: "12px",
-            marginBottom: "28px",
+            marginBottom: "20px",
             gap: "12px",
           }}
         >
@@ -973,7 +1326,7 @@ export default function CategoryPage({
                 marginBottom: "-13px",
                 fontFamily: "'Manrope', system-ui, sans-serif",
                 fontSize: "16px",
-                fontWeight: 600,
+                fontWeight: 700,
                 color: "#111111",
                 borderBottom: "2px solid #111111",
                 display: "inline-block",
@@ -983,12 +1336,13 @@ export default function CategoryPage({
             </span>
             <span
               style={{
-                fontSize: "12.5px",
+                fontSize: "13px",
                 color: "#6b7280",
                 fontFamily: "'Manrope', system-ui, sans-serif",
+                fontWeight: 600,
               }}
             >
-              ({displayedProducts.length})
+              Showing {Math.min(visibleCount, displayedProducts.length)} of {displayedProducts.length}
             </span>
           </div>
 
@@ -1034,7 +1388,7 @@ export default function CategoryPage({
               </select>
             </div>
 
-            {/* Mobile Filter Button (visible on <= 1024px) */}
+            {/* Mobile Filter Trigger */}
             <button
               onClick={() => setIsMobileFilterOpen(true)}
               className="mobile-filter-trigger-btn"
@@ -1059,6 +1413,72 @@ export default function CategoryPage({
           </div>
         </div>
 
+        {/* Active Filter Badges / Chips */}
+        {hasActiveFilters && (
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "20px" }}>
+            <span style={{ fontSize: "12px", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>Active Filters:</span>
+            {searchQuery && (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#f1f5f9", padding: "4px 10px", borderRadius: "999px", fontSize: "12px", fontWeight: 600, color: "#0f172a" }}>
+                Search: &quot;{searchQuery}&quot;
+                <button type="button" onClick={() => router.push(`/faucets/${category}`)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "#64748b" }}><X size={13} /></button>
+              </span>
+            )}
+            {minPriceInput && (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#e0f2fe", padding: "4px 10px", borderRadius: "999px", fontSize: "12px", fontWeight: 600, color: "#0369a1" }}>
+                Min: ₹{minPriceInput}
+                <button type="button" onClick={() => setMinPriceInput("")} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "#0369a1" }}><X size={13} /></button>
+              </span>
+            )}
+            {maxPriceInput && (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#e0f2fe", padding: "4px 10px", borderRadius: "999px", fontSize: "12px", fontWeight: 600, color: "#0369a1" }}>
+                Max: ₹{maxPriceInput}
+                <button type="button" onClick={() => setMaxPriceInput("")} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "#0369a1" }}><X size={13} /></button>
+              </span>
+            )}
+            {selectedNames.map((n) => (
+              <span key={n} style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#f1f5f9", padding: "4px 10px", borderRadius: "999px", fontSize: "12px", fontWeight: 600, color: "#0f172a" }}>
+                {n}
+                <button type="button" onClick={() => toggleNameFilter(n)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "#64748b" }}><X size={13} /></button>
+              </span>
+            ))}
+            {selectedColors.map((c) => (
+              <span key={c} style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#f1f5f9", padding: "4px 10px", borderRadius: "999px", fontSize: "12px", fontWeight: 600, color: "#0f172a" }}>
+                Color: {c}
+                <button type="button" onClick={() => toggleColorFilter(c)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "#64748b" }}><X size={13} /></button>
+              </span>
+            ))}
+            {selectedSizes.map((s) => (
+              <span key={s} style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#f1f5f9", padding: "4px 10px", borderRadius: "999px", fontSize: "12px", fontWeight: 600, color: "#0f172a" }}>
+                Size: {s}
+                <button type="button" onClick={() => toggleSizeFilter(s)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "#64748b" }}><X size={13} /></button>
+              </span>
+            ))}
+            {selectedCollections.map((col) => (
+              <span key={col} style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#f1f5f9", padding: "4px 10px", borderRadius: "999px", fontSize: "12px", fontWeight: 600, color: "#0f172a" }}>
+                Collection: {col}
+                <button type="button" onClick={() => toggleCollectionFilter(col)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "#64748b" }}><X size={13} /></button>
+              </span>
+            ))}
+            <button
+              onClick={clearAllFilters}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#ef4444",
+                fontSize: "12px",
+                fontWeight: 700,
+                cursor: "pointer",
+                padding: "2px 6px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+            >
+              <RotateCcw size={12} /> Clear all
+            </button>
+          </div>
+        )}
+
         {/* ── 3. Main Area: Sidebar (Desktop) + Product Grid ── */}
         <div style={{ display: "flex", gap: "32px", alignItems: "flex-start" }}>
           {/* Desktop Filter Sidebar */}
@@ -1068,250 +1488,325 @@ export default function CategoryPage({
 
           {/* Product Grid Area */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            {displayedProducts.length === 0 ? (
+            {isLoadingProducts ? (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "24px" }}>
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} style={{ height: "320px", borderRadius: "12px", background: "#f1f5f9", animation: "pulse 1.5s infinite" }} />
+                ))}
+              </div>
+            ) : displayedProducts.length === 0 ? (
               <div
                 style={{
-                  padding: "48px 20px",
+                  padding: "64px 20px",
                   textAlign: "center",
-                  backgroundColor: "#f9fafb",
-                  borderRadius: "12px",
-                  border: "1px dashed #d1d5db",
+                  backgroundColor: "#f8fafc",
+                  borderRadius: "16px",
+                  border: "1px dashed #cbd5e1",
                 }}
               >
-                <p
+                <div style={{ width: "52px", height: "52px", borderRadius: "50%", backgroundColor: "#e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", color: "#64748b" }}>
+                  <Search size={26} />
+                </div>
+                <h3
                   style={{
                     fontFamily: "'Manrope', system-ui, sans-serif",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    color: "#374151",
-                    margin: "0 0 8px 0",
+                    fontSize: "18px",
+                    fontWeight: 800,
+                    color: "#0f172a",
+                    margin: "0 0 6px 0",
                   }}
                 >
-                  No products found for the selected filters
+                  {searchQuery ? `No products matching "${searchQuery}"` : "No products found for the selected filters"}
+                </h3>
+                <p style={{ fontSize: "14px", color: "#64748b", maxWidth: "420px", margin: "0 auto 18px", lineHeight: 1.5 }}>
+                  Try searching by SKU code, article number, or clear active price &amp; color filters.
                 </p>
-                <button
-                  onClick={clearAllFilters}
-                  style={{
-                    marginTop: "8px",
-                    padding: "8px 18px",
-                    backgroundColor: "#111111",
-                    color: "#ffffff",
-                    border: "none",
-                    borderRadius: "6px",
-                    fontFamily: "'Manrope', system-ui, sans-serif",
-                    fontSize: "13px",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                >
-                  Reset Filters
-                </button>
-              </div>
-            ) : (
-              <div className="products-grid-responsive">
-                {displayedProducts.map((product) => {
-                  const prodCode = product.code || product.skuCode || product.id;
-                  const articleNo = product.article || product.code || product.skuCode || "";
-                  const sizeVal = product.size || "";
-                  const priceVal = Number(product.inSelling ?? product.price ?? 0);
-                  const productUrl = `/faucets/${category}/${encodeURIComponent(prodCode)}`;
-
-                  return (
-                    <article
-                      key={product.id || prodCode}
-                      className="product-card product-card-responsive group"
-                      onClick={(e) => {
-                        // If user selected text with mouse, do not navigate!
-                        const selection = typeof window !== "undefined" ? window.getSelection() : null;
-                        if (selection && selection.toString().trim().length > 0) {
-                          return;
-                        }
-                        const target = e.target as HTMLElement;
-                        if (target.closest("button") || target.closest("a")) {
-                          return;
-                        }
-                        router.push(productUrl);
+                <div style={{ display: "flex", justifyContent: "center", gap: "10px" }}>
+                  {hasActiveFilters && (
+                    <button
+                      onClick={clearAllFilters}
+                      style={{
+                        padding: "9px 20px",
+                        backgroundColor: "#0f172a",
+                        color: "#ffffff",
+                        border: "none",
+                        borderRadius: "8px",
+                        fontFamily: "'Manrope', system-ui, sans-serif",
+                        fontSize: "13.5px",
+                        fontWeight: 700,
+                        cursor: "pointer",
                       }}
                     >
-                      {/* Product Image Panel */}
-                      <Link
-                        href={productUrl}
-                        className="product-card__image-panel product-card-img-panel"
-                        style={{ textDecoration: "none", display: "flex", width: "100%" }}
+                      Reset Filters
+                    </button>
+                  )}
+                  {searchQuery && (
+                    <button
+                      onClick={() => router.push(`/faucets/${category}`)}
+                      style={{
+                        padding: "9px 20px",
+                        backgroundColor: "#ffffff",
+                        color: "#0f172a",
+                        border: "1px solid #cbd5e1",
+                        borderRadius: "8px",
+                        fontFamily: "'Manrope', system-ui, sans-serif",
+                        fontSize: "13.5px",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Clear Search
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="products-grid-responsive">
+                  {visibleProducts.map((product) => {
+                    const prodCode = product.code || product.skuCode || product.id;
+                    const articleNo = product.article || product.code || product.skuCode || "";
+                    const sizeVal = product.size || "";
+                    const priceVal = Number(product.inSelling ?? product.price ?? 0);
+                    const catSegment = (product.subcategoryId || product.category || category || "all")
+                      .toString()
+                      .toLowerCase()
+                      .replace(/\s+/g, "-");
+                    const productUrl = `/faucets/${catSegment}/${encodeURIComponent(prodCode)}`;
+
+                    return (
+                      <article
+                        key={product.id || prodCode}
+                        className="product-card product-card-responsive group"
                         onClick={(e) => {
                           const selection = typeof window !== "undefined" ? window.getSelection() : null;
                           if (selection && selection.toString().trim().length > 0) {
-                            e.preventDefault();
+                            return;
                           }
+                          const target = e.target as HTMLElement;
+                          if (target.closest("button") || target.closest("a")) {
+                            return;
+                          }
+                          router.push(productUrl);
                         }}
                       >
-                        <img
-                          src={product.image || "/api/media/website/catalogue/products/default/image.webp"}
-                          alt={product.name}
-                          draggable={false}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            maxWidth: "96%",
-                            maxHeight: "100%",
-                            objectFit: "contain",
-                            transform: "scale(1.12)",
-                            transition: "transform 0.45s ease",
-                            userSelect: "none",
-                          }}
-                          className="group-hover:scale-[1.18]"
-                        />
-                      </Link>
-
-                      {/* Editorial Title + Specs + Price */}
-                      <div
-                        style={{
-                          flexShrink: 0,
-                          marginTop: "8px",
-                          padding: "0 2px",
-                          userSelect: "text",
-                          WebkitUserSelect: "text",
-                        }}
-                      >
-                        <h3
-                          className="product-card-title"
-                          style={{
-                            userSelect: "text",
-                            WebkitUserSelect: "text",
-                            cursor: "text",
+                        {/* Product Image Panel */}
+                        <Link
+                          href={productUrl}
+                          className="product-card__image-panel product-card-img-panel"
+                          style={{ textDecoration: "none", display: "flex", width: "100%" }}
+                          onClick={(e) => {
+                            const selection = typeof window !== "undefined" ? window.getSelection() : null;
+                            if (selection && selection.toString().trim().length > 0) {
+                              e.preventDefault();
+                            }
                           }}
                         >
-                          <Link
-                            href={productUrl}
+                          <img
+                            src={product.image || "/api/media/website/catalogue/products/default/image.webp"}
+                            alt={product.name}
                             draggable={false}
                             style={{
-                              color: "inherit",
-                              textDecoration: "none",
+                              width: "100%",
+                              height: "100%",
+                              maxWidth: "96%",
+                              maxHeight: "100%",
+                              objectFit: "contain",
+                              transform: "scale(1.12)",
+                              transition: "transform 0.45s ease",
+                              userSelect: "none",
+                            }}
+                            className="group-hover:scale-[1.18]"
+                          />
+                        </Link>
+
+                        {/* Editorial Title + Specs + Price */}
+                        <div
+                          style={{
+                            flexShrink: 0,
+                            marginTop: "8px",
+                            padding: "0 2px",
+                            userSelect: "text",
+                            WebkitUserSelect: "text",
+                          }}
+                        >
+                          <h3
+                            className="product-card-title"
+                            style={{
                               userSelect: "text",
                               WebkitUserSelect: "text",
                               cursor: "text",
                             }}
-                            onClick={(e) => {
-                              const selection = typeof window !== "undefined" ? window.getSelection() : null;
-                              if (selection && selection.toString().trim().length > 0) {
-                                e.preventDefault();
-                              }
-                            }}
                           >
-                            {product.name}
-                          </Link>
-                        </h3>
+                            <Link
+                              href={productUrl}
+                              draggable={false}
+                              style={{
+                                color: "inherit",
+                                textDecoration: "none",
+                                userSelect: "text",
+                                WebkitUserSelect: "text",
+                                cursor: "text",
+                              }}
+                              onClick={(e) => {
+                                const selection = typeof window !== "undefined" ? window.getSelection() : null;
+                                if (selection && selection.toString().trim().length > 0) {
+                                  e.preventDefault();
+                                }
+                              }}
+                            >
+                              {product.name}
+                            </Link>
+                          </h3>
 
-                        {/* Size & Article Number info row */}
-                        {(articleNo || sizeVal) && (
+                          {/* Size & Article Number info row */}
+                          {(articleNo || sizeVal) && (
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                flexWrap: "wrap",
+                                gap: "4px",
+                                marginBottom: "8px",
+                                fontFamily: "'Manrope', system-ui, sans-serif",
+                                fontSize: "11px",
+                                lineHeight: 1.2,
+                                userSelect: "text",
+                                WebkitUserSelect: "text",
+                              }}
+                            >
+                              {articleNo ? (
+                                <span
+                                  style={{
+                                    color: "#4b5563",
+                                    fontWeight: 500,
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "3px",
+                                    userSelect: "text",
+                                    WebkitUserSelect: "text",
+                                    cursor: "text",
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <span
+                                    style={{
+                                      color: "#8c96a3",
+                                      fontSize: "10px",
+                                      textTransform: "uppercase",
+                                      letterSpacing: "0.04em",
+                                      fontWeight: 600,
+                                      userSelect: "text",
+                                      WebkitUserSelect: "text",
+                                      cursor: "text",
+                                    }}
+                                  >
+                                    Art:
+                                  </span>
+                                  <span
+                                    style={{
+                                      fontWeight: 600,
+                                      color: "#1f2937",
+                                      userSelect: "text",
+                                      WebkitUserSelect: "text",
+                                      cursor: "text",
+                                    }}
+                                  >
+                                    {articleNo}
+                                  </span>
+                                </span>
+                              ) : (
+                                <span />
+                              )}
+
+                              {sizeVal && (
+                                <span
+                                  style={{
+                                    color: "#334155",
+                                    fontWeight: 600,
+                                    fontSize: "10.5px",
+                                    backgroundColor: "rgba(0, 0, 0, 0.05)",
+                                    padding: "2px 6px",
+                                    borderRadius: "4px",
+                                    whiteSpace: "nowrap",
+                                    userSelect: "text",
+                                    WebkitUserSelect: "text",
+                                    cursor: "text",
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  Size: {sizeVal}
+                                </span>
+                              )}
+                            </div>
+                          )}
+
                           <div
                             style={{
                               display: "flex",
-                              alignItems: "center",
                               justifyContent: "space-between",
-                              flexWrap: "wrap",
-                              gap: "4px",
-                              marginBottom: "8px",
-                              fontFamily: "'Manrope', system-ui, sans-serif",
-                              fontSize: "11px",
-                              lineHeight: 1.2,
+                              alignItems: "center",
+                              paddingTop: "2px",
                               userSelect: "text",
                               WebkitUserSelect: "text",
                             }}
                           >
-                            {articleNo ? (
-                              <span
-                                style={{
-                                  color: "#4b5563",
-                                  fontWeight: 500,
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: "3px",
-                                  userSelect: "text",
-                                  WebkitUserSelect: "text",
-                                  cursor: "text",
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <span
-                                  style={{
-                                    color: "#8c96a3",
-                                    fontSize: "10px",
-                                    textTransform: "uppercase",
-                                    letterSpacing: "0.04em",
-                                    fontWeight: 600,
-                                    userSelect: "text",
-                                    WebkitUserSelect: "text",
-                                    cursor: "text",
-                                  }}
-                                >
-                                  Art:
-                                </span>
-                                <span
-                                  style={{
-                                    fontWeight: 600,
-                                    color: "#1f2937",
-                                    userSelect: "text",
-                                    WebkitUserSelect: "text",
-                                    cursor: "text",
-                                  }}
-                                >
-                                  {articleNo}
-                                </span>
-                              </span>
-                            ) : (
-                              <span />
-                            )}
-
-                            {sizeVal && (
-                              <span
-                                style={{
-                                  color: "#334155",
-                                  fontWeight: 600,
-                                  fontSize: "10.5px",
-                                  backgroundColor: "rgba(0, 0, 0, 0.05)",
-                                  padding: "2px 6px",
-                                  borderRadius: "4px",
-                                  whiteSpace: "nowrap",
-                                  userSelect: "text",
-                                  WebkitUserSelect: "text",
-                                  cursor: "text",
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                Size: {sizeVal}
-                              </span>
-                            )}
+                            <span
+                              className="product-card-price"
+                              style={{
+                                userSelect: "text",
+                                WebkitUserSelect: "text",
+                                cursor: "text",
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              ₹{priceVal.toLocaleString("en-IN")}/-
+                            </span>
                           </div>
-                        )}
-
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            paddingTop: "2px",
-                            userSelect: "text",
-                            WebkitUserSelect: "text",
-                          }}
-                        >
-                          <span
-                            className="product-card-price"
-                            style={{
-                              userSelect: "text",
-                              WebkitUserSelect: "text",
-                              cursor: "text",
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            ₹{priceVal.toLocaleString("en-IN")}/-
-                          </span>
                         </div>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
+                      </article>
+                    );
+                  })}
+                </div>
+
+                {/* Infinite Scroll Trigger & Loader */}
+                {hasMoreProducts && (
+                  <div
+                    ref={scrollTriggerRef}
+                    style={{
+                      padding: "36px 0",
+                      textAlign: "center",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "10px",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#64748b", fontSize: "13px", fontWeight: 600, fontFamily: "'Manrope', system-ui, sans-serif" }}>
+                      <Loader2 size={18} className="animate-spin text-sky-600" />
+                      Loading more products... ({displayedProducts.length - visibleCount} remaining)
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setVisibleCount((prev) => prev + 25)}
+                      style={{
+                        padding: "8px 20px",
+                        borderRadius: "8px",
+                        border: "1px solid #cbd5e1",
+                        background: "#ffffff",
+                        color: "#0f172a",
+                        fontSize: "12.5px",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Load Next 25 Products
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -1473,8 +1968,27 @@ export default function CategoryPage({
         </div>
       )}
 
-      {/* Floating Action Buttons are provided globally via FloatingActionButtons */}
       <FooterSection />
     </main>
+  );
+}
+
+export default function CategoryPage({
+  params,
+}: {
+  params: Promise<{ category: string }>;
+}) {
+  const { category } = use(params);
+
+  return (
+    <Suspense
+      fallback={
+        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#ffffff" }}>
+          <Loader2 size={32} className="animate-spin text-sky-600" />
+        </div>
+      }
+    >
+      <CategoryPageContent category={category} />
+    </Suspense>
   );
 }
