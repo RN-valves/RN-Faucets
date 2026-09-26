@@ -407,6 +407,24 @@ export default function AdminOrderDetailPage() {
   // Combined logs
   const logsList = order?.timeline || order?.logs || [];
 
+  // Parse payment_data if present as JSON
+  let parsedPayData: any = {};
+  if (order?.payment_data) {
+    try {
+      parsedPayData = typeof order.payment_data === "string" ? JSON.parse(order.payment_data) : order.payment_data;
+    } catch {
+      parsedPayData = {};
+    }
+  }
+
+  const effectivePayLinkId = order?.pay_link_id || parsedPayData.razorpay_payment_link_id || "";
+  const effectivePaymentId =
+    parsedPayData.razorpay_payment_id || order?.razorpayPaymentId || order?.payment_key || "";
+  const effectivePaymentRefId =
+    parsedPayData.razorpay_payment_link_reference_id || order?.uuid || order?.id || "";
+  const effectivePaymentStatus =
+    parsedPayData.razorpay_payment_link_status || (isPaid ? "paid" : "pending");
+
   return (
     <div style={{ minHeight: "100vh", background: isDark ? "#0B0F17" : "#F4F6F9" }}>
       <AdminHeader
@@ -877,7 +895,7 @@ export default function AdminOrderDetailPage() {
                       Payment Link Id
                     </th>
                     <td style={{ width: "32%", padding: "8px 12px", color: textMain, borderRight: `1px solid ${border}`, fontFamily: "monospace" }}>
-                      {order.pay_link_id || "—"}
+                      {effectivePayLinkId || "—"}
                     </td>
                     <th style={{ width: "180px", padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
                       Payment URL
@@ -909,21 +927,26 @@ export default function AdminOrderDetailPage() {
                     </td>
                   </tr>
 
-                  {order.razorpayPaymentId || order.payment_key ? (
+                  {effectivePaymentId || effectivePaymentRefId ? (
                     <tr style={{ borderBottom: `1px solid ${border}` }}>
                       <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
                         Payment Id
                       </th>
                       <td style={{ padding: "8px 12px", color: textMain, borderRight: `1px solid ${border}`, fontFamily: "monospace" }}>
-                        {order.razorpayPaymentId || order.payment_key || "—"}
+                        {effectivePaymentId || "—"}
                       </td>
                       <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
                         Payment Ref. Id
                       </th>
                       <td style={{ padding: "8px 12px", color: textMain }}>
-                        <span style={{ fontFamily: "monospace" }}>{order.uuid || order.id}</span>
-                        <strong style={{ color: isPaid ? "#198754" : "#DC3545", marginLeft: "6px" }}>
-                          ({isPaid ? "paid" : "pending"})
+                        <span style={{ fontFamily: "monospace" }}>{effectivePaymentRefId}</span>
+                        <strong
+                          style={{
+                            color: effectivePaymentStatus.toLowerCase().includes("paid") ? "#198754" : "#DC3545",
+                            marginLeft: "6px",
+                          }}
+                        >
+                          ({effectivePaymentStatus})
                         </strong>
                       </td>
                     </tr>
@@ -932,12 +955,12 @@ export default function AdminOrderDetailPage() {
                   {order.payment_data ? (
                     <tr style={{ borderBottom: `1px solid ${border}` }}>
                       <td colSpan={4} style={{ padding: "10px 12px", background: isDark ? "#0D1117" : "#F8F9FA", color: textMuted, fontFamily: "monospace", fontSize: "11.5px", wordBreak: "break-all" }}>
-                        {order.payment_data}
+                        {typeof order.payment_data === "object" ? JSON.stringify(order.payment_data) : order.payment_data}
                       </td>
                     </tr>
                   ) : null}
 
-                  {!order.pay_link_id && (
+                  {!effectivePayLinkId && (
                     <tr>
                       <td colSpan={2} style={{ padding: "8px 12px", color: textMuted }}>
                         Generate Payment Link

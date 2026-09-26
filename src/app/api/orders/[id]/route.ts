@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Order from "@/models/Order";
+import Payment from "@/models/Payment";
 import { requireAdminAuth, requireAuth } from "@/lib/security";
 import { sendOrderStatusEmail } from "@/lib/email";
 
@@ -11,7 +12,7 @@ export async function GET(
   try {
     await connectDB();
     const { id } = await params;
-    const order = await Order.findOne({ $or: [{ _id: id }, { id }] }).lean();
+    const order: any = await Order.findOne({ $or: [{ _id: id }, { id }] }).lean();
 
     if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
@@ -29,6 +30,50 @@ export async function GET(
 
       if (!isOwner) {
         return NextResponse.json({ error: "Forbidden. You can only view your own orders." }, { status: 403 });
+      }
+    }
+
+    // Dynamic Payment Enrichment from Payment collection (matching PHP logic)
+    const numericId = parseInt(order.id?.replace(/\D/g, "") || "") || order.legacyId || null;
+    const paymentQueries: any[] = [];
+
+    if (order.pay_link_id) paymentQueries.push({ payLinkId: order.pay_link_id });
+    if (order.payment_key) {
+      paymentQueries.push(
+        { paymentKey: order.payment_key },
+        { paymentId: order.payment_key },
+        { gatewayPaymentId: order.payment_key }
+      );
+    }
+    if (order.razorpayPaymentId) {
+      paymentQueries.push(
+        { paymentKey: order.razorpayPaymentId },
+        { paymentId: order.razorpayPaymentId },
+        { gatewayPaymentId: order.razorpayPaymentId }
+      );
+    }
+    if (order.uuid) {
+      paymentQueries.push({ paymentKey: order.uuid }, { payLinkId: order.uuid });
+    }
+    if (numericId) {
+      paymentQueries.push({ orderId: numericId });
+    }
+
+    if (paymentQueries.length > 0) {
+      const paymentRecord = await Payment.findOne({ $or: paymentQueries }).lean();
+      if (paymentRecord) {
+        if (!order.pay_link_id && paymentRecord.payLinkId) {
+          order.pay_link_id = paymentRecord.payLinkId;
+        }
+        if (!order.pay_link_url && paymentRecord.shortUrl) {
+          order.pay_link_url = paymentRecord.shortUrl;
+        }
+        if (!order.payment_key && (paymentRecord.paymentKey || paymentRecord.paymentId)) {
+          order.payment_key = paymentRecord.paymentKey || paymentRecord.paymentId;
+        }
+        if (!order.payment_data && paymentRecord.paymentData) {
+          order.payment_data = paymentRecord.paymentData;
+        }
       }
     }
 
