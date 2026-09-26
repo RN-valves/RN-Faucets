@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ChevronDown, CheckCircle, ArrowLeft, RefreshCw } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { setAdminAuth, getAdminAuth, logoutAdmin } from "@/utils/adminStore";
 import { setCustomerSession, getCustomerSession, clearCustomerSession } from "@/utils/customerAuth";
@@ -11,6 +11,8 @@ const LOGIN_BG = "/uploads/auth/login-bg.jpg";
 
 export default function AuthSplitSection() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectParam = searchParams.get("redirect");
   const [step, setStep] = useState<"mobile" | "otp" | "success">("mobile");
   const [mobile, setMobile] = useState("");
   const [otp, setOtp] = useState("");
@@ -137,8 +139,9 @@ export default function AuthSplitSection() {
           }, 300);
         } else {
           setStep("success");
+          const targetUrl = redirectParam && redirectParam.startsWith("/") ? redirectParam : "/";
           setTimeout(() => {
-            router.push("/");
+            router.push(targetUrl);
           }, 1200);
         }
       } else {

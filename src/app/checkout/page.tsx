@@ -71,15 +71,25 @@ export default function CheckoutPage() {
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+
   // Dynamic delivery date states
   const [minDeliveryDate, setMinDeliveryDate] = useState("");
   const [maxDeliveryDate, setMaxDeliveryDate] = useState("");
 
   useEffect(() => {
     setIsMounted(true);
+    const session = getCustomerSession();
+    if (!session) {
+      router.replace("/login-user?redirect=/checkout");
+      return;
+    }
+    setIsAuthChecking(false);
+
     const items = getCartItems();
     if (items.length === 0) {
       router.push("/cart");
+      return;
     }
     setCartItems(items);
 
@@ -96,7 +106,6 @@ export default function CheckoutPage() {
     setMaxDeliveryDate(maxDate.toLocaleDateString("en-GB", options));
 
     // Load dynamic saved addresses
-    const session = getCustomerSession();
     let loadedAddresses: Address[] = [];
     const stored = localStorage.getItem(SAVED_ADDRESSES_KEY);
     if (stored) {
@@ -281,13 +290,19 @@ export default function CheckoutPage() {
   const handlePlaceOrder = async () => {
     if (isProcessing) return;
 
+    const session = getCustomerSession();
+    if (!session) {
+      alert("Please log in with your mobile number to place your order.");
+      router.push("/login-user?redirect=/checkout");
+      return;
+    }
+
     const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
     if (!selectedAddress) {
       alert("Please select or add a delivery address.");
       return;
     }
 
-    const session = getCustomerSession();
     const customerEmail = session?.email || "customer@rnvalves.com";
     const customerPhone = selectedAddress.phone || session?.mobile || "9999999999";
     const customerName = selectedAddress.name || session?.name || "Customer";
@@ -497,8 +512,15 @@ export default function CheckoutPage() {
   const finalTotal = Math.max(0, totalMRP - discountAmount);
   const progressToDiscount = Math.max(0, 1500 - totalMRP);
 
-  if (!isMounted) {
-    return null;
+  if (!isMounted || isAuthChecking) {
+    return (
+      <main style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#64748b", fontSize: "14px", fontFamily: "sans-serif" }}>
+          <Loader2 className="animate-spin" size={20} />
+          Verifying account & loading checkout...
+        </div>
+      </main>
+    );
   }
 
   return (

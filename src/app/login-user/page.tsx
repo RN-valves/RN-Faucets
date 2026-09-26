@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Header from "@/components/Header";
 import FooterSection from "@/components/FooterSection";
 import AuthSplitSection from "@/components/AuthSplitSection";
@@ -23,7 +24,9 @@ export default function LoginUserPage() {
           background: "#ffffff",
         }}
       >
-        <AuthSplitSection />
+        <Suspense fallback={<div style={{ textAlign: "center", padding: "60px 0" }}>Loading login...</div>}>
+          <AuthSplitSection />
+        </Suspense>
       </section>
 
       <FooterSection />

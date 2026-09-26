@@ -345,8 +345,14 @@ function OrdersContent() {
     {
       header: "Order ID & Date",
       accessor: (o: OrderData) => (
-        <div>
-          <div style={{ fontWeight: 800, color: "#0077B6" }}>{o.id}</div>
+        <div
+          onClick={() => router.push(`/admin/orders/${o._id || o.id}`)}
+          style={{ cursor: "pointer" }}
+          title="Click to view full order & dispatch details"
+        >
+          <div style={{ fontWeight: 800, color: "#0077B6", textDecoration: "underline", textUnderlineOffset: "3px" }}>
+            {o.id}
+          </div>
           <div style={{ fontSize: "11.5px", opacity: 0.7 }}>{o.orderDate}</div>
         </div>
       ),
@@ -438,9 +444,9 @@ function OrdersContent() {
           size="sm"
           icon={<Eye size={13} />}
           isDark={isDark}
-          onClick={() => setSelectedOrder(o)}
+          onClick={() => router.push(`/admin/orders/${o._id || o.id}`)}
         >
-          Inspect & Dispatch
+          View & Manage
         </AdminButton>
       ),
     },
@@ -901,100 +907,6 @@ function OrdersContent() {
                 Close
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* --- INSPECT ORDER MODAL --- */}
-      {selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 relative border border-slate-200 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">
-                  Order Dispatch & Transport: {selectedOrder.id}
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Customer: {selectedOrder.customerName} ({selectedOrder.customerPhone})
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedOrder(null)}
-                className="text-slate-400 hover:text-slate-600 p-1"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveTransport} className="space-y-4 text-sm">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Order Status</label>
-                  <select
-                    value={transportForm.status}
-                    onChange={(e) => setTransportForm({ ...transportForm, status: e.target.value as any })}
-                    className="w-full p-2 border border-slate-200 rounded-lg text-xs"
-                  >
-                    <option value="Pending">Pending</option>
-                    <option value="Processing">Processing</option>
-                    <option value="Shipped">Shipped</option>
-                    <option value="Delivered">Delivered</option>
-                    <option value="Cancelled">Cancelled</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Payment Status</label>
-                  <select
-                    value={transportForm.paymentStatus}
-                    onChange={(e) => setTransportForm({ ...transportForm, paymentStatus: e.target.value as any })}
-                    className="w-full p-2 border border-slate-200 rounded-lg text-xs"
-                  >
-                    <option value="Pending">Pending</option>
-                    <option value="Paid">Paid</option>
-                    <option value="Refunded">Refunded</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Courier / Transport Partner</label>
-                  <input
-                    type="text"
-                    value={transportForm.courierPartner}
-                    onChange={(e) => setTransportForm({ ...transportForm, courierPartner: e.target.value })}
-                    className="w-full p-2 border border-slate-200 rounded-lg text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Tracking Number / AWB</label>
-                  <input
-                    type="text"
-                    value={transportForm.trackingNumber}
-                    onChange={(e) => setTransportForm({ ...transportForm, trackingNumber: e.target.value })}
-                    className="w-full p-2 border border-slate-200 rounded-lg text-xs font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
-                <button
-                  type="button"
-                  onClick={() => setSelectedOrder(null)}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 font-semibold text-xs rounded-lg"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isUpdating}
-                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-lg shadow-sm transition disabled:opacity-50"
-                >
-                  {isUpdating ? "Saving Transport Details..." : "Save Details"}
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}

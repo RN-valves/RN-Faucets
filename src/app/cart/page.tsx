@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import FooterSection from "@/components/FooterSection";
 import SupportLinksSection from "@/components/SupportLinksSection";
 import { getCartItems, removeFromCart, updateCartQuantity, type CartItem } from "@/utils/cart";
+import { getCustomerSession } from "@/utils/customerAuth";
 import { Trash2, Send, MapPin, Headset, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -445,7 +446,14 @@ export default function CartPage() {
                 <button
                   type="button"
                   className="checkout-btn"
-                  onClick={() => router.push("/checkout")}
+                  onClick={() => {
+                    const session = getCustomerSession();
+                    if (!session) {
+                      router.push("/login-user?redirect=/checkout");
+                    } else {
+                      router.push("/checkout");
+                    }
+                  }}
                 >
                   Proceed to Checkout
                 </button>
