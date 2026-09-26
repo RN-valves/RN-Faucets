@@ -538,7 +538,7 @@ export default function AdminOrderDetailPage() {
                 </Link>
 
                 <Link
-                  href={`/admin/orders/${order._id || order.id}/invoice`}
+                  href={`/admin/orders/${order._id || order.id}/invoice?download=true`}
                   target="_blank"
                   style={{
                     display: "inline-flex",

@@ -117,6 +117,7 @@ export default function OtherProductsSection({
     addToCart({
       id: itemId,
       name: item.name,
+      code: item.code || itemId,
       price: sellingPrice,
       image: item.image || "/api/media/website/catalogue/products/default/image.webp",
       color: item.colorName || "Standard",

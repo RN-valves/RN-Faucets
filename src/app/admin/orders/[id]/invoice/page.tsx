@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Printer, Download } from "lucide-react";
+import { ArrowLeft, Printer, Download, Loader2 } from "lucide-react";
 
 interface OrderItem {
   id?: string;
@@ -47,14 +47,17 @@ interface OrderData {
   updatedAt?: string;
 }
 
-export default function OrderInvoicePage() {
+function InvoiceContent() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const orderId = (params?.id as string) || "";
+  const isAutoDownload = searchParams?.get("download") === "true";
 
   const [order, setOrder] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     if (!orderId) return;
@@ -70,6 +73,56 @@ export default function OrderInvoicePage() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [orderId]);
+
+  const handleDownloadPDF = async () => {
+    if (!order) return;
+    setIsDownloading(true);
+    const orderNum = order.id.replace(/-/g, "").replace(/^RNORD|^RNOD|^ORD|^OD|^#/i, "");
+    const cleanId = order.id ? order.id.replace(/-/g, "").replace(/ORD/i, "OD") : `RNOD${orderNum}`;
+    const filename = `${cleanId}_Invoice.pdf`;
+
+    try {
+      if (!(window as any).html2pdf) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+          script.onload = resolve;
+          script.onerror = reject;
+          document.body.appendChild(script);
+        });
+      }
+
+      const element = document.querySelector(".invoice-container");
+      if (!element) throw new Error("Invoice element not found");
+
+      const opt = {
+        margin: [5, 5, 5, 5],
+        filename: filename,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      };
+
+      await (window as any).html2pdf().set(opt).from(element).save();
+    } catch (e) {
+      console.error("html2pdf failed, fallback to print:", e);
+      const oldTitle = document.title;
+      document.title = filename.replace(/\.pdf$/, "");
+      window.print();
+      document.title = oldTitle;
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (order && !loading && isAutoDownload) {
+      const timer = setTimeout(() => {
+        handleDownloadPDF();
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [order, loading, isAutoDownload]);
 
   const handlePrint = () => {
     window.print();
@@ -127,8 +180,24 @@ export default function OrderInvoicePage() {
           <ArrowLeft size={16} /> Back to Order Management
         </Link>
         <div style={{ display: "flex", gap: "10px" }}>
+          <button
+            type="button"
+            onClick={handleDownloadPDF}
+            disabled={isDownloading}
+            className="btn-print"
+            style={{
+              background: "#0077B6",
+              color: "#FFF",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+          >
+            {isDownloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+            {isDownloading ? "Downloading PDF..." : "Download PDF"}
+          </button>
           <button type="button" onClick={handlePrint} className="btn-print">
-            <Printer size={16} /> Print / Save as PDF
+            <Printer size={16} /> Print
           </button>
         </div>
       </div>
@@ -467,5 +536,19 @@ export default function OrderInvoicePage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function OrderInvoicePage() {
+  return (
+    <Suspense
+      fallback={
+        <div style={{ padding: "60px", textAlign: "center", fontFamily: "'Manrope', sans-serif" }}>
+          Loading Invoice...
+        </div>
+      }
+    >
+      <InvoiceContent />
+    </Suspense>
   );
 }

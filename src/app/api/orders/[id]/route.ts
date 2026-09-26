@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Order from "@/models/Order";
 import Payment from "@/models/Payment";
+import Product from "@/models/Product";
 import { requireAdminAuth, requireAuth } from "@/lib/security";
 import { sendOrderStatusEmail } from "@/lib/email";
 
@@ -74,6 +75,37 @@ export async function GET(
         if (!order.payment_data && paymentRecord.paymentData) {
           order.payment_data = paymentRecord.paymentData;
         }
+      }
+    }
+
+    // Dynamic Product SKU Code Enrichment (matching PHP Product SKU lookup)
+    if (Array.isArray(order.items) && order.items.length > 0) {
+      const productIds = order.items.map((it: any) => it.id).filter(Boolean);
+      if (productIds.length > 0) {
+        const products = await Product.find({
+          $or: [
+            { id: { $in: productIds } },
+            { _id: { $in: productIds.filter((pid: any) => typeof pid === "string" && pid.length === 24) } },
+          ],
+        })
+          .select("id code name size onlyProductWtGm")
+          .lean();
+
+        const productMap = new Map<string, any>();
+        for (const p of products) {
+          if (p.id) productMap.set(p.id.toString(), p);
+          if (p._id) productMap.set(p._id.toString(), p);
+        }
+
+        order.items = order.items.map((item: any) => {
+          const matched = item.id ? productMap.get(item.id.toString()) : null;
+          return {
+            ...item,
+            code: matched?.code || item.code || item.id,
+            size: item.size || matched?.size || "—",
+            lbhWeight: item.lbhWeight || matched?.onlyProductWtGm || 0,
+          };
+        });
       }
     }
 

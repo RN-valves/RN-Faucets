@@ -317,8 +317,9 @@ export default function CheckoutPage() {
       items: cartItems.map((item) => ({
         id: item.id,
         name: item.name,
-        code: item.id,
+        code: item.code || item.id,
         color: item.color || "Standard",
+        size: item.size,
         price: item.price,
         quantity: item.quantity,
         image: item.image || "",

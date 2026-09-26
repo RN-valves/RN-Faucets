@@ -1503,6 +1503,7 @@ export default function FaucetProductPage({
                     addToCart({
                       id: product.id,
                       name: product.name,
+                      code: (product as any).code || (product as any).skuCode || product.id,
                       price: product.price,
                       image: product.image,
                       color: product.colorName || "Standard",
@@ -1541,6 +1542,7 @@ export default function FaucetProductPage({
                     addToCart({
                       id: product.id,
                       name: product.name,
+                      code: (product as any).code || (product as any).skuCode || product.id,
                       price: product.price,
                       image: product.image,
                       color: product.colorName || "Standard",
