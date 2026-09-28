@@ -206,13 +206,13 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
 
   return (
     <section
-      data-header-theme="light"
+      data-header-theme="dark"
       className="luxury-categories-section"
       style={{
         width: "100%",
         minHeight: "100vh",
-        backgroundColor: "#FFFFFF",
-        color: "#0F172A",
+        backgroundColor: "#000000",
+        color: "#FFFFFF",
         padding: "clamp(90px, 12vh, 105px) 0 clamp(20px, 3vh, 35px)",
         overflow: "hidden",
         position: "relative",
@@ -270,8 +270,8 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
           width: 100%;
           aspect-ratio: 2 / 3;
           height: auto;
-          background: #F8FAFC;
-          border: 1px solid #E2E8F0;
+          background: #0D1117;
+          border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 0px;
           position: relative;
           overflow: hidden;
@@ -284,8 +284,8 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
         }
 
         .luxury-card:hover .luxury-card-image-wrap {
-          border-color: #0F172A;
-          box-shadow: 0 16px 36px rgba(0, 0, 0, 0.09);
+          border-color: rgba(255, 255, 255, 0.4);
+          box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
         }
 
         /* Primary Normal Image */
@@ -331,33 +331,33 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
           font-family: 'Manrope', system-ui, sans-serif;
           font-size: 15px;
           font-weight: 600;
-          color: #1F2937;
+          color: #E2E8F0;
           margin-top: 14px;
           letter-spacing: 0.01em;
           transition: color 0.25s ease;
         }
 
         .luxury-card:hover .luxury-card-label {
-          color: #000000;
+          color: #FFFFFF;
         }
 
         .luxury-card-arrow {
           transition: transform 0.25s ease, color 0.25s ease;
-          color: #64748B;
+          color: #94A3B8;
         }
 
         .luxury-card:hover .luxury-card-arrow {
           transform: translate(3px, -3px);
-          color: #000000;
+          color: #FFFFFF;
         }
 
         .luxury-nav-arrow {
           width: 38px;
           height: 38px;
           border-radius: 50%;
-          border: 1px solid #CBD5E1;
-          background: transparent;
-          color: #0F172A;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          background: rgba(255, 255, 255, 0.06);
+          color: #FFFFFF;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -366,9 +366,9 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
         }
 
         .luxury-nav-arrow:hover:not(:disabled) {
-          background: #0F172A;
-          color: #FFFFFF;
-          border-color: #0F172A;
+          background: #FFFFFF;
+          color: #000000;
+          border-color: #FFFFFF;
         }
 
         .luxury-nav-arrow:disabled {
@@ -477,7 +477,7 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
                 fontFamily: "'Manrope', system-ui, sans-serif",
                 fontSize: "clamp(15px, 1.5vw, 19px)",
                 fontWeight: 300,
-                color: "#64748B",
+                color: "#94A3B8",
                 letterSpacing: "-0.01em",
                 lineHeight: 1.25,
                 marginBottom: "2px",
@@ -492,7 +492,7 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
                 fontFamily: "'Manrope', system-ui, sans-serif",
                 fontSize: "clamp(24px, 2.3vw, 32px)",
                 fontWeight: 600,
-                color: "#0F172A",
+                color: "#FFFFFF",
                 letterSpacing: "-0.02em",
                 lineHeight: 1.2,
                 margin: 0,
@@ -551,13 +551,13 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
                 <div
                   className="luxury-card-image-wrap animate-pulse"
                   style={{
-                    background: "linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%)",
+                    background: "linear-gradient(90deg, #161b22 25%, #21262d 50%, #161b22 75%)",
                     backgroundSize: "200% 100%",
                   }}
                 />
                 <div style={{ marginTop: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <div style={{ height: "14px", width: "70%", backgroundColor: "#e2e8f0", borderRadius: "4px" }} />
-                  <div style={{ height: "10px", width: "40%", backgroundColor: "#e2e8f0", borderRadius: "4px" }} />
+                  <div style={{ height: "14px", width: "70%", backgroundColor: "#21262d", borderRadius: "4px" }} />
+                  <div style={{ height: "10px", width: "40%", backgroundColor: "#21262d", borderRadius: "4px" }} />
                 </div>
               </div>
             );
