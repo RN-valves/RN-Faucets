@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ChevronRight, Search, ShoppingBag, User, X, Shield, LogOut } from "lucide-react";
 import SearchModal from "./SearchModal";
@@ -425,12 +425,15 @@ export default function Header({ data }: HeaderProps) {
   }, [data?.logo, data?.menuVideo]);
 
   const router = useRouter();
+  const pathname = usePathname();
+  const isHome = pathname === "/";
+
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [activeUserMenuLink, setActiveUserMenuLink] = useState<string | null>(null);
-  const [isDarkBg, setIsDarkBg] = useState(true);
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [isDarkBg, setIsDarkBg] = useState(isHome);
+  const [isScrolled, setIsScrolled] = useState(!isHome);
   const [cartCount, setCartCount] = useState(0);
   const [sessionUser, setSessionUser] = useState<CustomerSession | null>(null);
   const [isAdminUser, setIsAdminUser] = useState(false);
@@ -511,19 +514,18 @@ export default function Header({ data }: HeaderProps) {
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, [userDropdownOpen]);
 
-  // overflow now handled by the combined effect above
-
   /* ── Dynamic scroll theme detection for light vs dark sections ── */
   useEffect(() => {
     const handleScroll = () => {
-      // Header stays 100% transparent for Section 1, 2, 3, & 4 (Best Seller Categories)
-      const isPastSection4 = window.scrollY >= (window.innerHeight * 4 - 90);
-      setIsScrolled(isPastSection4);
+      // On homepage, header becomes solid/frosted as soon as user scrolls past hero (scrollY >= 50px)
+      // On inner pages (product list, product details, cart, etc.), header has frosted background right from the top
+      const isPastTop = window.scrollY >= (isHome ? 50 : 8);
+      setIsScrolled(isPastTop);
 
       const sections = Array.from(document.querySelectorAll("section, [data-header-theme]"));
       const headerPoint = 45; // top mid-header height px
 
-      let darkBg = true;
+      let darkBg = isHome;
 
       for (const sec of sections) {
         const rect = sec.getBoundingClientRect();
@@ -552,6 +554,10 @@ export default function Header({ data }: HeaderProps) {
         }
       }
 
+      if (!isHome && sections.length === 0) {
+        darkBg = false;
+      }
+
       setIsDarkBg(darkBg);
     };
 
@@ -559,27 +565,31 @@ export default function Header({ data }: HeaderProps) {
     handleScroll();
 
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [isHome, pathname]);
 
   // Header text & icons adapt dynamically to background
   const textColor = isDarkBg ? "#ffffff" : "#111827";
   const textMutedColor = isDarkBg ? "rgba(255, 255, 255, 0.95)" : "rgba(17, 24, 39, 0.9)";
   const iconColor = isDarkBg ? "#ffffff" : "#111827";
-  const headerBg = isScrolled
+
+  // Solid/Frosted on all inner pages (product list, product details, etc.) and on homepage scroll
+  const isSolidHeader = !isHome || isScrolled;
+
+  const headerBg = isSolidHeader
     ? isDarkBg
-      ? "rgba(10, 15, 25, 0.96)"
-      : "rgba(255, 255, 255, 0.96)"
+      ? "rgba(8, 12, 20, 0.96)"
+      : "rgba(255, 255, 255, 0.97)"
     : "transparent";
-  const backdropFilterStyle = isScrolled ? "blur(12px)" : "none";
-  const borderBottomStyle = isScrolled
+  const backdropFilterStyle = isSolidHeader ? "blur(16px)" : "none";
+  const borderBottomStyle = isSolidHeader
     ? isDarkBg
-      ? "1px solid rgba(255, 255, 255, 0.1)"
-      : "1px solid rgba(0, 0, 0, 0.06)"
+      ? "1px solid rgba(255, 255, 255, 0.12)"
+      : "1px solid rgba(0, 0, 0, 0.08)"
     : "none";
-  const boxShadowStyle = isScrolled
+  const boxShadowStyle = isSolidHeader
     ? isDarkBg
-      ? "0 4px 20px rgba(0, 0, 0, 0.3)"
-      : "0 4px 20px rgba(0, 0, 0, 0.05)"
+      ? "0 4px 20px rgba(0, 0, 0, 0.35)"
+      : "0 4px 20px rgba(0, 0, 0, 0.06)"
     : "none";
 
   return (
