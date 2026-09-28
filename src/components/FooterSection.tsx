@@ -84,44 +84,25 @@ export default function FooterSection({ data }: FooterSectionProps) {
   const addressText = data?.address || "B-68 SITE-4 SAHIBABAD, Ghaziabad\nUttar Pradesh 201010, India";
   const phoneText = data?.phone || "1800 12340 0400";
   const email1Text = data?.email1 || "enquiry@rnvalves.com";
-  const email2Text = data?.email2 || "enquiry@rnvalves.com";
   const copyright = data?.copyrightText || "© Copyright | RN Valves & Faucets | All Rights Reserved";
+
   return (
-    <footer
-      style={{
-        width: "100%",
-        overflow: "hidden",
-        backgroundColor: "#022B52",
-        position: "relative",   /* needed so content sits on top of img */
-        color: "#ffffff",
-        fontFamily: "'Manrope','Poppins',sans-serif",
-      }}
-    >
-      {/* ── ORIGINAL background image — untouched ── */}
+    <footer className="w-full overflow-hidden bg-[#022B52] relative text-white font-['Manrope','Poppins',sans-serif]">
+      {/* ── Background image ── */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="https://jalbath.com/wp-content/uploads/2026/01/footer-bg-svg.svg"
         alt=""
         aria-hidden="true"
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-          display: "block",
-          pointerEvents: "none",
-          userSelect: "none",
-        }}
+        className="absolute top-0 left-0 w-full h-full object-cover pointer-events-none select-none"
       />
 
-      {/* ── All content sits on top via z-index ── */}
-      <div style={{ position: "relative", zIndex: 1, maxWidth: 1320, margin: "0 auto", padding: "40px 48px 0 48px" }}>
+      {/* ── Content container ── */}
+      <div className="relative z-10 max-w-[1320px] mx-auto px-5 sm:px-8 lg:px-12 pt-8 sm:pt-10 pb-6">
 
         {/* Logo — top-left */}
-        <div style={{ marginBottom: 32 }}>
-          <Link href="/" aria-label="RN Valves & Faucets Home">
+        <div className="mb-6 sm:mb-8">
+          <Link href="/" aria-label="RN Valves & Faucets Home" className="inline-block">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={footerLogo}
@@ -132,50 +113,61 @@ export default function FooterSection({ data }: FooterSectionProps) {
                   target.src = "/rn-header-logo.svg";
                 }
               }}
-              style={{ height: 85, width: "auto", display: "block" }}
+              className="h-14 sm:h-16 lg:h-20 w-auto block object-contain"
             />
           </Link>
         </div>
 
-        {/* 4-column grid */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "1.5fr 1fr 1fr 1.3fr",
-          gap: "0 56px",
-          alignItems: "start",
-          marginBottom: 36,
-        }}>
+        {/* Responsive Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1.3fr] gap-8 sm:gap-10 lg:gap-14 items-start mb-8 sm:mb-10">
 
           {/* Col 1 — Get In Touch */}
-          <div>
-            <h2 style={{ fontSize: 22, fontWeight: 600, color: "#ffffff", margin: "0 0 12px 0", letterSpacing: "-0.01em" }}>
+          <div className="sm:col-span-2 lg:col-span-1">
+            <h2 className="text-xl sm:text-[22px] font-semibold text-white mb-3 tracking-[-0.01em]">
               Get In Touch
             </h2>
-            <div style={{ height: 1, background: "rgba(255,255,255,0.25)", marginBottom: 18 }} />
-            <p style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", lineHeight: 1.75, margin: "0 0 8px 0", whiteSpace: "pre-line" }}>
+            <div className="h-[1px] bg-white/25 mb-4" />
+            <p className="text-sm text-white/85 leading-relaxed mb-2 whitespace-pre-line">
               {addressText}
             </p>
-            <p style={{ fontSize: 14, margin: "0 0 5px 0" }}>
-              <a href={`tel:${phoneText.replace(/\s+/g, "")}`} style={{ color: "rgba(255,255,255,0.85)", textDecoration: "none" }}>{phoneText}</a>
+            <p className="text-sm mb-1.5">
+              <a
+                href={`tel:${phoneText.replace(/\s+/g, "")}`}
+                className="text-white/85 hover:text-white transition-colors duration-150 no-underline"
+              >
+                {phoneText}
+              </a>
             </p>
-            <p style={{ fontSize: 14, margin: "0 0 5px 0" }}>
-              <a href={`mailto:${email1Text}`} style={{ color: "rgba(255,255,255,0.85)", textDecoration: "none" }}>{email1Text}</a>
+            <p className="text-sm mb-1.5">
+              <a
+                href={`mailto:${email1Text}`}
+                className="text-white/85 hover:text-white transition-colors duration-150 no-underline break-all"
+              >
+                {email1Text}
+              </a>
             </p>
-            <p style={{ fontSize: 14, margin: 0 }}>
-              <a href="https://www.rnvalves.com" target="_blank" rel="noopener noreferrer" style={{ color: "rgba(255,255,255,0.85)", textDecoration: "none" }}>www.rnvalves.com</a>
+            <p className="text-sm">
+              <a
+                href="https://www.rnvalves.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white/85 hover:text-white transition-colors duration-150 no-underline"
+              >
+                www.rnvalves.com
+              </a>
             </p>
+
             {/* Social icons */}
-            <div style={{ display: "flex", gap: 10, marginTop: 24, flexWrap: "wrap" }}>
+            <div className="flex flex-wrap gap-2.5 mt-5">
               {SOCIALS.map(({ Icon, label, href }) => (
-                <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label}
-                  style={{
-                    width: 36, height: 36, borderRadius: "50%",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    color: "rgba(255,255,255,0.85)",
-                    background: "rgba(255,255,255,0.08)",
-                    border: "1px solid rgba(255,255,255,0.15)",
-                    textDecoration: "none", flexShrink: 0,
-                  }}>
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-white/85 bg-white/10 border border-white/15 hover:bg-white/20 hover:text-white transition-all duration-150 shrink-0 no-underline"
+                >
                   <Icon />
                 </a>
               ))}
@@ -183,53 +175,54 @@ export default function FooterSection({ data }: FooterSectionProps) {
           </div>
 
           {/* Col 2 */}
-          <nav aria-label="Footer links 1" style={{ paddingTop: 4 }}>
+          <nav aria-label="Footer links 1" className="pt-0 lg:pt-1">
             {(data?.col1Links && data.col1Links.length > 0 ? data.col1Links : NAV_COL_1).map((l) => (
-              <Link key={l.label} href={l.href} style={{
-                display: "block", fontSize: 14.5, fontWeight: 400,
-                color: "rgba(255,255,255,0.85)", lineHeight: "2.35",
-                textDecoration: "none", letterSpacing: "0.01em",
-              }}>{l.label}</Link>
+              <Link
+                key={l.label}
+                href={l.href}
+                className="block text-[14.5px] font-normal text-white/85 hover:text-white transition-colors duration-150 py-1 sm:py-1.5 lg:py-1 leading-relaxed tracking-[0.01em] no-underline"
+              >
+                {l.label}
+              </Link>
             ))}
           </nav>
 
           {/* Col 3 */}
-          <nav aria-label="Footer links 2" style={{ paddingTop: 4 }}>
+          <nav aria-label="Footer links 2" className="pt-0 lg:pt-1">
             {(data?.col2Links && data.col2Links.length > 0 ? data.col2Links : NAV_COL_2)
               .filter((l) => !l.label?.toLowerCase().includes("warranty"))
               .map((l) => (
-              <Link key={l.label} href={l.href} style={{
-                display: "block", fontSize: 14.5, fontWeight: 400,
-                color: "rgba(255,255,255,0.85)", lineHeight: "2.35",
-                textDecoration: "none", letterSpacing: "0.01em",
-              }}>{l.label}</Link>
-            ))}
+                <Link
+                  key={l.label}
+                  href={l.href}
+                  className="block text-[14.5px] font-normal text-white/85 hover:text-white transition-colors duration-150 py-1 sm:py-1.5 lg:py-1 leading-relaxed tracking-[0.01em] no-underline"
+                >
+                  {l.label}
+                </Link>
+              ))}
           </nav>
 
           {/* Col 4 */}
-          <nav aria-label="Footer links 3" style={{ paddingTop: 4 }}>
+          <nav aria-label="Footer links 3" className="pt-0 lg:pt-1 sm:col-span-2 lg:col-span-1">
             {(data?.col3Links && data.col3Links.length > 0 ? data.col3Links : NAV_COL_3).map((l) => (
-              <Link key={l.label} href={l.href} style={{
-                display: "block", fontSize: 14.5, fontWeight: 400,
-                color: "rgba(255,255,255,0.85)", lineHeight: "2.35",
-                textDecoration: "none", letterSpacing: "0.01em",
-              }}>{l.label}</Link>
+              <Link
+                key={l.label}
+                href={l.href}
+                className="block text-[14.5px] font-normal text-white/85 hover:text-white transition-colors duration-150 py-1 sm:py-1.5 lg:py-1 leading-relaxed tracking-[0.01em] no-underline"
+              >
+                {l.label}
+              </Link>
             ))}
           </nav>
 
         </div>
 
         {/* Divider */}
-        <div style={{ height: 1, background: "rgba(255,255,255,0.12)", marginBottom: 18 }} />
+        <div className="h-[1px] bg-white/15 mb-4 sm:mb-5" />
 
         {/* Bottom bar */}
-        <div style={{
-          display: "flex", justifyContent: "space-between", alignItems: "center",
-          paddingBottom: 28, fontSize: 13, color: "rgba(255,255,255,0.6)",
-          flexWrap: "wrap", gap: 8,
-        }}>
-          <span>© Copyright | RN Valves &amp; Faucets | All Rights Reserved</span>
-    
+        <div className="flex flex-col sm:flex-row justify-between items-center text-center sm:text-left gap-2 text-xs sm:text-sm text-white/60 pb-2">
+          <span>{copyright}</span>
         </div>
 
       </div>
