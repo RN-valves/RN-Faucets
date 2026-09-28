@@ -434,6 +434,7 @@ export default function Header({ data }: HeaderProps) {
   const [activeUserMenuLink, setActiveUserMenuLink] = useState<string | null>(null);
   const [isDarkBg, setIsDarkBg] = useState(isHome);
   const [isScrolled, setIsScrolled] = useState(!isHome);
+  const [isHeaderHovered, setIsHeaderHovered] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [sessionUser, setSessionUser] = useState<CustomerSession | null>(null);
   const [isAdminUser, setIsAdminUser] = useState(false);
@@ -567,29 +568,34 @@ export default function Header({ data }: HeaderProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [isHome, pathname]);
 
-  // Header text & icons adapt dynamically to background
-  const textColor = isDarkBg ? "#ffffff" : "#111827";
-  const textMutedColor = isDarkBg ? "rgba(255, 255, 255, 0.95)" : "rgba(17, 24, 39, 0.9)";
-  const iconColor = isDarkBg ? "#ffffff" : "#111827";
+  // When hovering header OR when over light sections, turn solid white like Jaquar
+  const isLightMode = !isDarkBg || isHeaderHovered;
 
-  // Transparent over graphic image banners & dark hero sections (isDarkBg === true)
-  // Solid frosted over light product content, details, and forms (isDarkBg === false)
-  const headerBg = isDarkBg
-    ? "transparent"
-    : "rgba(255, 255, 255, 0.97)";
-  const backdropFilterStyle = isDarkBg ? "none" : "blur(16px)";
-  const borderBottomStyle = isDarkBg
-    ? "none"
-    : "1px solid rgba(0, 0, 0, 0.08)";
-  const boxShadowStyle = isDarkBg
-    ? "none"
-    : "0 4px 20px rgba(0, 0, 0, 0.05)";
+  // Header text & icons adapt dynamically to background / hover
+  const textColor = isLightMode ? "#111827" : "#ffffff";
+  const textMutedColor = isLightMode ? "rgba(17, 24, 39, 0.9)" : "rgba(255, 255, 255, 0.95)";
+  const iconColor = isLightMode ? "#111827" : "#ffffff";
+
+  // Transparent over graphic image banners & dark hero sections (when not hovered)
+  // Solid white like Jaquar on hover or over light product content, details, and forms
+  const headerBg = isLightMode
+    ? "rgba(255, 255, 255, 0.98)"
+    : "transparent";
+  const backdropFilterStyle = isLightMode ? "blur(16px)" : "none";
+  const borderBottomStyle = isLightMode
+    ? "1px solid rgba(0, 0, 0, 0.08)"
+    : "none";
+  const boxShadowStyle = isLightMode
+    ? "0 4px 20px rgba(0, 0, 0, 0.06)"
+    : "none";
 
   return (
     <>
       {/* ── Prominent Floating Brand Logo (Separated from Header Flow so header stays slim & close to top) ── */}
       <div
         className="rn-floating-brand-logo"
+        onMouseEnter={() => setIsHeaderHovered(true)}
+        onMouseLeave={() => setIsHeaderHovered(false)}
         style={{
           position: "fixed",
           top: "4px",
@@ -616,6 +622,8 @@ export default function Header({ data }: HeaderProps) {
 
       {/* ── Top Floating Navigation Bar (Slim & Close to Top) ── */}
       <header
+        onMouseEnter={() => setIsHeaderHovered(true)}
+        onMouseLeave={() => setIsHeaderHovered(false)}
         style={{
           position: "fixed",
           top: 0,
@@ -633,7 +641,7 @@ export default function Header({ data }: HeaderProps) {
           boxSizing: "border-box",
           pointerEvents: "auto",
           color: textColor,
-          transition: "background 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease",
+          transition: "background 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.35s ease, color 0.35s ease, box-shadow 0.35s ease",
         }}
         className="rn-header-navbar"
       >
@@ -647,7 +655,7 @@ export default function Header({ data }: HeaderProps) {
         >
           {/* Jaquar Style Embedded Search Bar (Desktop / Tablet) */}
           <div className="hidden md:block mr-4 flex-1 max-w-[580px]">
-            <JaquarSearchBar isDarkBg={isDarkBg} />
+            <JaquarSearchBar isDarkBg={!isLightMode} />
           </div>
 
           <div className="rn-header-action-icons" style={{ display: "flex", alignItems: "center" }}>
