@@ -572,25 +572,18 @@ export default function Header({ data }: HeaderProps) {
   const textMutedColor = isDarkBg ? "rgba(255, 255, 255, 0.95)" : "rgba(17, 24, 39, 0.9)";
   const iconColor = isDarkBg ? "#ffffff" : "#111827";
 
-  // Solid/Frosted on all inner pages (product list, product details, etc.) and on homepage scroll
-  const isSolidHeader = !isHome || isScrolled;
-
-  const headerBg = isSolidHeader
-    ? isDarkBg
-      ? "rgba(8, 12, 20, 0.96)"
-      : "rgba(255, 255, 255, 0.97)"
-    : "transparent";
-  const backdropFilterStyle = isSolidHeader ? "blur(16px)" : "none";
-  const borderBottomStyle = isSolidHeader
-    ? isDarkBg
-      ? "1px solid rgba(255, 255, 255, 0.12)"
-      : "1px solid rgba(0, 0, 0, 0.08)"
-    : "none";
-  const boxShadowStyle = isSolidHeader
-    ? isDarkBg
-      ? "0 4px 20px rgba(0, 0, 0, 0.35)"
-      : "0 4px 20px rgba(0, 0, 0, 0.06)"
-    : "none";
+  // Transparent over graphic image banners & dark hero sections (isDarkBg === true)
+  // Solid frosted over light product content, details, and forms (isDarkBg === false)
+  const headerBg = isDarkBg
+    ? "transparent"
+    : "rgba(255, 255, 255, 0.97)";
+  const backdropFilterStyle = isDarkBg ? "none" : "blur(16px)";
+  const borderBottomStyle = isDarkBg
+    ? "none"
+    : "1px solid rgba(0, 0, 0, 0.08)";
+  const boxShadowStyle = isDarkBg
+    ? "none"
+    : "0 4px 20px rgba(0, 0, 0, 0.05)";
 
   return (
     <>
