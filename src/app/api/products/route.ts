@@ -140,6 +140,23 @@ export async function GET(request: Request) {
       conditions.push({ status });
     }
 
+    // 8. Website Visibility Filter (Matches Laravel: is_visible_website == 1)
+    const isAll = searchParams.get("all") === "true" || searchParams.get("admin") === "true";
+    if (!isAll) {
+      conditions.push({ isVisibleWebsite: { $ne: false } });
+    }
+
+    // 9. New Arrival & Featured Filters
+    const newArrival = searchParams.get("newArrival") || searchParams.get("new_arrival");
+    if (newArrival === "true" || newArrival === "1") {
+      conditions.push({ newArrival: true });
+    }
+
+    const isFeatured = searchParams.get("featured") || searchParams.get("isFeatured");
+    if (isFeatured === "true" || isFeatured === "1") {
+      conditions.push({ isFeatured: true });
+    }
+
     const filter = conditions.length === 0 ? {} : conditions.length === 1 ? conditions[0] : { $and: conditions };
 
     if (countOnly) {
