@@ -533,13 +533,20 @@ export default function FaucetProductPage({
     residentialWarranty: rawProduct?.residentialWarranty || rawProduct?.residential_warranty || rawProduct?.productAttribute?.residential_warranty || 0,
     commercialWarranty: rawProduct?.commercialWarranty || rawProduct?.commercial_warranty || rawProduct?.productAttribute?.commercial_warranty || 0,
     stock: typeof rawProduct?.stock === "number" ? rawProduct.stock : (typeof rawProduct?.stockPcs === "number" ? rawProduct.stockPcs : 10),
+    status: rawProduct?.status || "In Stock",
   };
 
   const hasDiscount = product.originalPrice > product.price && product.price > 0;
   const discountPercent = hasDiscount
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
-  const inStock = product.stock > 0;
+
+  const isExplicitlyOutOfStock =
+    product.status === "Out of Stock" ||
+    product.status === "Inactive" ||
+    product.status === "InActive" ||
+    product.status === "Discontinued";
+  const inStock = !isExplicitlyOutOfStock && ((product.stock ?? 0) > 0 || product.status === "In Stock" || product.status === "Active");
 
   const hierarchyBreadcrumb = useMemo(() => {
     const parts: string[] = [];
@@ -1499,7 +1506,9 @@ export default function FaucetProductPage({
                 {/* Add To Cart */}
                 <button
                   type="button"
+                  disabled={!inStock}
                   onClick={() => {
+                    if (!inStock) return;
                     addToCart({
                       id: product.id,
                       name: product.name,
@@ -1515,30 +1524,38 @@ export default function FaucetProductPage({
                   style={{
                     flex: "1 1 140px",
                     height: "48px",
-                    border: "1.5px solid #0f172a",
+                    border: `1.5px solid ${inStock ? "#0f172a" : "#cbd5e1"}`,
                     borderRadius: "8px",
-                    background: "#ffffff",
-                    color: "#0f172a",
+                    background: inStock ? "#ffffff" : "#f1f5f9",
+                    color: inStock ? "#0f172a" : "#94a3b8",
                     fontFamily: "'Manrope', system-ui, sans-serif",
                     fontSize: "14px",
                     fontWeight: 800,
                     letterSpacing: "0.02em",
-                    cursor: "pointer",
+                    cursor: inStock ? "pointer" : "not-allowed",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     gap: "8px",
                     transition: "all 0.2s ease",
+                    opacity: inStock ? 1 : 0.75,
                   }}
                 >
                   <ShoppingCart size={17} />
-                  Add To Cart
+                  {inStock ? "Add To Cart" : "Out of Stock"}
                 </button>
 
                 {/* Buy Now */}
                 <button
                   type="button"
                   onClick={() => {
+                    if (!inStock) {
+                      window.open(
+                        `https://wa.me/918737029643?text=Hi%20RN%20Valves,%20I%20am%20enquiring%20about%20availability%20for:%20${encodeURIComponent(product.name)}%20(Code:%20${encodeURIComponent(product.code || product.id)})`,
+                        "_blank"
+                      );
+                      return;
+                    }
                     addToCart({
                       id: product.id,
                       name: product.name,
@@ -1556,7 +1573,7 @@ export default function FaucetProductPage({
                     height: "48px",
                     border: "none",
                     borderRadius: "8px",
-                    background: "#0f172a",
+                    background: inStock ? "#0f172a" : "#0284c7",
                     color: "#ffffff",
                     fontFamily: "'Manrope', system-ui, sans-serif",
                     fontSize: "14px",
@@ -1570,7 +1587,7 @@ export default function FaucetProductPage({
                     transition: "all 0.2s ease",
                   }}
                 >
-                  Buy Now
+                  {inStock ? "Buy Now" : "Enquire on WhatsApp"}
                 </button>
               </div>
 

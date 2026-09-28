@@ -2213,6 +2213,12 @@ function CategoryPageContent({ category }: { category: string }) {
                       .replace(/\s+/g, "-");
                     const productUrl = `/faucets/${catSegment}/${encodeURIComponent(prodCode)}`;
 
+                    const isOutOfStock =
+                      product.status === "Out of Stock" ||
+                      product.status === "Inactive" ||
+                      product.status === "InActive" ||
+                      product.status === "Discontinued";
+
                     return (
                       <article
                         key={product.id || prodCode}
@@ -2233,7 +2239,7 @@ function CategoryPageContent({ category }: { category: string }) {
                         <Link
                           href={productUrl}
                           className="product-card__image-panel product-card-img-panel"
-                          style={{ textDecoration: "none", display: "flex", width: "100%" }}
+                          style={{ textDecoration: "none", display: "flex", width: "100%", position: "relative" }}
                           onClick={(e) => {
                             const selection = typeof window !== "undefined" ? window.getSelection() : null;
                             if (selection && selection.toString().trim().length > 0) {
@@ -2241,6 +2247,27 @@ function CategoryPageContent({ category }: { category: string }) {
                             }
                           }}
                         >
+                          {isOutOfStock && (
+                            <span
+                              style={{
+                                position: "absolute",
+                                top: "10px",
+                                left: "10px",
+                                background: "rgba(220, 38, 38, 0.9)",
+                                color: "#ffffff",
+                                fontSize: "10px",
+                                fontWeight: 800,
+                                textTransform: "uppercase",
+                                letterSpacing: "0.06em",
+                                padding: "3px 8px",
+                                borderRadius: "4px",
+                                boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+                                zIndex: 2,
+                              }}
+                            >
+                              Out of Stock
+                            </span>
+                          )}
                           <img
                             src={product.image || "/api/media/website/catalogue/products/default/image.webp"}
                             alt={product.name}

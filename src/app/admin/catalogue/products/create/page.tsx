@@ -264,8 +264,8 @@ export default function CreateProductPage() {
       othV1Mrp: Number(othV1Mrp),
 
       // Stock & Specs
-      stock: Number(stock),
-      stockPcs: Number(stockPcs) || Number(stock),
+      stock: Number(stockPcs) || Number(stock) || 0,
+      stockPcs: Number(stockPcs) || Number(stock) || 0,
       moq: Number(moq),
       ctnPcs: Number(ctnPcs),
       midCtnPcs: Number(midCtnPcs),
@@ -590,7 +590,7 @@ export default function CreateProductPage() {
                       <input type="number" value={innerPcs} onChange={(e) => setInnerPcs(Number(e.target.value))} style={{ width: "100%", padding: "6px", borderRadius: "6px", border: `1px solid ${border}`, background: cardBg, color: textMain }} />
                     </td>
                     <td style={{ padding: "4px" }}>
-                      <input type="number" value={stockPcs} onChange={(e) => setStockPcs(Number(e.target.value))} style={{ width: "100%", padding: "6px", borderRadius: "6px", border: `1px solid ${border}`, background: cardBg, color: textMain }} />
+                      <input type="number" value={stockPcs} onChange={(e) => { const val = Number(e.target.value); setStockPcs(val); setStock(val); }} style={{ width: "100%", padding: "6px", borderRadius: "6px", border: `1px solid ${border}`, background: cardBg, color: textMain }} />
                     </td>
                     <td style={{ padding: "4px" }}>
                       <input type="number" step="any" value={productLength} onChange={(e) => setProductLength(Number(e.target.value))} style={{ width: "100%", padding: "6px", borderRadius: "6px", border: `1px solid ${border}`, background: cardBg, color: textMain }} />

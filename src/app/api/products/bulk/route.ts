@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import Product from "@/models/Product";
 import { requireAdminAuth } from "@/lib/security";
@@ -21,7 +22,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No product IDs provided" }, { status: 400 });
     }
 
-    const filter = { id: { $in: ids } };
+    const objectIds = ids
+      .filter((id) => typeof id === "string" && mongoose.isValidObjectId(id))
+      .map((id) => new mongoose.Types.ObjectId(id));
+
+    const filterConditions: any[] = [
+      { id: { $in: ids } },
+      { code: { $in: ids } },
+      { skuCode: { $in: ids } },
+    ];
+    if (objectIds.length > 0) {
+      filterConditions.push({ _id: { $in: objectIds } });
+    }
+
+    const filter = { $or: filterConditions };
 
     if (action === "delete") {
       await Product.deleteMany(filter);
@@ -29,7 +43,18 @@ export async function POST(request: Request) {
     }
 
     if (action === "status" && status) {
-      await Product.updateMany(filter, { $set: { status } });
+      if (status === "In Stock") {
+        await Product.updateMany(filter, {
+          $set: { status: "In Stock" },
+        });
+        // Ensure products set to In Stock do not stay at 0 stock
+        await Product.updateMany(
+          { ...filter, $or: [{ stock: { $lte: 0 } }, { stock: { $exists: false } }] },
+          { $set: { stock: 50, stockPcs: 50 } }
+        );
+      } else {
+        await Product.updateMany(filter, { $set: { status } });
+      }
       return NextResponse.json({ success: true, count: ids.length });
     }
 

@@ -150,13 +150,30 @@ export const getAdminProducts = async (params?: {
   }
 };
 
+function getAuthHeaders(): Record<string, string> {
+  if (typeof document === "undefined") return {};
+  const cookies = document.cookie
+    ? Object.fromEntries(
+        document.cookie.split(";").map((c) => {
+          const [k, ...v] = c.trim().split("=");
+          return [k, v.join("=")];
+        })
+      )
+    : {};
+  const token = cookies["rn_session"];
+  if (token) {
+    return { Authorization: `Bearer ${token}` };
+  }
+  return {};
+}
+
 export const addAdminProduct = async (
   product: Partial<AdminProduct>
 ): Promise<AdminProduct | null> => {
   try {
     const res = await fetch("/api/products", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify(product),
     });
     if (!res.ok) throw new Error("fetch failed");
@@ -173,19 +190,26 @@ export const updateAdminProduct = async (
   try {
     const res = await fetch(`/api/products/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify(updatedFields),
     });
-    if (!res.ok) throw new Error("fetch failed");
+    if (!res.ok) {
+      console.error(`Failed to update product ${id}:`, res.status, res.statusText);
+      throw new Error(`fetch failed: ${res.status}`);
+    }
     return res.json();
-  } catch {
+  } catch (err) {
+    console.error("updateAdminProduct error:", err);
     return null;
   }
 };
 
 export const deleteAdminProduct = async (id: string): Promise<boolean> => {
   try {
-    const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/products/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
     return res.ok;
   } catch {
     return false;
@@ -211,7 +235,7 @@ export const bulkPerformProductAction = async (payload: {
   try {
     const res = await fetch("/api/products/bulk", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify(payload),
     });
     return res.ok;

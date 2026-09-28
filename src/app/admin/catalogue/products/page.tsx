@@ -89,9 +89,59 @@ export default function ProductsListingPage() {
   }, []);
 
   const handleToggleStatus = async (id: string, currentStatus: string) => {
-    const nextStatus = currentStatus === "In Stock" || currentStatus === "Active" ? "Out of Stock" : "In Stock";
-    await updateAdminProduct(id, { status: nextStatus as any });
-    await loadData();
+    const isCurrentlyInStock = currentStatus === "In Stock" || currentStatus === "Active";
+    const nextStatus = isCurrentlyInStock ? "Out of Stock" : "In Stock";
+
+    // Optimistically update products list
+    setProducts((prev) =>
+      prev.map((p) => {
+        if (p.id === id || (p as any)._id === id) {
+          const currentQty = p.stockPcs || p.stock || 0;
+          const newStock = nextStatus === "In Stock" && currentQty <= 0 ? 50 : currentQty;
+          return {
+            ...p,
+            status: nextStatus as any,
+            stock: newStock,
+            stockPcs: newStock,
+          };
+        }
+        return p;
+      })
+    );
+
+    const res = await updateAdminProduct(id, {
+      status: nextStatus as any,
+      ...(nextStatus === "In Stock" ? { stock: 50, stockPcs: 50 } : {}),
+    });
+
+    if (!res) {
+      alert("Failed to update status. Please make sure you are logged in as admin.");
+      await loadData();
+    }
+  };
+
+  const handleQuickStockChange = async (id: string, newStockVal: number) => {
+    if (isNaN(newStockVal) || newStockVal < 0) return;
+    const newStatus = newStockVal > 0 ? "In Stock" : "Out of Stock";
+
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.id === id || (p as any)._id === id
+          ? { ...p, stock: newStockVal, stockPcs: newStockVal, status: newStatus as any }
+          : p
+      )
+    );
+
+    const res = await updateAdminProduct(id, {
+      stock: newStockVal,
+      stockPcs: newStockVal,
+      status: newStatus as any,
+    });
+
+    if (!res) {
+      alert("Failed to update stock. Please try again.");
+      await loadData();
+    }
   };
 
   const handleDeleteProduct = async (id: string, code: string) => {
@@ -113,7 +163,12 @@ export default function ProductsListingPage() {
       (prod.category && prod.category.toLowerCase().includes(q));
 
     const matchesCat = categoryFilter === "All" || prod.category === categoryFilter;
-    const matchesStatus = statusFilter === "All" || prod.status === statusFilter;
+    const prodStatusStr = String(prod.status || "");
+    const matchesStatus =
+      statusFilter === "All" ||
+      prod.status === statusFilter ||
+      (statusFilter === "In Stock" && (prod.status === "In Stock" || prod.status === "Active")) ||
+      (statusFilter === "Out of Stock" && (prodStatusStr === "Out of Stock" || prodStatusStr.toLowerCase() === "inactive" || (prod.stock || prod.stockPcs || 0) <= 0));
 
     return matchesQuery && matchesCat && matchesStatus;
   });
@@ -674,25 +729,67 @@ export default function ProductsListingPage() {
                         ₹{prod.inSelling || prod.price || 0}
                       </td>
 
-                      <td style={{ padding: "14px 20px", fontWeight: 700, color: textMain }}>
-                        {prod.stock || 0} pcs
+                      <td style={{ padding: "14px 20px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <input
+                            type="number"
+                            min="0"
+                            defaultValue={prod.stockPcs ?? prod.stock ?? 0}
+                            key={`stock-${prod.id}-${prod.stockPcs ?? prod.stock ?? 0}`}
+                            onBlur={(e) => {
+                              const val = parseInt(e.target.value, 10);
+                              if (!isNaN(val) && val !== (prod.stockPcs ?? prod.stock ?? 0)) {
+                                handleQuickStockChange(prod.id, val);
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                (e.target as HTMLInputElement).blur();
+                              }
+                            }}
+                            style={{
+                              width: "68px",
+                              padding: "4px 6px",
+                              borderRadius: "6px",
+                              border: `1px solid ${border}`,
+                              background: inputBg,
+                              color: textMain,
+                              fontSize: "12px",
+                              fontWeight: 700,
+                              textAlign: "center",
+                            }}
+                          />
+                          <span style={{ fontSize: "11px", color: textMuted }}>pcs</span>
+                        </div>
                       </td>
 
                       <td style={{ padding: "14px 20px" }}>
                         <button
                           onClick={() => handleToggleStatus(prod.id, prod.status)}
+                          title={`Click to switch to ${prod.status === "In Stock" || prod.status === "Active" ? "Out of Stock" : "In Stock"}`}
                           style={{
                             background: prod.status === "In Stock" || prod.status === "Active" ? "#0596691A" : "#DC26261A",
                             color: prod.status === "In Stock" || prod.status === "Active" ? "#059669" : "#DC2626",
-                            border: "none",
+                            border: `1px solid ${prod.status === "In Stock" || prod.status === "Active" ? "#05966933" : "#DC262633"}`,
                             padding: "4px 12px",
                             borderRadius: "12px",
                             fontSize: "11px",
                             fontWeight: 800,
                             cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "5px",
                           }}
                         >
-                          {prod.status}
+                          <span
+                            style={{
+                              width: "6px",
+                              height: "6px",
+                              borderRadius: "50%",
+                              background: prod.status === "In Stock" || prod.status === "Active" ? "#059669" : "#DC2626",
+                            }}
+                          />
+                          {prod.status || "In Stock"}
                         </button>
                       </td>
 
