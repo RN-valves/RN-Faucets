@@ -120,7 +120,7 @@ export default function AdminDashboardPage() {
     }).format(val);
   };
 
-  const getStatusColor = (status: AdminOrder["status"]) => {
+  const getStatusColor = (status?: string) => {
     switch (status) {
       case "Delivered":
         return { bg: isDark ? "rgba(35, 134, 54, 0.15)" : "#D1FAE5", text: isDark ? "#3FB950" : "#065F46", border: "#10B981" };
@@ -132,6 +132,8 @@ export default function AdminDashboardPage() {
         return { bg: isDark ? "rgba(163, 113, 247, 0.15)" : "#EDE9FE", text: isDark ? "#BC8CFF" : "#5B21B6", border: "#8B5CF6" };
       case "Cancelled":
         return { bg: isDark ? "rgba(248, 81, 73, 0.15)" : "#FEE2E2", text: isDark ? "#F85149" : "#991B1B", border: "#EF4444" };
+      default:
+        return { bg: isDark ? "rgba(163, 113, 247, 0.15)" : "#EDE9FE", text: isDark ? "#BC8CFF" : "#5B21B6", border: "#8B5CF6" };
     }
   };
 
@@ -699,22 +701,23 @@ export default function AdminDashboardPage() {
                     </td>
                   </tr>
                 ) : (
-                  orders.map((order) => {
+                  orders.map((order, idx) => {
                   const statusStyle = getStatusColor(order.status);
+                  const orderId = order.id || (order as any)._id || `RNOD-${idx + 1}`;
                   return (
-                    <tr key={order.id} style={{ borderBottom: `1px solid ${border}`, color: textMain }}>
+                    <tr key={orderId} style={{ borderBottom: `1px solid ${border}`, color: textMain }}>
                       <td style={{ padding: "16px", fontWeight: 800, color: "#0077B6" }}>
-                        {order.id}
+                        {orderId}
                       </td>
                       <td style={{ padding: "16px" }}>
-                        <div style={{ fontWeight: 700, color: textMain }}>{order.customerName}</div>
-                        <div style={{ fontSize: "11.5px", color: textMuted }}>{order.customerPhone}</div>
+                        <div style={{ fontWeight: 700, color: textMain }}>{order.customerName || "Customer"}</div>
+                        <div style={{ fontSize: "11.5px", color: textMuted }}>{order.customerPhone || "—"}</div>
                       </td>
                       <td style={{ padding: "16px", color: textMuted, fontSize: "12.5px" }}>
-                        {order.orderDate}
+                        {order.orderDate || "—"}
                       </td>
                       <td style={{ padding: "16px" }}>
-                        <div style={{ fontSize: "12.5px", fontWeight: 600 }}>{order.paymentMethod}</div>
+                        <div style={{ fontSize: "12.5px", fontWeight: 600 }}>{order.paymentMethod || "Online"}</div>
                         <span
                           style={{
                             fontSize: "11px",
@@ -722,17 +725,17 @@ export default function AdminDashboardPage() {
                             color: order.paymentStatus === "Paid" ? "#059669" : "#D97706",
                           }}
                         >
-                          ● {order.paymentStatus}
+                          ● {order.paymentStatus || "Pending"}
                         </span>
                       </td>
                       <td style={{ padding: "16px", fontWeight: 800, color: textMain }}>
-                        {formatCurrency(order.totalAmount)}
+                        {formatCurrency(Number(order.totalAmount || 0))}
                       </td>
                       <td style={{ padding: "16px" }}>
                         <select
-                          value={order.status}
+                          value={order.status || "Pending"}
                           onChange={(e) =>
-                            handleStatusChange(order.id, e.target.value as AdminOrder["status"])
+                            handleStatusChange(orderId, e.target.value as AdminOrder["status"])
                           }
                           style={{
                             background: statusStyle.bg,
@@ -824,10 +827,10 @@ export default function AdminDashboardPage() {
               >
                 <div>
                   <h3 style={{ fontSize: "18px", fontWeight: 800, color: textMain, margin: 0 }}>
-                    Order Details: {selectedOrder.id}
+                    Order Details: {selectedOrder.id || (selectedOrder as any)._id || "Order"}
                   </h3>
                   <span style={{ fontSize: "12px", color: textMuted }}>
-                    Placed on {selectedOrder.orderDate}
+                    Placed on {selectedOrder.orderDate || "—"}
                   </span>
                 </div>
                 <button
@@ -864,22 +867,22 @@ export default function AdminDashboardPage() {
                 }}
               >
                 <span style={{ fontWeight: 800, color: "#0077B6" }}>Shipping & Customer Info</span>
-                <div style={{ color: textMain, fontWeight: 700 }}>{selectedOrder.customerName}</div>
-                <div style={{ color: textMuted }}>Phone: {selectedOrder.customerPhone}</div>
-                <div style={{ color: textMuted }}>Email: {selectedOrder.customerEmail}</div>
+                <div style={{ color: textMain, fontWeight: 700 }}>{selectedOrder.customerName || "Customer"}</div>
+                <div style={{ color: textMuted }}>Phone: {selectedOrder.customerPhone || "—"}</div>
+                <div style={{ color: textMuted }}>Email: {selectedOrder.customerEmail || "—"}</div>
                 <div style={{ color: textMain, marginTop: "4px" }}>
-                  Address: {selectedOrder.shippingAddress.address},{" "}
-                  {selectedOrder.shippingAddress.city}, {selectedOrder.shippingAddress.state} -{" "}
-                  {selectedOrder.shippingAddress.pinCode}
+                  Address: {selectedOrder.shippingAddress?.address || "—"},{" "}
+                  {selectedOrder.shippingAddress?.city || ""}, {selectedOrder.shippingAddress?.state || ""} -{" "}
+                  {selectedOrder.shippingAddress?.pinCode || ""}
                 </div>
               </div>
 
               {/* Items List */}
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 <span style={{ fontSize: "14px", fontWeight: 800, color: textMain }}>
-                  Purchased Items ({selectedOrder.items.length})
+                  Purchased Items ({(selectedOrder.items || []).length})
                 </span>
-                {selectedOrder.items.map((item, idx) => (
+                {(selectedOrder.items || []).map((item, idx) => (
                   <div
                     key={idx}
                     style={{
@@ -894,8 +897,8 @@ export default function AdminDashboardPage() {
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={item.image}
-                      alt={item.name}
+                      src={item.image || "/placeholder.png"}
+                      alt={item.name || "Product"}
                       style={{
                         width: "50px",
                         height: "50px",
@@ -908,14 +911,14 @@ export default function AdminDashboardPage() {
                     />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: "13.5px", fontWeight: 700, color: textMain }}>
-                        {item.name}
+                        {item.name || "Product"}
                       </div>
                       <div style={{ fontSize: "11.5px", color: textMuted }}>
-                        Qty: {item.quantity} × ₹{item.price} ({item.color})
+                        Qty: {item.quantity || 1} × ₹{item.price || 0} {item.color ? `(${item.color})` : ""}
                       </div>
                     </div>
                     <div style={{ fontWeight: 800, color: textMain, fontSize: "14px" }}>
-                      ₹{item.price * item.quantity}
+                      ₹{Number(item.price || 0) * Number(item.quantity || 1)}
                     </div>
                   </div>
                 ))}
