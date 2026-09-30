@@ -20,9 +20,13 @@ import {
   Save,
   Upload,
   Image as ImageIcon,
+  Copy,
+  Check,
+  ExternalLink,
+  Trash2,
 } from "lucide-react";
 
-// Reusable R2 Upload Component
+// Reusable R2 Upload & Image Link Editor Component
 function R2UploadPicker({
   label,
   r2Key,
@@ -30,6 +34,7 @@ function R2UploadPicker({
   onUploadSuccess,
   onRemove,
   accept = "image/*",
+  isDark = false,
 }: {
   label: string;
   r2Key: string;
@@ -37,8 +42,10 @@ function R2UploadPicker({
   onUploadSuccess: (newUrl: string) => void;
   onRemove?: () => void;
   accept?: string;
+  isDark?: boolean;
 }) {
   const [uploading, setUploading] = useState(false);
+  const [copied, setCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,69 +63,206 @@ function R2UploadPicker({
     }
   };
 
+  const handleCopyLink = () => {
+    if (!currentUrl) return;
+    navigator.clipboard.writeText(currentUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const border = isDark ? "#21262D" : "#E5E7EB";
+  const cardBg = isDark ? "#161B22" : "#FFFFFF";
+  const textMain = isDark ? "#F0F6FC" : "#111827";
+  const textMuted = isDark ? "#8B949E" : "#6B7280";
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-      <label style={{ fontSize: "12px", fontWeight: 700, color: "#111827", display: "flex", justifyContent: "space-between" }}>
-        <span>{label}</span>
-        <span style={{ fontSize: "10px", color: "#6B7280", fontFamily: "monospace" }}>R2: {r2Key}</span>
-      </label>
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "6px" }}>
+        <label style={{ fontSize: "12.5px", fontWeight: 700, color: textMain }}>
+          {label}
+        </label>
+        <span style={{ fontSize: "11px", color: textMuted, fontFamily: "monospace" }}>
+          R2 Target: {r2Key}
+        </span>
+      </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: "8px", padding: "8px" }}>
-        {currentUrl ? (
-          <div style={{ width: "48px", height: "48px", borderRadius: "6px", overflow: "hidden", border: "1px solid #D1D5DB", flexShrink: 0, position: "relative", background: "#111827" }}>
-            <img src={currentUrl} alt={label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          </div>
-        ) : (
-          <div style={{ width: "48px", height: "48px", borderRadius: "6px", border: "1px dashed #9CA3AF", display: "flex", alignItems: "center", justifyContent: "center", color: "#9CA3AF", flexShrink: 0 }}>
-            <ImageIcon size={18} />
-          </div>
-        )}
-
-        <div style={{ flex: 1, display: "flex", gap: "8px", alignItems: "center" }}>
-          <input ref={fileInputRef} type="file" accept={accept} onChange={handleFileChange} style={{ display: "none" }} />
-
-          <button
-            type="button"
-            disabled={uploading}
-            onClick={() => fileInputRef.current?.click()}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+          background: isDark ? "#0D1117" : "#F8FAFC",
+          border: `1px solid ${border}`,
+          borderRadius: "10px",
+          padding: "14px",
+        }}
+      >
+        <div style={{ display: "flex", gap: "14px", alignItems: "flex-start", flexWrap: "wrap" }}>
+          {/* Live Image Preview Thumbnail */}
+          <div
             style={{
+              width: "80px",
+              height: "80px",
+              borderRadius: "8px",
+              overflow: "hidden",
+              border: `1px solid ${border}`,
+              flexShrink: 0,
+              position: "relative",
+              background: isDark ? "#161B22" : "#FFFFFF",
               display: "flex",
               alignItems: "center",
-              gap: "6px",
-              padding: "6px 12px",
-              borderRadius: "6px",
-              border: "1px solid #0077B6",
-              background: "#E0F2FE",
-              color: "#0077B6",
-              fontWeight: 700,
-              fontSize: "12px",
-              cursor: uploading ? "not-allowed" : "pointer",
+              justifyContent: "center",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
             }}
           >
-            <Upload size={13} /> {uploading ? "Uploading..." : currentUrl ? "Change Image" : "Upload File"}
-          </button>
+            {currentUrl ? (
+              <img
+                src={currentUrl}
+                alt={label}
+                style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = "none";
+                }}
+              />
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", color: textMuted }}>
+                <ImageIcon size={24} />
+                <span style={{ fontSize: "10px", fontWeight: 600 }}>No Image</span>
+              </div>
+            )}
+          </div>
 
-          {currentUrl && onRemove && (
-            <button
-              type="button"
-              onClick={() => {
-                deleteFileFromR2(r2Key);
-                onRemove();
-              }}
-              style={{
-                padding: "6px 10px",
-                borderRadius: "6px",
-                border: "1px solid #EF4444",
-                background: "transparent",
-                color: "#EF4444",
-                fontWeight: 700,
-                fontSize: "12px",
-                cursor: "pointer",
-              }}
-            >
-              Remove
-            </button>
-          )}
+          {/* Direct Link Input and File Upload Options */}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "10px", minWidth: "260px" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "11.5px", fontWeight: 700, color: textMain, marginBottom: "4px" }}>
+                Image Link / URL (Type, Paste, or Edit directly)
+              </label>
+              <div style={{ display: "flex", gap: "6px" }}>
+                <input
+                  type="text"
+                  value={currentUrl}
+                  onChange={(e) => onUploadSuccess(e.target.value)}
+                  placeholder="https://... or /api/media/..."
+                  style={{
+                    flex: 1,
+                    padding: "8px 12px",
+                    borderRadius: "6px",
+                    border: `1px solid ${border}`,
+                    background: cardBg,
+                    color: textMain,
+                    fontSize: "13px",
+                    fontFamily: "monospace",
+                    outline: "none",
+                  }}
+                />
+                {currentUrl && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleCopyLink}
+                      title="Copy Image URL"
+                      style={{
+                        padding: "8px 10px",
+                        borderRadius: "6px",
+                        border: `1px solid ${border}`,
+                        background: cardBg,
+                        color: copied ? "#059669" : textMuted,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {copied ? <Check size={14} /> : <Copy size={14} />}
+                      <span>{copied ? "Copied" : "Copy"}</span>
+                    </button>
+                    <a
+                      href={currentUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Open Image in new tab"
+                      style={{
+                        padding: "8px 10px",
+                        borderRadius: "6px",
+                        border: `1px solid ${border}`,
+                        background: cardBg,
+                        color: textMuted,
+                        display: "flex",
+                        alignItems: "center",
+                        textDecoration: "none",
+                      }}
+                    >
+                      <ExternalLink size={14} />
+                    </a>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Upload File & Clear Buttons */}
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={accept}
+                onChange={handleFileChange}
+                style={{ display: "none" }}
+              />
+
+              <button
+                type="button"
+                disabled={uploading}
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "7px 14px",
+                  borderRadius: "6px",
+                  border: "1px solid #0077B6",
+                  background: isDark ? "#073B4C" : "#E0F2FE",
+                  color: isDark ? "#38BDF8" : "#0077B6",
+                  fontWeight: 700,
+                  fontSize: "12px",
+                  cursor: uploading ? "not-allowed" : "pointer",
+                }}
+              >
+                <Upload size={13} /> {uploading ? "Uploading to Cloudflare R2..." : currentUrl ? "Upload & Replace Image File" : "Upload Image File to R2"}
+              </button>
+
+              {currentUrl && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onRemove) {
+                      deleteFileFromR2(r2Key);
+                      onRemove();
+                    } else {
+                      onUploadSuccess("");
+                    }
+                  }}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    padding: "7px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid #EF4444",
+                    background: "transparent",
+                    color: "#EF4444",
+                    fontWeight: 700,
+                    fontSize: "12px",
+                    cursor: "pointer",
+                  }}
+                >
+                  <Trash2 size={13} /> Clear Image
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -816,6 +960,7 @@ export default function EditProductPage() {
                 currentUrl={image}
                 onUploadSuccess={(url) => setImage(url)}
                 onRemove={() => setImage("")}
+                isDark={isDark}
               />
             </div>
 
