@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import Order from "@/models/Order";
 import Payment from "@/models/Payment";
 import Product from "@/models/Product";
+import User from "@/models/User";
 import { requireAdminAuth, requireAuth } from "@/lib/security";
 import { sendOrderStatusEmail } from "@/lib/email";
 
@@ -31,6 +32,33 @@ export async function GET(
 
       if (!isOwner) {
         return NextResponse.json({ error: "Forbidden. You can only view your own orders." }, { status: 403 });
+      }
+    }
+
+    // Customer profile & addresses lookup
+    if (order.customerPhone) {
+      const cleanPhone = order.customerPhone.replace(/\D/g, "").slice(-10);
+      const userDoc: any = await User.findOne({
+        $or: [
+          { mobile: cleanPhone },
+          { mobile: `+91${cleanPhone}` },
+          { mobile: `91${cleanPhone}` },
+        ],
+      })
+        .select("name mobile email address city state zipcode addresses userCode")
+        .lean();
+
+      if (userDoc) {
+        order.customer = {
+          name: userDoc.name || order.customerName,
+          mobile: userDoc.mobile || cleanPhone,
+          email: userDoc.email || order.customerEmail,
+          city: userDoc.city || order.shippingAddress?.city,
+          state: userDoc.state || order.shippingAddress?.state,
+          zipcode: userDoc.zipcode || order.shippingAddress?.pinCode,
+          userCode: userDoc.userCode || "",
+          addresses: Array.isArray(userDoc.addresses) ? userDoc.addresses : [],
+        };
       }
     }
 
@@ -133,7 +161,53 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
-    const previousOrder = await Order.findOne({ $or: [{ _id: id }, { id }] }).lean();
+    const previousOrder: any = await Order.findOne({ $or: [{ _id: id }, { id }] }).lean();
+    if (!previousOrder) return NextResponse.json({ error: "Order not found" }, { status: 404 });
+
+    // Handle Full Order Edit
+    if (body.isOrderEdit || Array.isArray(body.items)) {
+      if (previousOrder.status !== "Pending") {
+        return NextResponse.json(
+          { error: "Only Pending orders can be edited. Current status is " + previousOrder.status },
+          { status: 400 }
+        );
+      }
+
+      const items = Array.isArray(body.items) ? body.items : [];
+      if (items.length === 0) {
+        return NextResponse.json(
+          { error: "Order must contain at least one item." },
+          { status: 400 }
+        );
+      }
+
+      const subtotal = items.reduce(
+        (sum: number, it: any) => sum + (Number(it.price || 0) * Number(it.quantity || 1)),
+        0
+      );
+      const shippingAmount = Number(body.shippingAmount || 0);
+      const discountAmount = Number(body.discountAmount || 0);
+      const totalAmount = Math.max(0, Math.round(subtotal + shippingAmount - discountAmount));
+
+      body.items = items;
+      body.shippingAmount = shippingAmount;
+      body.discountAmount = discountAmount;
+      if (discountAmount > 0) {
+        body.discountCode = "Admin";
+      }
+      body.totalAmount = totalAmount;
+
+      // Append timeline audit entry
+      const timelineEntry = {
+        id: Date.now(),
+        user_name: adminSession.name || "Super Admin",
+        created_at: new Date().toISOString(),
+        change_value: "Pending",
+        change_type: "order_edit",
+      };
+      const existingTimeline = Array.isArray(previousOrder.timeline) ? previousOrder.timeline : [];
+      body.timeline = [timelineEntry, ...existingTimeline];
+    }
 
     const updated = await Order.findOneAndUpdate(
       { $or: [{ _id: id }, { id }] },
@@ -141,10 +215,8 @@ export async function PUT(
       { new: true }
     ).lean();
 
-    if (!updated) return NextResponse.json({ error: "Order not found" }, { status: 404 });
-
     // If status changed or updated, send status update email in background
-    if (body.status && (!previousOrder || previousOrder.status !== body.status)) {
+    if (body.status && previousOrder.status !== body.status) {
       sendOrderStatusEmail(updated, body.status).catch((err) =>
         console.error("Async status update email error:", err)
       );

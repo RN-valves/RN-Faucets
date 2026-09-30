@@ -835,17 +835,8 @@ export default function AdminOrderDetailPage() {
                 </button>
 
                 {order.status === "Pending" && (
-                  <button
-                    onClick={() => {
-                      const noteInput = prompt("Edit internal note for order:", order.note || "");
-                      if (noteInput !== null) {
-                        fetch(`/api/orders/${order._id || order.id}`, {
-                          method: "PUT",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ note: noteInput }),
-                        }).then(() => fetchOrder());
-                      }
-                    }}
+                  <Link
+                    href={`/admin/orders/${order._id || order.id}/edit`}
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
@@ -856,12 +847,11 @@ export default function AdminOrderDetailPage() {
                       borderRadius: "4px",
                       fontSize: "13px",
                       fontWeight: 700,
-                      border: "none",
-                      cursor: "pointer",
+                      textDecoration: "none",
                     }}
                   >
                     Edit Order <Edit size={14} />
-                  </button>
+                  </Link>
                 )}
               </div>
             </div>
