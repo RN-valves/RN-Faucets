@@ -811,9 +811,9 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                                 {codePart}
                               </span>
                             ) : null}
-                            {p.price && p.price > 0 ? (
+                            {(p.inSelling || p.price || p.inMrp || 0) > 0 ? (
                               <span style={{ fontSize: "12.5px", color: "#0077b6", fontWeight: 700, marginLeft: "8px" }}>
-                                ₹{p.price}
+                                ₹{p.inSelling || p.price || p.inMrp}
                               </span>
                             ) : null}
                           </span>

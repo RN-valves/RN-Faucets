@@ -206,15 +206,19 @@ export default function AdminOrderEditPage() {
   }, [orderId]);
 
   // 2. Search Products
-  const handleSearchProducts = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  const handleSearchProducts = async (
+    queryVal = searchQuery,
+    catVal = selectedCategory,
+    subcatVal = selectedSubcategory
+  ) => {
     setSearching(true);
     try {
       const qParams = new URLSearchParams();
-      if (searchQuery) qParams.set("q", searchQuery);
-      if (selectedCategory) qParams.set("category", selectedCategory);
-      if (selectedSubcategory) qParams.set("subcategory", selectedSubcategory);
-      qParams.set("limit", "25");
+      if (queryVal.trim()) qParams.set("q", queryVal.trim());
+      if (catVal) qParams.set("category", catVal);
+      if (subcatVal) qParams.set("subcategory", subcatVal);
+      qParams.set("admin", "true");
+      qParams.set("limit", "50");
 
       const res = await fetch(`/api/products?${qParams.toString()}`);
       if (res.ok) {
@@ -238,12 +242,18 @@ export default function AdminOrderEditPage() {
     }
   };
 
-  // Trigger search whenever category or subcategory filter changes
+  // Initial catalogue fetch on mount
   useEffect(() => {
-    if (selectedCategory || selectedSubcategory || searchQuery) {
-      handleSearchProducts();
-    }
-  }, [selectedCategory, selectedSubcategory]);
+    handleSearchProducts("", "", "");
+  }, []);
+
+  // Debounced auto-search when query or category filter changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleSearchProducts(searchQuery, selectedCategory, selectedSubcategory);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [searchQuery, selectedCategory, selectedSubcategory]);
 
   // Live Totals Calculation
   const subtotal = useMemo(() => {
@@ -647,7 +657,13 @@ export default function AdminOrderEditPage() {
                 </div>
 
                 {/* Search Bar */}
-                <form onSubmit={handleSearchProducts} style={{ display: "flex", gap: "8px" }}>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSearchProducts(searchQuery, selectedCategory, selectedSubcategory);
+                  }}
+                  style={{ display: "flex", gap: "8px" }}
+                >
                   <div style={{ position: "relative", flex: 1 }}>
                     <input
                       type="text"

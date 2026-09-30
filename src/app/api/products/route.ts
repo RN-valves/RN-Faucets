@@ -21,40 +21,37 @@ export async function GET(request: Request) {
     if (q) {
       const cleanQ = q.trim();
       const safeQ = escapeRegex(cleanQ);
-      const words = cleanQ.split(/\s+/).map((w) => escapeRegex(w)).filter((w) => w.length > 1);
+      const words = cleanQ.split(/\s+/).map((w) => escapeRegex(w)).filter((w) => w.length > 0);
 
-      const qOrConditions: Record<string, unknown>[] = [
-        { name: { $regex: safeQ, $options: "i" } },
-        { code: { $regex: safeQ, $options: "i" } },
-        { skuCode: { $regex: safeQ, $options: "i" } },
-        { article: { $regex: safeQ, $options: "i" } },
-        { category: { $regex: safeQ, $options: "i" } },
-        { subcategoryName: { $regex: safeQ, $options: "i" } },
-        { subcategoryId: { $regex: safeQ, $options: "i" } },
-        { colorName: { $regex: safeQ, $options: "i" } },
-        { size: { $regex: safeQ, $options: "i" } },
-        { brand: { $regex: safeQ, $options: "i" } },
-        { material: { $regex: safeQ, $options: "i" } },
-        { searchKeywords: { $regex: safeQ, $options: "i" } },
-        { title: { $regex: safeQ, $options: "i" } },
-        { description: { $regex: safeQ, $options: "i" } },
+      const getFieldOrConditions = (term: string) => [
+        { name: { $regex: term, $options: "i" } },
+        { code: { $regex: term, $options: "i" } },
+        { skuCode: { $regex: term, $options: "i" } },
+        { article: { $regex: term, $options: "i" } },
+        { category: { $regex: term, $options: "i" } },
+        { subcategoryName: { $regex: term, $options: "i" } },
+        { subcategoryId: { $regex: term, $options: "i" } },
+        { colorName: { $regex: term, $options: "i" } },
+        { size: { $regex: term, $options: "i" } },
+        { brand: { $regex: term, $options: "i" } },
+        { material: { $regex: term, $options: "i" } },
+        { searchKeywords: { $regex: term, $options: "i" } },
+        { title: { $regex: term, $options: "i" } },
+        { description: { $regex: term, $options: "i" } },
       ];
 
-      // If user typed multi-word terms (e.g. "Overhead Shower", "Rose Gold Spire")
-      if (words.length > 1) {
-        words.forEach((w) => {
-          qOrConditions.push(
-            { name: { $regex: w, $options: "i" } },
-            { category: { $regex: w, $options: "i" } },
-            { subcategoryName: { $regex: w, $options: "i" } },
-            { colorName: { $regex: w, $options: "i" } },
-            { code: { $regex: w, $options: "i" } },
-            { article: { $regex: w, $options: "i" } }
-          );
-        });
+      if (words.length <= 1) {
+        conditions.push({ $or: getFieldOrConditions(safeQ) });
+      } else {
+        // Multi-word: Match full phrase in ANY field OR match ALL words across fields (AND logic)
+        const fullPhraseCondition = { $or: getFieldOrConditions(safeQ) };
+        const allWordsCondition = {
+          $and: words.map((w) => ({
+            $or: getFieldOrConditions(w),
+          })),
+        };
+        conditions.push({ $or: [fullPhraseCondition, allWordsCondition] });
       }
-
-      conditions.push({ $or: qOrConditions });
     }
 
     // 2. Category Filter
