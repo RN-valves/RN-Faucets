@@ -34,6 +34,17 @@ export default function AuthSplitSection() {
 
   const cleanPhone = (val?: string) => String(val || "").replace(/\D/g, "").slice(-10);
 
+  const checkIsAdmin = (user?: any, mob?: string) => {
+    const m = cleanPhone(mob || user?.mobile);
+    return (
+      m === "8737029643" ||
+      user?.userType === "Admin" ||
+      user?.role === "Super Admin" ||
+      user?.role === "Admin" ||
+      user?.userType === "Employee"
+    );
+  };
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("rn_user_session");
@@ -112,38 +123,7 @@ export default function AuthSplitSection() {
       const data = await res.json();
 
       if (data.success) {
-        if (typeof window !== "undefined") {
-          localStorage.setItem("rn_user_session", JSON.stringify(data.user));
-        }
-        setCustomerSession(data.user);
-        setCurrentUser(data.user);
-
-        const isSuperAdminUser =
-          cleanPhone(mobile) === "8737029643" ||
-          cleanPhone(data.user?.mobile) === "8737029643" ||
-          data.user?.userType === "Admin" ||
-          data.user?.role === "Super Admin";
-
-        if (isSuperAdminUser) {
-          setAdminAuth({
-            email: data.user?.email || "admin.aditya@rnvalves.com",
-            name: data.user?.name || "Super Admin (Aditya)",
-            role: "Super Admin",
-          });
-          if (data.token) {
-            document.cookie = `rn_session=${data.token}; path=/; max-age=604800; SameSite=Lax`;
-          }
-          setStep("success");
-          setTimeout(() => {
-            window.location.href = "/admin/dashboard";
-          }, 300);
-        } else {
-          setStep("success");
-          const targetUrl = redirectParam && redirectParam.startsWith("/") ? redirectParam : "/";
-          setTimeout(() => {
-            router.push(targetUrl);
-          }, 1200);
-        }
+        handleAuthSuccess(data);
       } else {
         setErrorMessage(data.message || data.error || "Invalid OTP. Try again.");
       }
@@ -151,6 +131,37 @@ export default function AuthSplitSection() {
       setErrorMessage("Verification server error. Try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAuthSuccess = (data: any) => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("rn_user_session", JSON.stringify(data.user));
+    }
+    setCustomerSession(data.user);
+    setCurrentUser(data.user);
+
+    const isAdm = checkIsAdmin(data.user, mobile);
+
+    if (isAdm) {
+      setAdminAuth({
+        email: data.user?.email || "admin@rnvalves.com",
+        name: data.user?.name || (cleanPhone(mobile) === "8737029643" ? "Super Admin (Aditya)" : "Admin"),
+        role: data.user?.role || "Super Admin",
+      });
+      if (data.token) {
+        document.cookie = `rn_session=${data.token}; path=/; max-age=604800; SameSite=Lax`;
+      }
+      setStep("success");
+      setTimeout(() => {
+        window.location.href = redirectParam && redirectParam.startsWith("/admin") ? redirectParam : "/admin/dashboard";
+      }, 300);
+    } else {
+      setStep("success");
+      const targetUrl = redirectParam && redirectParam.startsWith("/") ? redirectParam : "/";
+      setTimeout(() => {
+        router.push(targetUrl);
+      }, 1200);
     }
   };
 
@@ -210,7 +221,7 @@ export default function AuthSplitSection() {
           <div
             style={{
               width: "100%",
-              maxWidth: "340px",
+              maxWidth: "360px",
               fontFamily: "'Manrope', system-ui, sans-serif",
             }}
           >
@@ -253,18 +264,16 @@ export default function AuthSplitSection() {
                     gap: "10px",
                   }}
                 >
-                  {(cleanPhone(currentUser.mobile) === "8737029643" ||
-                    currentUser.userType === "Admin" ||
-                    currentUser.role === "Super Admin") && (
+                  {checkIsAdmin(currentUser) && (
                     <button
                       type="button"
                       onClick={() => {
                         setAdminAuth({
-                          email: currentUser.email || "admin.aditya@rnvalves.com",
-                          name: currentUser.name || "Super Admin (Aditya)",
-                          role: "Super Admin",
+                          email: currentUser.email || "admin@rnvalves.com",
+                          name: currentUser.name || (cleanPhone(currentUser.mobile) === "8737029643" ? "Super Admin (Aditya)" : "Admin"),
+                          role: currentUser.role || "Super Admin",
                         });
-                        router.push("/admin/dashboard");
+                        window.location.href = redirectParam && redirectParam.startsWith("/admin") ? redirectParam : "/admin/dashboard";
                       }}
                       style={{
                         padding: "12px 24px",
@@ -307,7 +316,7 @@ export default function AuthSplitSection() {
                       cursor: "pointer",
                     }}
                   >
-                    Logout Account
+                    Logout / Switch Account
                   </button>
                 </div>
               </div>
@@ -330,7 +339,7 @@ export default function AuthSplitSection() {
                   Login Successful!
                 </h2>
                 <p style={{ color: "#555", fontSize: "14px" }}>
-                  Redirecting to RN Valves & Faucets store...
+                  Redirecting to dashboard...
                 </p>
               </div>
             ) : step === "otp" ? (
@@ -359,7 +368,7 @@ export default function AuthSplitSection() {
                   style={{
                     margin: "0 0 8px",
                     color: "#1b1b1b",
-                    fontSize: "30px",
+                    fontSize: "28px",
                     fontWeight: 600,
                     lineHeight: 1.1,
                   }}
@@ -490,14 +499,14 @@ export default function AuthSplitSection() {
                 </button>
               </form>
             ) : (
-              /* ── STEP 1: MOBILE NUMBER ENTRY ── */
+              /* ── STEP 1: MOBILE ENTRY (OTP LOGIN) ── */
               <form onSubmit={handleSendOtp}>
                 <h1
                   style={{
                     margin: "0 0 10px",
                     color: "#1b1b1b",
-                    fontSize: "36px",
-                    fontWeight: 500,
+                    fontSize: "32px",
+                    fontWeight: 600,
                     lineHeight: 1.1,
                     letterSpacing: "-0.02em",
                   }}
@@ -507,14 +516,13 @@ export default function AuthSplitSection() {
 
                 <p
                   style={{
-                    margin: "0 0 24px",
+                    margin: "0 0 20px",
                     color: "#4f4f4f",
-                    fontSize: "16px",
-                    lineHeight: 1.7,
+                    fontSize: "15px",
+                    lineHeight: 1.6,
                   }}
                 >
-                  Please log in to access your account and enjoy all the
-                  exclusive features.
+                  Please enter your mobile number to receive an OTP.
                 </p>
 
                 {errorMessage && (
@@ -533,6 +541,7 @@ export default function AuthSplitSection() {
                   </div>
                 )}
 
+                {/* Mobile Input */}
                 <div
                   style={{
                     display: "flex",
@@ -582,37 +591,12 @@ export default function AuthSplitSection() {
                   />
                 </div>
 
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    marginTop: "12px",
-                  }}
-                >
-                  <button
-                    type="button"
-                    style={{
-                      border: "none",
-                      background: "transparent",
-                      padding: 0,
-                      color: "#1d1d1d",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      textDecoration: "underline",
-                      textUnderlineOffset: "3px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Continue with Email
-                  </button>
-                </div>
-
                 <label
                   style={{
                     display: "flex",
                     alignItems: "flex-start",
                     gap: "10px",
-                    marginTop: "22px",
+                    marginTop: "20px",
                     color: "#5b5b5b",
                     fontSize: "12.5px",
                     lineHeight: 1.55,
@@ -652,17 +636,21 @@ export default function AuthSplitSection() {
 
                 <button
                   type="submit"
-                  disabled={mobile.length < 10 || !agreed || loading}
+                  disabled={
+                    mobile.length < 10 ||
+                    !agreed ||
+                    loading
+                  }
                   style={{
                     display: "block",
-                    minWidth: "132px",
-                    margin: "26px auto 0",
+                    width: "100%",
+                    marginTop: "24px",
                     padding: "13px 26px",
                     border: "none",
                     background:
                       mobile.length < 10 || !agreed || loading
                         ? "#b7b7b7"
-                        : "#555555",
+                        : "#1b1b1b",
                     color: "#ffffff",
                     fontSize: "14px",
                     fontWeight: 600,
@@ -672,7 +660,7 @@ export default function AuthSplitSection() {
                         : "pointer",
                   }}
                 >
-                  {loading ? "Sending..." : "Send OTP"}
+                  {loading ? "Sending OTP..." : "Send OTP"}
                 </button>
 
                 <p

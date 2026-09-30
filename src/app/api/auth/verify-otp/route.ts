@@ -29,7 +29,21 @@ export async function POST(request: Request) {
 
     const cleanMobile = String(mobile).replace(/\D/g, "").slice(-10);
     const enteredOtp = otp ? String(otp).trim() : "";
-    const isSuperAdmin = cleanMobile === "8737029643";
+
+    // Check if user is an Admin
+    let user = await User.findOne({
+      $or: [
+        { mobile: cleanMobile },
+        { mobile: `+91${cleanMobile}` },
+        { mobile: `91${cleanMobile}` },
+      ],
+    });
+
+    const isSuperAdmin =
+      cleanMobile === "8737029643" ||
+      user?.userType === "Admin" ||
+      user?.role === "Super Admin" ||
+      user?.role === "Admin";
 
     // ── Direct Registration Security Guard ──
     if (isDirectRegistration) {
@@ -41,16 +55,7 @@ export async function POST(request: Request) {
         );
       }
 
-      // Check if user already exists with an admin/staff role
-      const existingUser = await User.findOne({
-        $or: [
-          { mobile: cleanMobile },
-          { mobile: `+91${cleanMobile}` },
-          { mobile: `91${cleanMobile}` },
-        ],
-      });
-
-      if (existingUser && (existingUser.userType === "Admin" || existingUser.role === "Super Admin")) {
+      if (user && (user.userType === "Admin" || user.role === "Super Admin" || user.role === "Admin")) {
         return NextResponse.json(
           { error: "This mobile is associated with an admin account. Please verify via OTP." },
           { status: 403 }
@@ -64,44 +69,39 @@ export async function POST(request: Request) {
 
       let isValidOtp = false;
 
-      // Master OTP bypass for Super Admin in case of SMS gateway delay
-      if (isSuperAdmin && (enteredOtp === "1234" || enteredOtp === "0000")) {
-        isValidOtp = true;
-      } else {
-        // 1. Check in MongoDB Otp collection
-        const otpRecord = await Otp.findOne({
-          mobile: cleanMobile,
-          otp: enteredOtp,
-          expiresAt: { $gt: new Date() },
-        });
+      // 1. Check in MongoDB Otp collection
+      const otpRecord = await Otp.findOne({
+        mobile: cleanMobile,
+        otp: enteredOtp,
+        expiresAt: { $gt: new Date() },
+      });
 
-        if (otpRecord) {
-          isValidOtp = true;
-          // Clean up verified OTP
-          await Otp.deleteMany({ mobile: cleanMobile });
-        } else {
-          // 2. Fallback to MSG91 OTP verify API
-          const authKey = process.env.MSG91_AUTH_KEY;
-          const baseUrl = process.env.MSG91_BASE_URL || "https://control.msg91.com/api/v5";
-          if (authKey) {
-            try {
-              const verifyUrl = `${baseUrl}/otp/verify?otp=${enteredOtp}&mobile=91${cleanMobile}`;
-              const verifyRes = await fetch(verifyUrl, {
-                method: "GET",
-                headers: { authkey: authKey },
-              });
-              const verifyData = await verifyRes.json();
-              if (
-                verifyData &&
-                (verifyData.type === "success" ||
-                  verifyData.message === "OTP verified success" ||
-                  verifyData.message === "OTP verified success.")
-              ) {
-                isValidOtp = true;
-              }
-            } catch (vErr) {
-              console.error("MSG91 OTP verify error:", vErr);
+      if (otpRecord) {
+        isValidOtp = true;
+        // Clean up verified OTP
+        await Otp.deleteMany({ mobile: cleanMobile });
+      } else {
+        // 2. Fallback to MSG91 OTP verify API
+        const authKey = process.env.MSG91_AUTH_KEY;
+        const baseUrl = process.env.MSG91_BASE_URL || "https://control.msg91.com/api/v5";
+        if (authKey) {
+          try {
+            const verifyUrl = `${baseUrl}/otp/verify?otp=${enteredOtp}&mobile=91${cleanMobile}`;
+            const verifyRes = await fetch(verifyUrl, {
+              method: "GET",
+              headers: { authkey: authKey },
+            });
+            const verifyData = await verifyRes.json();
+            if (
+              verifyData &&
+              (verifyData.type === "success" ||
+                verifyData.message === "OTP verified success" ||
+                verifyData.message === "OTP verified success.")
+            ) {
+              isValidOtp = true;
             }
+          } catch (vErr) {
+            console.error("MSG91 OTP verify error:", vErr);
           }
         }
       }
@@ -113,15 +113,6 @@ export async function POST(request: Request) {
         );
       }
     }
-
-    // Find or create customer
-    let user = await User.findOne({
-      $or: [
-        { mobile: cleanMobile },
-        { mobile: `+91${cleanMobile}` },
-        { mobile: `91${cleanMobile}` },
-      ],
-    });
 
     if (!user) {
       const type = isSuperAdmin ? "Admin" : (userType === "Business" ? "Business" : "Customer");
@@ -141,24 +132,23 @@ export async function POST(request: Request) {
         status: "Active",
       });
     } else if (isSuperAdmin) {
-      user.mobile = "8737029643";
       user.userType = "Admin";
-      user.role = "Super Admin";
+      if (!user.role || user.role === "Customer") {
+        user.role = "Super Admin";
+      }
       user.approvalStatus = "Approved";
-      user.name = user.name || "Super Admin (Aditya)";
-      user.email = user.email || "admin.aditya@rnvalves.com";
       await user.save();
     }
 
     // Issue Cryptographically Signed Session Token & Cookie
-    const userRole = isSuperAdmin ? "Super Admin" : (user.role || "Customer");
+    const userRole = isSuperAdmin ? (user.role || "Super Admin") : (user.role || "Customer");
     const sessionToken = await createSessionToken({
       id: user._id.toString(),
       mobile: user.mobile,
       name: user.name || "",
       email: user.email || "",
       role: userRole,
-      userType: isSuperAdmin ? "Admin" : user.userType,
+      userType: isSuperAdmin ? "Admin" : (user.userType || "Customer"),
       userCode: user.userCode,
     });
 
@@ -168,7 +158,7 @@ export async function POST(request: Request) {
       token: sessionToken,
       user: {
         _id: user._id,
-        mobile: isSuperAdmin ? "8737029643" : user.mobile,
+        mobile: user.mobile,
         name: user.name,
         email: user.email,
         userCode: user.userCode,

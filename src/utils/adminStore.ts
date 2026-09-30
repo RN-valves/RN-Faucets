@@ -50,16 +50,17 @@ export const getAdminAuth = (): AdminUser | null => {
 
   const clean = (val?: string) => String(val || "").replace(/\D/g, "").slice(-10);
 
-  // Check fallback user session for 8737029643 or Admin userType
+  // Check fallback user session for Admin userType or admin numbers
   const userSession = localStorage.getItem("rn_user_session");
   if (userSession) {
     try {
       const parsed = JSON.parse(userSession);
-      if (clean(parsed.mobile) === "8737029643" || parsed.userType === "Admin" || parsed.role === "Super Admin" || parsed.userType === "Employee") {
+      const m = clean(parsed.mobile);
+      if (m === "8737029643" || parsed.userType === "Admin" || parsed.role === "Super Admin" || parsed.role === "Admin" || parsed.userType === "Employee") {
         const adminUser: AdminUser = {
-          email: parsed.email || "admin.aditya@rnvalves.com",
+          email: parsed.email || "admin@rnvalves.com",
           name: parsed.name || "Super Admin (Aditya)",
-          role: "Super Admin",
+          role: parsed.role || "Super Admin",
         };
         localStorage.setItem(AUTH_KEY, JSON.stringify(adminUser));
         return adminUser;
@@ -69,16 +70,17 @@ export const getAdminAuth = (): AdminUser | null => {
     }
   }
 
-  // Check fallback customer session for 8737029643 or Admin userType
+  // Check fallback customer session for Admin userType or admin numbers
   const customerSession = localStorage.getItem("rn_customer_session");
   if (customerSession) {
     try {
       const parsed = JSON.parse(customerSession);
-      if (clean(parsed.mobile) === "8737029643" || parsed.userType === "Admin" || parsed.role === "Super Admin" || parsed.userType === "Employee") {
+      const m = clean(parsed.mobile);
+      if (m === "8737029643" || parsed.userType === "Admin" || parsed.role === "Super Admin" || parsed.role === "Admin" || parsed.userType === "Employee") {
         const adminUser: AdminUser = {
-          email: parsed.email || "admin.aditya@rnvalves.com",
+          email: parsed.email || "admin@rnvalves.com",
           name: parsed.name || "Super Admin (Aditya)",
-          role: "Super Admin",
+          role: parsed.role || "Super Admin",
         };
         localStorage.setItem(AUTH_KEY, JSON.stringify(adminUser));
         return adminUser;

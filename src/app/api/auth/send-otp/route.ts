@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Otp from "@/models/Otp";
+import User from "@/models/User";
 import { checkRateLimit, getClientIp, isValidIndianPhone } from "@/lib/security";
 
 export async function POST(request: Request) {
@@ -17,9 +18,40 @@ export async function POST(request: Request) {
     }
 
     const cleanMobile = String(mobile).replace(/\D/g, "").slice(-10);
-    const isSuperAdmin = cleanMobile === "8737029643";
 
-    if (!isSuperAdmin) {
+    // Check if user is an Admin
+    let isAdminAccount = cleanMobile === "8737029643";
+    if (!isAdminAccount) {
+      try {
+        await connectDB();
+        const existingAdmin = await User.findOne({
+          $and: [
+            {
+              $or: [
+                { mobile: cleanMobile },
+                { mobile: `+91${cleanMobile}` },
+                { mobile: `91${cleanMobile}` },
+              ],
+            },
+            {
+              $or: [
+                { userType: "Admin" },
+                { role: "Super Admin" },
+                { role: "Admin" },
+                { userType: "Employee" },
+              ],
+            },
+          ],
+        });
+        if (existingAdmin) {
+          isAdminAccount = true;
+        }
+      } catch (checkErr) {
+        console.error("Admin check in send-otp:", checkErr);
+      }
+    }
+
+    if (!isAdminAccount) {
       // Rate limit per IP: max 5 requests per minute
       const ipLimit = checkRateLimit(`send-otp:ip:${ip}`, 5, 60 * 1000);
       if (!ipLimit.allowed) {
@@ -53,15 +85,6 @@ export async function POST(request: Request) {
         otp,
         expiresAt: new Date(Date.now() + 10 * 60 * 1000),
       });
-
-      if (isSuperAdmin) {
-        // Also persist master backup OTP 1234 for Super Admin
-        await Otp.create({
-          mobile: cleanMobile,
-          otp: "1234",
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        });
-      }
     } catch (dbErr) {
       console.error("Failed to store OTP in MongoDB:", dbErr);
     }
