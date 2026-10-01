@@ -471,23 +471,49 @@ function CategoryPageContent({ category }: { category: string }) {
 
   const hasMoreProducts = visibleCount < displayedProducts.length;
 
-  // IntersectionObserver to automatically load next 25 products as user scrolls
+  // Infinite Scroll: IntersectionObserver + Scroll Listener Fallback for smooth auto-loading
   useEffect(() => {
+    if (!hasMoreProducts || isLoadingProducts) return;
+
+    // 1. Intersection Observer for standard viewport triggering
     const trigger = scrollTriggerRef.current;
-    if (!trigger || !hasMoreProducts) return;
+    let observer: IntersectionObserver | null = null;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setVisibleCount((prev) => prev + 25);
-        }
-      },
-      { rootMargin: "350px" }
-    );
+    if (trigger) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting) {
+            setVisibleCount((prev) => Math.min(prev + 25, displayedProducts.length));
+          }
+        },
+        { root: null, rootMargin: "600px 0px 600px 0px", threshold: 0.01 }
+      );
+      observer.observe(trigger);
+    }
 
-    observer.observe(trigger);
-    return () => observer.disconnect();
-  }, [hasMoreProducts]);
+    // 2. Window Scroll event listener as reliable fallback across all devices
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const scrollPosition = window.innerHeight + window.scrollY;
+          const threshold = document.documentElement.scrollHeight - 700;
+          if (scrollPosition >= threshold) {
+            setVisibleCount((prev) => Math.min(prev + 25, displayedProducts.length));
+          }
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      if (observer) observer.disconnect();
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [hasMoreProducts, isLoadingProducts, visibleCount, displayedProducts.length]);
 
   const formatCategoryTitle = (cat: string) => {
     if (!cat || cat === "all") return "All Products";
@@ -2437,40 +2463,39 @@ function CategoryPageContent({ category }: { category: string }) {
                   })}
                 </div>
 
-                {/* Infinite Scroll Trigger & Loader */}
+                {/* Infinite Scroll Trigger & Automatic Loading Indicator */}
                 {hasMoreProducts && (
                   <div
                     ref={scrollTriggerRef}
                     style={{
-                      padding: "36px 0",
+                      padding: "40px 0 60px",
                       textAlign: "center",
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
                       justifyContent: "center",
-                      gap: "10px",
+                      gap: "12px",
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#64748b", fontSize: "13px", fontWeight: 600, fontFamily: "'Manrope', system-ui, sans-serif" }}>
-                      <Loader2 size={18} className="animate-spin text-sky-600" />
-                      Loading more products... ({displayedProducts.length - visibleCount} remaining)
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setVisibleCount((prev) => prev + 25)}
+                    <div
                       style={{
-                        padding: "8px 20px",
-                        borderRadius: "8px",
-                        border: "1px solid #cbd5e1",
-                        background: "#ffffff",
-                        color: "#0f172a",
-                        fontSize: "12.5px",
-                        fontWeight: 700,
-                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        padding: "10px 24px",
+                        background: "#f8fafc",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "9999px",
+                        color: "#475569",
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        fontFamily: "'Manrope', system-ui, sans-serif",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
                       }}
                     >
-                      Load Next 25 Products
-                    </button>
+                      <Loader2 size={18} className="animate-spin text-sky-600" />
+                      <span>Loading more products... ({displayedProducts.length - visibleCount} remaining)</span>
+                    </div>
                   </div>
                 )}
               </>
