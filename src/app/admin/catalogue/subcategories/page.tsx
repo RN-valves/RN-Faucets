@@ -24,6 +24,9 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
+  Check,
+  Loader2,
+  ArrowUpDown,
 } from "lucide-react";
 
 export default function SubcategoriesListingPage() {
@@ -33,13 +36,15 @@ export default function SubcategoriesListingPage() {
   const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Filter & Pagination State
+  // Filter, Sort & Pagination State
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("All");
   const [statusFilter, setStatusFilter] = useState<"All" | "Active" | "Inactive">("All");
   const [visibilityFilter, setVisibilityFilter] = useState<"All" | "Visible" | "Hidden">("All");
+  const [sortBy, setSortBy] = useState<"displayOrder" | "name" | "category" | "status">("displayOrder");
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(10);
+  const [perPage, setPerPage] = useState(15);
+  const [updatingOrderIds, setUpdatingOrderIds] = useState<Record<string, "saving" | "saved">>({});
 
   const isDark = theme === "dark";
 
@@ -67,6 +72,28 @@ export default function SubcategoriesListingPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleUpdateDisplayOrder = async (id: string, newOrder: number) => {
+    setUpdatingOrderIds((prev) => ({ ...prev, [id]: "saving" }));
+    try {
+      // Optimistic local update
+      setSubcategories((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, displayOrder: newOrder } : s))
+      );
+      await updateAdminSubcategory(id, { displayOrder: newOrder });
+      setUpdatingOrderIds((prev) => ({ ...prev, [id]: "saved" }));
+      setTimeout(() => {
+        setUpdatingOrderIds((prev) => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+      }, 2000);
+    } catch (err) {
+      console.error("Failed to update display order:", err);
+      loadData();
+    }
+  };
 
   const handleToggleStatus = async (id: string) => {
     const target = subcategories.find((s) => s.id === id);
@@ -110,6 +137,20 @@ export default function SubcategoriesListingPage() {
     return matchesQuery && matchesCat && matchesStatus && matchesVis;
   });
 
+  // Sort Subcategories
+  filteredSubcategories.sort((a, b) => {
+    if (sortBy === "displayOrder") {
+      const orderA = a.displayOrder && a.displayOrder > 0 ? a.displayOrder : 999999;
+      const orderB = b.displayOrder && b.displayOrder > 0 ? b.displayOrder : 999999;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.name.localeCompare(b.name);
+    }
+    if (sortBy === "name") return a.name.localeCompare(b.name);
+    if (sortBy === "category") return (a.categoryName || "").localeCompare(b.categoryName || "");
+    if (sortBy === "status") return (a.status || "").localeCompare(b.status || "");
+    return 0;
+  });
+
   const totalRecords = filteredSubcategories.length;
   const totalPages = Math.ceil(totalRecords / perPage) || 1;
   const paginatedSubcategories = filteredSubcategories.slice((page - 1) * perPage, page * perPage);
@@ -126,7 +167,13 @@ export default function SubcategoriesListingPage() {
 
       <main style={{ padding: "32px", maxWidth: "1400px", margin: "0 auto", width: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: "24px" }}>
         {/* Top Action Bar */}
-        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontSize: "14px", fontWeight: 700, color: textMain }}>
+              Total Subcategories: <span style={{ color: "#0077B6" }}>{subcategories.length}</span>
+            </span>
+          </div>
+
           <Link
             href="/admin/catalogue/subcategories/create"
             style={{
@@ -150,7 +197,7 @@ export default function SubcategoriesListingPage() {
 
         {/* Filter Bar */}
         <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: "12px", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px", boxShadow: shadow }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", background: inputBg, border: `1px solid ${border}`, borderRadius: "8px", padding: "8px 14px", flex: 1, minWidth: "280px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", background: inputBg, border: `1px solid ${border}`, borderRadius: "8px", padding: "8px 14px", flex: 1, minWidth: "260px" }}>
             <Search size={16} style={{ color: textMuted }} />
             <input
               type="text"
@@ -165,12 +212,31 @@ export default function SubcategoriesListingPage() {
           </div>
 
           <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+            {/* Sort By Filter */}
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <ArrowUpDown size={14} style={{ color: textMuted }} />
+              <label style={{ fontSize: "12px", color: textMuted, fontWeight: 700 }}>Sort:</label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                style={{ padding: "8px 12px", borderRadius: "8px", border: `1px solid ${border}`, background: inputBg, color: textMain, fontSize: "13px", fontWeight: 700 }}
+              >
+                <option value="displayOrder">Display Order (Rank #1, #2...)</option>
+                <option value="name">Name (A-Z)</option>
+                <option value="category">Parent Category</option>
+                <option value="status">Status</option>
+              </select>
+            </div>
+
             {/* Parent Category Filter */}
             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               <label style={{ fontSize: "12px", color: textMuted, fontWeight: 700 }}>Parent Category:</label>
               <select
                 value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
+                onChange={(e) => {
+                  setCategoryFilter(e.target.value);
+                  setPage(1);
+                }}
                 style={{ padding: "8px 12px", borderRadius: "8px", border: `1px solid ${border}`, background: inputBg, color: textMain, fontSize: "13px", fontWeight: 700 }}
               >
                 <option value="All">All Categories</option>
@@ -187,7 +253,10 @@ export default function SubcategoriesListingPage() {
               <label style={{ fontSize: "12px", color: textMuted, fontWeight: 700 }}>Status:</label>
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value as typeof statusFilter);
+                  setPage(1);
+                }}
                 style={{ padding: "8px 12px", borderRadius: "8px", border: `1px solid ${border}`, background: inputBg, color: textMain, fontSize: "13px", fontWeight: 700 }}
               >
                 <option value="All">All Status</option>
@@ -201,7 +270,10 @@ export default function SubcategoriesListingPage() {
               <label style={{ fontSize: "12px", color: textMuted, fontWeight: 700 }}>Visibility:</label>
               <select
                 value={visibilityFilter}
-                onChange={(e) => setVisibilityFilter(e.target.value as typeof visibilityFilter)}
+                onChange={(e) => {
+                  setVisibilityFilter(e.target.value as typeof visibilityFilter);
+                  setPage(1);
+                }}
                 style={{ padding: "8px 12px", borderRadius: "8px", border: `1px solid ${border}`, background: inputBg, color: textMain, fontSize: "13px", fontWeight: 700 }}
               >
                 <option value="All">All Visibility</option>
@@ -315,8 +387,59 @@ export default function SubcategoriesListingPage() {
                       {sub.categoryName || sub.categoryId}
                     </td>
 
-                    <td style={{ padding: "14px 20px", fontWeight: 700, color: textMuted }}>
-                      {sub.displayOrder || 0}
+                    {/* Inline Editable Display Order */}
+                    <td style={{ padding: "14px 20px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <input
+                          type="number"
+                          min="0"
+                          defaultValue={sub.displayOrder || 0}
+                          key={`${sub.id}-${sub.displayOrder}`}
+                          onBlur={(e) => {
+                            const val = Number(e.target.value);
+                            if (val !== (sub.displayOrder || 0)) {
+                              handleUpdateDisplayOrder(sub.id, val);
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              (e.target as HTMLInputElement).blur();
+                            }
+                          }}
+                          title="Set rank (1 for Top, 2 for 2nd place...). Press Enter or click away to save."
+                          style={{
+                            width: "56px",
+                            padding: "4px 6px",
+                            borderRadius: "6px",
+                            border: `1.5px solid ${sub.displayOrder && sub.displayOrder > 0 ? "#0077B6" : border}`,
+                            background: inputBg,
+                            color: textMain,
+                            fontWeight: 800,
+                            fontSize: "13px",
+                            textAlign: "center",
+                            outline: "none",
+                            transition: "all 0.15s ease",
+                          }}
+                        />
+
+                        {updatingOrderIds[sub.id] === "saving" && (
+                          <span title="Saving..." style={{ color: "#0077B6" }}>
+                            <Loader2 size={14} className="animate-spin inline" />
+                          </span>
+                        )}
+
+                        {updatingOrderIds[sub.id] === "saved" && (
+                          <span title="Saved successfully" style={{ color: "#059669", display: "inline-flex", alignItems: "center" }}>
+                            <Check size={14} />
+                          </span>
+                        )}
+
+                        {sub.displayOrder && sub.displayOrder > 0 && !updatingOrderIds[sub.id] ? (
+                          <span style={{ fontSize: "10px", fontWeight: 800, color: "#0077B6", background: isDark ? "#0077B625" : "#E0F2FE", padding: "2px 6px", borderRadius: "4px" }}>
+                            #{sub.displayOrder}
+                          </span>
+                        ) : null}
+                      </div>
                     </td>
 
                     <td style={{ padding: "14px 20px" }}>
