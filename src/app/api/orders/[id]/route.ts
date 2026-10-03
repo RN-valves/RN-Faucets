@@ -6,6 +6,7 @@ import Product from "@/models/Product";
 import User from "@/models/User";
 import { requireAdminAuth, requireAuth } from "@/lib/security";
 import { sendOrderStatusEmail } from "@/lib/email";
+import { getOrderSearchQuery } from "@/lib/orderUtils";
 
 export async function GET(
   request: Request,
@@ -14,7 +15,7 @@ export async function GET(
   try {
     await connectDB();
     const { id } = await params;
-    const order: any = await Order.findOne({ $or: [{ _id: id }, { id }] }).lean();
+    const order: any = await Order.findOne(getOrderSearchQuery(id)).lean();
 
     if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
@@ -161,7 +162,7 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
-    const previousOrder: any = await Order.findOne({ $or: [{ _id: id }, { id }] }).lean();
+    const previousOrder: any = await Order.findOne(getOrderSearchQuery(id)).lean();
     if (!previousOrder) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
     // Handle Full Order Edit
@@ -210,7 +211,7 @@ export async function PUT(
     }
 
     const updated = await Order.findOneAndUpdate(
-      { $or: [{ _id: id }, { id }] },
+      getOrderSearchQuery(id),
       body,
       { new: true }
     ).lean();
@@ -244,7 +245,7 @@ export async function DELETE(
 
     await connectDB();
     const { id } = await params;
-    const deleted = await Order.findOneAndDelete({ $or: [{ _id: id }, { id }] });
+    const deleted = await Order.findOneAndDelete(getOrderSearchQuery(id));
 
     if (!deleted) return NextResponse.json({ error: "Order not found" }, { status: 404 });
     return NextResponse.json({ success: true });

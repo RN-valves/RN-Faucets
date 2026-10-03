@@ -84,6 +84,8 @@ interface OrderData {
   packageHeight?: number;
   packageWeight?: number;
   shippingProvider?: string;
+  shiprocketOrderId?: string | number;
+  shiprocketShipmentId?: string | number;
   carrierId?: string;
   deliveryCharge?: number;
   gstCharge?: number;
@@ -120,6 +122,7 @@ export default function AdminOrderDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
+  const [isPushingShiprocket, setIsPushingShiprocket] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [isDownloadingManifest, setIsDownloadingManifest] = useState(false);
@@ -132,7 +135,7 @@ export default function AdminOrderDetailPage() {
   const [boxBreadth, setBoxBreadth] = useState<number>(10);
   const [boxHeight, setBoxHeight] = useState<number>(10);
   const [boxWeight, setBoxWeight] = useState<number>(0.5);
-  const [shippingGateway, setShippingGateway] = useState<"shiprocket" | "shipway">("shipway");
+  const [shippingGateway, setShippingGateway] = useState<"shiprocket" | "shipway">("shiprocket");
   const [isCalculatingRate, setIsCalculatingRate] = useState(false);
   const [carrierOptions, setCarrierOptions] = useState<any[]>([]);
   const [selectedCarrierId, setSelectedCarrierId] = useState("");
@@ -223,6 +226,44 @@ export default function AdminOrderDetailPage() {
       alert("Error generating payment link: " + err.message);
     } finally {
       setIsGeneratingLink(false);
+    }
+  };
+
+  // Push / Dispatch to Shiprocket directly
+  const handlePushToShiprocket = async () => {
+    if (!order) return;
+    setIsPushingShiprocket(true);
+    try {
+      const res = await fetch("/api/shipping/shiprocket", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId: order.id || orderId,
+          weight: boxWeight || 0.5,
+          length: boxLength || 15,
+          breadth: boxBreadth || 15,
+          height: boxHeight || 10,
+          action: "create",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to push order to Shiprocket");
+      }
+      if (data.order) {
+        setOrder(data.order);
+      } else {
+        await fetchOrder();
+      }
+      alert(
+        `Order pushed to Shiprocket successfully!\nShiprocket Order ID: ${
+          data.data?.order_id || ""
+        }\nShipment ID: ${data.data?.shipment_id || ""}\nStatus: Ready for Pickup / Manifest`
+      );
+    } catch (err: any) {
+      alert("Error pushing to Shiprocket: " + err.message);
+    } finally {
+      setIsPushingShiprocket(false);
     }
   };
 
@@ -800,6 +841,40 @@ export default function AdminOrderDetailPage() {
                   ) : (
                     <>
                       <Download size={14} /> Download Order PDF
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handlePushToShiprocket}
+                  disabled={isPushingShiprocket}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "6px 14px",
+                    background: order.shiprocketOrderId ? "#198754" : "#0D6EFD",
+                    color: "#FFF",
+                    border: `1px solid ${order.shiprocketOrderId ? "#198754" : "#0D6EFD"}`,
+                    borderRadius: "4px",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    cursor: isPushingShiprocket ? "not-allowed" : "pointer",
+                    opacity: isPushingShiprocket ? 0.7 : 1,
+                  }}
+                >
+                  {isPushingShiprocket ? (
+                    <>
+                      <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Syncing Shiprocket...
+                    </>
+                  ) : order.shiprocketOrderId ? (
+                    <>
+                      <ExternalLink size={14} /> Shiprocket #{order.shiprocketOrderId}
+                    </>
+                  ) : (
+                    <>
+                      🚀 Push to Shiprocket
                     </>
                   )}
                 </button>
@@ -1396,10 +1471,26 @@ export default function AdminOrderDetailPage() {
                       {order.courierPartner || "—"}
                     </td>
                     <th style={{ width: "180px", padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
-                      Transport Contact
+                      Shipping Provider
                     </th>
-                    <td style={{ padding: "8px 12px", color: textMain }}>
-                      {order.transportContact || "—"}
+                    <td style={{ padding: "8px 12px", color: textMain, fontWeight: 700 }}>
+                      <span
+                        style={{
+                          display: "inline-block",
+                          padding: "2px 8px",
+                          borderRadius: "4px",
+                          background: order.shippingProvider === "Shiprocket" ? "#0D6EFD" : "#198754",
+                          color: "#FFF",
+                          fontSize: "12px",
+                        }}
+                      >
+                        {order.shippingProvider || "Shiprocket"}
+                      </span>
+                      {order.shiprocketOrderId && (
+                        <span style={{ marginLeft: "8px", fontSize: "12px", color: textMuted }}>
+                          (Order: #{order.shiprocketOrderId} | Shipment: #{order.shiprocketShipmentId || "—"})
+                        </span>
+                      )}
                     </td>
                   </tr>
 
