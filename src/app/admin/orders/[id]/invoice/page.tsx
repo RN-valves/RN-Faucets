@@ -33,6 +33,9 @@ interface OrderData {
   customerName: string;
   customerPhone: string;
   customerEmail?: string;
+  gstNumber?: string;
+  businessName?: string;
+  customer?: any;
   items: OrderItem[];
   totalAmount: number;
   paymentMethod: string;
@@ -236,7 +239,19 @@ function InvoiceContent() {
         {/* Bill To Section */}
         <section className="customer-info">
           <h2>Bill To:</h2>
-          <p className="customer-name">{order.shippingAddress?.firstName || order.customerName} {order.shippingAddress?.lastName || ""}</p>
+          <p className="customer-name" style={{ fontWeight: 800, fontSize: "16px" }}>
+            {order.shippingAddress?.firstName || order.customerName} {order.shippingAddress?.lastName || ""}
+          </p>
+          {(order.businessName || order.customer?.businessName) && (
+            <p style={{ fontWeight: 700, margin: "2px 0", color: "#111111" }}>
+              Company: {order.businessName || order.customer?.businessName}
+            </p>
+          )}
+          {(order.gstNumber || order.customer?.gstNumber) && (
+            <p style={{ fontWeight: 800, margin: "2px 0", color: "#000000", fontSize: "14px" }}>
+              Buyer's GSTIN: <strong style={{ letterSpacing: "0.5px" }}>{order.gstNumber || order.customer?.gstNumber}</strong>
+            </p>
+          )}
           <p className="customer-address">
             {order.shippingAddress?.address ? `${order.shippingAddress.address}, ` : ""}
             {order.shippingAddress?.city ? `${order.shippingAddress.city}, ` : ""}
@@ -244,7 +259,12 @@ function InvoiceContent() {
             {order.shippingAddress?.pinCode ? `${order.shippingAddress.pinCode}` : ""}
           </p>
           <p>Phone: {order.shippingAddress?.phone || order.customerPhone}</p>
-          <p>Email: {order.shippingAddress?.email || order.customerEmail || "noreply@rnvalves.com"}</p>
+          {(() => {
+            const rawEmail = (order.customerEmail && !order.customerEmail.includes("noreply") ? order.customerEmail : "") ||
+                             (order.shippingAddress?.email && !order.shippingAddress.email.includes("noreply") ? order.shippingAddress.email : "") ||
+                             order.customer?.email || "";
+            return rawEmail ? <p>Email: {rawEmail}</p> : null;
+          })()}
         </section>
 
         {/* Order Details Table */}

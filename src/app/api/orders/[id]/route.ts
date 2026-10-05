@@ -46,20 +46,35 @@ export async function GET(
           { mobile: `91${cleanPhone}` },
         ],
       })
-        .select("name mobile email address city state zipcode addresses userCode")
+        .select("name mobile email address city state zipcode addresses userCode gstNumber businessName profession userType")
         .lean();
 
       if (userDoc) {
         order.customer = {
           name: userDoc.name || order.customerName,
           mobile: userDoc.mobile || cleanPhone,
-          email: userDoc.email || order.customerEmail,
+          email: userDoc.email || (order.customerEmail && !order.customerEmail.includes("noreply") ? order.customerEmail : ""),
           city: userDoc.city || order.shippingAddress?.city,
           state: userDoc.state || order.shippingAddress?.state,
           zipcode: userDoc.zipcode || order.shippingAddress?.pinCode,
           userCode: userDoc.userCode || "",
+          gstNumber: userDoc.gstNumber || order.gstNumber || "",
+          businessName: userDoc.businessName || order.businessName || "",
+          profession: userDoc.profession || "",
+          userType: userDoc.userType || "",
           addresses: Array.isArray(userDoc.addresses) ? userDoc.addresses : [],
         };
+
+        // Fix order-level customerEmail if it was "noreply@rnvalves.com" or empty
+        if ((!order.customerEmail || order.customerEmail.includes("noreply")) && userDoc.email) {
+          order.customerEmail = userDoc.email;
+        }
+        if (!order.gstNumber && userDoc.gstNumber) {
+          order.gstNumber = userDoc.gstNumber;
+        }
+        if (!order.businessName && userDoc.businessName) {
+          order.businessName = userDoc.businessName;
+        }
       }
     }
 

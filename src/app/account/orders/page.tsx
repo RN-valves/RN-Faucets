@@ -303,7 +303,28 @@ export default function CustomerOrdersPage() {
               </div>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+              <Link
+                href="/account/profile"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "10px 18px",
+                  border: "1px solid #0284C7",
+                  background: "#F0F9FF",
+                  borderRadius: "6px",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  color: "#0369A1",
+                  textDecoration: "none",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                <User size={15} />
+                My Profile &amp; GST Details
+              </Link>
+
               <Link
                 href="/catalogues"
                 style={{

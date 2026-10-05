@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Order from "@/models/Order";
+import User from "@/models/User";
 import { requireAdminAuth, requireAuth, escapeRegex, checkRateLimit, getClientIp, sanitizeObject } from "@/lib/security";
 import { sendOrderInvoiceEmail } from "@/lib/email";
 
@@ -191,10 +192,57 @@ export async function POST(request: Request) {
       legacyId = seq.legacyId;
     }
 
+    // Lookup user by phone for email and GST enrichment
+    let customerEmail = body.customerEmail;
+    let gstNumber = body.gstNumber;
+    let businessName = body.businessName;
+
+    if (body.customerPhone) {
+      const cleanPhone = String(body.customerPhone).replace(/\D/g, "").slice(-10);
+      const userDoc: any = await User.findOne({
+        $or: [
+          { mobile: cleanPhone },
+          { mobile: `+91${cleanPhone}` },
+          { mobile: `91${cleanPhone}` },
+        ],
+      });
+
+      if (userDoc) {
+        if ((!customerEmail || customerEmail.includes("noreply")) && userDoc.email) {
+          customerEmail = userDoc.email;
+        }
+        if (!gstNumber && userDoc.gstNumber) {
+          gstNumber = userDoc.gstNumber;
+        }
+        if (!businessName && userDoc.businessName) {
+          businessName = userDoc.businessName;
+        }
+
+        // Sync back any newly provided email or GST to the user profile
+        const userUpdates: any = {};
+        if (body.customerEmail && !body.customerEmail.includes("noreply") && !userDoc.email) {
+          userUpdates.email = body.customerEmail;
+        }
+        if (body.gstNumber && !userDoc.gstNumber) {
+          userUpdates.gstNumber = body.gstNumber;
+          userUpdates.userType = "Business";
+        }
+        if (body.businessName && !userDoc.businessName) {
+          userUpdates.businessName = body.businessName;
+        }
+        if (Object.keys(userUpdates).length > 0) {
+          await User.findByIdAndUpdate(userDoc._id, { $set: userUpdates });
+        }
+      }
+    }
+
     const order = await Order.create({
       ...body,
       id: orderId,
       legacyId: legacyId || numPart || undefined,
+      customerEmail: customerEmail || body.customerEmail || "",
+      gstNumber: gstNumber || body.gstNumber || "",
+      businessName: businessName || body.businessName || "",
       status: body.status || "Pending",
       paymentStatus: body.paymentStatus || (body.paymentMethod === "Online Payment" ? "Paid" : "Pending"),
       orderDate: new Date().toLocaleString("en-IN", {

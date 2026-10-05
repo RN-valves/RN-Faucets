@@ -933,7 +933,32 @@ export default function Header({ data }: HeaderProps) {
                         color: "#1f1f1f",
                       }}
                     >
-                      <span>My Orders &amp; Profile</span>
+                      <span>My Orders &amp; Tracking</span>
+                      <ChevronRight size={16} color="#9a9a9a" />
+                    </button>
+
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        router.push("/account/profile");
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        width: "100%",
+                        padding: "14px 20px",
+                        border: "none",
+                        borderBottom: "1px solid #efefef",
+                        background: "#fff",
+                        cursor: "pointer",
+                        fontSize: 14,
+                        color: "#1f1f1f",
+                      }}
+                    >
+                      <span>My Profile &amp; GST Details</span>
                       <ChevronRight size={16} color="#9a9a9a" />
                     </button>
 

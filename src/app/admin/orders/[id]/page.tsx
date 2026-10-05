@@ -103,6 +103,9 @@ interface OrderData {
   discountCode?: string;
   discountAmount?: number;
   shippingAmount?: number;
+  gstNumber?: string;
+  businessName?: string;
+  customer?: any;
   timeline?: OrderLog[];
   logs?: OrderLog[];
   createdAt?: string;
@@ -664,17 +667,22 @@ export default function AdminOrderDetailPage() {
   // Customer personal fields
   const customerName = order?.customerName || order?.shippingAddress?.firstName || "—";
   const customerPhone = order?.customerPhone || order?.shippingAddress?.phone || "—";
-  const customerEmail = order?.customerEmail || order?.shippingAddress?.email || "—";
-  const customerCity = order?.shippingAddress?.city || "";
-  const customerState = order?.shippingAddress?.state || "";
+  const rawEmail = (order?.customerEmail && !order.customerEmail.includes("noreply") ? order.customerEmail : "") ||
+                   (order?.shippingAddress?.email && !order.shippingAddress.email.includes("noreply") ? order.shippingAddress.email : "") ||
+                   order?.customer?.email || "";
+  const customerEmail = rawEmail || "—";
+  const customerGst = order?.gstNumber || order?.customer?.gstNumber || "";
+  const customerBusinessName = order?.businessName || order?.customer?.businessName || "";
+  const customerCity = order?.shippingAddress?.city || order?.customer?.city || "";
+  const customerState = order?.shippingAddress?.state || order?.customer?.state || "";
   const customerCountry = order?.shippingAddress?.country || "India";
-  const customerPincode = order?.shippingAddress?.pinCode || "—";
+  const customerPincode = order?.shippingAddress?.pinCode || order?.customer?.zipcode || "—";
   const customerUUID = order?.uuid || order?.id || "—";
 
   // Shipping recipient fields
   const shipName = `${order?.shippingAddress?.firstName || ""} ${order?.shippingAddress?.lastName || ""}`.trim() || customerName;
   const shipPhone = order?.shippingAddress?.phone || customerPhone;
-  const shipEmail = order?.shippingAddress?.email || customerEmail;
+  const shipEmail = (order?.shippingAddress?.email && !order.shippingAddress.email.includes("noreply") ? order.shippingAddress.email : "") || (customerEmail !== "—" ? customerEmail : "—");
   const shipCity = order?.shippingAddress?.city || "";
   const shipState = order?.shippingAddress?.state || "";
   const shipPincode = order?.shippingAddress?.pinCode || "—";
@@ -954,8 +962,26 @@ export default function AdminOrderDetailPage() {
                       </th>
                       <td style={{ padding: "8px 12px", color: textMain, fontWeight: 600 }}>{customerName}</td>
                     </tr>
+                    {customerBusinessName && (
+                      <tr style={{ borderBottom: `1px solid ${border}` }}>
+                        <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                          Business / Company
+                        </th>
+                        <td style={{ padding: "8px 12px", color: textMain, fontWeight: 700 }}>{customerBusinessName}</td>
+                      </tr>
+                    )}
+                    {customerGst && (
+                      <tr style={{ borderBottom: `1px solid ${border}`, background: isDark ? "#064E3B" : "#ECFDF5" }}>
+                        <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                          GSTIN / GST No.
+                        </th>
+                        <td style={{ padding: "8px 12px", color: "#059669", fontWeight: 800, fontFamily: "monospace", fontSize: "13.5px" }}>
+                          {customerGst} <span style={{ fontSize: "11px", fontWeight: 600, marginLeft: "6px" }}>(B2B Tax Invoice)</span>
+                        </td>
+                      </tr>
+                    )}
                     <tr style={{ borderBottom: `1px solid ${border}` }}>
-                      <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                      <th style={{ width: "180px", padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
                         Mobile
                       </th>
                       <td style={{ padding: "8px 12px", color: textMain }}>{customerPhone}</td>
@@ -964,7 +990,7 @@ export default function AdminOrderDetailPage() {
                       <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
                         Email
                       </th>
-                      <td style={{ padding: "8px 12px", color: textMain }}>{customerEmail}</td>
+                      <td style={{ padding: "8px 12px", color: customerEmail !== "—" ? textMain : textMuted }}>{customerEmail}</td>
                     </tr>
                     <tr style={{ borderBottom: `1px solid ${border}` }}>
                       <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
@@ -2211,9 +2237,19 @@ export default function AdminOrderDetailPage() {
           {/* Bill To */}
           <div style={{ marginTop: "24px" }}>
             <h2 style={{ fontSize: "18px", fontWeight: 800, margin: "0 0 8px 0", color: "#000000" }}>Bill To:</h2>
-            <p style={{ margin: "3px 0", fontSize: "13px", fontWeight: 600, color: "#222222" }}>
+            <p style={{ margin: "3px 0", fontSize: "14px", fontWeight: 700, color: "#111111" }}>
               {order.shippingAddress?.firstName || order.customerName || "—"} {order.shippingAddress?.lastName || ""}
             </p>
+            {customerBusinessName && (
+              <p style={{ margin: "2px 0", fontSize: "13px", fontWeight: 700, color: "#222222" }}>
+                Company: {customerBusinessName}
+              </p>
+            )}
+            {customerGst && (
+              <p style={{ margin: "3px 0", fontSize: "13px", fontWeight: 800, color: "#000000" }}>
+                <strong>Buyer's GSTIN: {customerGst}</strong>
+              </p>
+            )}
             <p style={{ margin: "3px 0", fontSize: "13px", color: "#222222" }}>
               {order.shippingAddress?.address ? `${order.shippingAddress.address}, ` : ""}
               {order.shippingAddress?.city ? `${order.shippingAddress.city}, ` : ""}
@@ -2223,9 +2259,11 @@ export default function AdminOrderDetailPage() {
             <p style={{ margin: "3px 0", fontSize: "13px", color: "#222222" }}>
               Phone: {order.shippingAddress?.phone || order.customerPhone || "—"}
             </p>
-            <p style={{ margin: "3px 0", fontSize: "13px", color: "#222222" }}>
-              Email: {order.shippingAddress?.email || order.customerEmail || "noreply@rnvalves.com"}
-            </p>
+            {customerEmail !== "—" && (
+              <p style={{ margin: "3px 0", fontSize: "13px", color: "#222222" }}>
+                Email: {customerEmail}
+              </p>
+            )}
           </div>
 
           {/* Order Details Table */}

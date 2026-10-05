@@ -23,6 +23,8 @@ import {
   Banknote,
   ChevronRight,
   Loader2,
+  Building2,
+  Mail,
 } from "lucide-react";
 
 interface Address {
@@ -73,6 +75,12 @@ export default function CheckoutPage() {
 
   const [isAuthChecking, setIsAuthChecking] = useState(true);
 
+  // Email and GST Invoice Details
+  const [checkoutEmail, setCheckoutEmail] = useState("");
+  const [checkoutGstNumber, setCheckoutGstNumber] = useState("");
+  const [checkoutBusinessName, setCheckoutBusinessName] = useState("");
+  const [isGstApplied, setIsGstApplied] = useState(false);
+
   // Dynamic delivery date states
   const [minDeliveryDate, setMinDeliveryDate] = useState("");
   const [maxDeliveryDate, setMaxDeliveryDate] = useState("");
@@ -85,6 +93,30 @@ export default function CheckoutPage() {
       return;
     }
     setIsAuthChecking(false);
+
+    if (session) {
+      if (session.email) setCheckoutEmail(session.email);
+      if (session.gstNumber) {
+        setCheckoutGstNumber(session.gstNumber);
+        setIsGstApplied(true);
+      }
+      if (session.businessName) setCheckoutBusinessName(session.businessName);
+    }
+
+    // Try fetching fresh profile in background
+    fetch("/api/user/profile")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.user) {
+          if (data.user.email) setCheckoutEmail(data.user.email);
+          if (data.user.gstNumber) {
+            setCheckoutGstNumber(data.user.gstNumber);
+            setIsGstApplied(true);
+          }
+          if (data.user.businessName) setCheckoutBusinessName(data.user.businessName);
+        }
+      })
+      .catch(() => {});
 
     const items = getCartItems();
     if (items.length === 0) {
@@ -303,9 +335,24 @@ export default function CheckoutPage() {
       return;
     }
 
-    const customerEmail = session?.email || "customer@rnvalves.com";
+    const finalEmail = checkoutEmail.trim() || session?.email || "customer@rnvalves.com";
     const customerPhone = selectedAddress.phone || session?.mobile || "9999999999";
     const customerName = selectedAddress.name || session?.name || "Customer";
+    const finalGst = isGstApplied ? checkoutGstNumber.trim().toUpperCase() : "";
+    const finalBusinessName = isGstApplied ? checkoutBusinessName.trim() : "";
+
+    // Sync profile in background
+    if (finalEmail || finalGst || finalBusinessName) {
+      fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: finalEmail,
+          gstNumber: finalGst,
+          businessName: finalBusinessName,
+        }),
+      }).catch(() => {});
+    }
 
     const generatedOrderId = generateOrderId();
 
@@ -313,7 +360,9 @@ export default function CheckoutPage() {
       id: generatedOrderId,
       customerName,
       customerPhone,
-      customerEmail,
+      customerEmail: finalEmail,
+      gstNumber: finalGst,
+      businessName: finalBusinessName,
       items: cartItems.map((item) => ({
         id: item.id,
         name: item.name,
@@ -332,7 +381,7 @@ export default function CheckoutPage() {
         firstName: selectedAddress.name,
         lastName: `(${selectedAddress.label})`,
         phone: selectedAddress.phone,
-        email: customerEmail,
+        email: finalEmail,
         address: selectedAddress.addressLine,
         city: selectedAddress.city,
         state: selectedAddress.state,
@@ -429,7 +478,7 @@ export default function CheckoutPage() {
           prefill: {
             name: customerName,
             contact: customerPhone,
-            email: customerEmail,
+            email: finalEmail,
           },
           notes: {
             address: `${selectedAddress.addressLine}, ${selectedAddress.city}, ${selectedAddress.state} - ${selectedAddress.pinCode}`,
@@ -1014,7 +1063,80 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* ── 2. Estimated Delivery & Order Items Preview ── */}
+              {/* ── 2. Contact Email & GSTIN Tax Invoice Card ── */}
+              <div className="checkout-card">
+                <div className="checkout-card-header">
+                  <span>Contact Email &amp; Tax Invoice (GST)</span>
+                </div>
+                <div style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: "16px" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#374151", marginBottom: "6px" }}>
+                      Email Address (For Tax Invoices &amp; Tracking)
+                    </label>
+                    <div style={{ position: "relative" }}>
+                      <input
+                        type="email"
+                        placeholder="your-email@example.com"
+                        value={checkoutEmail}
+                        onChange={(e) => setCheckoutEmail(e.target.value)}
+                        className="checkout-input-field"
+                        style={{ paddingLeft: "36px" }}
+                      />
+                      <Mail size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+                    </div>
+                    <span style={{ fontSize: "11px", color: "#64748b", marginTop: "4px", display: "block" }}>
+                      Order confirmation, dispatch details, and tax invoice will be sent here.
+                    </span>
+                  </div>
+
+                  {/* GST Invoice Toggle */}
+                  <div style={{ paddingTop: "12px", borderTop: "1px solid #f1f5f9" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>
+                      <input
+                        type="checkbox"
+                        checked={isGstApplied}
+                        onChange={(e) => setIsGstApplied(e.target.checked)}
+                        style={{ width: "16px", height: "16px", accentColor: "#dc2626", cursor: "pointer" }}
+                      />
+                      <span>Need GST Tax Invoice for Business Purchase?</span>
+                    </label>
+
+                    {isGstApplied && (
+                      <div style={{ marginTop: "14px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px", backgroundColor: "#f8fafc", padding: "14px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "11.5px", fontWeight: 700, color: "#334155", marginBottom: "4px" }}>
+                            GST Number (GSTIN) *
+                          </label>
+                          <input
+                            type="text"
+                            maxLength={15}
+                            placeholder="e.g. 07AAAAA0000A1Z5"
+                            value={checkoutGstNumber}
+                            onChange={(e) => setCheckoutGstNumber(e.target.value.toUpperCase())}
+                            className="checkout-input-field"
+                            style={{ textTransform: "uppercase", fontFamily: "monospace", fontWeight: 700 }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: "block", fontSize: "11.5px", fontWeight: 700, color: "#334155", marginBottom: "4px" }}>
+                            Company / Business Name *
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Enterprise / Hardware Store"
+                            value={checkoutBusinessName}
+                            onChange={(e) => setCheckoutBusinessName(e.target.value)}
+                            className="checkout-input-field"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* ── 3. Estimated Delivery & Order Items Preview ── */}
               <div className="checkout-card">
                 <div className="checkout-card-header">
                   <span>Estimated Delivery</span>
