@@ -588,6 +588,8 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
                       alt={cat.name}
                       fill
                       sizes="400px"
+                      loading="lazy"
+                      decoding="async"
                       unoptimized
                       style={{
                         objectFit: "cover",
@@ -607,6 +609,8 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
                         alt={`${cat.name} hover preview`}
                         fill
                         sizes="400px"
+                        loading="lazy"
+                        decoding="async"
                         unoptimized
                         style={{
                           objectFit: "cover",

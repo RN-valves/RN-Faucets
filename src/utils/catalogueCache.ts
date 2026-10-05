@@ -86,23 +86,6 @@ export function preloadCatalogueData() {
     .then(([cats, subs]) => {
       if (Array.isArray(cats) && cats.length > 0) memoryCategories = cats;
       if (Array.isArray(subs) && subs.length > 0) memorySubcategories = subs;
-
-      if (typeof window !== "undefined") {
-        // Pre-warm all category & subcategory banners into browser RAM cache
-        if (Array.isArray(cats)) {
-          cats.forEach((c: any) => {
-            if (c.banner) preheatImage(c.banner);
-            if (c.image) preheatImage(c.image);
-            if (c.icon) preheatImage(c.icon);
-          });
-        }
-        if (Array.isArray(subs)) {
-          subs.forEach((s: any) => {
-            if (s.banner) preheatImage(s.banner);
-            if (s.image) preheatImage(s.image);
-          });
-        }
-      }
     })
     .catch(() => {})
     .finally(() => {

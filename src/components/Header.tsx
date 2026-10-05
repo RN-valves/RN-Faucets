@@ -476,7 +476,6 @@ export default function Header({ data }: HeaderProps) {
     };
 
     updateAuthStatus();
-    preloadCatalogueData();
     window.addEventListener("customer-auth-changed", updateAuthStatus);
     window.addEventListener("rn-admin-data-changed", updateAuthStatus);
 

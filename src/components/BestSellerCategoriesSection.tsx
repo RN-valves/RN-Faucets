@@ -987,6 +987,8 @@ export default function BestSellerCategoriesSection({
                     alt={product.name}
                     fill
                     sizes={`${cardWidth}px`}
+                    loading="lazy"
+                    decoding="async"
                     unoptimized
                     style={{
                       objectFit: "contain",
