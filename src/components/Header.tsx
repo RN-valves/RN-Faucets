@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ChevronRight, Search, ShoppingBag, User, X, Shield, LogOut } from "lucide-react";
@@ -60,8 +61,26 @@ function preloadCatalogueData() {
     fetch("/api/subcategories").then((r) => (r.ok ? r.json() : [])),
   ])
     .then(([cats, subs]) => {
-      if (Array.isArray(cats) && cats.length > 0) cachedCategories = cats;
-      if (Array.isArray(subs) && subs.length > 0) cachedSubcategories = subs;
+      if (Array.isArray(cats) && cats.length > 0) {
+        cachedCategories = cats;
+      }
+      if (Array.isArray(subs) && subs.length > 0) {
+        cachedSubcategories = subs;
+      }
+      // Pre-warm the top images in browser cache for instantaneous menu render
+      if (typeof window !== "undefined") {
+        const topImages = [
+          ...(Array.isArray(cats) ? cats.slice(0, 10).map((c: any) => c.icon || c.image) : []),
+          ...(Array.isArray(subs) ? subs.slice(0, 20).map((s: any) => s.image || s.banner) : []),
+        ].filter(Boolean);
+
+        topImages.forEach((url) => {
+          if (typeof url === "string" && url.trim()) {
+            const prefetchImg = new window.Image();
+            prefetchImg.src = url;
+          }
+        });
+      }
     })
     .catch(() => {})
     .finally(() => {
@@ -241,11 +260,16 @@ function CatalogueDashboard({
                 onClick={() => setActiveCategoryId(item.id || (item as any)._id || item.slug)}
                 className={`catalogue-category-btn${isSelected ? " is-active" : ""}`}
               >
-                <div className="catalogue-category-thumb">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                <div className="catalogue-category-thumb" style={{ position: "relative" }}>
+                  <Image
                     src={thumbnailImg}
                     alt={item.name}
+                    width={88}
+                    height={88}
+                    sizes="88px"
+                    loading={idx < 6 ? "eager" : "lazy"}
+                    priority={idx < 3}
+                    unoptimized={typeof thumbnailImg === "string" && thumbnailImg.endsWith(".svg")}
                     style={{
                       width: "100%",
                       height: "100%",
@@ -324,12 +348,26 @@ function CatalogueDashboard({
                   className="subcategory-card group catalogue-subcat-card"
                   onClick={() => handleNavigate(`/faucets/${targetSlug}`)}
                 >
-                  <div className="catalogue-card-img-panel">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                  <div className="catalogue-card-img-panel" style={{ position: "relative" }}>
+                    <Image
                       src={cardImg}
                       alt={sub.name}
+                      width={260}
+                      height={170}
+                      sizes="(max-width: 640px) 160px, 260px"
+                      loading={idx < 6 ? "eager" : "lazy"}
+                      priority={idx < 4}
+                      unoptimized={typeof cardImg === "string" && cardImg.endsWith(".svg")}
                       className="catalogue-card-img"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        maxHeight: "165px",
+                        objectFit: "contain",
+                      }}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = "/api/media/website/catalogue/products/default/image.webp";
+                      }}
                     />
                   </div>
 
@@ -358,12 +396,22 @@ function CatalogueDashboard({
               className="subcategory-card group catalogue-subcat-fallback-card"
               onClick={() => activeCategory && handleNavigate(`/faucets/${activeCategory.slug || activeCategory.id}`)}
             >
-              <div className="catalogue-card-img-panel">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+              <div className="catalogue-card-img-panel" style={{ position: "relative" }}>
+                <Image
                   src={getCardImage(activeCategory?.image, 0)}
                   alt={activeCategory?.name || "Range"}
+                  width={260}
+                  height={170}
+                  sizes="260px"
+                  priority
+                  unoptimized={typeof activeCategory?.image === "string" && activeCategory.image.endsWith(".svg")}
                   className="catalogue-card-img"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    maxHeight: "165px",
+                    objectFit: "contain",
+                  }}
                 />
               </div>
               <div className="catalogue-card-info-panel" style={{ padding: "20px 18px", gap: "12px" }}>
