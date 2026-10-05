@@ -119,6 +119,9 @@ export default async function CategoryPage({
 
     const [prodDocs, catDocs, subDocs] = await Promise.all([
       Product.find(productQuery)
+        .select(
+          "id code skuCode name image price inSelling size article colorName category categoryId categoryName categorySlug subcategory subcategoryId subcategoryName subcategorySlug collectionName series slug displayOrder createdAt"
+        )
         .sort({ displayOrder: 1, createdAt: -1 })
         .limit(100)
         .lean(),
@@ -126,11 +129,17 @@ export default async function CategoryPage({
         status: { $ne: "Inactive" },
         isVisibleWebsite: { $ne: false },
         isVisible: { $ne: false },
-      }).lean(),
+      })
+        .select("id name slug image banner status displayOrder productCount")
+        .sort({ displayOrder: 1, name: 1 })
+        .lean(),
       Subcategory.find({
         status: { $ne: "Inactive" },
         isVisibleWebsite: { $ne: false },
-      }).lean(),
+      })
+        .select("id name slug categoryId categoryName image banner status displayOrder productCount")
+        .sort({ displayOrder: 1, name: 1 })
+        .lean(),
     ]);
 
     if (Array.isArray(prodDocs)) {

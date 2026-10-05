@@ -2294,6 +2294,16 @@ export default function CategoryClient({
                       <article
                         key={product.id || prodCode}
                         className="product-card product-card-responsive group"
+                        onMouseEnter={() => {
+                          try {
+                            router.prefetch(productUrl);
+                          } catch (_) {}
+                        }}
+                        onTouchStart={() => {
+                          try {
+                            router.prefetch(productUrl);
+                          } catch (_) {}
+                        }}
                         onClick={(e) => {
                           const selection = typeof window !== "undefined" ? window.getSelection() : null;
                           if (selection && selection.toString().trim().length > 0) {
