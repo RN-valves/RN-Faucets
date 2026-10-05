@@ -191,6 +191,13 @@ const organizationSchemaJsonLd = {
   ],
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: "#0f172a",
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -204,6 +211,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        <meta charSet="utf-8" />
         <link rel="icon" href="/favicon.ico?v=3" sizes="any" />
         <link rel="icon" href="/favicon.png?v=3" type="image/png" />
         <link rel="shortcut icon" href="/favicon.ico?v=3" />
