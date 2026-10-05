@@ -309,27 +309,24 @@ export default function HomeClient({
       // Section 1 -> Section 2 Snap
       if (currentScroll < h * 0.8) {
         isSnappingRef.current = true;
-        e.preventDefault();
         window.scrollTo({ top: h, behavior: "smooth" });
         setTimeout(() => { isSnappingRef.current = false; }, 800);
       }
       // Section 2 -> Section 3 Snap
       else if (currentScroll >= h * 0.8 && currentScroll < h * 1.8) {
         isSnappingRef.current = true;
-        e.preventDefault();
         window.scrollTo({ top: h * 2, behavior: "smooth" });
         setTimeout(() => { isSnappingRef.current = false; }, 800);
       }
       // Section 3 -> Section 4 (Best Sellers) Snap
       else if (currentScroll >= h * 1.8 && currentScroll < h * 2.8) {
         isSnappingRef.current = true;
-        e.preventDefault();
         window.scrollTo({ top: h * 3, behavior: "smooth" });
         setTimeout(() => { isSnappingRef.current = false; }, 800);
       }
     };
 
-    window.addEventListener("wheel", handleWheelSnap, { passive: false });
+    window.addEventListener("wheel", handleWheelSnap, { passive: true });
     return () => window.removeEventListener("wheel", handleWheelSnap);
   }, []);
 

@@ -311,17 +311,17 @@ export default function ProductDetailPage() {
 
               <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", paddingTop: "12px", borderTop: `1px solid ${border}` }}>
                 {product.videoUrl && (
-                  <a href={product.videoUrl} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#DC2626", fontWeight: 700, fontSize: "13px", textDecoration: "none" }}>
+                  <a href={product.videoUrl} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#DC2626", fontWeight: 700, fontSize: "13px", textDecoration: "none" }}>
                     <Video size={16} /> YouTube Video
                   </a>
                 )}
                 {product.amazonLink && (
-                  <a href={product.amazonLink} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#D97706", fontWeight: 700, fontSize: "13px", textDecoration: "none" }}>
+                  <a href={product.amazonLink} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#D97706", fontWeight: 700, fontSize: "13px", textDecoration: "none" }}>
                     <ShoppingCart size={16} /> Amazon India
                   </a>
                 )}
                 {product.flipkartLink && (
-                  <a href={product.flipkartLink} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#2563EB", fontWeight: 700, fontSize: "13px", textDecoration: "none" }}>
+                  <a href={product.flipkartLink} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#2563EB", fontWeight: 700, fontSize: "13px", textDecoration: "none" }}>
                     <ShoppingCart size={16} /> Flipkart
                   </a>
                 )}

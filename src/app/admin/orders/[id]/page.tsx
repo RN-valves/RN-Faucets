@@ -1212,7 +1212,7 @@ export default function AdminOrderDetailPage() {
                     </th>
                     <td style={{ padding: "8px 12px" }}>
                       {order.courierSlipUrl || order.transportAttachment ? (
-                        <a href={order.courierSlipUrl || order.transportAttachment} target="_blank">
+                        <a href={order.courierSlipUrl || order.transportAttachment} target="_blank" rel="noopener noreferrer">
                           <img
                             src={order.courierSlipUrl || order.transportAttachment}
                             alt="Courier Slip"
@@ -1264,7 +1264,7 @@ export default function AdminOrderDetailPage() {
                               textDecoration: "none",
                               whiteSpace: "nowrap",
                             }}
-                          >
+                           rel="noopener noreferrer">
                             Click for Payment
                           </a>
                         </div>
@@ -1530,7 +1530,7 @@ export default function AdminOrderDetailPage() {
                           href={order.transportUrl}
                           target="_blank"
                           style={{ color: "#0D6EFD", textDecoration: "none" }}
-                        >
+                         rel="noopener noreferrer">
                           {order.transportUrl}
                         </a>
                       ) : (
@@ -1549,7 +1549,7 @@ export default function AdminOrderDetailPage() {
                           href={order.transportAttachment}
                           target="_blank"
                           style={{ color: "#0D6EFD", fontWeight: 600 }}
-                        >
+                         rel="noopener noreferrer">
                           Download Slip
                         </a>
                       ) : (
@@ -2030,7 +2030,7 @@ export default function AdminOrderDetailPage() {
                             {order.transportUrl && (
                               <>
                                 <span style={{ margin: "0 8px" }}>|</span>
-                                <a href={order.transportUrl} target="_blank" style={{ color: "#0DCAF0", fontWeight: 700 }}>
+                                <a href={order.transportUrl} target="_blank" style={{ color: "#0DCAF0", fontWeight: 700 }} rel="noopener noreferrer">
                                   Track Parcel
                                 </a>
                               </>

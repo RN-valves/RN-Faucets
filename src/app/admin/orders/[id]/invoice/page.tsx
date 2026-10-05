@@ -215,7 +215,7 @@ function InvoiceContent() {
             <p>Phone: 1800123400400</p>
             <p>Email: enquiry@rnvalves.com</p>
             <p>
-              website: <a href="https://www.rnvalves.com" target="_blank" rel="noreferrer">www.rnvalves.com</a>
+              website: <a href="https://www.rnvalves.com" target="_blank" rel="noopener noreferrer">www.rnvalves.com</a>
             </p>
             <p>
               <strong>GSTIN No.: 09AAKCR3772K1ZR</strong>

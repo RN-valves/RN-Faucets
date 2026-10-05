@@ -499,8 +499,7 @@ export default function AdminCategoriesListingPage() {
                           {cat.pdfCatalogue ? (
                             <a
                               href={cat.pdfCatalogue}
-                              target="_blank"
-                              rel="noreferrer"
+                              target="_blank" rel="noopener noreferrer"
                               style={{ display: "inline-flex", alignItems: "center", gap: "4px", color: "#0077B6", fontSize: "12px", fontWeight: 700, textDecoration: "none" }}
                             >
                               <FileText size={14} /> PDF

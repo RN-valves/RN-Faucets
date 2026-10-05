@@ -212,8 +212,7 @@ function R2UploadPicker({
           {currentUrl && (
             <a
               href={currentUrl}
-              target="_blank"
-              rel="noreferrer"
+              target="_blank" rel="noopener noreferrer"
               style={{
                 display: "flex",
                 alignItems: "center",

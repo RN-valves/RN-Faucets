@@ -1071,7 +1071,7 @@ function OrdersContent() {
               {selectedPayment.shortUrl && (
                 <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}>
                   <span style={{ color: textMuted }}>Payment Link URL:</span>
-                  <a href={selectedPayment.shortUrl} target="_blank" rel="noreferrer" style={{ color: "#0077B6", display: "flex", alignItems: "center", gap: "4px" }}>
+                  <a href={selectedPayment.shortUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#0077B6", display: "flex", alignItems: "center", gap: "4px" }}>
                     {selectedPayment.shortUrl} <ExternalLink size={12} />
                   </a>
                 </div>

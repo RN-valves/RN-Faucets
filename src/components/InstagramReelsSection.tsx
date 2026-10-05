@@ -706,7 +706,6 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
         Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
       if (Math.abs(delta) < 2) return;
 
-      e.preventDefault();
       gsap.killTweensOf(track);
       track.scrollLeft += delta;
 
@@ -717,7 +716,7 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
       }, 150);
     };
 
-    track.addEventListener("wheel", onWheel, { passive: false });
+    track.addEventListener("wheel", onWheel, { passive: true });
     return () => {
       track.removeEventListener("wheel", onWheel);
       if (wheelTimer) clearTimeout(wheelTimer);

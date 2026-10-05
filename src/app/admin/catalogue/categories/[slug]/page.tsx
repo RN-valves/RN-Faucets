@@ -307,8 +307,7 @@ export default function CategoryDetailPage() {
                 <div style={{ paddingTop: "12px", borderTop: `1px solid ${border}` }}>
                   <a
                     href={category.pdfCatalogue}
-                    target="_blank"
-                    rel="noreferrer"
+                    target="_blank" rel="noopener noreferrer"
                     style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#0077B6", fontWeight: 800, fontSize: "14px", textDecoration: "none" }}
                   >
                     <FileText size={18} /> View PDF Catalogue Document
