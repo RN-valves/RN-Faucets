@@ -269,7 +269,8 @@ function CatalogueDashboard({
                     sizes="88px"
                     loading={idx < 6 ? "eager" : "lazy"}
                     priority={idx < 3}
-                    unoptimized={typeof thumbnailImg === "string" && thumbnailImg.endsWith(".svg")}
+                    unoptimized={true}
+                    decoding="async"
                     style={{
                       width: "100%",
                       height: "100%",
@@ -357,7 +358,8 @@ function CatalogueDashboard({
                       sizes="(max-width: 640px) 160px, 260px"
                       loading={idx < 6 ? "eager" : "lazy"}
                       priority={idx < 4}
-                      unoptimized={typeof cardImg === "string" && cardImg.endsWith(".svg")}
+                      unoptimized={true}
+                      decoding="async"
                       className="catalogue-card-img"
                       style={{
                         width: "100%",
@@ -404,7 +406,8 @@ function CatalogueDashboard({
                   height={170}
                   sizes="260px"
                   priority
-                  unoptimized={typeof activeCategory?.image === "string" && activeCategory.image.endsWith(".svg")}
+                  unoptimized={true}
+                  decoding="async"
                   className="catalogue-card-img"
                   style={{
                     width: "100%",
