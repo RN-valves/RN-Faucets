@@ -1600,12 +1600,24 @@ export default function CategoryClient({
 
       {/* Responsive Inline CSS */}
       <style jsx global>{`
+        @keyframes heroShimmer {
+          0% {
+            background-position: -200% 0;
+          }
+          100% {
+            background-position: 200% 0;
+          }
+        }
+
         .category-hero-container {
           position: relative;
           width: 100%;
           height: ${searchQuery ? "38vh" : "100vh"};
           min-height: ${searchQuery ? "260px" : "480px"};
           overflow: hidden;
+          background: linear-gradient(90deg, #090d16 0%, #172033 50%, #090d16 100%);
+          background-size: 200% 100%;
+          animation: heroShimmer 2.4s ease-in-out infinite;
         }
 
         .category-content-container {
@@ -2309,6 +2321,8 @@ export default function CategoryClient({
                           <img
                             src={product.image || "/api/media/website/catalogue/products/default/image.webp"}
                             alt={product.name}
+                            loading="lazy"
+                            decoding="async"
                             draggable={false}
                             style={{
                               width: "100%",
@@ -2317,7 +2331,7 @@ export default function CategoryClient({
                               maxHeight: "100%",
                               objectFit: "contain",
                               transform: "scale(1.14)",
-                              transition: "transform 0.45s ease",
+                              transition: "transform 0.45s ease, opacity 0.3s ease",
                               userSelect: "none",
                               filter: "drop-shadow(0 16px 26px rgba(18, 38, 56, 0.16))",
                             }}

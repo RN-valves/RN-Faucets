@@ -119,7 +119,7 @@ export default function DynamicCategoryPage({ params }: { params: Promise<{ slug
           width: "100vw",
           height: "100vh",
           overflow: "hidden",
-          backgroundColor: "#000000",
+          backgroundColor: "#090d16",
         }}
       >
         <Image
@@ -128,6 +128,8 @@ export default function DynamicCategoryPage({ params }: { params: Promise<{ slug
           fill
           priority
           unoptimized
+          decoding="async"
+          sizes="100vw"
           style={{
             objectFit: "cover",
             objectPosition: "center",
