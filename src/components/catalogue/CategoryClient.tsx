@@ -161,15 +161,21 @@ export default function CategoryClient({
     setVisibleCount(25);
   }, [category, searchQuery, selectedNames, selectedColors, selectedSizes, selectedCollections, minPriceInput, maxPriceInput, sortBy]);
 
-  // Load Data
+  // Load Data (Only fetch if not already loaded via SSR or when performing text search)
   useEffect(() => {
+    // If SSR already passed complete initial data and user is not searching, do not re-fetch
+    if (initialCategoryData && initialProducts && initialProducts.length > 0 && !searchQuery) {
+      setIsLoadingProducts(false);
+      return;
+    }
+
     async function loadData() {
       setIsLoadingProducts(true);
       try {
-        let activeSub: any = null;
+        let activeSub: any = initialCategoryData;
         let activeCat: any = null;
 
-        if (category && category !== "all") {
+        if (!activeSub && category && category !== "all") {
           const subRes = await fetch(`/api/subcategories/${category}`);
           const subData = subRes.ok ? await subRes.json() : null;
           if (subData && !subData.error) {
@@ -206,36 +212,40 @@ export default function CategoryClient({
         }
 
         // Fetch category & subcategory navigation lists
-        const allCatRes = await fetch("/api/categories");
-        if (allCatRes.ok) {
-          const catList = await allCatRes.json();
-          if (Array.isArray(catList)) {
-            setAllCategories(catList);
+        if (allCategories.length === 0) {
+          const allCatRes = await fetch("/api/categories");
+          if (allCatRes.ok) {
+            const catList = await allCatRes.json();
+            if (Array.isArray(catList)) {
+              setAllCategories(catList);
+            }
           }
         }
 
-        const allSubRes = await fetch("/api/subcategories");
-        if (allSubRes.ok) {
-          const subList = await allSubRes.json();
-          if (Array.isArray(subList)) {
-            const parentCatName =
-              activeSub?.categoryName ||
-              activeCat?.name ||
-              "PTMT | High Grade Engineering Polymer Faucets";
-            const parentCatId = activeSub?.categoryId || activeCat?.id || activeCat?._id;
+        if (relatedSubcategories.length === 0) {
+          const allSubRes = await fetch("/api/subcategories");
+          if (allSubRes.ok) {
+            const subList = await allSubRes.json();
+            if (Array.isArray(subList)) {
+              const parentCatName =
+                activeSub?.categoryName ||
+                activeCat?.name ||
+                "PTMT | High Grade Engineering Polymer Faucets";
+              const parentCatId = activeSub?.categoryId || activeCat?.id || activeCat?._id;
 
-            const filtered = subList.filter((s) => {
-              if (parentCatId && String(s.categoryId) === String(parentCatId)) return true;
-              if (
-                s.categoryName &&
-                parentCatName &&
-                s.categoryName.toLowerCase().trim() === parentCatName.toLowerCase().trim()
-              )
-                return true;
-              return false;
-            });
+              const filtered = subList.filter((s) => {
+                if (parentCatId && String(s.categoryId) === String(parentCatId)) return true;
+                if (
+                  s.categoryName &&
+                  parentCatName &&
+                  s.categoryName.toLowerCase().trim() === parentCatName.toLowerCase().trim()
+                )
+                  return true;
+                return false;
+              });
 
-            setRelatedSubcategories(filtered.length > 0 ? filtered : subList);
+              setRelatedSubcategories(filtered.length > 0 ? filtered : subList);
+            }
           }
         }
       } catch (err) {
@@ -245,7 +255,7 @@ export default function CategoryClient({
       }
     }
     loadData();
-  }, [category, searchQuery]);
+  }, [category, searchQuery, initialCategoryData, initialProducts]);
 
   // Lock body scroll when mobile filter is open
   useEffect(() => {
