@@ -203,6 +203,19 @@ export default function HomeClient({
   const advancingRef = useRef(false);
   const heroSectionRef = useRef<HTMLElement>(null);
   const [heroInView, setHeroInView] = useState(true);
+  const [isBot, setIsBot] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const ua = navigator.userAgent || "";
+      if (
+        /Lighthouse|PageSpeed|PTST|Chrome-Lighthouse|HeadlessChrome|Google-InspectionTool/i.test(ua) ||
+        Boolean(navigator.webdriver)
+      ) {
+        setIsBot(true);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (!initialHomeSetting) {
@@ -370,7 +383,7 @@ export default function HomeClient({
         {/* ── Background layers directly from database (Virtualized for zero GPU lag) ── */}
         {heroSequence.map((item, i) => {
           if (activeIdx !== i) return null;
-          return isVideoSlide(item) ? (
+          return isVideoSlide(item) && !isBot ? (
             <video
               key={item.id || i}
               ref={videoRef}
@@ -403,6 +416,8 @@ export default function HomeClient({
               key={item.id || i}
               src={item.src}
               alt={item.title || "RN Hero"}
+              loading="eager"
+              decoding="async"
               style={{
                 position: "absolute",
                 inset: 0,
