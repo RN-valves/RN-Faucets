@@ -16,26 +16,23 @@ if (!cached) {
 }
 
 export async function connectDB(): Promise<typeof mongoose> {
-  const targetUri = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/rn-valves";
+  const targetUri =
+    process.env.MONGODB_URI ||
+    "mongodb+srv://web_db_user:EoK0ZBimp3zGV9ZY@rncluster.jbtr81i.mongodb.net/rn-valves?retryWrites=true&w=majority&appName=RNcluster";
 
-  const isLocalConfigured = targetUri.includes("127.0.0.1") || targetUri.includes("localhost");
-  const isCurrentConnLocal =
-    cached.conn?.connection?.host?.includes("127.0.0.1") ||
-    cached.conn?.connection?.host?.includes("localhost");
-
-  // If environment switched or current connection doesn't match local configuration, reset
-  if (cached.conn && isLocalConfigured && !isCurrentConnLocal) {
-    console.log("Switching cached Mongoose connection to Local MongoDB:", targetUri);
+  // If URI changed, reset cached connection
+  if (cached.currentUri && cached.currentUri !== targetUri && cached.conn) {
     try {
       await mongoose.disconnect();
-    } catch (e) {
-      console.error("Disconnect error:", e);
-    }
+    } catch {}
     cached.conn = null;
     cached.promise = null;
   }
 
-  if (cached.conn) return cached.conn;
+  // If already connected with readyState === 1
+  if (cached.conn && mongoose.connection.readyState === 1) {
+    return cached.conn;
+  }
 
   if (!cached.promise) {
     cached.promise = mongoose
@@ -44,8 +41,14 @@ export async function connectDB(): Promise<typeof mongoose> {
         maxPoolSize: 10,
         serverSelectionTimeoutMS: 10000,
       })
+      .then((m) => {
+        cached.conn = m;
+        cached.currentUri = targetUri;
+        return m;
+      })
       .catch((err) => {
         cached.promise = null;
+        cached.conn = null;
         throw err;
       });
   }
