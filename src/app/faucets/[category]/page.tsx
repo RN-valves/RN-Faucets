@@ -526,7 +526,17 @@ function CategoryPageContent({ category }: { category: string }) {
     ? `Search: "${searchQuery}"`
     : categoryData?.name || formatCategoryTitle(category);
 
-  const heroImage = categoryData?.banner || categoryData?.image || DEFAULT_HERO_IMAGE;
+  const getValidHeroImage = (data: any) => {
+    if (data?.banner && data.banner.trim() && !data.banner.includes("uploads/catalogue") && !data.banner.includes("www.rnvalves.com")) {
+      return data.banner;
+    }
+    if (data?.image && data.image.trim() && !data.image.includes("uploads/catalogue") && !data.image.includes("www.rnvalves.com")) {
+      return data.image;
+    }
+    return DEFAULT_HERO_IMAGE;
+  };
+
+  const heroImage = getValidHeroImage(categoryData);
   const parentCategoryHeading =
     categoryData?.categoryName ||
     categoryData?.parentName ||
@@ -1869,6 +1879,8 @@ function CategoryPageContent({ category }: { category: string }) {
           fill
           priority
           unoptimized
+          decoding="async"
+          sizes="100vw"
           style={{
             objectFit: "cover",
             objectPosition: "center",
