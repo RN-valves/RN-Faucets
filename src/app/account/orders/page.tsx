@@ -325,27 +325,6 @@ export default function CustomerOrdersPage() {
                 My Profile &amp; GST Details
               </Link>
 
-              <Link
-                href="/catalogues"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "10px 20px",
-                  border: "1px solid #E5E5E5",
-                  background: "#FFFFFF",
-                  borderRadius: "6px",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  color: "#111111",
-                  textDecoration: "none",
-                  transition: "all 0.2s ease",
-                }}
-              >
-                <FileText size={15} />
-                Catalogues
-              </Link>
-
               <button
                 type="button"
                 onClick={handleLogout}
