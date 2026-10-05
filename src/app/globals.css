@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+:root {
+  --font-manrope: var(--font-manrope, 'Manrope', system-ui, -apple-system, sans-serif);
+  --font-plus-jakarta-sans: var(--font-plus-jakarta-sans, 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -13,6 +18,7 @@ html {
 }
 
 body {
+  font-family: var(--font-manrope), 'Manrope', system-ui, -apple-system, sans-serif;
   width: 100%;
   min-height: 100vh;
   overflow-x: hidden;
