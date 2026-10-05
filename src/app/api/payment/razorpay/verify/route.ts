@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyRazorpayPaymentSignature } from "@/lib/razorpay";
 import { connectDB } from "@/lib/mongodb";
 import Order from "@/models/Order";
+import User from "@/models/User";
 import { sendOrderInvoiceEmail } from "@/lib/email";
 
 export async function POST(request: Request) {
@@ -63,12 +64,59 @@ export async function POST(request: Request) {
 
     const orderId = rawId;
 
+    // Lookup user by phone for email and GST enrichment
+    let customerEmail = orderData?.customerEmail;
+    let gstNumber = orderData?.gstNumber;
+    let businessName = orderData?.businessName;
+
+    if (orderData?.customerPhone) {
+      const cleanPhone = String(orderData.customerPhone).replace(/\D/g, "").slice(-10);
+      const userDoc: any = await User.findOne({
+        $or: [
+          { mobile: cleanPhone },
+          { mobile: `+91${cleanPhone}` },
+          { mobile: `91${cleanPhone}` },
+        ],
+      });
+
+      if (userDoc) {
+        if ((!customerEmail || customerEmail.includes("noreply")) && userDoc.email) {
+          customerEmail = userDoc.email;
+        }
+        if (!gstNumber && userDoc.gstNumber) {
+          gstNumber = userDoc.gstNumber;
+        }
+        if (!businessName && userDoc.businessName) {
+          businessName = userDoc.businessName;
+        }
+
+        // Sync back any newly provided email or GST to the user profile
+        const userUpdates: any = {};
+        if (orderData.customerEmail && !orderData.customerEmail.includes("noreply") && !userDoc.email) {
+          userUpdates.email = orderData.customerEmail;
+        }
+        if (orderData.gstNumber && !userDoc.gstNumber) {
+          userUpdates.gstNumber = orderData.gstNumber;
+          userUpdates.userType = "Business";
+        }
+        if (orderData.businessName && !userDoc.businessName) {
+          userUpdates.businessName = orderData.businessName;
+        }
+        if (Object.keys(userUpdates).length > 0) {
+          await User.findByIdAndUpdate(userDoc._id, { $set: userUpdates });
+        }
+      }
+    }
+
     const savedOrder = await Order.findOneAndUpdate(
       { $or: [{ id: orderId }, { uuid: orderData?.uuid }] },
       {
         ...orderData,
         id: orderId,
         legacyId: legacyId || undefined,
+        customerEmail: customerEmail || orderData?.customerEmail || "",
+        gstNumber: gstNumber || orderData?.gstNumber || "",
+        businessName: businessName || orderData?.businessName || "",
         paymentStatus: "Paid",
         paymentMethod: "Online Payment",
         status: "Processing",

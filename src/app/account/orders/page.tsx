@@ -61,6 +61,8 @@ interface OrderData {
   customerName: string;
   customerPhone: string;
   customerEmail: string;
+  gstNumber?: string;
+  businessName?: string;
   items: OrderItem[];
   totalAmount: number;
   paymentMethod: "Online Payment" | "Cash on Delivery";
@@ -1203,6 +1205,16 @@ export default function CustomerOrdersPage() {
                   Customer Details
                 </p>
                 <p style={{ fontWeight: 600, color: "#111111", margin: "0 0 2px" }}>{selectedInvoiceOrder.customerName}</p>
+                {(selectedInvoiceOrder.businessName || session.businessName) && (
+                  <p style={{ fontWeight: 600, color: "#111111", margin: "0 0 2px" }}>
+                    Company: {selectedInvoiceOrder.businessName || session.businessName}
+                  </p>
+                )}
+                {(selectedInvoiceOrder.gstNumber || session.gstNumber) && (
+                  <p style={{ fontWeight: 700, color: "#0369A1", margin: "0 0 2px", fontFamily: "monospace" }}>
+                    GSTIN: {selectedInvoiceOrder.gstNumber || session.gstNumber}
+                  </p>
+                )}
                 <p style={{ margin: "0 0 2px" }}>+91 {selectedInvoiceOrder.customerPhone}</p>
                 <p style={{ margin: 0 }}>{selectedInvoiceOrder.customerEmail}</p>
               </div>

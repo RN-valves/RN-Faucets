@@ -33,6 +33,8 @@ export interface IOrder extends Document {
   customerName: string;
   customerPhone: string;
   customerEmail: string;
+  gstNumber?: string;
+  businessName?: string;
   items: {
     id?: string;
     name: string;
@@ -124,6 +126,8 @@ const OrderSchema = new Schema<IOrder>(
     customerName: { type: String, required: true },
     customerPhone: { type: String, required: true },
     customerEmail: { type: String, default: "" },
+    gstNumber: { type: String, default: "" },
+    businessName: { type: String, default: "" },
     items: { type: [OrderItemSchema], default: [] },
     totalAmount: { type: Number, required: true },
     paymentMethod: { type: String, default: "Online Payment" },
