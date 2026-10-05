@@ -48,45 +48,12 @@ interface DynamicSubcategory {
   description?: string;
 }
 
-let cachedCategories: DynamicCategory[] | null = null;
-let cachedSubcategories: DynamicSubcategory[] | null = null;
-let isPreloadingCatalogue = false;
-
-function preloadCatalogueData() {
-  if (cachedCategories && cachedSubcategories) return;
-  if (isPreloadingCatalogue) return;
-  isPreloadingCatalogue = true;
-  Promise.all([
-    fetch("/api/categories").then((r) => (r.ok ? r.json() : [])),
-    fetch("/api/subcategories").then((r) => (r.ok ? r.json() : [])),
-  ])
-    .then(([cats, subs]) => {
-      if (Array.isArray(cats) && cats.length > 0) {
-        cachedCategories = cats;
-      }
-      if (Array.isArray(subs) && subs.length > 0) {
-        cachedSubcategories = subs;
-      }
-      // Pre-warm the top images in browser cache for instantaneous menu render
-      if (typeof window !== "undefined") {
-        const topImages = [
-          ...(Array.isArray(cats) ? cats.slice(0, 10).map((c: any) => c.icon || c.image) : []),
-          ...(Array.isArray(subs) ? subs.slice(0, 20).map((s: any) => s.image || s.banner) : []),
-        ].filter(Boolean);
-
-        topImages.forEach((url) => {
-          if (typeof url === "string" && url.trim()) {
-            const prefetchImg = new window.Image();
-            prefetchImg.src = url;
-          }
-        });
-      }
-    })
-    .catch(() => {})
-    .finally(() => {
-      isPreloadingCatalogue = false;
-    });
-}
+import {
+  preloadCatalogueData,
+  getCachedCategories,
+  getCachedSubcategories,
+  preheatImage,
+} from "@/utils/catalogueCache";
 
 function CatalogueDashboard({
   onClose,
@@ -96,20 +63,24 @@ function CatalogueDashboard({
   onBack?: () => void;
 }) {
   const router = useRouter();
-  const [categories, setCategories] = useState<DynamicCategory[]>(cachedCategories || []);
-  const [subcategories, setSubcategories] = useState<DynamicSubcategory[]>(cachedSubcategories || []);
+  const cachedCats = getCachedCategories();
+  const cachedSubs = getCachedSubcategories();
+  const [categories, setCategories] = useState<DynamicCategory[]>((cachedCats as any) || []);
+  const [subcategories, setSubcategories] = useState<DynamicSubcategory[]>((cachedSubs as any) || []);
   const [activeCategoryId, setActiveCategoryId] = useState<string>(
-    cachedCategories && cachedCategories.length > 0
-      ? cachedCategories[0].id || (cachedCategories[0] as any)._id || cachedCategories[0].slug
+    cachedCats && cachedCats.length > 0
+      ? cachedCats[0].id || (cachedCats[0] as any)._id || cachedCats[0].slug
       : ""
   );
-  const [loading, setLoading] = useState(!cachedCategories || cachedCategories.length === 0);
+  const [loading, setLoading] = useState(!cachedCats || cachedCats.length === 0);
 
   useEffect(() => {
-    if (cachedCategories && cachedSubcategories && cachedCategories.length > 0) {
-      setCategories(cachedCategories);
-      setSubcategories(cachedSubcategories);
-      setActiveCategoryId(cachedCategories[0].id || (cachedCategories[0] as any)._id || cachedCategories[0].slug);
+    const memCats = getCachedCategories();
+    const memSubs = getCachedSubcategories();
+    if (memCats && memSubs && memCats.length > 0) {
+      setCategories(memCats as any);
+      setSubcategories(memSubs as any);
+      setActiveCategoryId(memCats[0].id || (memCats[0] as any)._id || memCats[0].slug);
       setLoading(false);
       return;
     }
@@ -126,12 +97,10 @@ function CatalogueDashboard({
         const subs = subRes.ok ? await subRes.json() : [];
 
         if (Array.isArray(cats) && cats.length > 0) {
-          cachedCategories = cats;
           setCategories(cats);
           setActiveCategoryId(cats[0].id || (cats[0] as any)._id || cats[0].slug);
         }
         if (Array.isArray(subs) && subs.length > 0) {
-          cachedSubcategories = subs;
           setSubcategories(subs);
         }
       } catch (err) {
@@ -347,6 +316,7 @@ function CatalogueDashboard({
                 <article
                   key={sub.id || idx}
                   className="subcategory-card group catalogue-subcat-card"
+                  onMouseEnter={() => preheatImage(sub.banner || sub.image)}
                   onClick={() => handleNavigate(`/faucets/${targetSlug}`)}
                 >
                   <div className="catalogue-card-img-panel" style={{ position: "relative" }}>
