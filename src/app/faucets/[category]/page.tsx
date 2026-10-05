@@ -7,6 +7,7 @@ import { useState, useEffect, use, useMemo, useRef, Suspense } from "react";
 import Header from "@/components/Header";
 import FooterSection from "@/components/FooterSection";
 import { SlidersHorizontal, X, Search, RotateCcw, Loader2 } from "lucide-react";
+import { getCachedCategoryOrSubcategory, preheatImage, preloadCatalogueData } from "@/utils/catalogueCache";
 
 // Convert human size strings (e.g. 1/2", 3/4", 15mm, 25mm, 4", 100mm) into comparable numeric mm values
 function parseSizeValue(sizeStr: string): number {
@@ -109,7 +110,7 @@ function CategoryPageContent({ category }: { category: string }) {
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get("search") || searchParams.get("q") || "";
 
-  const [categoryData, setCategoryData] = useState<any>(null);
+  const [categoryData, setCategoryData] = useState<any>(() => getCachedCategoryOrSubcategory(category));
   const [dbProducts, setDbProducts] = useState<any[]>([]);
   const [allCategories, setAllCategories] = useState<any[]>([]);
   const [relatedSubcategories, setRelatedSubcategories] = useState<any[]>([]);
@@ -2251,12 +2252,6 @@ function CategoryPageContent({ category }: { category: string }) {
                       .replace(/\s+/g, "-");
                     const productUrl = `/faucets/${catSegment}/${encodeURIComponent(prodCode)}`;
 
-                    const isOutOfStock =
-                      product.status === "Out of Stock" ||
-                      product.status === "Inactive" ||
-                      product.status === "InActive" ||
-                      product.status === "Discontinued";
-
                     return (
                       <article
                         key={product.id || prodCode}
@@ -2285,27 +2280,6 @@ function CategoryPageContent({ category }: { category: string }) {
                             }
                           }}
                         >
-                          {isOutOfStock && (
-                            <span
-                              style={{
-                                position: "absolute",
-                                top: "10px",
-                                left: "10px",
-                                background: "rgba(220, 38, 38, 0.9)",
-                                color: "#ffffff",
-                                fontSize: "10px",
-                                fontWeight: 800,
-                                textTransform: "uppercase",
-                                letterSpacing: "0.06em",
-                                padding: "3px 8px",
-                                borderRadius: "4px",
-                                boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-                                zIndex: 2,
-                              }}
-                            >
-                              Out of Stock
-                            </span>
-                          )}
                           <img
                             src={product.image || "/api/media/website/catalogue/products/default/image.webp"}
                             alt={product.name}
