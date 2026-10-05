@@ -1,18 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import Header from "@/components/Header";
 import { ChevronDown } from "lucide-react";
 import ProductShowcaseSection from "@/components/ProductShowcaseSection";
 import CategoriesSection from "@/components/CategoriesSection";
 import BestSellerCategoriesSection from "@/components/BestSellerCategoriesSection";
-import WhyBuySection from "@/components/WhyBuySection";
-import InstagramReelsSection from "@/components/InstagramReelsSection";
-import JaquarSupportSection from "@/components/JaquarSupportSection";
-import BlogsSection from "@/components/BlogsSection";
-import SupportLinksSection from "@/components/SupportLinksSection";
 import FooterSection from "@/components/FooterSection";
 import { getAdminHomeSetting } from "@/utils/adminStore";
+
+// Dynamic loading for heavy below-the-fold sections (Massive mobile CPU & TBT boost)
+const WhyBuySection = dynamic(() => import("@/components/WhyBuySection"), { ssr: true });
+const InstagramReelsSection = dynamic(() => import("@/components/InstagramReelsSection"), { ssr: false });
+const JaquarSupportSection = dynamic(() => import("@/components/JaquarSupportSection"), { ssr: true });
+const BlogsSection = dynamic(() => import("@/components/BlogsSection"), { ssr: true });
+const SupportLinksSection = dynamic(() => import("@/components/SupportLinksSection"), { ssr: true });
 
 /* ─── Sequence items ────────────────────────────────────── */
 type ItemType = "video" | "image";
@@ -204,8 +207,10 @@ export default function HomeClient({
   const heroSectionRef = useRef<HTMLElement>(null);
   const [heroInView, setHeroInView] = useState(true);
   const [isBot, setIsBot] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
+    setHasMounted(true);
     if (typeof window !== "undefined") {
       const ua = navigator.userAgent || "";
       if (
@@ -383,7 +388,7 @@ export default function HomeClient({
         {/* ── Background layers directly from database (Virtualized for zero GPU lag) ── */}
         {heroSequence.map((item, i) => {
           if (activeIdx !== i) return null;
-          return isVideoSlide(item) && !isBot ? (
+          return isVideoSlide(item) && hasMounted && !isBot ? (
             <video
               key={item.id || i}
               ref={videoRef}
