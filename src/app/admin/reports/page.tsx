@@ -1464,7 +1464,17 @@ function AdminReportsContent() {
                 >
                   <option value="all">All Subcategories</option>
                   {subcategories
-                    .filter((s) => selectedCategory === "all" || s.categoryId === selectedCategory)
+                    .filter((s) => {
+                      if (selectedCategory === "all") return true;
+                      const selCatObj = categories.find(
+                        (c) => c.id === selectedCategory || c.slug === selectedCategory || c.name === selectedCategory
+                      );
+                      if (s.categoryId === selectedCategory) return true;
+                      if (selCatObj && (s.categoryId === selCatObj.id || (s as any).categoryName === selCatObj.name)) {
+                        return true;
+                      }
+                      return false;
+                    })
                     .map((s) => (
                       <option key={s.id || s.name} value={s.id || s.name}>
                         {s.name}

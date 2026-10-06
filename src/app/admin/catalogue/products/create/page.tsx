@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AdminHeader from "@/components/admin/AdminHeader";
+import R2UploadPicker from "@/components/admin/R2UploadPicker";
 import {
   addAdminProduct,
   getAdminCategories,
@@ -25,248 +26,6 @@ import {
   Trash2,
 } from "lucide-react";
 
-// Reusable R2 Upload & Image Link Editor Component
-function R2UploadPicker({
-  label,
-  r2Key,
-  currentUrl,
-  onUploadSuccess,
-  onRemove,
-  accept = "image/*",
-  isDark = false,
-}: {
-  label: string;
-  r2Key: string;
-  currentUrl: string;
-  onUploadSuccess: (newUrl: string) => void;
-  onRemove?: () => void;
-  accept?: string;
-  isDark?: boolean;
-}) {
-  const [uploading, setUploading] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    const res = await uploadFileToR2(file, r2Key);
-    setUploading(false);
-
-    if (res.success && res.url) {
-      onUploadSuccess(res.url);
-    } else {
-      alert("Failed to upload image to Cloudflare R2.");
-    }
-  };
-
-  const handleCopyLink = () => {
-    if (!currentUrl) return;
-    navigator.clipboard.writeText(currentUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const border = isDark ? "#21262D" : "#E5E7EB";
-  const cardBg = isDark ? "#161B22" : "#FFFFFF";
-  const textMain = isDark ? "#F0F6FC" : "#111827";
-  const textMuted = isDark ? "#8B949E" : "#6B7280";
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "6px" }}>
-        <label style={{ fontSize: "12.5px", fontWeight: 700, color: textMain }}>
-          {label}
-        </label>
-        <span style={{ fontSize: "11px", color: textMuted, fontFamily: "monospace" }}>
-          R2 Target: {r2Key}
-        </span>
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "12px",
-          background: isDark ? "#0D1117" : "#F8FAFC",
-          border: `1px solid ${border}`,
-          borderRadius: "10px",
-          padding: "14px",
-        }}
-      >
-        <div style={{ display: "flex", gap: "14px", alignItems: "flex-start", flexWrap: "wrap" }}>
-          {/* Live Image Preview Thumbnail */}
-          <div
-            style={{
-              width: "80px",
-              height: "80px",
-              borderRadius: "8px",
-              overflow: "hidden",
-              border: `1px solid ${border}`,
-              flexShrink: 0,
-              position: "relative",
-              background: isDark ? "#161B22" : "#FFFFFF",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-            }}
-          >
-            {currentUrl ? (
-              <img
-                src={currentUrl}
-                alt={label}
-                style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = "none";
-                }}
-              />
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", color: textMuted }}>
-                <ImageIcon size={24} />
-                <span style={{ fontSize: "10px", fontWeight: 600 }}>No Image</span>
-              </div>
-            )}
-          </div>
-
-          {/* Direct Link Input and File Upload Options */}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "10px", minWidth: "260px" }}>
-            <div>
-              <label style={{ display: "block", fontSize: "11.5px", fontWeight: 700, color: textMain, marginBottom: "4px" }}>
-                Image Link / URL (Type, Paste, or Edit directly)
-              </label>
-              <div style={{ display: "flex", gap: "6px" }}>
-                <input
-                  type="text"
-                  value={currentUrl}
-                  onChange={(e) => onUploadSuccess(e.target.value)}
-                  placeholder="https://... or /api/media/..."
-                  style={{
-                    flex: 1,
-                    padding: "8px 12px",
-                    borderRadius: "6px",
-                    border: `1px solid ${border}`,
-                    background: cardBg,
-                    color: textMain,
-                    fontSize: "13px",
-                    fontFamily: "monospace",
-                    outline: "none",
-                  }}
-                />
-                {currentUrl && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={handleCopyLink}
-                      title="Copy Image URL"
-                      style={{
-                        padding: "8px 10px",
-                        borderRadius: "6px",
-                        border: `1px solid ${border}`,
-                        background: cardBg,
-                        color: copied ? "#059669" : textMuted,
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "4px",
-                        fontSize: "12px",
-                        fontWeight: 600,
-                      }}
-                    >
-                      {copied ? <Check size={14} /> : <Copy size={14} />}
-                      <span>{copied ? "Copied" : "Copy"}</span>
-                    </button>
-                    <a
-                      href={currentUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="Open Image in new tab"
-                      style={{
-                        padding: "8px 10px",
-                        borderRadius: "6px",
-                        border: `1px solid ${border}`,
-                        background: cardBg,
-                        color: textMuted,
-                        display: "flex",
-                        alignItems: "center",
-                        textDecoration: "none",
-                      }}
-                    >
-                      <ExternalLink size={14} />
-                    </a>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Upload File & Clear Buttons */}
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={accept}
-                onChange={handleFileChange}
-                style={{ display: "none" }}
-              />
-
-              <button
-                type="button"
-                disabled={uploading}
-                onClick={() => fileInputRef.current?.click()}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "7px 14px",
-                  borderRadius: "6px",
-                  border: "1px solid #0077B6",
-                  background: isDark ? "#073B4C" : "#E0F2FE",
-                  color: isDark ? "#38BDF8" : "#0077B6",
-                  fontWeight: 700,
-                  fontSize: "12px",
-                  cursor: uploading ? "not-allowed" : "pointer",
-                }}
-              >
-                <Upload size={13} /> {uploading ? "Uploading to Cloudflare R2..." : currentUrl ? "Upload & Replace Image File" : "Upload Image File to R2"}
-              </button>
-
-              {currentUrl && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (onRemove) {
-                      deleteFileFromR2(r2Key);
-                      onRemove();
-                    } else {
-                      onUploadSuccess("");
-                    }
-                  }}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "4px",
-                    padding: "7px 12px",
-                    borderRadius: "6px",
-                    border: "1px solid #EF4444",
-                    background: "transparent",
-                    color: "#EF4444",
-                    fontWeight: 700,
-                    fontSize: "12px",
-                    cursor: "pointer",
-                  }}
-                >
-                  <Trash2 size={13} /> Clear Image
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function CreateProductPage() {
   const router = useRouter();
@@ -352,6 +111,35 @@ export default function CreateProductPage() {
   const textMuted = isDark ? "#8B949E" : "#6B7280";
   const inputBg = isDark ? "#161B22" : "#F9FAFB";
   const shadow = isDark ? "none" : "0 2px 10px rgba(0, 0, 0, 0.04)";
+
+  const selectedCatObj = useMemo(() => {
+    return categories.find(
+      (c) => c.name === category || c.id === category || c.slug === category
+    );
+  }, [category, categories]);
+
+  const filteredSubcategories = useMemo(() => {
+    if (!category) return subcategories;
+    const catNameLower = (category || "").trim().toLowerCase();
+    const normCat = catNameLower.replace(/[\s|_-]+/g, "");
+
+    return subcategories.filter((s) => {
+      if (selectedCatObj) {
+        if (s.categoryId === selectedCatObj.id) return true;
+        if ((selectedCatObj as any)._id && s.categoryId === String((selectedCatObj as any)._id)) return true;
+        if (s.categoryId === selectedCatObj.name) return true;
+      }
+      if (s.categoryId === category) return true;
+      if (s.categoryName) {
+        const subCatNameLower = s.categoryName.trim().toLowerCase();
+        const normSub = subCatNameLower.replace(/[\s|_-]+/g, "");
+        if (subCatNameLower === catNameLower || normSub === normCat || normSub.includes(normCat) || normCat.includes(normSub)) {
+          return true;
+        }
+      }
+      return false;
+    });
+  }, [category, selectedCatObj, subcategories]);
 
   useEffect(() => {
     Promise.all([
@@ -498,7 +286,10 @@ export default function CreateProductPage() {
                 <select
                   required
                   value={category}
-                  onChange={(e) => setCategory(e.target.value)}
+                  onChange={(e) => {
+                    setCategory(e.target.value);
+                    setSubcategoryId("");
+                  }}
                   style={{ width: "100%", padding: "10px 14px", borderRadius: "8px", border: `1px solid ${border}`, background: inputBg, color: textMain, fontWeight: 700 }}
                 >
                   <option value="">Select Category</option>
@@ -509,15 +300,23 @@ export default function CreateProductPage() {
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textMain, marginBottom: "4px" }}>Subcategory</label>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textMain, marginBottom: "4px" }}>
+                  Subcategory {category && filteredSubcategories.length > 0 ? `(${filteredSubcategories.length})` : ""}
+                </label>
                 <select
                   value={subcategoryId}
                   onChange={(e) => setSubcategoryId(e.target.value)}
                   style={{ width: "100%", padding: "10px 14px", borderRadius: "8px", border: `1px solid ${border}`, background: inputBg, color: textMain }}
                 >
-                  <option value="">Select Subcategory</option>
-                  {subcategories.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name} ({s.categoryName})</option>
+                  <option value="">
+                    {category
+                      ? filteredSubcategories.length > 0
+                        ? `Select Subcategory (${filteredSubcategories.length} available)`
+                        : "-- No Subcategories for this Category --"
+                      : "-- Select Category First --"}
+                  </option>
+                  {filteredSubcategories.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
                 </select>
               </div>
