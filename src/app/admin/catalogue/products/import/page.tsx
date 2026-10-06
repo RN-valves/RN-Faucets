@@ -116,8 +116,20 @@ export default function BulkProductsImportPage() {
 
   // Export Current Products Excel (.xlsx) Template
   const handleDownloadCurrentUpdateExcel = async () => {
-    const prods = await getAdminProducts();
-    const formattedProds = prods.map((p) => ({
+    let prods: any[] = [];
+    try {
+      const res = await fetch("/api/reports?type=products&export=true");
+      if (res.ok) {
+        const data = await res.json();
+        prods = data.products || [];
+      }
+    } catch {
+      // fallback
+    }
+    if (prods.length === 0) {
+      prods = await getAdminProducts();
+    }
+    const formattedProds = prods.map((p: any) => ({
       id: p.id,
       category: p.category,
       subcategory: p.subcategoryName || "",

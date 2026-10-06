@@ -15,6 +15,7 @@ import {
 import AdminShimmer from "@/components/admin/ui/AdminShimmer";
 import { AdminProduct, AdminCategory } from "@/types/admin";
 import { useAdminTheme } from "@/app/admin/layout";
+import * as XLSX from "xlsx";
 import {
   Plus,
   Trash2,
@@ -31,6 +32,7 @@ import {
   Tag,
   DollarSign,
   Box,
+  FileSpreadsheet,
 } from "lucide-react";
 
 export default function ProductsListingPage() {
@@ -39,6 +41,7 @@ export default function ProductsListingPage() {
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
 
   // Filter & Pagination State
   const [searchQuery, setSearchQuery] = useState("");
@@ -299,19 +302,113 @@ export default function ProductsListingPage() {
     }
   };
 
-  // Export JSON / CSV
-  const handleExportJSON = () => {
-    const exportItems = selectedIds.length > 0
-      ? products.filter((p) => selectedIds.includes(p.id))
-      : filteredProducts;
+  // Export Products (Excel .xlsx / JSON)
+  const handleExportExcel = async (format: "xlsx" | "json" = "xlsx") => {
+    setExporting(true);
+    try {
+      let rawProducts: any[] = [];
 
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportItems, null, 2));
-    const downloadAnchor = document.createElement("a");
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `rn_products_export_${Date.now()}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
+      // If user selected specific products, use selected products from loaded state
+      if (selectedIds.length > 0) {
+        rawProducts = products.filter((p) => selectedIds.includes(p.id) || selectedIds.includes((p as any)._id));
+      } else {
+        // Fetch full catalogue export directly from server without pagination limits
+        const res = await fetch("/api/reports?type=products&export=true");
+        if (res.ok) {
+          const data = await res.json();
+          rawProducts = data.products || [];
+        }
+        // Fallback to loaded products if API fails
+        if (rawProducts.length === 0) {
+          rawProducts = filteredProducts.length > 0 ? filteredProducts : products;
+        }
+      }
+
+      if (rawProducts.length === 0) {
+        alert("No products found to export.");
+        return;
+      }
+
+      const timestamp = new Date().toISOString().split("T")[0];
+
+      if (format === "json") {
+        const jsonBlob = new Blob([JSON.stringify(rawProducts, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(jsonBlob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `rn_products_export_${timestamp}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        return;
+      }
+
+      // Map all 51 Laravel-compatible columns
+      const rows = rawProducts.map((p: any) => ({
+        id: p.id || p.code || "",
+        category: p.category || "",
+        subcategory: p.subcategoryName || p.subcategory || "",
+        content_id: p.contentId || p.content_id || "",
+        brand: p.brand || "RN Valves",
+        material: p.material || "",
+        color_name: p.colorName || p.color_name || "",
+        name: p.name || "",
+        article: p.article || "",
+        sku_code: p.skuCode || p.sku_code || p.code || "",
+        size: p.size || "",
+        hsn: p.hsn || "",
+        image: p.image || "",
+        title: p.title || p.name || "",
+        keywords: p.keywords || "",
+        description: p.description || "",
+        search_keywords: p.searchKeywords || p.search_keywords || "",
+        is_visible_website: p.isVisibleWebsite !== undefined ? (p.isVisibleWebsite ? 1 : 0) : (p.is_visible_website ?? 1),
+        is_visible_api: p.isVisibleApi !== undefined ? (p.isVisibleApi ? 1 : 0) : (p.is_visible_api ?? 1),
+        new_arrival: p.newArrival ? 1 : (p.new_arrival ? 1 : 0),
+        is_featured: p.isFeatured ? 1 : (p.is_featured ? 1 : 0),
+        sale_type: p.saleType || p.sale_type || "",
+        in_mrp: p.inMrp ?? p.in_mrp ?? p.price ?? 0,
+        in_selling: p.inSelling ?? p.in_selling ?? p.price ?? 0,
+        in_v1_mrp: p.inV1Mrp ?? p.in_v1_mrp ?? (p.inMrp ? p.inMrp * 2 : 0),
+        oth_mrp: p.othMrp ?? p.oth_mrp ?? p.inMrp ?? 0,
+        oth_selling: p.othSelling ?? p.oth_selling ?? p.inSelling ?? 0,
+        oth_v1_mrp: p.othV1Mrp ?? p.oth_v1_mrp ?? p.inV1Mrp ?? 0,
+        color_group_id: p.colorGroupId || p.color_group_id || "",
+        product_combo_id: p.productComboId || p.product_combo_id || "",
+        product_size_id: p.productSizeId || p.product_size_id || "",
+        ctn_pcs: p.ctnPcs ?? p.ctn_pcs ?? 0,
+        mid_ctn_pcs: p.midCtnPcs ?? p.mid_ctn_pcs ?? 0,
+        inner_pcs: p.innerPcs ?? p.inner_pcs ?? 0,
+        stock_pcs: p.stockPcs ?? p.stock_pcs ?? p.stock ?? 0,
+        only_product_wt_gm: p.onlyProductWtGm ?? p.only_product_wt_gm ?? 0,
+        product_length: p.productLength ?? p.product_length ?? 0,
+        product_breadth: p.productBreadth ?? p.product_breadth ?? 0,
+        product_height: p.productHeight ?? p.product_height ?? 0,
+        product_lbh_weight_gm: p.productLbhWeightGm ?? p.product_lbh_weight_gm ?? 0,
+        mid_ctn_lbh_weight_kg: p.midCtnLbhWeightKg ?? p.mid_ctn_lbh_weight_kg ?? 0,
+        residential_warranty: p.residentialWarranty ?? p.residential_warranty ?? 0,
+        commercial_warranty: p.commercialWarranty ?? p.commercial_warranty ?? 0,
+        amazon_link: p.amazonLink || p.amazon_link || "",
+        flipkart_link: p.flipkartLink || p.flipkart_link || "",
+        short_description: p.shortDescription || p.short_description || p.description || "",
+        video_url: p.videoUrl || p.video_url || "",
+        is_full_turn: p.isFullTurn ? 1 : (p.is_full_turn ? 1 : 0),
+        full_turn_code: p.fullTurnCode || p.full_turn_code || "",
+        master_ctn_lbh_weight_kg: p.masterCtnLbhWeightKg ?? p.master_ctn_lbh_weight_kg ?? 0,
+        status: p.status || "In Stock",
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "products");
+      XLSX.writeFile(wb, `${timestamp}_products.xlsx`);
+    } catch (err) {
+      console.error("Export error:", err);
+      alert("Failed to export products. Please try again.");
+    } finally {
+      setExporting(false);
+    }
   };
 
   // Import JSON
@@ -348,12 +445,55 @@ export default function ProductsListingPage() {
       <main style={{ padding: "32px", maxWidth: "1400px", margin: "0 auto", width: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: "24px" }}>
         {/* Top Action Bar */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
             <button
-              onClick={handleExportJSON}
-              style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 16px", borderRadius: "8px", border: `1px solid ${border}`, background: cardBg, color: textMain, fontWeight: 700, fontSize: "13px", cursor: "pointer" }}
+              onClick={() => handleExportExcel("xlsx")}
+              disabled={exporting}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "9px 16px",
+                borderRadius: "8px",
+                border: "1px solid #10B981",
+                background: isDark ? "#064E3B" : "#ECFDF5",
+                color: isDark ? "#34D399" : "#059669",
+                fontWeight: 700,
+                fontSize: "13px",
+                cursor: exporting ? "not-allowed" : "pointer",
+                opacity: exporting ? 0.7 : 1,
+                boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                transition: "all 0.15s ease",
+              }}
+              title="Export all products into Excel (.xlsx) spreadsheet with all 51 fields"
             >
-              <Download size={15} /> Export {selectedIds.length > 0 ? `Selected (${selectedIds.length})` : "All Products"}
+              <FileSpreadsheet size={15} />
+              {exporting
+                ? "Exporting Excel (.xlsx)..."
+                : selectedIds.length > 0
+                ? `Export Selected (${selectedIds.length}) .xlsx`
+                : "Export All Products (.xlsx)"}
+            </button>
+
+            <button
+              onClick={() => handleExportExcel("json")}
+              disabled={exporting}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "9px 14px",
+                borderRadius: "8px",
+                border: `1px solid ${border}`,
+                background: cardBg,
+                color: textMuted,
+                fontWeight: 600,
+                fontSize: "12.5px",
+                cursor: exporting ? "not-allowed" : "pointer",
+              }}
+              title="Export as JSON file backup"
+            >
+              <Download size={14} /> JSON
             </button>
 
             <Link
