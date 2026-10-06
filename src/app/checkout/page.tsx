@@ -1427,14 +1427,18 @@ export default function CheckoutPage() {
                       flex: 1,
                       padding: "10px 12px",
                       borderRadius: "6px",
-                      border: "1px solid #d1d5db",
+                      border: isCouponApplied ? "1px solid #10b981" : "1px solid #d1d5db",
                       fontFamily: "'Manrope', system-ui, sans-serif",
-                      fontSize: "13px",
+                      fontSize: "13.5px",
                       textTransform: "uppercase",
-                      letterSpacing: "0.04em",
-                      fontWeight: 600,
+                      letterSpacing: "0.05em",
+                      fontWeight: 700,
+                      color: isCouponApplied ? "#065f46" : "#0f172a",
                       outline: "none",
-                      backgroundColor: isCouponApplied ? "#f1f5f9" : "#ffffff",
+                      backgroundColor: isCouponApplied ? "#ecfdf5" : "#ffffff",
+                      opacity: 1,
+                      WebkitTextFillColor: isCouponApplied ? "#065f46" : "#0f172a",
+                      cursor: isCouponApplied ? "default" : "text",
                     }}
                   />
                   <button
