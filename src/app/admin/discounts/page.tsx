@@ -3,42 +3,51 @@
 import { useEffect, useState } from "react";
 import AdminHeader from "@/components/admin/AdminHeader";
 import { useAdminTheme } from "@/app/admin/layout";
+import AdminButton from "@/components/admin/ui/AdminButton";
+import AdminFilterBar from "@/components/admin/ui/AdminFilterBar";
+import AdminDataTable, { Column } from "@/components/admin/ui/AdminDataTable";
+import AdminStatusBadge from "@/components/admin/ui/AdminStatusBadge";
+import AdminCard from "@/components/admin/ui/AdminCard";
 import {
   Tag,
   Plus,
-  Search,
-  CheckCircle2,
-  XCircle,
   Copy,
   Check,
-  Calendar,
   Percent,
   IndianRupee,
   Edit2,
   Trash2,
-  RefreshCw,
-  Sparkles,
+  Calendar,
   Layers,
+  Sparkles,
+  CheckCircle2,
+  X,
+  Clock,
+  ShieldCheck,
 } from "lucide-react";
 
 interface DiscountItem {
   _id: string;
   id: string;
   name: string;
-  type: "Amount" | "Percent";
+  type: "Amount" | "Percent" | string;
   value: number;
   startValue: number;
   endValue: number;
   expiredAt: string;
-  status: "Active" | "Inactive";
+  status: "Active" | "Inactive" | string;
   createdAt?: string;
 }
 
 export default function AdminDiscountsPage() {
+  const { theme, toggleTheme } = useAdminTheme();
+  const isDark = theme === "dark";
+
   const [discounts, setDiscounts] = useState<DiscountItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"All" | "Active" | "Inactive">("All");
+  const [typeFilter, setTypeFilter] = useState<"All" | "Percent" | "Amount">("All");
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   // Modal State
@@ -53,6 +62,7 @@ export default function AdminDiscountsPage() {
     expiredAt: "2026-12-31",
     status: "Active" as "Active" | "Inactive",
   });
+  const [isSaving, setIsSaving] = useState(false);
 
   async function fetchDiscounts() {
     setLoading(true);
@@ -99,14 +109,18 @@ export default function AdminDiscountsPage() {
 
   const handleOpenEdit = (item: DiscountItem) => {
     setEditingItem(item);
+    const expDate = item.expiredAt
+      ? item.expiredAt.split("T")[0]
+      : "2026-12-31";
+
     setFormData({
       name: item.name,
-      type: item.type,
-      value: item.value,
-      startValue: item.startValue,
-      endValue: item.endValue,
-      expiredAt: item.expiredAt,
-      status: item.status,
+      type: (item.type?.toLowerCase().includes("amount") ? "Amount" : "Percent") as "Amount" | "Percent",
+      value: Number(item.value) || 0,
+      startValue: Number(item.startValue) || 0,
+      endValue: Number(item.endValue) || 999999,
+      expiredAt: expDate,
+      status: (item.status === "Active" ? "Active" : "Inactive") as "Active" | "Inactive",
     });
     setShowModal(true);
   };
@@ -145,363 +159,769 @@ export default function AdminDiscountsPage() {
 
   const handleSaveDiscount = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name) return;
+    if (!formData.name.trim()) return;
 
+    setIsSaving(true);
     try {
+      const payload = {
+        name: formData.name.trim().toUpperCase(),
+        type: formData.type,
+        value: Number(formData.value),
+        startValue: Number(formData.startValue),
+        endValue: Number(formData.endValue),
+        expiredAt: formData.expiredAt,
+        status: formData.status,
+      };
+
+      let res;
       if (editingItem) {
-        const res = await fetch(`/api/discounts/${editingItem._id || editingItem.id}`, {
+        res = await fetch(`/api/discounts/${editingItem._id || editingItem.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
+          body: JSON.stringify(payload),
         });
-        if (res.ok) {
-          setShowModal(false);
-          fetchDiscounts();
-        }
       } else {
-        const res = await fetch("/api/discounts", {
+        res = await fetch("/api/discounts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
+          body: JSON.stringify(payload),
         });
-        if (res.ok) {
-          setShowModal(false);
-          fetchDiscounts();
-        }
       }
-    } catch (err) {
-      console.error("Failed to save discount:", err);
+
+      if (res.ok) {
+        setShowModal(false);
+        fetchDiscounts();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to save discount promo code.");
+      }
+    } catch (err: any) {
+      console.error("Save discount error:", err);
+      alert(err.message || "Something went wrong while saving discount.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const activeCount = discounts.filter((d) => d.status === "Active").length;
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return "Never";
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr.split("T")[0] || dateStr;
+      return d.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    } catch {
+      return dateStr;
+    }
+  };
 
-  const { theme, toggleTheme } = useAdminTheme();
+  // Filtered List
+  const filteredDiscounts = discounts.filter((d) => {
+    const matchesSearch =
+      !searchQuery ||
+      d.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      String(d.value).includes(searchQuery);
+
+    const matchesType =
+      typeFilter === "All" ||
+      (typeFilter === "Percent" && d.type?.toLowerCase().includes("percent")) ||
+      (typeFilter === "Amount" && d.type?.toLowerCase().includes("amount"));
+
+    return matchesSearch && matchesType;
+  });
+
+  // Metrics
+  const totalCount = discounts.length;
+  const activeCount = discounts.filter((d) => d.status === "Active").length;
+  const percentCount = discounts.filter((d) => d.type?.toLowerCase().includes("percent")).length;
+  const amountCount = discounts.filter((d) => d.type?.toLowerCase().includes("amount")).length;
+
+  const cardBg = isDark ? "#0D1117" : "#FFFFFF";
+  const cardBorder = isDark ? "1px solid #21262D" : "1px solid #E5E7EB";
+  const textMuted = isDark ? "#8B949E" : "#6B7280";
+  const textMain = isDark ? "#F0F6FC" : "#111827";
+
+  const columns: Column<DiscountItem>[] = [
+    {
+      header: "Promo Code",
+      accessor: (d) => {
+        const isCopied = copiedCode === d.name;
+        const isPercent = (d.type || "").toLowerCase().includes("percent");
+
+        return (
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div
+              style={{
+                width: "36px",
+                height: "36px",
+                borderRadius: "8px",
+                background: isPercent
+                  ? (isDark ? "rgba(56, 189, 248, 0.15)" : "#E0F2FE")
+                  : (isDark ? "rgba(16, 185, 129, 0.15)" : "#ECFDF5"),
+                color: isPercent ? (isDark ? "#38BDF8" : "#0284C7") : (isDark ? "#34D399" : "#059669"),
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 800,
+                flexShrink: 0,
+              }}
+            >
+              {isPercent ? <Percent size={18} /> : <IndianRupee size={18} />}
+            </div>
+
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span
+                  style={{
+                    fontFamily: "monospace",
+                    fontWeight: 800,
+                    fontSize: "14px",
+                    letterSpacing: "0.04em",
+                    color: textMain,
+                  }}
+                >
+                  {d.name}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleCopyCode(d.name)}
+                  title="Copy Code"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: "2px",
+                    color: isCopied ? "#10B981" : textMuted,
+                  }}
+                >
+                  {isCopied ? <Check size={14} /> : <Copy size={14} />}
+                </button>
+              </div>
+              <div style={{ fontSize: "11px", color: textMuted }}>
+                {isPercent ? "Percentage Rule" : "Flat Amount Rule"}
+              </div>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      header: "Benefit / Value",
+      accessor: (d) => {
+        const isPercent = (d.type || "").toLowerCase().includes("percent");
+        return (
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span
+              style={{
+                fontSize: "15px",
+                fontWeight: 800,
+                color: isPercent ? (isDark ? "#38BDF8" : "#0284C7") : (isDark ? "#34D399" : "#059669"),
+              }}
+            >
+              {isPercent ? `${d.value}% OFF` : `₹${Number(d.value).toLocaleString("en-IN")} OFF`}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      header: "Cart Slab Tier",
+      accessor: (d) => (
+        <div style={{ fontSize: "12.5px" }}>
+          <div style={{ color: textMain, fontWeight: 600 }}>
+            Min: <strong>₹{Number(d.startValue || 0).toLocaleString("en-IN")}</strong>
+          </div>
+          <div style={{ color: textMuted, fontSize: "11.5px" }}>
+            Max: {d.endValue && Number(d.endValue) < 900000 ? `₹${Number(d.endValue).toLocaleString("en-IN")}` : "No Limit"}
+          </div>
+        </div>
+      ),
+    },
+    {
+      header: "Expiry Date",
+      accessor: (d) => (
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12.5px", color: textMain }}>
+          <Calendar size={13} style={{ color: textMuted }} />
+          <span>{formatDate(d.expiredAt)}</span>
+        </div>
+      ),
+    },
+    {
+      header: "Status",
+      accessor: (d) => {
+        const isActive = d.status === "Active";
+        return (
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <AdminStatusBadge
+              status={isActive ? "Active" : "Inactive"}
+              variant={isActive ? "success" : "danger"}
+              isDark={isDark}
+            />
+            <button
+              type="button"
+              onClick={() => handleToggleStatus(d)}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontSize: "11.5px",
+                fontWeight: 600,
+                color: isActive ? "#DC2626" : "#059669",
+                textDecoration: "underline",
+                padding: "0 4px",
+              }}
+            >
+              {isActive ? "Disable" : "Enable"}
+            </button>
+          </div>
+        );
+      },
+    },
+    {
+      header: "Actions",
+      align: "right",
+      accessor: (d) => (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "6px" }}>
+          <AdminButton
+            variant="secondary"
+            size="sm"
+            icon={<Edit2 size={13} />}
+            isDark={isDark}
+            onClick={() => handleOpenEdit(d)}
+          >
+            Edit
+          </AdminButton>
+          <AdminButton
+            variant="danger"
+            size="sm"
+            icon={<Trash2 size={13} />}
+            isDark={isDark}
+            onClick={() => handleDelete(d)}
+          >
+            Delete
+          </AdminButton>
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
       <AdminHeader
         title="Discounts & Coupon Promo Engine"
-        subtitle="Create promo codes, set percentage/flat discounts, and manage coupon validity."
+        subtitle="Configure promotional discount promo codes, cart-level threshold slabs, percentage deductions, and coupon validity."
         onRefresh={fetchDiscounts}
         theme={theme}
         onToggleTheme={toggleTheme}
       />
 
-      <main className="flex-1 overflow-y-auto p-6 space-y-6 max-w-[1400px] w-full mx-auto font-sans">
-          {/* Header Banner */}
-          <div className="flex flex-wrap items-center justify-between gap-4">
+      <main style={{ padding: "28px", maxWidth: "1400px", margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
+        {/* Top Metric Cards */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: "16px",
+            marginBottom: "24px",
+          }}
+        >
+          <div
+            style={{
+              background: cardBg,
+              border: cardBorder,
+              borderRadius: "12px",
+              padding: "18px 20px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
             <div>
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <Tag className="text-rose-600" size={26} />
-                Discounts & Coupon Promo Codes
-              </h1>
-              <p className="text-sm text-slate-500 mt-1">
-                Configure promotional promo codes, minimum cart value rules, percentage & flat discounts
-              </p>
+              <div style={{ fontSize: "12px", fontWeight: 700, textTransform: "uppercase", color: textMuted, letterSpacing: "0.04em" }}>
+                Total Promo Codes
+              </div>
+              <div style={{ fontSize: "28px", fontWeight: 800, color: textMain, marginTop: "4px" }}>
+                {totalCount}
+              </div>
             </div>
-
-            <button
-              type="button"
-              onClick={handleOpenAdd}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm rounded-lg shadow-sm transition"
+            <div
+              style={{
+                width: "44px",
+                height: "44px",
+                borderRadius: "10px",
+                background: isDark ? "rgba(56, 189, 248, 0.15)" : "#E0F2FE",
+                color: isDark ? "#38BDF8" : "#0284C7",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
             >
-              <Plus size={16} />
-              Create Promo Code
-            </button>
-          </div>
-
-          {/* Metric Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Coupons</p>
-                <p className="text-2xl font-bold text-slate-900 mt-1">{discounts.length}</p>
-              </div>
-              <div className="p-3 bg-rose-50 text-rose-600 rounded-lg">
-                <Tag size={22} />
-              </div>
-            </div>
-
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider">Active Promo Codes</p>
-                <p className="text-2xl font-bold text-emerald-900 mt-1">{activeCount}</p>
-              </div>
-              <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
-                <CheckCircle2 size={22} />
-              </div>
-            </div>
-
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wider">Rule Types</p>
-                <p className="text-2xl font-bold text-indigo-900 mt-1">Flat ₹ & % OFF</p>
-              </div>
-              <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
-                <Sparkles size={22} />
-              </div>
+              <Tag size={22} />
             </div>
           </div>
 
-          {/* Search & Filter Bar */}
-          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
-            <div className="relative flex-1 min-w-[240px]">
-              <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
-              <input
-                type="text"
-                placeholder="Search promo code (e.g. RN05OFF)..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && fetchDiscounts()}
-                className="w-full pl-10 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500"
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-slate-500 uppercase">Status:</span>
-              <div className="flex bg-slate-100 p-1 rounded-lg">
-                {(["All", "Active", "Inactive"] as const).map((st) => (
-                  <button
-                    key={st}
-                    type="button"
-                    onClick={() => setStatusFilter(st)}
-                    className={`px-3 py-1 text-xs font-semibold rounded-md transition ${
-                      statusFilter === st ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
-                    }`}
-                  >
-                    {st}
-                  </button>
-                ))}
+          <div
+            style={{
+              background: cardBg,
+              border: cardBorder,
+              borderRadius: "12px",
+              padding: "18px 20px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <div>
+              <div style={{ fontSize: "12px", fontWeight: 700, textTransform: "uppercase", color: textMuted, letterSpacing: "0.04em" }}>
+                Active Coupons
               </div>
+              <div style={{ fontSize: "28px", fontWeight: 800, color: "#10B981", marginTop: "4px" }}>
+                {activeCount}
+              </div>
+            </div>
+            <div
+              style={{
+                width: "44px",
+                height: "44px",
+                borderRadius: "10px",
+                background: isDark ? "rgba(16, 185, 129, 0.15)" : "#ECFDF5",
+                color: "#10B981",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <CheckCircle2 size={22} />
+            </div>
+          </div>
 
-              <button
-                type="button"
-                onClick={fetchDiscounts}
-                className="p-2 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-lg transition"
+          <div
+            style={{
+              background: cardBg,
+              border: cardBorder,
+              borderRadius: "12px",
+              padding: "18px 20px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <div>
+              <div style={{ fontSize: "12px", fontWeight: 700, textTransform: "uppercase", color: textMuted, letterSpacing: "0.04em" }}>
+                Percentage Rules
+              </div>
+              <div style={{ fontSize: "28px", fontWeight: 800, color: isDark ? "#38BDF8" : "#0284C7", marginTop: "4px" }}>
+                {percentCount}
+              </div>
+            </div>
+            <div
+              style={{
+                width: "44px",
+                height: "44px",
+                borderRadius: "10px",
+                background: isDark ? "rgba(56, 189, 248, 0.15)" : "#E0F2FE",
+                color: isDark ? "#38BDF8" : "#0284C7",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Percent size={22} />
+            </div>
+          </div>
+
+          <div
+            style={{
+              background: cardBg,
+              border: cardBorder,
+              borderRadius: "12px",
+              padding: "18px 20px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <div>
+              <div style={{ fontSize: "12px", fontWeight: 700, textTransform: "uppercase", color: textMuted, letterSpacing: "0.04em" }}>
+                Flat Amount Rules
+              </div>
+              <div style={{ fontSize: "28px", fontWeight: 800, color: isDark ? "#A78BFA" : "#7C3AED", marginTop: "4px" }}>
+                {amountCount}
+              </div>
+            </div>
+            <div
+              style={{
+                width: "44px",
+                height: "44px",
+                borderRadius: "10px",
+                background: isDark ? "rgba(167, 139, 250, 0.15)" : "#F3E8FF",
+                color: isDark ? "#A78BFA" : "#7C3AED",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <IndianRupee size={22} />
+            </div>
+          </div>
+        </div>
+
+        {/* Filter & Action Bar */}
+        <AdminFilterBar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Search promo code (e.g. RN05OFF, WELCOME200)..."
+          isDark={isDark}
+          filters={
+            <>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as any)}
+                style={{
+                  padding: "9px 14px",
+                  borderRadius: "8px",
+                  border: isDark ? "1px solid #30363D" : "1px solid #D1D5DB",
+                  background: isDark ? "#161B22" : "#FFFFFF",
+                  color: textMain,
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  outline: "none",
+                }}
               >
-                <RefreshCw size={18} />
-              </button>
+                <option value="All">All Statuses</option>
+                <option value="Active">Active Only</option>
+                <option value="Inactive">Inactive Only</option>
+              </select>
+
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value as any)}
+                style={{
+                  padding: "9px 14px",
+                  borderRadius: "8px",
+                  border: isDark ? "1px solid #30363D" : "1px solid #D1D5DB",
+                  background: isDark ? "#161B22" : "#FFFFFF",
+                  color: textMain,
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  outline: "none",
+                }}
+              >
+                <option value="All">All Rule Types</option>
+                <option value="Percent">Percentage (% OFF)</option>
+                <option value="Amount">Flat Amount (₹ OFF)</option>
+              </select>
+            </>
+          }
+          actions={
+            <AdminButton
+              variant="primary"
+              icon={<Plus size={16} />}
+              isDark={isDark}
+              onClick={handleOpenAdd}
+            >
+              Create New Promo Code
+            </AdminButton>
+          }
+        />
+
+        {/* Main Data Table */}
+        <AdminDataTable
+          columns={columns}
+          data={filteredDiscounts}
+          keyExtractor={(d) => d._id || d.id}
+          loading={loading}
+          isDark={isDark}
+          emptyState={
+            <div style={{ padding: "48px 20px", textAlign: "center" }}>
+              <Tag size={36} style={{ color: textMuted, margin: "0 auto 12px auto" }} />
+              <div style={{ fontSize: "16px", fontWeight: 700, color: textMain }}>No Discount Promo Codes Found</div>
+              <div style={{ fontSize: "13px", color: textMuted, marginTop: "4px" }}>
+                Create your first promotional discount slab code by clicking the &ldquo;Create New Promo Code&rdquo; button above.
+              </div>
             </div>
-          </div>
+          }
+        />
+      </main>
 
-          {/* Promo Code Cards Grid */}
-          {loading ? (
-            <div className="p-12 text-center text-slate-500 font-medium bg-white rounded-xl border border-slate-200">
-              Loading promo codes...
-            </div>
-          ) : discounts.length === 0 ? (
-            <div className="p-12 text-center text-slate-500 font-medium bg-white rounded-xl border border-slate-200">
-              No promo codes found. Click &quot;Create Promo Code&quot; to add one.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {discounts.map((item) => (
-                <div
-                  key={item._id || item.id}
-                  className={`bg-white p-5 rounded-2xl border transition relative space-y-4 shadow-sm ${
-                    item.status === "Active" ? "border-slate-200 hover:border-rose-300" : "border-slate-200 bg-slate-50/70 opacity-75"
-                  }`}
-                >
-                  {/* Card Header */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-base font-extrabold tracking-wider bg-rose-50 text-rose-700 px-3 py-1 rounded-lg border border-rose-200">
-                        {item.name}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleCopyCode(item.name)}
-                        className="p-1.5 text-slate-400 hover:text-slate-700 transition"
-                        title="Copy Promo Code"
-                      >
-                        {copiedCode === item.name ? <Check size={16} className="text-emerald-600" /> : <Copy size={16} />}
-                      </button>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => handleToggleStatus(item)}
-                      className={`px-2.5 py-1 text-xs font-semibold rounded-full border transition ${
-                        item.status === "Active"
-                          ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                          : "bg-slate-100 text-slate-500 border-slate-300 hover:bg-slate-200"
-                      }`}
-                    >
-                      {item.status}
-                    </button>
-                  </div>
-
-                  {/* Value Highlight */}
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-3xl font-extrabold text-slate-900">
-                      {item.type === "Percent" ? `${item.value}%` : `₹${item.value}`}
-                    </span>
-                    <span className="text-xs font-semibold text-slate-500 uppercase">OFF</span>
-                  </div>
-
-                  {/* Rules Summary */}
-                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1 text-xs text-slate-600">
-                    <div className="flex justify-between">
-                      <span className="text-slate-400 font-medium">Min Cart Amount:</span>
-                      <span className="font-semibold text-slate-800">₹{item.startValue.toLocaleString("en-IN")}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400 font-medium">Max Discount Cap:</span>
-                      <span className="font-semibold text-slate-800">₹{item.endValue.toLocaleString("en-IN")}</span>
-                    </div>
-                    <div className="flex justify-between pt-1 border-t border-slate-200/60">
-                      <span className="text-slate-400 font-medium flex items-center gap-1">
-                        <Calendar size={12} />
-                        Expiry Date:
-                      </span>
-                      <span className="font-semibold text-slate-800">{item.expiredAt}</span>
-                    </div>
-                  </div>
-
-                  {/* Actions Footer */}
-                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEdit(item)}
-                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg transition inline-flex items-center gap-1"
-                    >
-                      <Edit2 size={13} />
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(item)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                      title="Delete Promo Code"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </main>
-
-      {/* Create / Edit Promo Code Modal */}
+      {/* Create / Edit Promo Code Modal Dialog */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 relative border border-slate-200">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-              <h3 className="text-lg font-bold text-slate-900">
-                {editingItem ? `Edit Promo Code: ${editingItem.name}` : "Create New Promo Code"}
-              </h3>
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(0, 0, 0, 0.65)",
+            backdropFilter: "blur(4px)",
+            zIndex: 99999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+            boxSizing: "border-box",
+          }}
+          onClick={() => setShowModal(false)}
+        >
+          <div
+            style={{
+              backgroundColor: isDark ? "#161B22" : "#FFFFFF",
+              borderRadius: "14px",
+              width: "100%",
+              maxWidth: "580px",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+              overflow: "hidden",
+              border: isDark ? "1px solid #30363D" : "1px solid #E5E7EB",
+              fontFamily: "'Manrope', system-ui, sans-serif",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: "20px 24px",
+                borderBottom: isDark ? "1px solid #21262D" : "1px solid #E5E7EB",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                background: isDark ? "#0D1117" : "#F9FAFB",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <Tag size={20} color={isDark ? "#38BDF8" : "#0284C7"} />
+                <h3 style={{ margin: 0, fontSize: "17px", fontWeight: 700, color: textMain }}>
+                  {editingItem ? "Edit Discount Promo Code" : "Create New Promo Code Slab"}
+                </h3>
+              </div>
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: textMuted,
+                  cursor: "pointer",
+                  padding: "4px",
+                }}
               >
-                ✕
+                <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleSaveDiscount} className="space-y-3.5 text-sm">
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Promo Code Name *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. RN05OFF or FESTIVE20"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value.toUpperCase() })}
-                  className="w-full p-2.5 border border-slate-200 rounded-lg text-sm font-mono uppercase font-bold tracking-wider"
-                />
-              </div>
+            {/* Modal Form */}
+            <form onSubmit={handleSaveDiscount} style={{ padding: "24px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "18px" }}>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 700, textTransform: "uppercase", color: textMain, marginBottom: "6px" }}>
+                    Promo Code Name <span style={{ color: "#DC2626" }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. RN05OFF, FESTIVE10, B2BBULK15"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value.toUpperCase() })}
+                    style={{
+                      width: "100%",
+                      padding: "10px 14px",
+                      borderRadius: "6px",
+                      border: isDark ? "1px solid #30363D" : "1px solid #D1D5DB",
+                      background: isDark ? "#0D1117" : "#FFFFFF",
+                      color: textMain,
+                      fontFamily: "monospace",
+                      fontWeight: 800,
+                      fontSize: "14px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                  <span style={{ display: "block", fontSize: "11px", color: textMuted, marginTop: "4px" }}>
+                    Unique promo coupon entered by customers during checkout.
+                  </span>
+                </div>
 
-              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Discount Type</label>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 700, textTransform: "uppercase", color: textMain, marginBottom: "6px" }}>
+                    Discount Type <span style={{ color: "#DC2626" }}>*</span>
+                  </label>
                   <select
                     value={formData.type}
                     onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
-                    className="w-full p-2.5 border border-slate-200 rounded-lg text-sm bg-white"
+                    style={{
+                      width: "100%",
+                      padding: "10px 14px",
+                      borderRadius: "6px",
+                      border: isDark ? "1px solid #30363D" : "1px solid #D1D5DB",
+                      background: isDark ? "#0D1117" : "#FFFFFF",
+                      color: textMain,
+                      fontSize: "13.5px",
+                      fontWeight: 600,
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
                   >
-                    <option value="Percent">Percentage % OFF</option>
-                    <option value="Amount">Flat Amount ₹ OFF</option>
+                    <option value="Percent">Percentage (% OFF)</option>
+                    <option value="Amount">Fixed Amount (₹ OFF)</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Discount Value ({formData.type === "Percent" ? "%" : "₹"}) *
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 700, textTransform: "uppercase", color: textMain, marginBottom: "6px" }}>
+                    Discount Value ({formData.type === "Percent" ? "%" : "₹"}) <span style={{ color: "#DC2626" }}>*</span>
                   </label>
                   <input
                     type="number"
                     required
                     min={1}
+                    max={formData.type === "Percent" ? 100 : 999999}
                     value={formData.value}
                     onChange={(e) => setFormData({ ...formData, value: Number(e.target.value) })}
-                    className="w-full p-2.5 border border-slate-200 rounded-lg text-sm font-bold"
+                    style={{
+                      width: "100%",
+                      padding: "10px 14px",
+                      borderRadius: "6px",
+                      border: isDark ? "1px solid #30363D" : "1px solid #D1D5DB",
+                      background: isDark ? "#0D1117" : "#FFFFFF",
+                      color: textMain,
+                      fontSize: "13.5px",
+                      fontWeight: 700,
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
                   />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Min Order Amount (₹)</label>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 700, textTransform: "uppercase", color: textMain, marginBottom: "6px" }}>
+                    Min Cart Order (₹) <span style={{ color: "#DC2626" }}>*</span>
+                  </label>
                   <input
                     type="number"
+                    required
+                    min={0}
                     value={formData.startValue}
                     onChange={(e) => setFormData({ ...formData, startValue: Number(e.target.value) })}
-                    className="w-full p-2.5 border border-slate-200 rounded-lg text-sm"
+                    style={{
+                      width: "100%",
+                      padding: "10px 14px",
+                      borderRadius: "6px",
+                      border: isDark ? "1px solid #30363D" : "1px solid #D1D5DB",
+                      background: isDark ? "#0D1117" : "#FFFFFF",
+                      color: textMain,
+                      fontSize: "13.5px",
+                      fontWeight: 600,
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Max Discount Cap (₹)</label>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 700, textTransform: "uppercase", color: textMain, marginBottom: "6px" }}>
+                    Max Cart Order (₹)
+                  </label>
                   <input
                     type="number"
+                    min={formData.startValue}
                     value={formData.endValue}
                     onChange={(e) => setFormData({ ...formData, endValue: Number(e.target.value) })}
-                    className="w-full p-2.5 border border-slate-200 rounded-lg text-sm"
+                    style={{
+                      width: "100%",
+                      padding: "10px 14px",
+                      borderRadius: "6px",
+                      border: isDark ? "1px solid #30363D" : "1px solid #D1D5DB",
+                      background: isDark ? "#0D1117" : "#FFFFFF",
+                      color: textMain,
+                      fontSize: "13.5px",
+                      fontWeight: 600,
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
                   />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Expiry Date</label>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 700, textTransform: "uppercase", color: textMain, marginBottom: "6px" }}>
+                    Expiry Date
+                  </label>
                   <input
                     type="date"
+                    required
                     value={formData.expiredAt}
                     onChange={(e) => setFormData({ ...formData, expiredAt: e.target.value })}
-                    className="w-full p-2.5 border border-slate-200 rounded-lg text-sm"
+                    style={{
+                      width: "100%",
+                      padding: "10px 14px",
+                      borderRadius: "6px",
+                      border: isDark ? "1px solid #30363D" : "1px solid #D1D5DB",
+                      background: isDark ? "#0D1117" : "#FFFFFF",
+                      color: textMain,
+                      fontSize: "13.5px",
+                      fontWeight: 600,
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Status</label>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 700, textTransform: "uppercase", color: textMain, marginBottom: "6px" }}>
+                    Status
+                  </label>
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                    className="w-full p-2.5 border border-slate-200 rounded-lg text-sm bg-white"
+                    style={{
+                      width: "100%",
+                      padding: "10px 14px",
+                      borderRadius: "6px",
+                      border: isDark ? "1px solid #30363D" : "1px solid #D1D5DB",
+                      background: isDark ? "#0D1117" : "#FFFFFF",
+                      color: textMain,
+                      fontSize: "13.5px",
+                      fontWeight: 600,
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
                   >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
+                    <option value="Active">Active (Available for checkout)</option>
+                    <option value="Inactive">Inactive (Disabled)</option>
                   </select>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
-                <button
-                  type="button"
+              {/* Action Buttons */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "flex-end",
+                  gap: "12px",
+                  marginTop: "24px",
+                  paddingTop: "18px",
+                  borderTop: isDark ? "1px solid #21262D" : "1px solid #E5E7EB",
+                }}
+              >
+                <AdminButton
+                  variant="secondary"
+                  isDark={isDark}
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 font-semibold text-sm rounded-lg"
                 >
                   Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm rounded-lg"
+                </AdminButton>
+                <AdminButton
+                  variant="primary"
+                  isDark={isDark}
+                  disabled={isSaving}
                 >
-                  Save Promo Code
-                </button>
+                  {isSaving ? "Saving..." : editingItem ? "Update Promo Code" : "Save Promo Code"}
+                </AdminButton>
               </div>
             </form>
           </div>
