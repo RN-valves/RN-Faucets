@@ -1234,22 +1234,6 @@ export default function FaucetProductPage({
                   <strong style={{ color: "#0f172a", fontFamily: "ui-monospace, monospace" }}>{product.skuCode || product.code}</strong>
                 </div>
 
-                {(product.subcategoryName || product.category) && (
-                  <div>
-                    <span style={{ color: "#64748b", fontWeight: 500 }}>Category: </span>
-                    <Link
-                      href={displaySubcatHref}
-                      style={{
-                        color: "#0284c7",
-                        fontWeight: 600,
-                        textDecoration: "none",
-                      }}
-                    >
-                      {displaySubcatName}
-                    </Link>
-                  </div>
-                )}
-
                 {product.size && (
                   <div>
                     <span style={{ color: "#64748b", fontWeight: 500 }}>Product Size: </span>
@@ -1270,22 +1254,6 @@ export default function FaucetProductPage({
                     <strong style={{ color: "#0f172a" }}>{product.residentialWarranty} Year Residential</strong>
                   </div>
                 )}
-
-                <div>
-                  <span style={{ color: "#64748b", fontWeight: 500 }}>Offers: </span>
-                  <span
-                    style={{
-                      color: "#0369a1",
-                      background: "#f0f9ff",
-                      padding: "2px 6px",
-                      borderRadius: "4px",
-                      fontSize: "11px",
-                      fontWeight: 600,
-                    }}
-                  >
-                    Tiered bulk discounts
-                  </span>
-                </div>
               </div>
 
               {variantProducts.length > 1 && (
