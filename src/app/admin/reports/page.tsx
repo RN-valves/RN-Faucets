@@ -92,29 +92,99 @@ interface OrderReportItem {
 interface ProductReportItem {
   _id?: string;
   id: string;
-  name: string;
-  title?: string;
-  code?: string;
-  article?: string;
-  skuCode?: string;
   category: string;
   categoryId?: string;
+  subcategory?: string;
   subcategoryId?: string;
   subcategoryName?: string;
+  contentId?: string;
+  content_id?: string;
   brand?: string;
   material?: string;
   colorName?: string;
+  color_name?: string;
+  name: string;
+  article?: string;
+  skuCode?: string;
+  sku_code?: string;
+  code?: string;
   size?: string;
   hsn?: string;
-  inMrp?: number;
-  inSelling?: number;
-  price?: number;
-  stock: number;
-  stockPcs?: number;
-  status: string;
   image?: string;
+  title?: string;
+  keywords?: string;
   description?: string;
+  searchKeywords?: string;
+  search_keywords?: string;
+  isVisibleWebsite?: boolean | number;
+  is_visible_website?: boolean | number;
+  isVisibleApi?: boolean | number;
+  is_visible_api?: boolean | number;
+  newArrival?: boolean | number;
+  new_arrival?: boolean | number;
+  isFeatured?: boolean | number;
+  is_featured?: boolean | number;
+  saleType?: string;
+  sale_type?: string;
+  inMrp?: number;
+  in_mrp?: number;
+  inSelling?: number;
+  in_selling?: number;
+  inV1Mrp?: number;
+  in_v1_mrp?: number;
+  othMrp?: number;
+  oth_mrp?: number;
+  othSelling?: number;
+  oth_selling?: number;
+  othV1Mrp?: number;
+  oth_v1_mrp?: number;
+  colorGroupId?: string;
+  color_group_id?: string;
+  productComboId?: string;
+  product_combo_id?: string;
+  productSizeId?: string;
+  product_size_id?: string;
+  ctnPcs?: number;
+  ctn_pcs?: number;
+  midCtnPcs?: number;
+  mid_ctn_pcs?: number;
+  innerPcs?: number;
+  inner_pcs?: number;
+  stockPcs?: number;
+  stock_pcs?: number;
+  stock?: number;
+  onlyProductWtGm?: number;
+  only_product_wt_gm?: number;
+  productLength?: number;
+  product_length?: number;
+  productBreadth?: number;
+  product_breadth?: number;
+  productHeight?: number;
+  product_height?: number;
+  productLbhWeightGm?: number;
+  product_lbh_weight_gm?: number;
+  midCtnLbhWeightKg?: number;
+  mid_ctn_lbh_weight_kg?: number;
   residentialWarranty?: number;
+  residential_warranty?: number;
+  commercialWarranty?: number;
+  commercial_warranty?: number;
+  amazonLink?: string;
+  amazon_link?: string;
+  flipkartLink?: string;
+  flipkart_link?: string;
+  shortDescription?: string;
+  short_description?: string;
+  videoUrl?: string;
+  video_url?: string;
+  isFullTurn?: boolean | number;
+  is_full_turn?: boolean | number;
+  fullTurnCode?: string;
+  full_turn_code?: string;
+  masterCtnLbhWeightKg?: number;
+  master_ctn_lbh_weight_kg?: number;
+  status: string;
+  price?: number;
 }
 
 interface RemarkLogItem {
@@ -413,33 +483,65 @@ function AdminReportsContent() {
         XLSX.utils.book_append_sheet(workbook, worksheet, "Order Sales Report");
         XLSX.writeFile(workbook, `RN_Order_Sales_Report_${timestamp}.xlsx`);
       } else if (activeTab === "products") {
-        // Product master matching Laravel's ProductExport
+        // Product master matching Laravel's exact 51-column ProductExport.php
         const rawProducts: ProductReportItem[] = data.products || [];
-        const rows = rawProducts.map((p) => ({
-          "ID": p.id,
-          "Category": p.category,
-          "Subcategory": p.subcategoryName || "",
-          "Product Name": p.name,
-          "Article": p.article || "",
-          "SKU Code": p.skuCode || p.code || "",
-          "Brand": p.brand || "RN Valves",
-          "Material": p.material || "",
-          "Color": p.colorName || "",
-          "Size": p.size || "",
-          "HSN": p.hsn || "",
-          "MRP (₹)": p.inMrp || p.price || 0,
-          "Selling Price (₹)": p.inSelling || p.price || 0,
-          "Stock (Pcs)": p.stockPcs ?? p.stock ?? 0,
-          "Status": p.status,
-          "Warranty (Years)": p.residentialWarranty || "",
-          "Title": p.title || "",
-          "Image URL": p.image || "",
-          "Description": p.description || "",
+        const rows = rawProducts.map((p: any) => ({
+          "id": p.id,
+          "category": p.category || "",
+          "subcategory": p.subcategoryName || p.subcategory || "",
+          "content_id": p.contentId || p.content_id || "",
+          "brand": p.brand || "RN Valves",
+          "material": p.material || "",
+          "color_name": p.colorName || p.color_name || "",
+          "name": p.name,
+          "article": p.article || "",
+          "sku_code": p.skuCode || p.sku_code || p.code || "",
+          "size": p.size || "",
+          "hsn": p.hsn || "",
+          "image": p.image || "",
+          "title": p.title || p.name || "",
+          "keywords": p.keywords || "",
+          "description": p.description || "",
+          "search_keywords": p.searchKeywords || p.search_keywords || "",
+          "is_visible_website": p.isVisibleWebsite !== undefined ? (p.isVisibleWebsite ? 1 : 0) : p.is_visible_website ?? 1,
+          "is_visible_api": p.isVisibleApi !== undefined ? (p.isVisibleApi ? 1 : 0) : p.is_visible_api ?? 1,
+          "new_arrival": p.newArrival ? 1 : (p.new_arrival ? 1 : 0),
+          "is_featured": p.isFeatured ? 1 : (p.is_featured ? 1 : 0),
+          "sale_type": p.saleType || p.sale_type || "",
+          "in_mrp": p.inMrp ?? p.in_mrp ?? p.price ?? 0,
+          "in_selling": p.inSelling ?? p.in_selling ?? p.price ?? 0,
+          "in_v1_mrp": p.inV1Mrp ?? p.in_v1_mrp ?? (p.inMrp ? p.inMrp * 2 : 0),
+          "oth_mrp": p.othMrp ?? p.oth_mrp ?? p.inMrp ?? 0,
+          "oth_selling": p.othSelling ?? p.oth_selling ?? p.inSelling ?? 0,
+          "oth_v1_mrp": p.othV1Mrp ?? p.oth_v1_mrp ?? p.inV1Mrp ?? 0,
+          "color_group_id": p.colorGroupId || p.color_group_id || "",
+          "product_combo_id": p.productComboId || p.product_combo_id || "",
+          "product_size_id": p.productSizeId || p.product_size_id || "",
+          "ctn_pcs": p.ctnPcs ?? p.ctn_pcs ?? 0,
+          "mid_ctn_pcs": p.midCtnPcs ?? p.mid_ctn_pcs ?? 0,
+          "inner_pcs": p.innerPcs ?? p.inner_pcs ?? 0,
+          "stock_pcs": p.stockPcs ?? p.stock_pcs ?? p.stock ?? 0,
+          "only_product_wt_gm": p.onlyProductWtGm ?? p.only_product_wt_gm ?? 0,
+          "product_length": p.productLength ?? p.product_length ?? 0,
+          "product_breadth": p.productBreadth ?? p.product_breadth ?? 0,
+          "product_height": p.productHeight ?? p.product_height ?? 0,
+          "product_lbh_weight_gm": p.productLbhWeightGm ?? p.product_lbh_weight_gm ?? 0,
+          "mid_ctn_lbh_weight_kg": p.midCtnLbhWeightKg ?? p.mid_ctn_lbh_weight_kg ?? 0,
+          "residential_warranty": p.residentialWarranty ?? p.residential_warranty ?? 0,
+          "commercial_warranty": p.commercialWarranty ?? p.commercial_warranty ?? 0,
+          "amazon_link": p.amazonLink || p.amazon_link || "",
+          "flipkart_link": p.flipkartLink || p.flipkart_link || "",
+          "short_description": p.shortDescription || p.short_description || p.description || "",
+          "video_url": p.videoUrl || p.video_url || "",
+          "is_full_turn": p.isFullTurn ? 1 : (p.is_full_turn ? 1 : 0),
+          "full_turn_code": p.fullTurnCode || p.full_turn_code || "",
+          "master_ctn_lbh_weight_kg": p.masterCtnLbhWeightKg ?? p.master_ctn_lbh_weight_kg ?? 0,
+          "status": p.status || "In Stock",
         }));
 
         const worksheet = XLSX.utils.json_to_sheet(rows);
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Product Catalog");
-        XLSX.writeFile(workbook, `RN_Products_Report_${timestamp}.xlsx`);
+        XLSX.utils.book_append_sheet(workbook, worksheet, "products");
+        XLSX.writeFile(workbook, `${new Date().toISOString().split("T")[0]}_products.xlsx`);
       } else if (activeTab === "remarks") {
         // Remark logs export
         const rawLogs: RemarkLogItem[] = data.logs || [];
@@ -963,50 +1065,48 @@ function AdminReportsContent() {
           }
         />
 
-        {/* Comprehensive Filter Control Panel */}
-        <div
-          style={{
-            background: cardBg,
-            border: `1px solid ${border}`,
-            borderRadius: "12px",
-            padding: "16px 20px",
-            marginBottom: "20px",
-            boxShadow: isDark ? "none" : "0 1px 3px rgba(0,0,0,0.05)",
-          }}
-        >
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center", justifyContent: "space-between" }}>
-            {/* Search Input */}
-            <div style={{ flex: "1 1 260px", position: "relative" }}>
-              <input
-                type="text"
-                placeholder={
-                  activeTab === "orders"
-                    ? "Search Order ID, Customer, Phone, City, Tracking..."
-                    : activeTab === "products"
-                    ? "Search Product Name, Article No, SKU, Brand..."
-                    : "Search Customer, Phone, Caller, Notes..."
-                }
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && fetchReports(1)}
-                style={{
-                  width: "100%",
-                  height: "38px",
-                  padding: "0 12px 0 34px",
-                  borderRadius: "8px",
-                  border: `1px solid ${inputBorder}`,
-                  background: inputBg,
-                  color: textMain,
-                  fontSize: "13px",
-                  boxSizing: "border-box",
-                  outline: "none",
-                }}
-              />
-              <Search size={15} style={{ position: "absolute", left: "10px", top: "11px", color: textMuted }} />
-            </div>
+        {/* Comprehensive Filter Control Panel (For Orders & Remarks) */}
+        {activeTab !== "products" && (
+          <div
+            style={{
+              background: cardBg,
+              border: `1px solid ${border}`,
+              borderRadius: "12px",
+              padding: "16px 20px",
+              marginBottom: "20px",
+              boxShadow: isDark ? "none" : "0 1px 3px rgba(0,0,0,0.05)",
+            }}
+          >
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center", justifyContent: "space-between" }}>
+              {/* Search Input */}
+              <div style={{ flex: "1 1 260px", position: "relative" }}>
+                <input
+                  type="text"
+                  placeholder={
+                    activeTab === "orders"
+                      ? "Search Order ID, Customer, Phone, City, Tracking..."
+                      : "Search Customer, Phone, Caller, Notes..."
+                  }
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && fetchReports(1)}
+                  style={{
+                    width: "100%",
+                    height: "38px",
+                    padding: "0 12px 0 34px",
+                    borderRadius: "8px",
+                    border: `1px solid ${inputBorder}`,
+                    background: inputBg,
+                    color: textMain,
+                    fontSize: "13px",
+                    boxSizing: "border-box",
+                    outline: "none",
+                  }}
+                />
+                <Search size={15} style={{ position: "absolute", left: "10px", top: "11px", color: textMuted }} />
+              </div>
 
-            {/* Date Pickers (For Orders & Remarks) */}
-            {(activeTab === "orders" || activeTab === "remarks") && (
+              {/* Date Pickers (For Orders & Remarks) */}
               <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                   <span style={{ fontSize: "11.5px", fontWeight: 600, color: textMuted }}>From:</span>
@@ -1045,231 +1145,132 @@ function AdminReportsContent() {
                   />
                 </div>
               </div>
-            )}
 
-            {/* Tab 1: Orders Dropdown Filters */}
-            {activeTab === "orders" && (
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                <select
-                  value={orderStatus}
-                  onChange={(e) => setOrderStatus(e.target.value)}
-                  style={{
-                    height: "38px",
-                    padding: "0 10px",
-                    borderRadius: "8px",
-                    border: `1px solid ${inputBorder}`,
-                    background: inputBg,
-                    color: textMain,
-                    fontSize: "12.5px",
-                    fontWeight: 600,
-                    outline: "none",
-                  }}
-                >
-                  <option value="All">All Order Statuses</option>
-                  {distinctStatuses.map((st) => (
-                    <option key={st} value={st}>
-                      {st}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  value={paymentStatus}
-                  onChange={(e) => setPaymentStatus(e.target.value)}
-                  style={{
-                    height: "38px",
-                    padding: "0 10px",
-                    borderRadius: "8px",
-                    border: `1px solid ${inputBorder}`,
-                    background: inputBg,
-                    color: textMain,
-                    fontSize: "12.5px",
-                    fontWeight: 600,
-                    outline: "none",
-                  }}
-                >
-                  <option value="All">All Payments</option>
-                  <option value="Paid">Paid</option>
-                  <option value="Pending">Pending</option>
-                </select>
-              </div>
-            )}
-
-            {/* Tab 2: Products Dropdown Filters */}
-            {activeTab === "products" && (
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => {
-                    setSelectedCategory(e.target.value);
-                    setSelectedSubcategory("all");
-                  }}
-                  style={{
-                    height: "38px",
-                    padding: "0 10px",
-                    borderRadius: "8px",
-                    border: `1px solid ${inputBorder}`,
-                    background: inputBg,
-                    color: textMain,
-                    fontSize: "12.5px",
-                    fontWeight: 600,
-                    outline: "none",
-                  }}
-                >
-                  <option value="all">All Categories</option>
-                  {categories.map((c) => (
-                    <option key={c.id || c.slug} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  value={selectedSubcategory}
-                  onChange={(e) => setSelectedSubcategory(e.target.value)}
-                  style={{
-                    height: "38px",
-                    padding: "0 10px",
-                    borderRadius: "8px",
-                    border: `1px solid ${inputBorder}`,
-                    background: inputBg,
-                    color: textMain,
-                    fontSize: "12.5px",
-                    fontWeight: 600,
-                    outline: "none",
-                  }}
-                >
-                  <option value="all">All Subcategories</option>
-                  {subcategories
-                    .filter((s) => selectedCategory === "all" || s.categoryId === selectedCategory)
-                    .map((s) => (
-                      <option key={s.id || s.name} value={s.id || s.name}>
-                        {s.name}
+              {/* Tab 1: Orders Dropdown Filters */}
+              {activeTab === "orders" && (
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                  <select
+                    value={orderStatus}
+                    onChange={(e) => setOrderStatus(e.target.value)}
+                    style={{
+                      height: "38px",
+                      padding: "0 10px",
+                      borderRadius: "8px",
+                      border: `1px solid ${inputBorder}`,
+                      background: inputBg,
+                      color: textMain,
+                      fontSize: "12.5px",
+                      fontWeight: 600,
+                      outline: "none",
+                    }}
+                  >
+                    <option value="All">All Order Statuses</option>
+                    {distinctStatuses.map((st) => (
+                      <option key={st} value={st}>
+                        {st}
                       </option>
                     ))}
-                </select>
+                  </select>
 
-                <select
-                  value={productStock}
-                  onChange={(e) => setProductStock(e.target.value)}
-                  style={{
-                    height: "38px",
-                    padding: "0 10px",
-                    borderRadius: "8px",
-                    border: `1px solid ${inputBorder}`,
-                    background: inputBg,
-                    color: textMain,
-                    fontSize: "12.5px",
-                    fontWeight: 600,
-                    outline: "none",
-                  }}
-                >
-                  <option value="all">All Stock Status</option>
-                  <option value="in_stock">In Stock (&gt; 0)</option>
-                  <option value="low_stock">Low Stock (1-10)</option>
-                  <option value="out_of_stock">Out of Stock (0)</option>
-                </select>
+                  <select
+                    value={paymentStatus}
+                    onChange={(e) => setPaymentStatus(e.target.value)}
+                    style={{
+                      height: "38px",
+                      padding: "0 10px",
+                      borderRadius: "8px",
+                      border: `1px solid ${inputBorder}`,
+                      background: inputBg,
+                      color: textMain,
+                      fontSize: "12.5px",
+                      fontWeight: 600,
+                      outline: "none",
+                    }}
+                  >
+                    <option value="All">All Payments</option>
+                    <option value="Paid">Paid</option>
+                    <option value="Pending">Pending</option>
+                  </select>
+                </div>
+              )}
 
-                <select
-                  value={productStatus}
-                  onChange={(e) => setProductStatus(e.target.value)}
-                  style={{
-                    height: "38px",
-                    padding: "0 10px",
-                    borderRadius: "8px",
-                    border: `1px solid ${inputBorder}`,
-                    background: inputBg,
-                    color: textMain,
-                    fontSize: "12.5px",
-                    fontWeight: 600,
-                    outline: "none",
-                  }}
+              {/* Tab 3: Remark Logs Dropdown Filters */}
+              {activeTab === "remarks" && (
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                  <select
+                    value={selectedRemark}
+                    onChange={(e) => setSelectedRemark(e.target.value)}
+                    style={{
+                      height: "38px",
+                      padding: "0 10px",
+                      borderRadius: "8px",
+                      border: `1px solid ${inputBorder}`,
+                      background: inputBg,
+                      color: textMain,
+                      fontSize: "12.5px",
+                      fontWeight: 600,
+                      outline: "none",
+                    }}
+                  >
+                    <option value="All">All Remarks</option>
+                    {distinctRemarks.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={selectedAdmin}
+                    onChange={(e) => setSelectedAdmin(e.target.value)}
+                    style={{
+                      height: "38px",
+                      padding: "0 10px",
+                      borderRadius: "8px",
+                      border: `1px solid ${inputBorder}`,
+                      background: inputBg,
+                      color: textMain,
+                      fontSize: "12.5px",
+                      fontWeight: 600,
+                      outline: "none",
+                    }}
+                  >
+                    <option value="All">All Callers / Admins</option>
+                    {distinctAdmins.map((a) => (
+                      <option key={a} value={a}>
+                        {a}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Filter Action Buttons */}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <AdminButton
+                  variant="primary"
+                  size="md"
+                  icon={<Filter size={14} />}
+                  isDark={isDark}
+                  onClick={() => fetchReports(1)}
                 >
-                  <option value="All">All Statuses</option>
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
+                  Apply Filter
+                </AdminButton>
+
+                <AdminButton
+                  variant="secondary"
+                  size="md"
+                  icon={<RotateCcw size={14} />}
+                  isDark={isDark}
+                  onClick={handleResetFilters}
+                  title="Reset Filters"
+                >
+                  Reset
+                </AdminButton>
               </div>
-            )}
-
-            {/* Tab 3: Remark Logs Dropdown Filters */}
-            {activeTab === "remarks" && (
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                <select
-                  value={selectedRemark}
-                  onChange={(e) => setSelectedRemark(e.target.value)}
-                  style={{
-                    height: "38px",
-                    padding: "0 10px",
-                    borderRadius: "8px",
-                    border: `1px solid ${inputBorder}`,
-                    background: inputBg,
-                    color: textMain,
-                    fontSize: "12.5px",
-                    fontWeight: 600,
-                    outline: "none",
-                  }}
-                >
-                  <option value="All">All Remarks</option>
-                  {distinctRemarks.map((r) => (
-                    <option key={r} value={r}>
-                      {r}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  value={selectedAdmin}
-                  onChange={(e) => setSelectedAdmin(e.target.value)}
-                  style={{
-                    height: "38px",
-                    padding: "0 10px",
-                    borderRadius: "8px",
-                    border: `1px solid ${inputBorder}`,
-                    background: inputBg,
-                    color: textMain,
-                    fontSize: "12.5px",
-                    fontWeight: 600,
-                    outline: "none",
-                  }}
-                >
-                  <option value="All">All Callers / Admins</option>
-                  {distinctAdmins.map((a) => (
-                    <option key={a} value={a}>
-                      {a}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Filter Action Buttons */}
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <AdminButton
-                variant="primary"
-                size="md"
-                icon={<Filter size={14} />}
-                isDark={isDark}
-                onClick={() => fetchReports(1)}
-              >
-                Apply Filter
-              </AdminButton>
-
-              <AdminButton
-                variant="secondary"
-                size="md"
-                icon={<RotateCcw size={14} />}
-                isDark={isDark}
-                onClick={handleResetFilters}
-                title="Reset Filters"
-              >
-                Reset
-              </AdminButton>
             </div>
-          </div>
 
-          {/* Quick Date Presets Row */}
-          {(activeTab === "orders" || activeTab === "remarks") && (
+            {/* Quick Date Presets Row */}
             <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "12px", flexWrap: "wrap" }}>
               <span style={{ fontSize: "11px", fontWeight: 700, color: textMuted, textTransform: "uppercase" }}>
                 Quick Presets:
@@ -1300,10 +1301,10 @@ function AdminReportsContent() {
                 </button>
               ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Tab 1: Orders Filtered Summary Banner (Matching Laravel's total row) */}
+        {/* Tab 1: Orders Filtered Summary Banner */}
         {activeTab === "orders" && (
           <div
             style={{
@@ -1359,7 +1360,221 @@ function AdminReportsContent() {
           </div>
         )}
 
-        {/* Data Table */}
+        {/* Tab 2: Products Dedicated Pure Laravel Style Export Box (Option A) */}
+        {activeTab === "products" && (
+          <div
+            style={{
+              background: cardBg,
+              border: `1px solid ${border}`,
+              borderRadius: "14px",
+              padding: "28px",
+              boxShadow: isDark ? "none" : "0 2px 8px rgba(0,0,0,0.04)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "16px", marginBottom: "24px", paddingBottom: "20px", borderBottom: `1px solid ${border}` }}>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <h3 style={{ margin: 0, fontSize: "20px", fontWeight: 800, color: textMain }}>
+                    Product Data Export
+                  </h3>
+                  <span
+                    style={{
+                      fontSize: "11.5px",
+                      fontWeight: 700,
+                      padding: "3px 10px",
+                      borderRadius: "20px",
+                      background: isDark ? "rgba(16, 185, 129, 0.15)" : "#D1FAE5",
+                      color: "#059669",
+                    }}
+                  >
+                    {globalSummary.totalProducts.toLocaleString()} Total Products
+                  </span>
+                </div>
+                <p style={{ margin: "6px 0 0 0", fontSize: "13px", color: textMuted }}>
+                  Select Category and Subcategory filters to download comprehensive 51-column Excel report matching the RN Laravel Product Schema.
+                </p>
+              </div>
+
+              <AdminButton
+                variant="primary"
+                size="lg"
+                icon={<FileSpreadsheet size={16} />}
+                isDark={isDark}
+                onClick={handleExportExcel}
+                disabled={exporting}
+                style={{ backgroundColor: "#059669", borderColor: "#059669", color: "#FFFFFF", fontWeight: 700 }}
+              >
+                {exporting ? "Generating 51-Column Excel..." : "Export Products XLS"}
+              </AdminButton>
+            </div>
+
+            {/* Selection Form */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "20px", marginBottom: "28px" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textMain, marginBottom: "8px" }}>
+                  Select Category
+                </label>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => {
+                    setSelectedCategory(e.target.value);
+                    setSelectedSubcategory("all");
+                  }}
+                  style={{
+                    width: "100%",
+                    height: "44px",
+                    padding: "0 14px",
+                    borderRadius: "8px",
+                    border: `1px solid ${inputBorder}`,
+                    background: inputBg,
+                    color: textMain,
+                    fontSize: "13.5px",
+                    fontWeight: 600,
+                    outline: "none",
+                  }}
+                >
+                  <option value="all">All Categories ({categories.length})</option>
+                  {categories.map((c) => (
+                    <option key={c.id || c.slug} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textMain, marginBottom: "8px" }}>
+                  Select SubCategory
+                </label>
+                <select
+                  value={selectedSubcategory}
+                  onChange={(e) => setSelectedSubcategory(e.target.value)}
+                  style={{
+                    width: "100%",
+                    height: "44px",
+                    padding: "0 14px",
+                    borderRadius: "8px",
+                    border: `1px solid ${inputBorder}`,
+                    background: inputBg,
+                    color: textMain,
+                    fontSize: "13.5px",
+                    fontWeight: 600,
+                    outline: "none",
+                  }}
+                >
+                  <option value="all">All Subcategories</option>
+                  {subcategories
+                    .filter((s) => selectedCategory === "all" || s.categoryId === selectedCategory)
+                    .map((s) => (
+                      <option key={s.id || s.name} value={s.id || s.name}>
+                        {s.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textMain, marginBottom: "8px" }}>
+                  Stock Status (Optional)
+                </label>
+                <select
+                  value={productStock}
+                  onChange={(e) => setProductStock(e.target.value)}
+                  style={{
+                    width: "100%",
+                    height: "44px",
+                    padding: "0 14px",
+                    borderRadius: "8px",
+                    border: `1px solid ${inputBorder}`,
+                    background: inputBg,
+                    color: textMain,
+                    fontSize: "13.5px",
+                    fontWeight: 600,
+                    outline: "none",
+                  }}
+                >
+                  <option value="all">All Stock Status</option>
+                  <option value="in_stock">In Stock (&gt; 0)</option>
+                  <option value="low_stock">Low Stock (1-10)</option>
+                  <option value="out_of_stock">Out of Stock (0)</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: textMain, marginBottom: "8px" }}>
+                  Catalog Status (Optional)
+                </label>
+                <select
+                  value={productStatus}
+                  onChange={(e) => setProductStatus(e.target.value)}
+                  style={{
+                    width: "100%",
+                    height: "44px",
+                    padding: "0 14px",
+                    borderRadius: "8px",
+                    border: `1px solid ${inputBorder}`,
+                    background: inputBg,
+                    color: textMain,
+                    fontSize: "13.5px",
+                    fontWeight: 600,
+                    outline: "none",
+                  }}
+                >
+                  <option value="All">All Statuses</option>
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Quick Export Summary Box */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: "14px",
+                background: isDark ? "#161B22" : "#F8FAFC",
+                border: `1px solid ${border}`,
+                borderRadius: "10px",
+                padding: "18px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                <Layers size={18} style={{ color: "#0077B6", marginTop: "2px", flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: "13px", fontWeight: 700, color: textMain }}>51 Standard Columns</div>
+                  <div style={{ fontSize: "12px", color: textMuted }}>Complete RN Laravel schema mapping</div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                <DollarSign size={18} style={{ color: "#059669", marginTop: "2px", flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: "13px", fontWeight: 700, color: textMain }}>Multi-Tier Pricing</div>
+                  <div style={{ fontSize: "12px", color: textMuted }}>India MRP, Selling, Tier 1, Export rates</div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                <Package size={18} style={{ color: "#7C3AED", marginTop: "2px", flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: "13px", fontWeight: 700, color: textMain }}>Cartons & Logistics</div>
+                  <div style={{ fontSize: "12px", color: textMuted }}>Inner pcs, Mid/Master Carton, LBH wt</div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                <ShieldCheck size={18} style={{ color: "#D97706", marginTop: "2px", flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: "13px", fontWeight: 700, color: textMain }}>Warranty & Marketplaces</div>
+                  <div style={{ fontSize: "12px", color: textMuted }}>Warranty years, Amazon & Flipkart links</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Data Tables (For Orders & Remarks) */}
         {activeTab === "orders" ? (
           <AdminDataTable
             isDark={isDark}
@@ -1368,15 +1583,7 @@ function AdminReportsContent() {
             data={orders}
             keyExtractor={(o) => o.id}
           />
-        ) : activeTab === "products" ? (
-          <AdminDataTable
-            isDark={isDark}
-            loading={loading}
-            columns={productColumns}
-            data={products}
-            keyExtractor={(p) => p.id}
-          />
-        ) : (
+        ) : activeTab === "remarks" ? (
           <AdminDataTable
             isDark={isDark}
             loading={loading}
@@ -1384,57 +1591,59 @@ function AdminReportsContent() {
             data={remarkLogs}
             keyExtractor={(l, idx) => l._id || l.id || idx}
           />
+        ) : null}
+
+        {/* Pagination Bar (For Orders & Remarks) */}
+        {activeTab !== "products" && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginTop: "20px",
+              padding: "12px 16px",
+              background: cardBg,
+              border: `1px solid ${border}`,
+              borderRadius: "10px",
+              fontSize: "13px",
+              flexWrap: "wrap",
+              gap: "10px",
+            }}
+          >
+            <div style={{ color: textMuted }}>
+              Showing <b>{totalCount === 0 ? 0 : (currentPage - 1) * 50 + 1}</b> to{" "}
+              <b>{Math.min(currentPage * 50, totalCount)}</b> of <b>{totalCount}</b> records
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <AdminButton
+                variant="secondary"
+                size="sm"
+                icon={<ChevronLeft size={14} />}
+                isDark={isDark}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage <= 1 || loading}
+              >
+                Previous
+              </AdminButton>
+
+              <span style={{ fontWeight: 700, padding: "0 8px" }}>
+                Page {currentPage} of {totalPages}
+              </span>
+
+              <AdminButton
+                variant="secondary"
+                size="sm"
+                isDark={isDark}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage >= totalPages || loading}
+              >
+                Next
+                <ChevronRight size={14} style={{ marginLeft: "4px" }} />
+              </AdminButton>
+            </div>
+          </div>
         )}
-
-        {/* Pagination Bar */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginTop: "20px",
-            padding: "12px 16px",
-            background: cardBg,
-            border: `1px solid ${border}`,
-            borderRadius: "10px",
-            fontSize: "13px",
-            flexWrap: "wrap",
-            gap: "10px",
-          }}
-        >
-          <div style={{ color: textMuted }}>
-            Showing <b>{totalCount === 0 ? 0 : (currentPage - 1) * 50 + 1}</b> to{" "}
-            <b>{Math.min(currentPage * 50, totalCount)}</b> of <b>{totalCount}</b> records
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <AdminButton
-              variant="secondary"
-              size="sm"
-              icon={<ChevronLeft size={14} />}
-              isDark={isDark}
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage <= 1 || loading}
-            >
-              Previous
-            </AdminButton>
-
-            <span style={{ fontWeight: 700, padding: "0 8px" }}>
-              Page {currentPage} of {totalPages}
-            </span>
-
-            <AdminButton
-              variant="secondary"
-              size="sm"
-              isDark={isDark}
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage >= totalPages || loading}
-            >
-              Next
-              <ChevronRight size={14} style={{ marginLeft: "4px" }} />
-            </AdminButton>
-          </div>
-        </div>
       </main>
 
       {/* Order Detail Modal */}
