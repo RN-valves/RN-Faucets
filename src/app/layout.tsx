@@ -6,14 +6,12 @@ import AnalyticsLoader from "@/components/AnalyticsLoader";
 
 const manrope = Manrope({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
   variable: "--font-manrope",
   display: "swap",
 });
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
   variable: "--font-plus-jakarta-sans",
   display: "swap",
 });
