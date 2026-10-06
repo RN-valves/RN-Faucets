@@ -6,7 +6,7 @@ import FooterSection from "@/components/FooterSection";
 import SupportLinksSection from "@/components/SupportLinksSection";
 import { getCartItems, removeFromCart, updateCartQuantity, type CartItem } from "@/utils/cart";
 import { getCustomerSession } from "@/utils/customerAuth";
-import { Trash2, Send, MapPin, Headset, ChevronRight } from "lucide-react";
+import { Trash2, Send, MapPin, Headset, ChevronRight, Tag, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -14,10 +14,21 @@ export default function CartPage() {
   const router = useRouter();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isMounted, setIsMounted] = useState(false);
+  const [availableDiscounts, setAvailableDiscounts] = useState<any[]>([]);
 
   useEffect(() => {
     setIsMounted(true);
     setCartItems(getCartItems());
+
+    // Fetch active discounts list for slab calculations
+    fetch("/api/discounts?activeOnly=true")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.discounts && Array.isArray(data.discounts)) {
+          setAvailableDiscounts(data.discounts);
+        }
+      })
+      .catch(() => {});
 
     const handleCartUpdate = () => {
       setCartItems(getCartItems());
@@ -44,9 +55,29 @@ export default function CartPage() {
     }).format(price);
   };
 
-  // Calculate totals
+  // Calculate totals & discount slabs
   const totalQuantity = cartItems.reduce((acc, item) => acc + item.quantity, 0);
   const totalPrice = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
+  const eligibleSlab = availableDiscounts.find((d) => {
+    const start = Number(d.startValue || 0);
+    const end = d.endValue ? Number(d.endValue) : 999999999;
+    return totalPrice >= start && totalPrice <= end;
+  });
+
+  const nextSlab = availableDiscounts
+    .filter((d) => Number(d.startValue || 0) > totalPrice)
+    .sort((a, b) => Number(a.startValue) - Number(b.startValue))[0];
+
+  const amountNeededForNextSlab = nextSlab ? Math.max(0, Number(nextSlab.startValue) - totalPrice) : 0;
+
+  const discountAmount = eligibleSlab
+    ? eligibleSlab.type === "Amount" || eligibleSlab.type === "Flat" || eligibleSlab.type === "Fixed"
+      ? Math.min(Number(eligibleSlab.value), totalPrice)
+      : Math.round(totalPrice * (Number(eligibleSlab.value) / 100))
+    : 0;
+
+  const finalTotal = Math.max(0, totalPrice - discountAmount);
 
   if (!isMounted) {
     return null; // Avoid hydration mismatch
@@ -427,21 +458,92 @@ export default function CartPage() {
               <div className="summary-card">
                 <h2 className="summary-title">Order Summary ({totalQuantity} Item{totalQuantity > 1 ? "s" : ""})</h2>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                  {cartItems.map((item) => (
-                    <div key={`${item.id}-${item.color}`} className="summary-row">
-                      <span style={{ maxWidth: "70%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {item.name}
-                      </span>
-                      <span>₹{formatPrice(item.price * item.quantity)}</span>
+                {/* Slab Nudge & Unlocked Messages */}
+                {eligibleSlab && (
+                  <div
+                    style={{
+                      backgroundColor: "#ecfdf5",
+                      border: "1px solid #a7f3d0",
+                      borderRadius: "8px",
+                      padding: "12px 14px",
+                      fontSize: "12.5px",
+                      fontWeight: 600,
+                      color: "#065f46",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <CheckCircle2 size={16} color="#059669" style={{ flexShrink: 0 }} />
+                    <span>
+                      You unlocked <strong>{eligibleSlab.type === "Amount" ? `₹${eligibleSlab.value}` : `${eligibleSlab.value}%`} OFF</strong> with code <strong style={{ fontFamily: "monospace" }}>{eligibleSlab.name}</strong>!
+                    </span>
+                  </div>
+                )}
+
+                {nextSlab && amountNeededForNextSlab > 0 && (
+                  <div
+                    style={{
+                      backgroundColor: "#fffbeb",
+                      border: "1px solid #fde68a",
+                      borderRadius: "8px",
+                      padding: "12px 14px",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: "#92400e",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <Tag size={15} color="#d97706" style={{ flexShrink: 0 }} />
+                    <span>
+                      Add products worth <strong>₹{formatPrice(amountNeededForNextSlab)}</strong> more to unlock{" "}
+                      <strong>{nextSlab.type === "Amount" ? `₹${nextSlab.value}` : `${nextSlab.value}%`} OFF</strong> (Code: {nextSlab.name})!
+                    </span>
+                  </div>
+                )}
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <div className="summary-row">
+                    <span>Total MRP (Inc. of Taxes)</span>
+                    <span style={{ fontWeight: 600, color: "#111111" }}>₹{formatPrice(totalPrice)}.00</span>
+                  </div>
+
+                  <div className="summary-row">
+                    <span>Shipping Fee</span>
+                    <span style={{ fontWeight: 700, color: "#059669" }}>FREE</span>
+                  </div>
+
+                  {discountAmount > 0 && (
+                    <div className="summary-row" style={{ color: "#059669" }}>
+                      <span>Slab Discount ({eligibleSlab?.name})</span>
+                      <span style={{ fontWeight: 700 }}>- ₹{formatPrice(discountAmount)}.00</span>
                     </div>
-                  ))}
+                  )}
 
                   <div className="summary-row total">
                     <span>Total Amount</span>
-                    <span>₹{formatPrice(totalPrice)}</span>
+                    <span>₹{formatPrice(finalTotal)}.00</span>
                   </div>
                 </div>
+
+                {discountAmount > 0 && (
+                  <div
+                    style={{
+                      backgroundColor: "#ecfdf5",
+                      border: "1px dashed #059669",
+                      borderRadius: "6px",
+                      padding: "10px",
+                      textAlign: "center",
+                      fontSize: "12.5px",
+                      fontWeight: 700,
+                      color: "#065f46",
+                    }}
+                  >
+                    🎉 You will save ₹{formatPrice(discountAmount)} on this order
+                  </div>
+                )}
 
                 <button
                   type="button"

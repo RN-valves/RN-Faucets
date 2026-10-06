@@ -86,6 +86,7 @@ export default function CheckoutPage() {
 
   const [availableDiscounts, setAvailableDiscounts] = useState<any[]>([]);
   const [couponFeedback, setCouponFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [userManuallyRemovedCoupon, setUserManuallyRemovedCoupon] = useState(false);
 
   // Dynamic delivery date states
   const [minDeliveryDate, setMinDeliveryDate] = useState("");
@@ -185,6 +186,7 @@ export default function CheckoutPage() {
 
   const handleApplyCoupon = async (specificCode?: string) => {
     if (isCouponApplied && !specificCode) {
+      setUserManuallyRemovedCoupon(true);
       setIsCouponApplied(false);
       setCouponCode("");
       setDiscountPercent(0);
@@ -194,6 +196,7 @@ export default function CheckoutPage() {
       return;
     }
 
+    setUserManuallyRemovedCoupon(false);
     const code = (specificCode || couponCode).trim().toUpperCase();
     if (!code) {
       setCouponFeedback({ type: "error", message: "Please enter a valid coupon code." });
@@ -214,7 +217,7 @@ export default function CheckoutPage() {
         setIsCouponApplied(true);
         setAppliedCouponName(data.code);
         setCouponCode(data.code);
-        if (data.type === "Amount") {
+        if (data.type === "Amount" || data.type === "Flat" || data.type === "Fixed") {
           setDiscountFixedAmount(Number(data.discountAmount));
           setDiscountPercent(0);
         } else {
@@ -563,6 +566,49 @@ export default function CheckoutPage() {
   const discountAmount = isCouponApplied ? calculatedDiscount : 0;
   const finalTotal = Math.max(0, totalMRP - discountAmount);
   const progressToDiscount = Math.max(0, 1500 - totalMRP);
+
+  // Auto-Apply matching eligible slab discount
+  useEffect(() => {
+    if (availableDiscounts.length === 0 || totalMRP <= 0 || userManuallyRemovedCoupon) {
+      return;
+    }
+
+    const eligibleSlab = availableDiscounts.find((d) => {
+      const start = Number(d.startValue || 0);
+      const end = d.endValue ? Number(d.endValue) : 999999999;
+      return totalMRP >= start && totalMRP <= end;
+    });
+
+    if (eligibleSlab) {
+      if (!isCouponApplied || (appliedCouponName !== eligibleSlab.name && availableDiscounts.some((d) => d.name === appliedCouponName))) {
+        setIsCouponApplied(true);
+        setAppliedCouponName(eligibleSlab.name);
+        setCouponCode(eligibleSlab.name);
+        if (eligibleSlab.type === "Amount" || eligibleSlab.type === "Flat" || eligibleSlab.type === "Fixed") {
+          setDiscountFixedAmount(Number(eligibleSlab.value));
+          setDiscountPercent(0);
+        } else {
+          setDiscountPercent(Number(eligibleSlab.value));
+          setDiscountFixedAmount(0);
+        }
+        setCouponFeedback({
+          type: "success",
+          message: `Auto-applied ${eligibleSlab.name} - ${eligibleSlab.type === "Amount" ? `₹${eligibleSlab.value}` : `${eligibleSlab.value}%`} OFF!`,
+        });
+      }
+    } else {
+      // If current applied coupon was an auto-applied slab and cart total is no longer eligible
+      const wasAutoSlab = availableDiscounts.some((d) => d.name === appliedCouponName);
+      if (wasAutoSlab && isCouponApplied) {
+        setIsCouponApplied(false);
+        setAppliedCouponName("");
+        setCouponCode("");
+        setDiscountPercent(0);
+        setDiscountFixedAmount(0);
+        setCouponFeedback(null);
+      }
+    }
+  }, [availableDiscounts, totalMRP, userManuallyRemovedCoupon, isCouponApplied, appliedCouponName]);
 
   if (!isMounted || isAuthChecking) {
     return (
@@ -1277,7 +1323,7 @@ export default function CheckoutPage() {
 
                 return (
                   <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                    {eligibleActiveSlab && !isCouponApplied && (
+                    {eligibleActiveSlab && (
                       <div
                         style={{
                           backgroundColor: "#ecfdf5",
@@ -1295,38 +1341,51 @@ export default function CheckoutPage() {
                         }}
                       >
                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <Check size={16} color="#059669" />
+                          <CheckCircle2 size={18} color="#059669" style={{ flexShrink: 0 }} />
                           <span>
-                            Eligible for{" "}
-                            <strong>
-                              {eligibleActiveSlab.type === "Amount" ? `₹${eligibleActiveSlab.value}` : `${eligibleActiveSlab.value}%`} OFF
-                            </strong>{" "}
-                            with code <strong style={{ fontFamily: "monospace" }}>{eligibleActiveSlab.name}</strong>!
+                            {isCouponApplied && appliedCouponName === eligibleActiveSlab.name ? (
+                              <>
+                                <strong>Auto-Applied {eligibleActiveSlab.name}</strong>: Enjoying{" "}
+                                <span style={{ color: "#047857", fontWeight: 800 }}>
+                                  {eligibleActiveSlab.type === "Amount" ? `₹${eligibleActiveSlab.value}` : `${eligibleActiveSlab.value}%`} OFF
+                                </span>!
+                              </>
+                            ) : (
+                              <>
+                                You are eligible for{" "}
+                                <strong>
+                                  {eligibleActiveSlab.type === "Amount" ? `₹${eligibleActiveSlab.value}` : `${eligibleActiveSlab.value}%`} OFF
+                                </strong>{" "}
+                                with code <strong style={{ fontFamily: "monospace" }}>{eligibleActiveSlab.name}</strong>!
+                              </>
+                            )}
                           </span>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => handleApplyCoupon(eligibleActiveSlab.name)}
-                          style={{
-                            background: "#059669",
-                            color: "#ffffff",
-                            border: "none",
-                            borderRadius: "4px",
-                            padding: "4px 10px",
-                            fontSize: "12px",
-                            fontWeight: 700,
-                            cursor: "pointer",
-                          }}
-                        >
-                          Apply Code
-                        </button>
+                        {!isCouponApplied && (
+                          <button
+                            type="button"
+                            onClick={() => handleApplyCoupon(eligibleActiveSlab.name)}
+                            style={{
+                              background: "#059669",
+                              color: "#ffffff",
+                              border: "none",
+                              borderRadius: "4px",
+                              padding: "4px 12px",
+                              fontSize: "12px",
+                              fontWeight: 700,
+                              cursor: "pointer",
+                            }}
+                          >
+                            Apply
+                          </button>
+                        )}
                       </div>
                     )}
 
                     {nextSlab && amountNeeded > 0 && (
                       <div
                         style={{
-                          backgroundColor: "#fef3c7",
+                          backgroundColor: "#fffbeb",
                           border: "1px solid #fde68a",
                           borderRadius: "8px",
                           padding: "12px 16px",
@@ -1338,10 +1397,11 @@ export default function CheckoutPage() {
                           gap: "8px",
                         }}
                       >
-                        <Tag size={15} />
+                        <Tag size={16} color="#d97706" style={{ flexShrink: 0 }} />
                         <span>
                           Add products worth <strong>₹{formatPrice(amountNeeded)}</strong> more to unlock{" "}
-                          <strong>{nextSlab.type === "Amount" ? `₹${nextSlab.value}` : `${nextSlab.value}%`} OFF</strong> (Code: {nextSlab.name})!
+                          <strong>{nextSlab.type === "Amount" ? `₹${nextSlab.value}` : `${nextSlab.value}%`} OFF</strong> (Code:{" "}
+                          <strong style={{ fontFamily: "monospace" }}>{nextSlab.name}</strong>)!
                         </span>
                       </div>
                     )}
@@ -1449,7 +1509,7 @@ export default function CheckoutPage() {
 
                   {discountAmount > 0 && (
                     <div style={{ display: "flex", justifyContent: "space-between", color: "#059669" }}>
-                      <span>Coupon Discount</span>
+                      <span>Cart Discount ({appliedCouponName})</span>
                       <span style={{ fontWeight: 700 }}>- ₹{formatPrice(discountAmount)}.00</span>
                     </div>
                   )}
@@ -1470,6 +1530,24 @@ export default function CheckoutPage() {
                     <span>₹{formatPrice(finalTotal)}.00</span>
                   </div>
                 </div>
+
+                {discountAmount > 0 && (
+                  <div
+                    style={{
+                      backgroundColor: "#ecfdf5",
+                      border: "1px dashed #059669",
+                      borderRadius: "6px",
+                      padding: "10px",
+                      textAlign: "center",
+                      fontSize: "12.5px",
+                      fontWeight: 700,
+                      color: "#065f46",
+                      marginTop: "14px",
+                    }}
+                  >
+                    🎉 You are saving ₹{formatPrice(discountAmount)} on this order
+                  </div>
+                )}
 
                 {/* Payment Methods */}
                 <div style={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
