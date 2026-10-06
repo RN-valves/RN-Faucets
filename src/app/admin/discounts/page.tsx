@@ -49,7 +49,7 @@ export default function AdminDiscountsPage() {
     type: "Percent" as "Amount" | "Percent",
     value: 10,
     startValue: 1500,
-    endValue: 1000,
+    endValue: 4999,
     expiredAt: "2026-12-31",
     status: "Active" as "Active" | "Inactive",
   });
@@ -90,7 +90,7 @@ export default function AdminDiscountsPage() {
       type: "Percent",
       value: 10,
       startValue: 1500,
-      endValue: 1000,
+      endValue: 4999,
       expiredAt: "2026-12-31",
       status: "Active",
     });

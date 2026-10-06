@@ -19,6 +19,11 @@ import {
   Truck,
   VolumeX,
   Waves,
+  Tag,
+  Info,
+  X,
+  Copy,
+  Check,
 } from "lucide-react";
 import Header from "@/components/Header";
 import FooterSection from "@/components/FooterSection";
@@ -374,6 +379,9 @@ export default function FaucetProductPage({
   const [quantity, setQuantity] = useState(1);
   const [parentCategory, setParentCategory] = useState<{ name: string; slug: string } | null>(null);
   const [subcategoryInfo, setSubcategoryInfo] = useState<{ name: string; slug: string } | null>(null);
+  const [activeDiscounts, setActiveDiscounts] = useState<any[]>([]);
+  const [showDiscountModal, setShowDiscountModal] = useState(false);
+  const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -386,6 +394,19 @@ export default function FaucetProductPage({
             loadedProd = data;
             setDbProduct(data);
           }
+        }
+
+        // Fetch active discount slabs
+        try {
+          const discRes = await fetch("/api/discounts?activeOnly=true");
+          if (discRes.ok) {
+            const discData = await discRes.json();
+            if (discData.discounts && Array.isArray(discData.discounts)) {
+              setActiveDiscounts(discData.discounts);
+            }
+          }
+        } catch (e) {
+          console.error("Error fetching discounts:", e);
         }
 
         // Fetch categories list to dynamically resolve parent category
@@ -1059,6 +1080,35 @@ export default function FaucetProductPage({
                   />
                   {inStock ? "In Stock" : "Out of Stock"}
                 </span>
+
+                {activeDiscounts.length > 0 && (
+                  <>
+                    <span style={{ color: "#cbd5e1" }}>•</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowDiscountModal(true)}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "5px",
+                        background: "#fef3c7",
+                        border: "1px dashed #fcd34d",
+                        color: "#b45309",
+                        padding: "3px 9px",
+                        borderRadius: "999px",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                        transition: "all 0.15s ease",
+                      }}
+                    >
+                      <Tag size={12} />
+                      <span>Discount: Details</span>
+                      <Info size={12} />
+                    </button>
+                  </>
+                )}
               </div>
 
               {/* Price & Discount */}
@@ -2508,6 +2558,185 @@ export default function FaucetProductPage({
           }
         }
       `}</style>
+
+      {/* Discount Slabs Details Modal (matching Laravel discount_popup) */}
+      {showDiscountModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(15, 23, 42, 0.65)",
+            backdropFilter: "blur(4px)",
+            zIndex: 99999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+            boxSizing: "border-box",
+          }}
+          onClick={() => setShowDiscountModal(false)}
+        >
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              width: "100%",
+              maxWidth: "540px",
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+              overflow: "hidden",
+              border: "1px solid #e2e8f0",
+              fontFamily: "'Manrope', system-ui, sans-serif",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: "18px 24px",
+                background: "#0f172a",
+                color: "#ffffff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <Tag size={18} color="#38bdf8" />
+                <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700, letterSpacing: "-0.01em" }}>
+                  Active Cart Discount Tiers
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDiscountModal(false)}
+                style={{
+                  background: "rgba(255,255,255,0.15)",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "30px",
+                  height: "30px",
+                  color: "#ffffff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: "20px 24px" }}>
+              <p style={{ margin: "0 0 16px", fontSize: "13px", color: "#64748b", lineHeight: 1.5 }}>
+                Discounts are automatically calculated on the <strong>Checkout page</strong> based on your final cart total:
+              </p>
+
+              <div style={{ border: "1px solid #e2e8f0", borderRadius: "10px", overflow: "hidden" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12.5px" }}>
+                  <thead>
+                    <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0", color: "#0f172a" }}>
+                      <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700 }}>Min Cart</th>
+                      <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700 }}>Max Cart</th>
+                      <th style={{ padding: "10px 12px", textAlign: "center", fontWeight: 700 }}>Discount</th>
+                      <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700 }}>Coupon Code</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {activeDiscounts.map((disc, idx) => {
+                      const isPercent = (disc.type || "").toLowerCase().includes("percent");
+                      const isCopied = copiedCoupon === disc.name;
+
+                      return (
+                        <tr
+                          key={disc._id || disc.id || idx}
+                          style={{
+                            borderBottom: idx === activeDiscounts.length - 1 ? "none" : "1px solid #f1f5f9",
+                            backgroundColor: idx % 2 === 0 ? "#ffffff" : "#fafafa",
+                          }}
+                        >
+                          <td style={{ padding: "12px", fontWeight: 600, color: "#334155" }}>
+                            ₹{Number(disc.startValue || 0).toLocaleString("en-IN")}
+                          </td>
+                          <td style={{ padding: "12px", color: "#64748b" }}>
+                            {disc.endValue && Number(disc.endValue) < 900000
+                              ? `₹${Number(disc.endValue).toLocaleString("en-IN")}`
+                              : "No Limit"}
+                          </td>
+                          <td style={{ padding: "12px", textAlign: "center" }}>
+                            <span
+                              style={{
+                                background: "#ecfdf5",
+                                color: "#059669",
+                                border: "1px solid #a7f3d0",
+                                padding: "2px 8px",
+                                borderRadius: "4px",
+                                fontWeight: 800,
+                                fontSize: "12px",
+                              }}
+                            >
+                              {isPercent ? `${disc.value}% OFF` : `₹${disc.value} OFF`}
+                            </span>
+                          </td>
+                          <td style={{ padding: "12px", textAlign: "right" }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(disc.name);
+                                setCopiedCoupon(disc.name);
+                                setTimeout(() => setCopiedCoupon(null), 2000);
+                              }}
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                background: isCopied ? "#ecfdf5" : "#f1f5f9",
+                                color: isCopied ? "#059669" : "#0f172a",
+                                border: `1px solid ${isCopied ? "#a7f3d0" : "#cbd5e1"}`,
+                                borderRadius: "6px",
+                                padding: "4px 8px",
+                                fontSize: "11.5px",
+                                fontFamily: "monospace",
+                                fontWeight: 700,
+                                cursor: "pointer",
+                              }}
+                            >
+                              {disc.name}
+                              {isCopied ? <Check size={12} /> : <Copy size={12} />}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <div style={{ marginTop: "16px", textAlign: "center" }}>
+                <button
+                  type="button"
+                  onClick={() => setShowDiscountModal(false)}
+                  style={{
+                    padding: "10px 24px",
+                    background: "#0f172a",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

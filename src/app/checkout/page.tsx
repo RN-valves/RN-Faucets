@@ -25,6 +25,9 @@ import {
   Loader2,
   Building2,
   Mail,
+  X,
+  AlertCircle,
+  CheckCircle2,
 } from "lucide-react";
 
 interface Address {
@@ -81,6 +84,9 @@ export default function CheckoutPage() {
   const [checkoutBusinessName, setCheckoutBusinessName] = useState("");
   const [isGstApplied, setIsGstApplied] = useState(false);
 
+  const [availableDiscounts, setAvailableDiscounts] = useState<any[]>([]);
+  const [couponFeedback, setCouponFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
   // Dynamic delivery date states
   const [minDeliveryDate, setMinDeliveryDate] = useState("");
   const [maxDeliveryDate, setMaxDeliveryDate] = useState("");
@@ -102,6 +108,16 @@ export default function CheckoutPage() {
       }
       if (session.businessName) setCheckoutBusinessName(session.businessName);
     }
+
+    // Fetch active discounts list for slab calculations
+    fetch("/api/discounts?activeOnly=true")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.discounts && Array.isArray(data.discounts)) {
+          setAvailableDiscounts(data.discounts);
+        }
+      })
+      .catch(() => {});
 
     // Try fetching fresh profile in background
     fetch("/api/user/profile")
@@ -167,71 +183,55 @@ export default function CheckoutPage() {
     }
   }, [router]);
 
-  const handleApplyCoupon = async () => {
-    if (isCouponApplied) {
+  const handleApplyCoupon = async (specificCode?: string) => {
+    if (isCouponApplied && !specificCode) {
       setIsCouponApplied(false);
       setCouponCode("");
       setDiscountPercent(0);
       setDiscountFixedAmount(0);
       setAppliedCouponName("");
+      setCouponFeedback(null);
       return;
     }
 
-    const code = couponCode.trim().toUpperCase();
+    const code = (specificCode || couponCode).trim().toUpperCase();
     if (!code) {
-      alert("Please enter a coupon code");
+      setCouponFeedback({ type: "error", message: "Please enter a valid coupon code." });
       return;
     }
 
     setIsCheckingCoupon(true);
+    setCouponFeedback(null);
     try {
-      const res = await fetch(`/api/discounts?q=${encodeURIComponent(code)}`);
-      if (res.ok) {
-        const data = await res.json();
-        const found = data.discounts?.find(
-          (d: any) => d.name.toUpperCase() === code && d.status === "Active"
-        );
+      const res = await fetch("/api/discounts/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, cartTotal: totalMRP }),
+      });
 
-        if (found) {
-          if (found.startValue && totalMRP < found.startValue) {
-            alert(`Coupon ${code} requires a minimum cart value of ₹${found.startValue}`);
-            setIsCheckingCoupon(false);
-            return;
-          }
-
-          if (found.type === "Amount") {
-            setDiscountFixedAmount(Number(found.value));
-            setDiscountPercent(0);
-          } else {
-            setDiscountPercent(Number(found.value));
-            setDiscountFixedAmount(0);
-          }
-          setIsCouponApplied(true);
-          setAppliedCouponName(code);
-          setIsCheckingCoupon(false);
-          return;
+      const data = await res.json();
+      if (res.ok && data.valid) {
+        setIsCouponApplied(true);
+        setAppliedCouponName(data.code);
+        setCouponCode(data.code);
+        if (data.type === "Amount") {
+          setDiscountFixedAmount(Number(data.discountAmount));
+          setDiscountPercent(0);
+        } else {
+          setDiscountPercent(Number(data.value));
+          setDiscountFixedAmount(0);
         }
-      }
-
-      // Default promo code
-      if (code === "RN05OFF") {
-        setDiscountPercent(5);
-        setDiscountFixedAmount(0);
-        setIsCouponApplied(true);
-        setAppliedCouponName("RN05OFF");
+        setCouponFeedback({ type: "success", message: data.message });
       } else {
-        alert("Invalid or inactive coupon code.");
+        setIsCouponApplied(false);
+        setAppliedCouponName("");
+        setDiscountFixedAmount(0);
+        setDiscountPercent(0);
+        setCouponFeedback({ type: "error", message: data.message || "Invalid coupon code." });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Coupon verification error:", err);
-      if (code === "RN05OFF") {
-        setDiscountPercent(5);
-        setDiscountFixedAmount(0);
-        setIsCouponApplied(true);
-        setAppliedCouponName("RN05OFF");
-      } else {
-        alert("Invalid coupon code.");
-      }
+      setCouponFeedback({ type: "error", message: "Unable to verify coupon code. Please try again." });
     } finally {
       setIsCheckingCoupon(false);
     }
@@ -363,6 +363,8 @@ export default function CheckoutPage() {
       customerEmail: finalEmail,
       gstNumber: finalGst,
       businessName: finalBusinessName,
+      discountCode: isCouponApplied ? appliedCouponName : undefined,
+      discountAmount: isCouponApplied ? discountAmount : 0,
       items: cartItems.map((item) => ({
         id: item.id,
         name: item.name,
@@ -1263,44 +1265,89 @@ export default function CheckoutPage() {
                 />
               </div>
 
-              {/* Promo Banner */}
-              {progressToDiscount > 0 ? (
-                <div
-                  style={{
-                    backgroundColor: "#fef3c7",
-                    border: "1px solid #fde68a",
-                    borderRadius: "8px",
-                    padding: "12px 16px",
-                    fontSize: "12.5px",
-                    fontWeight: 600,
-                    color: "#92400e",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                  }}
-                >
-                  <Tag size={15} />
-                  <span>Add products worth ₹{formatPrice(progressToDiscount)} more to unlock 10% OFF!</span>
-                </div>
-              ) : (
-                <div
-                  style={{
-                    backgroundColor: "#ecfdf5",
-                    border: "1px solid #a7f3d0",
-                    borderRadius: "8px",
-                    padding: "12px 16px",
-                    fontSize: "12.5px",
-                    fontWeight: 600,
-                    color: "#065f46",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                  }}
-                >
-                  <Check size={15} />
-                  <span>🎉 You have unlocked a 10% discount on your order!</span>
-                </div>
-              )}
+              {/* Dynamic Slab Gamification & Progress Banner */}
+              {(() => {
+                const eligibleActiveSlab = availableDiscounts.find(
+                  (d) => totalMRP >= Number(d.startValue || 0) && (!d.endValue || totalMRP <= Number(d.endValue))
+                );
+                const nextSlab = availableDiscounts
+                  .filter((d) => Number(d.startValue || 0) > totalMRP)
+                  .sort((a, b) => Number(a.startValue) - Number(b.startValue))[0];
+                const amountNeeded = nextSlab ? Math.max(0, Number(nextSlab.startValue) - totalMRP) : 0;
+
+                return (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    {eligibleActiveSlab && !isCouponApplied && (
+                      <div
+                        style={{
+                          backgroundColor: "#ecfdf5",
+                          border: "1px solid #a7f3d0",
+                          borderRadius: "8px",
+                          padding: "12px 16px",
+                          fontSize: "13px",
+                          fontWeight: 600,
+                          color: "#065f46",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: "8px",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <Check size={16} color="#059669" />
+                          <span>
+                            Eligible for{" "}
+                            <strong>
+                              {eligibleActiveSlab.type === "Amount" ? `₹${eligibleActiveSlab.value}` : `${eligibleActiveSlab.value}%`} OFF
+                            </strong>{" "}
+                            with code <strong style={{ fontFamily: "monospace" }}>{eligibleActiveSlab.name}</strong>!
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleApplyCoupon(eligibleActiveSlab.name)}
+                          style={{
+                            background: "#059669",
+                            color: "#ffffff",
+                            border: "none",
+                            borderRadius: "4px",
+                            padding: "4px 10px",
+                            fontSize: "12px",
+                            fontWeight: 700,
+                            cursor: "pointer",
+                          }}
+                        >
+                          Apply Code
+                        </button>
+                      </div>
+                    )}
+
+                    {nextSlab && amountNeeded > 0 && (
+                      <div
+                        style={{
+                          backgroundColor: "#fef3c7",
+                          border: "1px solid #fde68a",
+                          borderRadius: "8px",
+                          padding: "12px 16px",
+                          fontSize: "12.5px",
+                          fontWeight: 600,
+                          color: "#92400e",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
+                      >
+                        <Tag size={15} />
+                        <span>
+                          Add products worth <strong>₹{formatPrice(amountNeeded)}</strong> more to unlock{" "}
+                          <strong>{nextSlab.type === "Amount" ? `₹${nextSlab.value}` : `${nextSlab.value}%`} OFF</strong> (Code: {nextSlab.name})!
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Coupon Code Input Box */}
               <div className="checkout-card" style={{ padding: "16px" }}>
@@ -1312,8 +1359,11 @@ export default function CheckoutPage() {
                     type="text"
                     placeholder="e.g. RN05OFF"
                     value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value)}
-                    disabled={isCouponApplied}
+                    onChange={(e) => {
+                      setCouponCode(e.target.value);
+                      if (couponFeedback) setCouponFeedback(null);
+                    }}
+                    disabled={isCouponApplied || isCheckingCoupon}
                     style={{
                       flex: 1,
                       padding: "10px 12px",
@@ -1330,7 +1380,8 @@ export default function CheckoutPage() {
                   />
                   <button
                     type="button"
-                    onClick={handleApplyCoupon}
+                    onClick={() => handleApplyCoupon()}
+                    disabled={isCheckingCoupon}
                     style={{
                       backgroundColor: isCouponApplied ? "#ef4444" : "#111111",
                       color: "#ffffff",
@@ -1340,13 +1391,32 @@ export default function CheckoutPage() {
                       fontFamily: "'Manrope', system-ui, sans-serif",
                       fontSize: "12.5px",
                       fontWeight: 700,
-                      cursor: "pointer",
+                      cursor: isCheckingCoupon ? "not-allowed" : "pointer",
+                      opacity: isCheckingCoupon ? 0.7 : 1,
                       transition: "background-color 0.2s ease",
                     }}
                   >
-                    {isCouponApplied ? "REMOVE" : "APPLY"}
+                    {isCheckingCoupon ? "CHECKING..." : isCouponApplied ? "REMOVE" : "APPLY"}
                   </button>
                 </div>
+
+                {/* Feedback Message */}
+                {couponFeedback && (
+                  <div
+                    style={{
+                      marginTop: "10px",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: couponFeedback.type === "success" ? "#059669" : "#dc2626",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }}
+                  >
+                    {couponFeedback.type === "success" ? <Check size={14} /> : <X size={14} />}
+                    <span>{couponFeedback.message}</span>
+                  </div>
+                )}
               </div>
 
               {/* Price Summary & Payment Selection */}

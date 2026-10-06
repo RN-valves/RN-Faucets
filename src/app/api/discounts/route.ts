@@ -10,7 +10,7 @@ const DEFAULT_MOCK_DISCOUNTS = [
     type: "Percent",
     value: 5,
     startValue: 1500,
-    endValue: 1000,
+    endValue: 2499,
     expiredAt: "2026-12-31",
     status: "Active",
   },
@@ -20,7 +20,7 @@ const DEFAULT_MOCK_DISCOUNTS = [
     type: "Amount",
     value: 200,
     startValue: 2500,
-    endValue: 200,
+    endValue: 4999,
     expiredAt: "2026-11-30",
     status: "Active",
   },
@@ -30,7 +30,7 @@ const DEFAULT_MOCK_DISCOUNTS = [
     type: "Percent",
     value: 10,
     startValue: 5000,
-    endValue: 2500,
+    endValue: 14999,
     expiredAt: "2026-10-31",
     status: "Active",
   },
@@ -40,7 +40,7 @@ const DEFAULT_MOCK_DISCOUNTS = [
     type: "Percent",
     value: 15,
     startValue: 15000,
-    endValue: 10000,
+    endValue: 999999,
     expiredAt: "2026-12-31",
     status: "Active",
   },
@@ -52,6 +52,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const q = searchParams.get("q") || "";
     const status = searchParams.get("status") || "All";
+    const activeOnly = searchParams.get("activeOnly") === "true";
 
     const count = await Discount.countDocuments();
     if (count === 0) {
@@ -62,11 +63,20 @@ export async function GET(request: Request) {
     if (q) {
       query.name = { $regex: escapeRegex(q), $options: "i" };
     }
-    if (status !== "All") {
+    if (activeOnly) {
+      query.status = "Active";
+      query.$or = [
+        { expiredAt: { $exists: false } },
+        { expiredAt: null },
+        { expiredAt: { $gte: new Date().toISOString().split("T")[0] } },
+      ];
+    } else if (status !== "All") {
       query.status = status;
     }
 
-    const discounts = await Discount.find(query).sort({ createdAt: -1 }).lean();
+    const discounts = await Discount.find(query)
+      .sort(activeOnly ? { startValue: 1 } : { createdAt: -1 })
+      .lean();
 
     return NextResponse.json({
       discounts,
