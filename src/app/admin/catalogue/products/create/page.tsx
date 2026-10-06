@@ -166,17 +166,15 @@ export default function CreateProductPage() {
 
     setSubmitting(true);
     const parentSub = subcategories.find((s) => s.id === subcategoryId);
-    const generatedId = `PROD-${Date.now()}`;
     const urlKey = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
     const created = await addAdminProduct({
-      id: generatedId,
       name: name.trim(),
       code: code.trim(),
       skuCode: skuCode.trim() || code.trim(),
       article: article.trim(),
       hsn: hsn.trim(),
-      category,
+      category: selectedCatObj?.name || category,
       subcategoryId,
       subcategoryName: parentSub?.name || "",
       brand,

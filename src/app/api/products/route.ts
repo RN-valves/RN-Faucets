@@ -215,13 +215,27 @@ export async function POST(request: Request) {
 
     await connectDB();
     const body = await request.json();
-    const code = body.code ? body.code.toUpperCase() : `RN-${Date.now()}`;
-    const id = body.id || code;
-    const urlKey = body.urlKey || (body.name ? body.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") : id.toLowerCase());
+    const code = body.code ? body.code.toUpperCase().trim() : `RN-${Date.now()}`;
+    
+    // Auto-increment numeric ID (find highest numeric id < 1000000)
+    let assignedId = body.id ? String(body.id).trim() : "";
+    if (!assignedId || assignedId.startsWith("PROD-") || isNaN(parseInt(assignedId, 10)) || parseInt(assignedId, 10) > 1000000) {
+      const allProductIds = await Product.find({}, { id: 1 }).lean();
+      let maxNum = 0;
+      for (const p of allProductIds) {
+        const n = parseInt(p.id, 10);
+        if (!isNaN(n) && n < 1000000 && n > maxNum) {
+          maxNum = n;
+        }
+      }
+      assignedId = String(maxNum > 0 ? maxNum + 1 : 9915);
+    }
+
+    const urlKey = body.urlKey || (body.name ? body.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") : assignedId.toLowerCase());
 
     const productData = {
       ...body,
-      id,
+      id: assignedId,
       code,
       urlKey,
       createdDate: new Date().toISOString().split("T")[0],

@@ -1007,17 +1007,6 @@ export default function CategoryClient({
                               flexShrink: 0,
                             }}
                           />
-                          <span
-                            style={{
-                              width: "14px",
-                              height: "14px",
-                              borderRadius: "50%",
-                              background: swatch,
-                              border: "1px solid rgba(0,0,0,0.15)",
-                              display: "inline-block",
-                              flexShrink: 0,
-                            }}
-                          />
                           <span>{name}</span>
                         </div>
                         <span className="filter-count-badge">( {count} )</span>
@@ -1370,17 +1359,6 @@ export default function CategoryClient({
                           height: "18px",
                           cursor: "pointer",
                           accentColor: "#0284c7",
-                          flexShrink: 0,
-                        }}
-                      />
-                      <span
-                        style={{
-                          width: "15px",
-                          height: "15px",
-                          borderRadius: "50%",
-                          background: swatch,
-                          border: "1px solid rgba(0,0,0,0.2)",
-                          display: "inline-block",
                           flexShrink: 0,
                         }}
                       />
