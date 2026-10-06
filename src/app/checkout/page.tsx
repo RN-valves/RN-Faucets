@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import FooterSection from "@/components/FooterSection";
-import SupportLinksSection from "@/components/SupportLinksSection";
 import { getCartItems, saveCartItems, type CartItem } from "@/utils/cart";
 import { getCustomerSession } from "@/utils/customerAuth";
 import { useRouter } from "next/navigation";
@@ -1632,52 +1631,6 @@ export default function CheckoutPage() {
         </div>
       </section>
 
-      {/* Luxury Bottom Support / Dealer Strip */}
-      <div
-        style={{
-          width: "100%",
-          backgroundColor: "#f8fafc",
-          borderTop: "1px solid #e2e8f0",
-          borderBottom: "1px solid #e2e8f0",
-          padding: "24px",
-          boxSizing: "border-box",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: "1280px",
-            margin: "0 auto",
-            display: "flex",
-            flexWrap: "wrap",
-            justifyContent: "space-around",
-            alignItems: "center",
-            gap: "20px",
-            fontFamily: "'Manrope', system-ui, sans-serif",
-            fontSize: "13px",
-            fontWeight: 700,
-            color: "#0f172a",
-          }}
-        >
-          <a href="#" style={{ display: "flex", alignItems: "center", gap: "8px", textDecoration: "none", color: "inherit" }}>
-            <MapPin size={17} style={{ color: "#0284c7" }} />
-            <span>Dealer Locator</span>
-          </a>
-          <a href="#" style={{ display: "flex", alignItems: "center", gap: "8px", textDecoration: "none", color: "inherit" }}>
-            <Phone size={17} style={{ color: "#0284c7" }} />
-            <span>Talk to an Expert</span>
-          </a>
-          <a href="#" style={{ display: "flex", alignItems: "center", gap: "8px", textDecoration: "none", color: "inherit" }}>
-            <Download size={17} style={{ color: "#0284c7" }} />
-            <span>Download Catalogue</span>
-          </a>
-          <a href="#" style={{ display: "flex", alignItems: "center", gap: "8px", textDecoration: "none", color: "inherit" }}>
-            <Headset size={17} style={{ color: "#0284c7" }} />
-            <span>Customer Service Request</span>
-          </a>
-        </div>
-      </div>
-
-      <SupportLinksSection />
       <FooterSection />
     </main>
   );

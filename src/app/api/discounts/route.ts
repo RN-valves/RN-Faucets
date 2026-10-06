@@ -134,11 +134,15 @@ export async function GET(request: Request) {
       query.name = { $regex: escapeRegex(q), $options: "i" };
     }
     if (activeOnly) {
+      const now = new Date();
+      const dateStr = now.toISOString().split("T")[0];
       query.status = "Active";
       query.$or = [
         { expiredAt: { $exists: false } },
         { expiredAt: null },
-        { expiredAt: { $gte: new Date().toISOString().split("T")[0] } },
+        { expiredAt: "" },
+        { expiredAt: { $gte: now } },
+        { expiredAt: { $gte: dateStr } },
       ];
     } else if (status !== "All") {
       query.status = status;
