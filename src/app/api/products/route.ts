@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Product from "@/models/Product";
+import Subcategory from "@/models/Subcategory";
+import Category from "@/models/Category";
 import { requireAdminAuth, escapeRegex } from "@/lib/security";
 
 export async function GET(request: Request) {
@@ -233,11 +235,34 @@ export async function POST(request: Request) {
 
     const urlKey = body.urlKey || (body.name ? body.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") : assignedId.toLowerCase());
 
+    let subcategoryId = body.subcategoryId || "";
+    let subcategoryName = body.subcategoryName || body.subcategory || "";
+    let categoryName = body.category || "";
+
+    if ((!subcategoryId || subcategoryId === "") && subcategoryName) {
+      const matchedSub = await Subcategory.findOne({
+        $or: [
+          { name: { $regex: new RegExp(`^${escapeRegex(subcategoryName.trim())}$`, "i") } },
+          { slug: subcategoryName.trim().toLowerCase() },
+        ],
+      }).lean();
+      if (matchedSub) {
+        subcategoryId = String(matchedSub.id || matchedSub._id);
+        subcategoryName = matchedSub.name;
+        if (!categoryName && matchedSub.categoryName) {
+          categoryName = matchedSub.categoryName;
+        }
+      }
+    }
+
     const productData = {
       ...body,
       id: assignedId,
       code,
       urlKey,
+      subcategoryId,
+      subcategoryName,
+      category: categoryName || "Faucets",
       createdDate: new Date().toISOString().split("T")[0],
       stockPcs: body.stockPcs !== undefined ? body.stockPcs : body.stock || 0,
       inMrp: body.inMrp || body.originalPrice || body.price || 0,

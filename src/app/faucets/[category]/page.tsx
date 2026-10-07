@@ -101,18 +101,29 @@ export default async function CategoryPage({
 
     if (category && category !== "all") {
       if (activeSub) {
+        const subNameEscaped = (activeSub.name || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const subSlugEscaped = (activeSub.slug || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         productQuery.$or = [
           { subcategory: activeSub.name },
           { subcategory: activeSub.slug },
-          { subcategoryId: activeSub.id },
+          { subcategoryName: activeSub.name },
+          { subcategoryName: { $regex: `^${subNameEscaped}$`, $options: "i" } },
+          { subcategoryName: { $regex: `^${subSlugEscaped.replace(/-/g, " ")}$`, $options: "i" } },
+          { subcategoryId: String(activeSub.id || activeSub._id) },
           { subcategorySlug: activeSub.slug },
+          { collectionName: { $regex: `^${subNameEscaped}$`, $options: "i" } },
+          { series: { $regex: `^${subNameEscaped}$`, $options: "i" } },
         ];
       } else if (activeCat) {
+        const catNameEscaped = (activeCat.name || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const catSlugEscaped = (activeCat.slug || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         productQuery.$or = [
           { category: activeCat.name },
-          { category: activeCat.slug },
-          { categoryId: activeCat.id },
+          { category: { $regex: `^${catNameEscaped}$`, $options: "i" } },
+          { category: { $regex: `^${catSlugEscaped.replace(/-/g, " ")}$`, $options: "i" } },
           { categorySlug: activeCat.slug },
+          { categoryId: String(activeCat.id || activeCat._id) },
+          { categoryName: activeCat.name },
         ];
       }
     }

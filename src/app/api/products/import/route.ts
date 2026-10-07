@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Product from "@/models/Product";
+import Subcategory from "@/models/Subcategory";
+import Category from "@/models/Category";
 import { requireAdminAuth } from "@/lib/security";
 
 export async function POST(request: Request) {
@@ -19,6 +21,26 @@ export async function POST(request: Request) {
 
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: "Invalid array provided for import" }, { status: 400 });
+    }
+
+    // Pre-fetch all subcategories and categories for quick lookup & normalization
+    const [allSubcategories, allCategories] = await Promise.all([
+      Subcategory.find({}).lean(),
+      Category.find({}).lean(),
+    ]);
+
+    const subMap = new Map<string, any>();
+    for (const s of allSubcategories) {
+      if (s.name) subMap.set(s.name.trim().toLowerCase(), s);
+      if (s.slug) subMap.set(s.slug.trim().toLowerCase(), s);
+      if (s.id) subMap.set(String(s.id).trim().toLowerCase(), s);
+    }
+
+    const catMap = new Map<string, any>();
+    for (const c of allCategories) {
+      if (c.name) catMap.set(c.name.trim().toLowerCase(), c);
+      if (c.slug) catMap.set(c.slug.trim().toLowerCase(), c);
+      if (c.id) catMap.set(String(c.id).trim().toLowerCase(), c);
     }
 
     let successCount = 0;
@@ -53,13 +75,43 @@ export async function POST(request: Request) {
         }
         if (article) updateData.article = article;
 
-        if (hasKey("category")) updateData.category = item.category;
-        if (hasKey("subcategory") || hasKey("subcategory_name") || hasKey("subcategoryName")) {
-          updateData.subcategoryName = item.subcategory ?? item.subcategory_name ?? item.subcategoryName;
+        // Subcategory resolution
+        if (
+          hasKey("subcategory") ||
+          hasKey("subcategory_name") ||
+          hasKey("subcategoryName") ||
+          hasKey("subcategoryId") ||
+          hasKey("subcategory_id")
+        ) {
+          const subRaw = item.subcategory ?? item.subcategory_name ?? item.subcategoryName ?? item.subcategoryId ?? item.subcategory_id;
+          const matchedSub = subMap.get(String(subRaw).trim().toLowerCase());
+          if (matchedSub) {
+            updateData.subcategoryId = String(matchedSub.id || matchedSub._id);
+            updateData.subcategoryName = matchedSub.name;
+            updateData.subcategory = matchedSub.name;
+            if (!updateData.category && matchedSub.categoryName) {
+              updateData.category = matchedSub.categoryName;
+            }
+          } else {
+            updateData.subcategoryName = item.subcategory ?? item.subcategory_name ?? item.subcategoryName;
+            updateData.subcategory = updateData.subcategoryName;
+            if (hasKey("subcategoryId") || hasKey("subcategory_id")) {
+              updateData.subcategoryId = String(item.subcategoryId ?? item.subcategory_id);
+            }
+          }
         }
-        if (hasKey("subcategoryId") || hasKey("subcategory_id")) {
-          updateData.subcategoryId = item.subcategoryId ?? item.subcategory_id;
+
+        // Category resolution
+        if (hasKey("category") || hasKey("category_name") || hasKey("categoryName")) {
+          const catRaw = item.category ?? item.category_name ?? item.categoryName;
+          const matchedCat = catMap.get(String(catRaw).trim().toLowerCase());
+          if (matchedCat) {
+            updateData.category = matchedCat.name;
+          } else {
+            updateData.category = catRaw;
+          }
         }
+
         if (hasKey("content_id") || hasKey("contentId")) {
           updateData.content_id = item.content_id ?? item.contentId;
         }
