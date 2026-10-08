@@ -349,6 +349,18 @@ export default function HomeClient({
     }
   }, [activeIdx, heroInView, heroSequence]);
 
+  const getPosterSrc = (item: any, idx: number) => {
+    if (!item) return "";
+    if (item.poster) return item.poster;
+    const clean = (item.src || "").split("?")[0].toLowerCase();
+    if (clean.includes("/hero/0")) return "/api/media/website/home/hero/0-poster.webp";
+    if (clean.includes("/hero/1")) return "/api/media/website/home/hero/1-poster.webp";
+    if (clean.includes("/hero/2")) return "/api/media/website/home/hero/2.webp";
+    if (clean.includes("/hero/3")) return "/api/media/website/home/hero/3.webp";
+    if (item.type === "image") return item.src;
+    return `/api/media/website/home/hero/${item.id ?? idx}-poster.webp`;
+  };
+
   const current = heroSequence[activeIdx] || heroSequence[0];
 
   return (
@@ -370,7 +382,7 @@ export default function HomeClient({
           width: "100%",
           height: "100vh",
           overflow: "hidden",
-          background: "#000",
+          background: "#020914",
         }}
       >
         {/* ── Shimmer placeholder until database hero loads ── */}
@@ -389,70 +401,87 @@ export default function HomeClient({
         {/* ── Background layers directly from database (Virtualized for zero GPU lag) ── */}
         {heroSequence.map((item, i) => {
           if (activeIdx !== i) return null;
-          return isVideoSlide(item) && hasMounted && !isBot ? (
-            <video
+          const isVid = isVideoSlide(item);
+          const posterUrl = getPosterSrc(item, i);
+
+          return (
+            <div
               key={item.id || i}
-              ref={(el) => {
-                (videoRef as any).current = el;
-                if (el) {
-                  el.muted = true;
-                  el.defaultMuted = true;
-                }
-              }}
-              src={getOptimizedVideoSrc(item.src)}
-              autoPlay
-              muted
-              playsInline
-              preload="auto"
-              disablePictureInPicture
-              disableRemotePlayback
-              onEnded={advance}
-              onLoadedData={(e) => {
-                const el = e.currentTarget;
-                el.muted = true;
-                el.play().catch(() => {});
-              }}
-              onCanPlay={(e) => {
-                const el = e.currentTarget;
-                el.muted = true;
-                el.play().catch(() => {});
-              }}
               style={{
                 position: "absolute",
                 inset: 0,
                 width: "100%",
                 height: "100%",
-                objectFit: "cover",
-                objectPosition: "center center",
                 opacity: visible ? 1 : 0,
                 transition: "opacity 0.4s ease",
                 zIndex: 1,
-                pointerEvents: "none",
-                transform: "translate3d(0, 0, 0)",
-                backfaceVisibility: "hidden",
-                willChange: "opacity",
               }}
-            />
-          ) : (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              key={item.id || i}
-              src={item.src}
-              alt={item.title || "RN Hero"}
-              loading="eager"
-              decoding="async"
-              style={{
-                position: "absolute",
-                inset: 0,
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                opacity: visible ? 1 : 0,
-                transition: "opacity 0.4s ease",
-                zIndex: 1,
-                pointerEvents: "none",
-              }}
-            />
+            >
+              {/* Immediate Poster/Image backdrop so user NEVER sees black/blank screen while video is buffering */}
+              {posterUrl && (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={posterUrl}
+                  alt={item.title || "RN Hero"}
+                  loading="eager"
+                  decoding="async"
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    objectPosition: "center center",
+                    zIndex: 1,
+                    pointerEvents: "none",
+                  }}
+                />
+              )}
+
+              {/* Video layer on top that smoothly starts when ready */}
+              {isVid && hasMounted && !isBot && (
+                <video
+                  ref={(el) => {
+                    (videoRef as any).current = el;
+                    if (el) {
+                      el.muted = true;
+                      el.defaultMuted = true;
+                    }
+                  }}
+                  src={getOptimizedVideoSrc(item.src)}
+                  poster={posterUrl || undefined}
+                  autoPlay
+                  muted
+                  playsInline
+                  preload="auto"
+                  disablePictureInPicture
+                  disableRemotePlayback
+                  onEnded={advance}
+                  onLoadedData={(e) => {
+                    const el = e.currentTarget;
+                    el.muted = true;
+                    el.play().catch(() => {});
+                  }}
+                  onCanPlay={(e) => {
+                    const el = e.currentTarget;
+                    el.muted = true;
+                    el.play().catch(() => {});
+                  }}
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    objectPosition: "center center",
+                    zIndex: 2,
+                    pointerEvents: "none",
+                    transform: "translate3d(0, 0, 0)",
+                    backfaceVisibility: "hidden",
+                  }}
+                />
+              )}
+            </div>
           );
         })}
 
