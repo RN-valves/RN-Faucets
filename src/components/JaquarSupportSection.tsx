@@ -28,18 +28,61 @@ export default function JaquarSupportSection({ data }: JaquarSupportSectionProps
   const cardsRef = useRef<(HTMLAnchorElement | null)[]>([]);
   const isVisible = data?.visible !== false;
 
-  const rawCards = data?.cards && Array.isArray(data.cards) ? data.cards : [];
+  const defaultCards = [
+    {
+      title: "Become A Dealer / Distributor",
+      description: "Join our pan-India network and partner with India's trusted bath fittings manufacturer.",
+      cta: "Join Our Network",
+      href: "/business-user-registration",
+      image: "/uploads/support/store-locator.webp",
+      overlay: "linear-gradient(90deg, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.58) 28%, rgba(0,0,0,0.14) 60%, rgba(0,0,0,0.06) 100%)",
+    },
+    {
+      title: "RN Care",
+      description: "Expert support. Trusted Service. Industry leading warranty.",
+      cta: "Let's Connect",
+      href: "/contact-us",
+      image: "/uploads/support/rn-care.webp",
+      overlay: "linear-gradient(90deg, rgba(0,0,0,0.84) 0%, rgba(0,0,0,0.7) 34%, rgba(0,0,0,0.2) 68%, rgba(0,0,0,0.08) 100%)",
+    },
+  ];
+
+  const rawCards = data?.cards && Array.isArray(data.cards) && data.cards.length > 0 ? data.cards : defaultCards;
   const cardsList = rawCards
     .filter((c: any) => Boolean(c.title))
-    .map((c: any) => ({
-      ...c,
-      image:
-        c.image && !c.image.includes("jaquar.com")
-          ? c.image
-          : c.title?.toLowerCase().includes("store")
-          ? "/uploads/support/store-locator.webp"
-          : "/uploads/support/rn-care.webp",
-    }));
+    .map((c: any) => {
+      const isStoreLocator =
+        c.title?.toLowerCase().includes("store") ||
+        c.href === "/store-locator" ||
+        c.cta?.toLowerCase().includes("store");
+
+      const title = isStoreLocator ? "Become A Dealer / Distributor" : c.title;
+      const description = isStoreLocator
+        ? "Join our pan-India network and partner with India's trusted bath fittings manufacturer."
+        : c.description;
+      const cta = isStoreLocator ? "Join Our Network" : c.cta;
+      const href = isStoreLocator
+        ? "/business-user-registration"
+        : c.href && c.href !== "#" && c.href !== "/store-locator"
+        ? c.href
+        : c.title?.toLowerCase().includes("care")
+        ? "/contact-us"
+        : "/business-user-registration";
+
+      return {
+        ...c,
+        title,
+        description,
+        cta,
+        href,
+        image:
+          c.image && !c.image.includes("jaquar.com")
+            ? c.image
+            : title?.toLowerCase().includes("care")
+            ? "/uploads/support/rn-care.webp"
+            : "/uploads/support/store-locator.webp",
+      };
+    });
 
   useEffect(() => {
     if (!isVisible || !sectionRef.current) return;
@@ -213,15 +256,7 @@ export default function JaquarSupportSection({ data }: JaquarSupportSectionProps
 
       <div className="jaquar-support-grid">
         {cardsList.map((card, index) => {
-          const isConnect =
-            card.cta?.toLowerCase().includes("connect") ||
-            card.title?.toLowerCase().includes("care");
-          const targetHref =
-            card.href && card.href !== "#"
-              ? card.href
-              : isConnect
-              ? "/contact-us"
-              : "/store-locator";
+          const targetHref = card.href || "/business-user-registration";
 
           return (
             <Link

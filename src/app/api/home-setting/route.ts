@@ -128,10 +128,10 @@ const DEFAULT_HOME_SETTINGS = {
     visible: true,
     cards: [
       {
-        title: "Store Locator",
-        description: "Purchase our products from RN Faucets authorized dealers only.",
-        cta: "Find a Store",
-        href: "/store-locator",
+        title: "Become A Dealer / Distributor",
+        description: "Join our pan-India network and partner with India's trusted bath fittings manufacturer.",
+        cta: "Join Our Network",
+        href: "/business-user-registration",
         image: "/uploads/support/store-locator.webp",
         overlay: "linear-gradient(90deg, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.58) 28%, rgba(0,0,0,0.14) 60%, rgba(0,0,0,0.06) 100%)",
       },

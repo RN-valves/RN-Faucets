@@ -185,10 +185,10 @@ export default function BlogsSection({ data, initialBlogs = [] }: BlogsSectionPr
         .blogs-card-title {
           margin: 0;
           font-family: 'Manrope', Helvetica, Arial, sans-serif;
-          font-size: 24px;
-          font-weight: 400;
-          line-height: 1.28;
-          letter-spacing: -0.03em;
+          font-size: 16px;
+          font-weight: 500;
+          line-height: 1.4;
+          letter-spacing: -0.01em;
           transition: opacity 0.2s ease;
         }
         @media (max-width: 960px) {
@@ -196,7 +196,7 @@ export default function BlogsSection({ data, initialBlogs = [] }: BlogsSectionPr
             grid-template-columns: 1fr;
           }
           .blogs-card-title {
-            font-size: 20px;
+            font-size: 15px;
           }
         }
         @media (max-width: 768px) {

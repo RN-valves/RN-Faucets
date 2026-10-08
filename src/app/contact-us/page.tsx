@@ -255,7 +255,6 @@ export default function ContactUsPage() {
                 padding: "36px 32px",
                 display: "flex",
                 flexDirection: "column",
-                justifyContent: "space-between",
                 gap: "24px",
                 boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
               }}
@@ -358,43 +357,6 @@ export default function ContactUsPage() {
                     <Clock size={16} color="#94A3B8" />
                     Monday – Saturday: 9:30 AM – 6:30 PM IST
                   </div>
-                </div>
-              </div>
-
-              {/* QR Code Block */}
-              <div
-                style={{
-                  background: "#FFFFFF",
-                  border: "1px solid #E2E8F0",
-                  borderRadius: "12px",
-                  padding: "16px 20px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "18px",
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="https://www.rnvalves.com/uploads/catalogue/qrcodes/67fca5e484603.png"
-                  alt="Scan QR for Plumber Enquiry"
-                  style={{
-                    width: "88px",
-                    height: "88px",
-                    objectFit: "contain",
-                    border: "1px solid #E2E8F0",
-                    borderRadius: "8px",
-                    padding: "4px",
-                    background: "#FFFFFF",
-                    flexShrink: 0,
-                  }}
-                />
-                <div>
-                  <p style={{ fontSize: "13.5px", fontWeight: 700, color: "#0F172A", margin: "0 0 4px" }}>
-                    Plumber &amp; Technician Desk
-                  </p>
-                  <p style={{ fontSize: "12px", color: "#64748B", margin: 0, lineHeight: 1.4 }}>
-                    Scan QR code for dedicated plumber registration &amp; technical assistance.
-                  </p>
                 </div>
               </div>
             </div>
