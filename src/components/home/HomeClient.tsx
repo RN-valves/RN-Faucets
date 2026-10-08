@@ -66,20 +66,41 @@ function ProgressRing({
 
     if (itemType === "video") {
       const vid = videoRef.current;
-      if (!vid) return;
+      if (!vid) {
+        const fallback = setTimeout(() => {
+          if (active) onComplete();
+        }, imageDuration || 6000);
+        return () => {
+          active = false;
+          clearTimeout(fallback);
+        };
+      }
+
+      // Safety fallback timer if video stalls or fails to reach ended event
+      const maxDuration = (vid.duration && !isNaN(vid.duration) && vid.duration > 0 ? vid.duration * 1000 : imageDuration || 6000) + 1500;
+      const safetyTimer = setTimeout(() => {
+        if (active) onComplete();
+      }, Math.max(maxDuration, 5000));
 
       const updateProgress = () => {
-        if (!active || !circleRef.current || !vid.duration) return;
+        if (!active || !circleRef.current || !vid.duration || isNaN(vid.duration)) return;
         const p = Math.min(Math.max(vid.currentTime / vid.duration, 0), 1);
         circleRef.current.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - p));
       };
 
+      const handleEnded = () => {
+        if (active) onComplete();
+      };
+
       vid.addEventListener("timeupdate", updateProgress);
+      vid.addEventListener("ended", handleEnded);
       const interval = setInterval(updateProgress, 100);
 
       return () => {
         active = false;
+        clearTimeout(safetyTimer);
         vid.removeEventListener("timeupdate", updateProgress);
+        vid.removeEventListener("ended", handleEnded);
         clearInterval(interval);
       };
     } else {
@@ -298,7 +319,7 @@ export default function HomeClient({
     );
   };
 
-  /* ── React to active index & viewport visibility changes ── */
+  /* ── React to active index & viewport visibility changes (Guaranteed Safari/Mac support) ── */
   useEffect(() => {
     if (heroSequence.length === 0) return;
     const item = heroSequence[activeIdx] || heroSequence[0];
@@ -308,45 +329,25 @@ export default function HomeClient({
     if (!vid) return;
 
     if (isVideoSlide(item) && heroInView) {
-      vid.play().catch(() => {});
+      vid.muted = true;
+      vid.defaultMuted = true;
+      vid.playsInline = true;
+      vid.setAttribute("muted", "");
+      vid.setAttribute("playsinline", "");
+      vid.setAttribute("webkit-playsinline", "true");
+
+      const playPromise = vid.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          // Retry playback with forced mute for Safari autoplay rules
+          vid.muted = true;
+          vid.play().catch(() => {});
+        });
+      }
     } else {
       vid.pause();
     }
   }, [activeIdx, heroInView, heroSequence]);
-
-  /* ── Smooth 1-wheel snap from Section 1 -> Section 2 -> Section 3 ── */
-  const isSnappingRef = useRef(false);
-
-  useEffect(() => {
-    const handleWheelSnap = (e: WheelEvent) => {
-      if (isSnappingRef.current || e.deltaY <= 10) return;
-
-      const currentScroll = window.scrollY;
-      const h = window.innerHeight;
-
-      // Section 1 -> Section 2 Snap
-      if (currentScroll < h * 0.8) {
-        isSnappingRef.current = true;
-        window.scrollTo({ top: h, behavior: "smooth" });
-        setTimeout(() => { isSnappingRef.current = false; }, 800);
-      }
-      // Section 2 -> Section 3 Snap
-      else if (currentScroll >= h * 0.8 && currentScroll < h * 1.8) {
-        isSnappingRef.current = true;
-        window.scrollTo({ top: h * 2, behavior: "smooth" });
-        setTimeout(() => { isSnappingRef.current = false; }, 800);
-      }
-      // Section 3 -> Section 4 (Best Sellers) Snap
-      else if (currentScroll >= h * 1.8 && currentScroll < h * 2.8) {
-        isSnappingRef.current = true;
-        window.scrollTo({ top: h * 3, behavior: "smooth" });
-        setTimeout(() => { isSnappingRef.current = false; }, 800);
-      }
-    };
-
-    window.addEventListener("wheel", handleWheelSnap, { passive: true });
-    return () => window.removeEventListener("wheel", handleWheelSnap);
-  }, []);
 
   const current = heroSequence[activeIdx] || heroSequence[0];
 
@@ -391,15 +392,31 @@ export default function HomeClient({
           return isVideoSlide(item) && hasMounted && !isBot ? (
             <video
               key={item.id || i}
-              ref={videoRef}
+              ref={(el) => {
+                (videoRef as any).current = el;
+                if (el) {
+                  el.muted = true;
+                  el.defaultMuted = true;
+                }
+              }}
               src={getOptimizedVideoSrc(item.src)}
               autoPlay
               muted
               playsInline
-              preload="metadata"
+              preload="auto"
               disablePictureInPicture
               disableRemotePlayback
               onEnded={advance}
+              onLoadedData={(e) => {
+                const el = e.currentTarget;
+                el.muted = true;
+                el.play().catch(() => {});
+              }}
+              onCanPlay={(e) => {
+                const el = e.currentTarget;
+                el.muted = true;
+                el.play().catch(() => {});
+              }}
               style={{
                 position: "absolute",
                 inset: 0,
@@ -413,6 +430,7 @@ export default function HomeClient({
                 pointerEvents: "none",
                 transform: "translate3d(0, 0, 0)",
                 backfaceVisibility: "hidden",
+                willChange: "opacity",
               }}
             />
           ) : (

@@ -702,12 +702,11 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
     let wheelTimer: ReturnType<typeof setTimeout> | null = null;
 
     const onWheel = (e: WheelEvent) => {
-      const delta =
-        Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-      if (Math.abs(delta) < 2) return;
+      // Only scroll horizontally if user is intentionally swiping horizontally
+      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) || Math.abs(e.deltaX) < 2) return;
 
       gsap.killTweensOf(track);
-      track.scrollLeft += delta;
+      track.scrollLeft += e.deltaX;
 
       if (wheelTimer) clearTimeout(wheelTimer);
       wheelTimer = setTimeout(() => {
