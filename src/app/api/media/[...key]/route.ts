@@ -66,10 +66,35 @@ export async function GET(
       }
     }
 
+    const url = new URL(req.url);
+    const hasVersion = url.searchParams.has("v") || url.searchParams.has("t");
+
     const headers = new Headers();
     headers.set("Content-Type", contentType);
     headers.set("Accept-Ranges", "bytes");
-    headers.set("Cache-Control", "public, max-age=31536000, immutable");
+
+    if (hasVersion) {
+      // Versioned URLs (?v=...) are immutable and safe to cache for 1 year
+      headers.set("Cache-Control", "public, max-age=31536000, immutable");
+    } else {
+      // Unversioned URLs must revalidate with R2 ETag
+      headers.set("Cache-Control", "public, max-age=0, must-revalidate");
+    }
+
+    if (response.ETag) {
+      headers.set("ETag", response.ETag);
+      const ifNoneMatch = req.headers.get("if-none-match");
+      if (ifNoneMatch && (ifNoneMatch === response.ETag || ifNoneMatch === `"${response.ETag}"` || ifNoneMatch === response.ETag.replace(/"/g, ""))) {
+        return new Response(null, {
+          status: 304,
+          headers,
+        });
+      }
+    }
+
+    if (response.LastModified) {
+      headers.set("Last-Modified", response.LastModified.toUTCString());
+    }
 
     if (response.ContentRange) {
       headers.set("Content-Range", response.ContentRange);
