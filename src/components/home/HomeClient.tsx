@@ -65,26 +65,16 @@ function ProgressRing({
     let active = true;
 
     if (itemType === "video") {
-      const vid = videoRef.current;
-      if (!vid) {
-        const fallback = setTimeout(() => {
-          if (active) onComplete();
-        }, imageDuration || 6000);
-        return () => {
-          active = false;
-          clearTimeout(fallback);
-        };
-      }
-
-      // Safety fallback timer if video stalls or fails to reach ended event
-      const maxDuration = (vid.duration && !isNaN(vid.duration) && vid.duration > 0 ? vid.duration * 1000 : imageDuration || 6000) + 1500;
-      const safetyTimer = setTimeout(() => {
-        if (active) onComplete();
-      }, Math.max(maxDuration, 5000));
+      let attachedVid: HTMLVideoElement | null = null;
+      let safetyTimer: NodeJS.Timeout | null = null;
+      let interval: NodeJS.Timeout | null = null;
+      let retryTimeout: NodeJS.Timeout | null = null;
 
       const updateProgress = () => {
-        if (!active || !circleRef.current || !vid.duration || isNaN(vid.duration)) return;
-        const p = Math.min(Math.max(vid.currentTime / vid.duration, 0), 1);
+        if (!active || !circleRef.current || !attachedVid) return;
+        const duration = attachedVid.duration;
+        if (!duration || isNaN(duration) || duration <= 0) return;
+        const p = Math.min(Math.max(attachedVid.currentTime / duration, 0), 1);
         circleRef.current.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - p));
       };
 
@@ -92,16 +82,64 @@ function ProgressRing({
         if (active) onComplete();
       };
 
-      vid.addEventListener("timeupdate", updateProgress);
-      vid.addEventListener("ended", handleEnded);
-      const interval = setInterval(updateProgress, 100);
+      const setSafetyTimeout = (durationSec: number) => {
+        if (safetyTimer) clearTimeout(safetyTimer);
+        // Video duration + 2s buffer so video can complete naturally
+        safetyTimer = setTimeout(() => {
+          if (active) onComplete();
+        }, (durationSec + 2) * 1000);
+      };
+
+      const handleLoadedMetadata = () => {
+        if (!active || !attachedVid) return;
+        updateProgress();
+        if (attachedVid.duration && !isNaN(attachedVid.duration) && attachedVid.duration > 0) {
+          setSafetyTimeout(attachedVid.duration);
+        }
+      };
+
+      const attachToVideo = (vid: HTMLVideoElement) => {
+        attachedVid = vid;
+        vid.addEventListener("timeupdate", updateProgress, { passive: true });
+        vid.addEventListener("ended", handleEnded);
+        vid.addEventListener("loadedmetadata", handleLoadedMetadata);
+
+        if (vid.readyState >= 1 && vid.duration && !isNaN(vid.duration) && vid.duration > 0) {
+          setSafetyTimeout(vid.duration);
+        }
+
+        interval = setInterval(updateProgress, 100);
+      };
+
+      let attempts = 0;
+      const findAndAttach = () => {
+        if (!active) return;
+        const vid = videoRef.current || document.querySelector<HTMLVideoElement>("section[data-header-theme='dark'] video");
+        if (vid) {
+          attachToVideo(vid);
+        } else if (attempts < 15) {
+          attempts++;
+          retryTimeout = setTimeout(findAndAttach, 100);
+        } else {
+          // Fallback only if no video element exists at all
+          safetyTimer = setTimeout(() => {
+            if (active) onComplete();
+          }, imageDuration || 6000);
+        }
+      };
+
+      findAndAttach();
 
       return () => {
         active = false;
-        clearTimeout(safetyTimer);
-        vid.removeEventListener("timeupdate", updateProgress);
-        vid.removeEventListener("ended", handleEnded);
-        clearInterval(interval);
+        if (safetyTimer) clearTimeout(safetyTimer);
+        if (interval) clearInterval(interval);
+        if (retryTimeout) clearTimeout(retryTimeout);
+        if (attachedVid) {
+          attachedVid.removeEventListener("timeupdate", updateProgress);
+          attachedVid.removeEventListener("ended", handleEnded);
+          attachedVid.removeEventListener("loadedmetadata", handleLoadedMetadata);
+        }
       };
     } else {
       // Direct DOM update on every animation frame for image timer
@@ -570,7 +608,7 @@ export default function HomeClient({
                   <ProgressRing
                     key={item.id || i}
                     isActive={activeIdx === i}
-                    itemType={item.type}
+                    itemType={isVideoSlide(item) ? "video" : "image"}
                     videoRef={videoRef}
                     imageDuration={item.duration}
                     onComplete={advance}
