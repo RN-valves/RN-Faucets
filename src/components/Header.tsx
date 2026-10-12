@@ -233,9 +233,9 @@ function CatalogueDashboard({
                   <Image
                     src={thumbnailImg}
                     alt={item.name}
-                    width={88}
-                    height={88}
-                    sizes="88px"
+                    width={104}
+                    height={104}
+                    sizes="104px"
                     loading={idx < 6 ? "eager" : "lazy"}
                     priority={idx < 3}
                     unoptimized={true}
@@ -244,6 +244,7 @@ function CatalogueDashboard({
                       width: "100%",
                       height: "100%",
                       objectFit: "contain",
+                      transform: "scale(1.08)",
                     }}
                     onError={(e) => {
                       (e.currentTarget as HTMLImageElement).src = "/api/media/website/catalogue/products/default/image.webp";
@@ -323,9 +324,9 @@ function CatalogueDashboard({
                     <Image
                       src={cardImg}
                       alt={sub.name}
-                      width={260}
-                      height={170}
-                      sizes="(max-width: 640px) 160px, 260px"
+                      width={320}
+                      height={210}
+                      sizes="(max-width: 640px) 180px, 320px"
                       loading={idx < 6 ? "eager" : "lazy"}
                       priority={idx < 4}
                       unoptimized={true}
@@ -334,7 +335,7 @@ function CatalogueDashboard({
                       style={{
                         width: "100%",
                         height: "100%",
-                        maxHeight: "165px",
+                        maxHeight: "195px",
                         objectFit: "contain",
                       }}
                       onError={(e) => {
@@ -372,9 +373,9 @@ function CatalogueDashboard({
                 <Image
                   src={getCardImage(activeCategory?.image, 0)}
                   alt={activeCategory?.name || "Range"}
-                  width={260}
-                  height={170}
-                  sizes="260px"
+                  width={320}
+                  height={210}
+                  sizes="320px"
                   priority
                   unoptimized={true}
                   decoding="async"
@@ -382,7 +383,7 @@ function CatalogueDashboard({
                   style={{
                     width: "100%",
                     height: "100%",
-                    maxHeight: "165px",
+                    maxHeight: "195px",
                     objectFit: "contain",
                   }}
                 />
@@ -1263,8 +1264,8 @@ export default function Header({ data }: HeaderProps) {
 
           /* ── Larger Categories Column (Left/Middle) ── */
           .catalogue-categories-aside {
-            width: clamp(340px, 28vw, 440px);
-            min-width: clamp(340px, 28vw, 440px);
+            width: clamp(370px, 30vw, 470px);
+            min-width: clamp(370px, 30vw, 470px);
             display: flex;
             flex-direction: column;
             gap: 12px;
@@ -1314,10 +1315,10 @@ export default function Header({ data }: HeaderProps) {
 
           .catalogue-category-btn {
             display: grid;
-            grid-template-columns: 88px 1fr auto;
+            grid-template-columns: 104px 1fr auto;
             align-items: center;
             gap: 16px;
-            padding: 14px 18px;
+            padding: 12px 16px;
             border-radius: 18px;
             border: 1px solid rgba(203, 213, 225, 0.9);
             background: rgba(255, 255, 255, 0.92);
@@ -1325,7 +1326,7 @@ export default function Header({ data }: HeaderProps) {
             cursor: pointer;
             text-align: left;
             width: 100%;
-            min-height: 98px;
+            min-height: 114px;
             color: inherit;
             transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
             outline: none;
@@ -1344,13 +1345,13 @@ export default function Header({ data }: HeaderProps) {
           }
 
           .catalogue-category-thumb {
-            width: 88px;
-            height: 88px;
-            border-radius: 14px;
+            width: 104px;
+            height: 104px;
+            border-radius: 16px;
             background-color: #ffffff;
             border: 1px solid rgba(148, 163, 184, 0.3);
             flex-shrink: 0;
-            padding: 6px;
+            padding: 4px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
             display: flex;
             align-items: center;
@@ -1468,9 +1469,9 @@ export default function Header({ data }: HeaderProps) {
 
           .catalogue-subcat-card {
             display: grid;
-            grid-template-columns: clamp(120px, 40%, 175px) 1fr;
-            min-height: 190px;
-            border-radius: 16px;
+            grid-template-columns: clamp(160px, 50%, 220px) 1fr;
+            min-height: 215px;
+            border-radius: 18px;
             overflow: hidden;
             cursor: pointer;
             text-decoration: none;
@@ -1493,9 +1494,9 @@ export default function Header({ data }: HeaderProps) {
           .catalogue-subcat-fallback-card {
             grid-column: 1 / -1;
             display: grid;
-            grid-template-columns: clamp(120px, 34%, 180px) 1fr;
-            min-height: 195px;
-            border-radius: 16px;
+            grid-template-columns: clamp(160px, 45%, 220px) 1fr;
+            min-height: 215px;
+            border-radius: 18px;
             overflow: hidden;
             cursor: pointer;
             isolation: isolate;
@@ -1514,7 +1515,7 @@ export default function Header({ data }: HeaderProps) {
             align-items: center;
             justify-content: center;
             overflow: hidden;
-            padding: 8px;
+            padding: 4px 0 4px 8px;
             box-sizing: border-box;
             background: transparent !important;
             box-shadow: none !important;
@@ -1522,19 +1523,19 @@ export default function Header({ data }: HeaderProps) {
           .catalogue-card-img {
             width: 100%;
             height: 100%;
-            max-height: 165px;
+            max-height: 195px;
             object-fit: contain;
-            transform: scale(1.1);
+            transform: scale(1.22);
             filter: drop-shadow(0 16px 26px rgba(12, 24, 38, 0.24));
             transition: transform 0.4s ease, filter 0.4s ease;
           }
           .catalogue-subcat-card:hover .catalogue-card-img {
-            transform: scale(1.18);
+            transform: scale(1.3);
             filter: drop-shadow(0 20px 32px rgba(12, 24, 38, 0.32));
           }
 
           .catalogue-card-info-panel {
-            padding: 18px 16px;
+            padding: 18px 16px 16px 8px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
