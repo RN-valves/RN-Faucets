@@ -2,18 +2,25 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import Product from "@/models/Product";
-import { requireAdminAuth } from "@/lib/security";
+import { requireAdminAuth, escapeRegex } from "@/lib/security";
 
-function buildProductFilter(id: string) {
+function buildProductFilter(rawId: string) {
+  const id = decodeURIComponent(rawId).trim();
   const filterList: any[] = [
     { id },
     { code: id },
     { skuCode: id },
     { urlKey: id },
+    { code: new RegExp(`^${escapeRegex(id)}$`, "i") },
+    { skuCode: new RegExp(`^${escapeRegex(id)}$`, "i") },
   ];
+  if (!isNaN(Number(id))) {
+    filterList.push({ id: Number(id) });
+  }
   if (mongoose.isValidObjectId(id)) {
     filterList.push({ _id: new mongoose.Types.ObjectId(id) });
   }
+  filterList.push({ _id: id });
   return { $or: filterList };
 }
 
@@ -52,6 +59,42 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
+    // Prevent modifying immutable fields
+    delete (body as any)._id;
+    delete (body as any).__v;
+    delete (body as any).createdAt;
+    delete (body as any).updatedAt;
+
+    // Sanitize numeric fields to prevent MongoDB CastError on NaN
+    const numFields = [
+      "price",
+      "originalPrice",
+      "inMrp",
+      "inSelling",
+      "inV1Mrp",
+      "othMrp",
+      "othSelling",
+      "othV1Mrp",
+      "stock",
+      "stockPcs",
+      "moq",
+      "ctnPcs",
+      "midCtnPcs",
+      "innerPcs",
+      "productLength",
+      "productBreadth",
+      "productHeight",
+      "onlyProductWtGm",
+      "residentialWarranty",
+      "commercialWarranty",
+    ];
+    for (const f of numFields) {
+      if (body[f] !== undefined) {
+        const val = Number(body[f]);
+        body[f] = isNaN(val) ? 0 : val;
+      }
+    }
+
     // Synchronize stock and stockPcs fields
     if (typeof body.stock === "number") {
       body.stockPcs = body.stock;
@@ -76,10 +119,12 @@ export async function PUT(
     const updated = await Product.findOneAndUpdate(
       filter,
       { $set: body },
-      { new: true }
+      { new: true, returnDocument: "after" }
     );
 
-    if (!updated) return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    if (!updated) {
+      return NextResponse.json({ error: `Product not found with identifier: ${id}` }, { status: 404 });
+    }
     return NextResponse.json(updated);
   } catch (error: any) {
     console.error("PUT /api/products/[id] error:", error);

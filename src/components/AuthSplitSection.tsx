@@ -151,6 +151,7 @@ export default function AuthSplitSection() {
       });
       if (data.token) {
         document.cookie = `rn_session=${data.token}; path=/; max-age=604800; SameSite=Lax`;
+        localStorage.setItem("rn_admin_token", data.token);
       }
       setStep("success");
       setTimeout(() => {

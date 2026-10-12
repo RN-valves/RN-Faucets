@@ -239,72 +239,87 @@ export default function EditProductPage() {
     setSubmitting(true);
     const parentSub = subcategories.find((s) => s.id === subcategoryId);
 
-    const updated = await updateAdminProduct(product.id, {
-      name: name.trim(),
-      code: itemCode.trim(),
-      skuCode: skuCode.trim() || itemCode.trim(),
-      article: article.trim(),
-      hsn: hsn.trim(),
-      category: selectedCatObj?.name || category,
-      subcategoryId,
-      subcategoryName: parentSub?.name || "",
-      brand,
-      material,
-      colorName,
-      size,
-      saleType,
-      price: Number(inSelling) || Number(inMrp) || 0,
-      originalPrice: Number(inMrp) || 0,
+    const safeNum = (val: any, fallback = 0): number => {
+      const n = Number(val);
+      return isNaN(n) ? fallback : n;
+    };
 
-      // Multi-tier Prices
-      inMrp: Number(inMrp),
-      inSelling: Number(inSelling),
-      inV1Mrp: Number(inV1Mrp),
-      othMrp: Number(othMrp),
-      othSelling: Number(othSelling),
-      othV1Mrp: Number(othV1Mrp),
+    const targetId = (product as any)._id
+      ? String((product as any)._id)
+      : (product.code || product.id || code);
 
-      // Stock & Specs
-      stock: Number(stockPcs) || Number(stock) || 0,
-      stockPcs: Number(stockPcs) || Number(stock) || 0,
-      moq: Number(moq),
-      ctnPcs: Number(ctnPcs),
-      midCtnPcs: Number(midCtnPcs),
-      innerPcs: Number(innerPcs),
+    try {
+      const updated = await updateAdminProduct(targetId, {
+        name: name.trim(),
+        code: itemCode.trim(),
+        skuCode: skuCode.trim() || itemCode.trim(),
+        article: article.trim(),
+        hsn: hsn.trim(),
+        category: selectedCatObj?.name || category,
+        subcategoryId,
+        subcategoryName: parentSub?.name || "",
+        brand,
+        material,
+        colorName,
+        size,
+        saleType,
+        price: safeNum(inSelling) || safeNum(inMrp) || 0,
+        originalPrice: safeNum(inMrp) || 0,
 
-      productLength: Number(productLength),
-      productBreadth: Number(productBreadth),
-      productHeight: Number(productHeight),
+        // Multi-tier Prices
+        inMrp: safeNum(inMrp),
+        inSelling: safeNum(inSelling),
+        inV1Mrp: safeNum(inV1Mrp),
+        othMrp: safeNum(othMrp),
+        othSelling: safeNum(othSelling),
+        othV1Mrp: safeNum(othV1Mrp),
 
-      onlyProductWtGm: Number(onlyProductWtGm),
-      residentialWarranty: Number(residentialWarranty),
-      commercialWarranty: Number(commercialWarranty),
+        // Stock & Specs
+        stock: safeNum(stockPcs) || safeNum(stock) || 0,
+        stockPcs: safeNum(stockPcs) || safeNum(stock) || 0,
+        moq: safeNum(moq, 1),
+        ctnPcs: safeNum(ctnPcs),
+        midCtnPcs: safeNum(midCtnPcs),
+        innerPcs: safeNum(innerPcs),
 
-      image,
-      videoUrl: videoUrl.trim(),
-      amazonLink: amazonLink.trim(),
-      flipkartLink: flipkartLink.trim(),
+        productLength: safeNum(productLength),
+        productBreadth: safeNum(productBreadth),
+        productHeight: safeNum(productHeight),
 
-      title: title.trim(),
-      keywords: keywords.trim(),
-      description: description.trim(),
-      searchKeywords: searchKeywords.trim(),
+        onlyProductWtGm: safeNum(onlyProductWtGm),
+        residentialWarranty: safeNum(residentialWarranty),
+        commercialWarranty: safeNum(commercialWarranty),
 
-      status,
-      isVisibleWebsite,
-      isVisibleApi,
-      newArrival,
-      isFeatured,
-      isFullTurn,
-      fullTurnCode,
-    });
+        image,
+        videoUrl: videoUrl.trim(),
+        amazonLink: amazonLink.trim(),
+        flipkartLink: flipkartLink.trim(),
 
-    setSubmitting(false);
+        title: title.trim(),
+        keywords: keywords.trim(),
+        description: description.trim(),
+        searchKeywords: searchKeywords.trim(),
 
-    if (updated) {
-      router.push(`/admin/catalogue/products/${encodeURIComponent(updated.code || itemCode.trim())}`);
-    } else {
-      alert("Failed to update product.");
+        status,
+        isVisibleWebsite,
+        isVisibleApi,
+        newArrival,
+        isFeatured,
+        isFullTurn,
+        fullTurnCode,
+      });
+
+      if (updated) {
+        alert("Product updated successfully!");
+        router.push(`/admin/catalogue/products/${encodeURIComponent(updated.code || itemCode.trim())}`);
+      } else {
+        alert("Failed to update product. Please check console or try again.");
+      }
+    } catch (err: any) {
+      console.error("Failed to update product:", err);
+      alert(err.message || "Failed to update product. Please verify your admin session.");
+    } finally {
+      setSubmitting(false);
     }
   };
 

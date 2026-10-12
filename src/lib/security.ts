@@ -233,6 +233,7 @@ export function sanitizeStorageKey(rawKey: string): string {
 export const ADMIN_ROLES = new Set([
   "Super Admin",
   "Admin",
+  "Employee",
   "Catalogue Manager",
   "Order Dispatcher",
   "Customer Support Manager",
@@ -308,8 +309,10 @@ export async function requireAdminAuth(req: Request): Promise<SessionPayload | n
   const isAdmin =
     ADMIN_ROLES.has(session.role) ||
     session.userType === "Admin" ||
+    session.userType === "Employee" ||
     session.role === "Super Admin" ||
-    session.role === "Admin";
+    session.role === "Admin" ||
+    session.role === "Employee";
 
   if (!isAdmin) return null;
 

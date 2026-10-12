@@ -162,7 +162,20 @@ function getAuthHeaders(): Record<string, string> {
         })
       )
     : {};
-  const token = cookies["rn_session"];
+  let token = cookies["rn_session"];
+  if (!token && typeof localStorage !== "undefined") {
+    token =
+      localStorage.getItem("rn_admin_token") ||
+      localStorage.getItem("rn_token") ||
+      (() => {
+        try {
+          const u = JSON.parse(localStorage.getItem("rn_admin_user") || "{}");
+          return u?.token || null;
+        } catch {
+          return null;
+        }
+      })();
+  }
   if (token) {
     return { Authorization: `Bearer ${token}` };
   }
@@ -175,13 +188,18 @@ export const addAdminProduct = async (
   try {
     const res = await fetch("/api/products", {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify(product),
     });
-    if (!res.ok) throw new Error("fetch failed");
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      throw new Error(errJson.error || `Failed to create product (${res.status})`);
+    }
     return res.json();
-  } catch {
-    return null;
+  } catch (err: any) {
+    console.error("addAdminProduct error:", err);
+    throw err;
   }
 };
 
@@ -190,26 +208,30 @@ export const updateAdminProduct = async (
   updatedFields: Partial<AdminProduct>
 ): Promise<AdminProduct | null> => {
   try {
-    const res = await fetch(`/api/products/${id}`, {
+    const res = await fetch(`/api/products/${encodeURIComponent(id)}`, {
       method: "PUT",
+      credentials: "include",
       headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify(updatedFields),
     });
     if (!res.ok) {
-      console.error(`Failed to update product ${id}:`, res.status, res.statusText);
-      throw new Error(`fetch failed: ${res.status}`);
+      const errJson = await res.json().catch(() => ({}));
+      const msg = errJson.error || `Server responded with ${res.status}: ${res.statusText}`;
+      console.error(`Failed to update product ${id}:`, res.status, msg);
+      throw new Error(msg);
     }
     return res.json();
-  } catch (err) {
+  } catch (err: any) {
     console.error("updateAdminProduct error:", err);
-    return null;
+    throw err;
   }
 };
 
 export const deleteAdminProduct = async (id: string): Promise<boolean> => {
   try {
-    const res = await fetch(`/api/products/${id}`, {
+    const res = await fetch(`/api/products/${encodeURIComponent(id)}`, {
       method: "DELETE",
+      credentials: "include",
       headers: getAuthHeaders(),
     });
     return res.ok;
