@@ -17,10 +17,9 @@ function buildProductFilter(rawId: string) {
   if (!isNaN(Number(id))) {
     filterList.push({ id: Number(id) });
   }
-  if (mongoose.isValidObjectId(id)) {
+  if (mongoose.isValidObjectId(id) && id.length === 24) {
     filterList.push({ _id: new mongoose.Types.ObjectId(id) });
   }
-  filterList.push({ _id: id });
   return { $or: filterList };
 }
 
