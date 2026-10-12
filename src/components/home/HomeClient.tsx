@@ -66,79 +66,71 @@ function ProgressRing({
 
     if (itemType === "video") {
       let attachedVid: HTMLVideoElement | null = null;
-      let safetyTimer: NodeJS.Timeout | null = null;
       let interval: NodeJS.Timeout | null = null;
-      let retryTimeout: NodeJS.Timeout | null = null;
+      let pollInterval: NodeJS.Timeout | null = null;
+      let failsafeTimer: NodeJS.Timeout | null = null;
 
       const updateProgress = () => {
         if (!active || !circleRef.current || !attachedVid) return;
         const duration = attachedVid.duration;
-        if (!duration || isNaN(duration) || duration <= 0) return;
-        const p = Math.min(Math.max(attachedVid.currentTime / duration, 0), 1);
-        circleRef.current.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - p));
+        if (duration && !isNaN(duration) && duration > 0 && isFinite(duration)) {
+          const p = Math.min(Math.max(attachedVid.currentTime / duration, 0), 1);
+          circleRef.current.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - p));
+        }
       };
 
       const handleEnded = () => {
         if (active) onComplete();
       };
 
-      const setSafetyTimeout = (durationSec: number) => {
-        if (safetyTimer) clearTimeout(safetyTimer);
-        // Video duration + 2s buffer so video can complete naturally
-        safetyTimer = setTimeout(() => {
-          if (active) onComplete();
-        }, (durationSec + 2) * 1000);
-      };
-
-      const handleLoadedMetadata = () => {
-        if (!active || !attachedVid) return;
-        updateProgress();
-        if (attachedVid.duration && !isNaN(attachedVid.duration) && attachedVid.duration > 0) {
-          setSafetyTimeout(attachedVid.duration);
-        }
-      };
-
       const attachToVideo = (vid: HTMLVideoElement) => {
         attachedVid = vid;
         vid.addEventListener("timeupdate", updateProgress, { passive: true });
         vid.addEventListener("ended", handleEnded);
-        vid.addEventListener("loadedmetadata", handleLoadedMetadata);
+        vid.addEventListener("loadedmetadata", updateProgress);
+        updateProgress();
 
-        if (vid.readyState >= 1 && vid.duration && !isNaN(vid.duration) && vid.duration > 0) {
-          setSafetyTimeout(vid.duration);
-        }
+        // Generous 65s failsafe only in case video permanently freezes or breaks
+        failsafeTimer = setTimeout(() => {
+          if (active) onComplete();
+        }, 65000);
 
         interval = setInterval(updateProgress, 100);
       };
 
-      let attempts = 0;
-      const findAndAttach = () => {
-        if (!active) return;
-        const vid = videoRef.current || document.querySelector<HTMLVideoElement>("section[data-header-theme='dark'] video");
-        if (vid) {
-          attachToVideo(vid);
-        } else if (attempts < 15) {
-          attempts++;
-          retryTimeout = setTimeout(findAndAttach, 100);
-        } else {
-          // Fallback only if no video element exists at all
-          safetyTimer = setTimeout(() => {
-            if (active) onComplete();
-          }, imageDuration || 6000);
+      // Continuously poll until video element is rendered and attached
+      pollInterval = setInterval(() => {
+        if (attachedVid) {
+          if (pollInterval) clearInterval(pollInterval);
+          return;
         }
-      };
+        const vid =
+          videoRef.current ||
+          document.querySelector<HTMLVideoElement>("section[data-header-theme='dark'] video");
+        if (vid) {
+          if (pollInterval) clearInterval(pollInterval);
+          attachToVideo(vid);
+        }
+      }, 100);
 
-      findAndAttach();
+      // Check immediately
+      const initialVid =
+        videoRef.current ||
+        document.querySelector<HTMLVideoElement>("section[data-header-theme='dark'] video");
+      if (initialVid) {
+        if (pollInterval) clearInterval(pollInterval);
+        attachToVideo(initialVid);
+      }
 
       return () => {
         active = false;
-        if (safetyTimer) clearTimeout(safetyTimer);
+        if (failsafeTimer) clearTimeout(failsafeTimer);
         if (interval) clearInterval(interval);
-        if (retryTimeout) clearTimeout(retryTimeout);
+        if (pollInterval) clearInterval(pollInterval);
         if (attachedVid) {
           attachedVid.removeEventListener("timeupdate", updateProgress);
           attachedVid.removeEventListener("ended", handleEnded);
-          attachedVid.removeEventListener("loadedmetadata", handleLoadedMetadata);
+          attachedVid.removeEventListener("loadedmetadata", updateProgress);
         }
       };
     } else {
@@ -339,8 +331,8 @@ export default function HomeClient({
 
   const getOptimizedVideoSrc = (src?: string) => {
     if (!src) return "";
-    if (src.includes("bannerVideo5.mp4")) return "/videos/optimized/bannerVideo5.mp4";
-    if (src.includes("bannerVideo2.mp4")) return "/videos/optimized/bannerVideo2.mp4";
+    if (src.includes("bannerVideo5.mp4") || src.includes("/hero/0")) return "/videos/optimized/bannerVideo5.mp4";
+    if (src.includes("bannerVideo2.mp4") || src.includes("/hero/1")) return "/videos/optimized/bannerVideo2.mp4";
     return src;
   };
 
