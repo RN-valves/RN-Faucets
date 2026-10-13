@@ -40,21 +40,24 @@ const PinterestIcon = () => (
 );
 
 const NAV_COL_1 = [
-  { label: "About Us", href: "/about-us" },
-  { label: "Blogs", href: "/blogs" },
-  { label: "Our CSR", href: "/corporate-social-responsibility" },
-];
-const NAV_COL_2 = [
-  { label: "Become our Dealer", href: "/business-user-registration" },
-  { label: "Our Certification", href: "/certificates" },
+  { label: "About RN Valves", href: "/about-us" },
+  { label: "Career with us", href: "/career" },
+  { label: "Our Blogs", href: "/blogs" },
   { label: "Contact Us", href: "/contact-us" },
 ];
+const NAV_COL_2 = [
+  { label: "PTMT Faucets", href: "/faucets/ptmt-taps-or-faucets" },
+  { label: "CP Faucets", href: "/faucets/cp-faucets" },
+  { label: "Showers", href: "/faucets/showers" },
+  { label: "Store Locator", href: "/store-locator" },
+];
 const NAV_COL_3 = [
-  { label: "Personal Account", href: "/retail-user-registration" },
-  { label: "Business Account", href: "/business-user-registration" },
   { label: "Privacy Policy", href: "/privacy-policy" },
   { label: "Return & Refund Policy", href: "/return-refund-policy" },
   { label: "Terms & Conditions", href: "/terms-conditions" },
+  { label: "Our Certification", href: "/certificates" },
+  { label: "Our CSR", href: "/corporate-social-responsibility" },
+  { label: "Become our Dealer", href: "/business-user-registration" },
 ];
 const SOCIALS = [
   { Icon: InstagramIcon, label: "Instagram", href: "https://www.instagram.com/rnvalvesandfaucets/" },
@@ -184,12 +187,10 @@ export default function FooterSection({ data }: FooterSectionProps) {
 
           {/* Col 2 */}
           <nav aria-label="Footer links 1" style={{ paddingTop: 4 }}>
-            {(data?.col1Links && data.col1Links.length > 0 ? data.col1Links : NAV_COL_1).map((l) => (
-              <Link key={l.label} href={l.href} style={{
-                display: "block", fontSize: 14.5, fontWeight: 400,
-                color: "rgba(255,255,255,0.85)", lineHeight: "2.35",
-                textDecoration: "none", letterSpacing: "0.01em",
-              }}>{l.label}</Link>
+            {(data?.col1Links && data.col1Links.length > 0 ? data.col1Links : NAV_COL_1)
+              .filter((l) => !l.label?.toLowerCase().includes("catalogue") && !l.href?.toLowerCase().includes("catalogue"))
+              .map((l) => (
+              <Link key={l.label} href={l.href} className="rn-footer-nav-link">{l.label}</Link>
             ))}
           </nav>
 
@@ -198,24 +199,41 @@ export default function FooterSection({ data }: FooterSectionProps) {
             {(data?.col2Links && data.col2Links.length > 0 ? data.col2Links : NAV_COL_2)
               .filter((l) => !l.label?.toLowerCase().includes("warranty"))
               .map((l) => (
-              <Link key={l.label} href={l.href} style={{
-                display: "block", fontSize: 14.5, fontWeight: 400,
-                color: "rgba(255,255,255,0.85)", lineHeight: "2.35",
-                textDecoration: "none", letterSpacing: "0.01em",
-              }}>{l.label}</Link>
+              <Link key={l.label} href={l.href} className="rn-footer-nav-link">{l.label}</Link>
             ))}
           </nav>
 
           {/* Col 4 */}
           <nav aria-label="Footer links 3" style={{ paddingTop: 4 }}>
-            {(data?.col3Links && data.col3Links.length > 0 ? data.col3Links : NAV_COL_3).map((l) => (
-              <Link key={l.label} href={l.href} style={{
-                display: "block", fontSize: 14.5, fontWeight: 400,
-                color: "rgba(255,255,255,0.85)", lineHeight: "2.35",
-                textDecoration: "none", letterSpacing: "0.01em",
-              }}>{l.label}</Link>
-            ))}
+            {(data?.col3Links && data.col3Links.length > 0 ? data.col3Links : NAV_COL_3)
+              .filter((l) => {
+                const label = l.label?.toLowerCase() || "";
+                const href = l.href?.toLowerCase() || "";
+                return !label.includes("personal account") &&
+                       !label.includes("business account") &&
+                       !href.includes("retail-user-registration");
+              })
+              .map((l) => (
+                <Link key={l.label} href={l.href} className="rn-footer-nav-link">{l.label}</Link>
+              ))}
           </nav>
+
+          <style>{`
+            .rn-footer-nav-link {
+              display: block;
+              font-size: 14.5px;
+              font-weight: 400;
+              color: rgba(255, 255, 255, 0.85);
+              line-height: 2.35;
+              text-decoration: none;
+              letter-spacing: 0.01em;
+              transition: color 0.18s ease, transform 0.18s ease;
+            }
+            .rn-footer-nav-link:hover {
+              color: #00AEEF !important;
+              transform: translateX(3px);
+            }
+          `}</style>
 
         </div>
 

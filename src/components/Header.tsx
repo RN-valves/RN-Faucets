@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronRight, Search, ShoppingBag, User, X, Shield, LogOut } from "lucide-react";
 import SearchModal from "./SearchModal";
 import JaquarSearchBar from "./JaquarSearchBar";
+import HeaderMegaMenu, { MegaMenuType } from "./HeaderMegaMenu";
 import { getCartItems } from "@/utils/cart";
 import { getCustomerSession, clearCustomerSession, CustomerSession } from "@/utils/customerAuth";
 import { getAdminAuth, logoutAdmin } from "@/utils/adminStore";
@@ -454,13 +455,82 @@ export default function Header({ data }: HeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [activeUserMenuLink, setActiveUserMenuLink] = useState<string | null>(null);
+  const [activeMegaMenu, setActiveMegaMenu] = useState<MegaMenuType | null>(null);
+  const megaMenuTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [isHeaderHovered, setIsHeaderHovered] = useState(false);
+  const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [isDarkBg, setIsDarkBg] = useState(isHome);
   const [isScrolled, setIsScrolled] = useState(!isHome);
-  const [isHeaderHovered, setIsHeaderHovered] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [sessionUser, setSessionUser] = useState<CustomerSession | null>(null);
   const [isAdminUser, setIsAdminUser] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
+
+  const handleHeaderMouseEnter = () => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+    setIsHeaderHovered(true);
+  };
+
+  const handleHeaderMouseLeave = () => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+    }
+    hoverTimerRef.current = setTimeout(() => {
+      setIsHeaderHovered(false);
+    }, 180);
+  };
+
+  const handleNavTabEnter = (type: MegaMenuType) => {
+    handleHeaderMouseEnter();
+    if (megaMenuTimerRef.current) {
+      clearTimeout(megaMenuTimerRef.current);
+      megaMenuTimerRef.current = null;
+    }
+    setActiveMegaMenu(type);
+  };
+
+  const handleNavTabLeave = () => {
+    handleHeaderMouseLeave();
+    megaMenuTimerRef.current = setTimeout(() => {
+      setActiveMegaMenu(null);
+    }, 240);
+  };
+
+  const handleMegaMenuEnter = () => {
+    handleHeaderMouseEnter();
+    if (megaMenuTimerRef.current) {
+      clearTimeout(megaMenuTimerRef.current);
+      megaMenuTimerRef.current = null;
+    }
+  };
+
+  const handleMegaMenuLeave = () => {
+    handleHeaderMouseLeave();
+    megaMenuTimerRef.current = setTimeout(() => {
+      setActiveMegaMenu(null);
+    }, 200);
+  };
+
+  useEffect(() => {
+    setActiveMegaMenu(null);
+    if (megaMenuTimerRef.current) {
+      clearTimeout(megaMenuTimerRef.current);
+      megaMenuTimerRef.current = null;
+    }
+  }, [pathname]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setActiveMegaMenu(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   useEffect(() => {
     const updateAuthStatus = () => {
@@ -589,25 +659,30 @@ export default function Header({ data }: HeaderProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [isHome, pathname]);
 
-  // When hovering header OR when over light sections, turn solid white like Jaquar
-  const isLightMode = !isDarkBg || isHeaderHovered;
+  // When hovering header OR when mega-menu is active OR when over light sections:
+  // Show luxury transparent white (frosted glass) as requested ("on hover should be transparent but in white")
+  const isTransparentWhite = isHeaderHovered || activeMegaMenu !== null || !isDarkBg;
 
-  // Header text & icons adapt dynamically to background / hover
-  const textColor = isLightMode ? "#111827" : "#ffffff";
-  const textMutedColor = isLightMode ? "rgba(17, 24, 39, 0.9)" : "rgba(255, 255, 255, 0.95)";
-  const iconColor = isLightMode ? "#111827" : "#ffffff";
+  // Header text & icons adapt dynamically:
+  // Over transparent dark hero: crisp white (#ffffff)
+  // Over transparent white (hover/light): luxury dark (#111827)
+  const textColor = isTransparentWhite ? "#111827" : "#ffffff";
+  const textMutedColor = isTransparentWhite ? "rgba(17, 24, 39, 0.85)" : "rgba(255, 255, 255, 0.95)";
+  const iconColor = isTransparentWhite ? "#111827" : "#ffffff";
+  const activeTabColor = isTransparentWhite ? "#0077B6" : "#38BDF8";
 
-  // Transparent over graphic image banners & dark hero sections (when not hovered)
-  // Solid white like Jaquar on hover or over light product content, details, and forms
-  const headerBg = isLightMode
-    ? "rgba(255, 255, 255, 0.98)"
+  // Transparent header: pure transparent by default; on hover transparent in white (frosted glass)
+  const headerBg = isTransparentWhite
+    ? "rgba(255, 255, 255, 0.82)"
     : "transparent";
-  const backdropFilterStyle = isLightMode ? "blur(16px)" : "none";
-  const borderBottomStyle = isLightMode
-    ? "1px solid rgba(0, 0, 0, 0.08)"
+  const backdropFilterStyle = isTransparentWhite || isScrolled
+    ? "blur(20px) saturate(180%)"
     : "none";
-  const boxShadowStyle = isLightMode
-    ? "0 4px 20px rgba(0, 0, 0, 0.06)"
+  const borderBottomStyle = isTransparentWhite
+    ? "1px solid rgba(0, 0, 0, 0.07)"
+    : "none";
+  const boxShadowStyle = isTransparentWhite
+    ? "0 4px 24px rgba(0, 0, 0, 0.04)"
     : "none";
 
   return (
@@ -615,8 +690,8 @@ export default function Header({ data }: HeaderProps) {
       {/* ── Prominent Floating Brand Logo (Separated from Header Flow so header stays slim & close to top) ── */}
       <div
         className="rn-floating-brand-logo"
-        onMouseEnter={() => setIsHeaderHovered(true)}
-        onMouseLeave={() => setIsHeaderHovered(false)}
+        onMouseEnter={handleHeaderMouseEnter}
+        onMouseLeave={handleHeaderMouseLeave}
         style={{
           position: "fixed",
           top: "4px",
@@ -643,8 +718,8 @@ export default function Header({ data }: HeaderProps) {
 
       {/* ── Top Floating Navigation Bar (Slim & Close to Top) ── */}
       <header
-        onMouseEnter={() => setIsHeaderHovered(true)}
-        onMouseLeave={() => setIsHeaderHovered(false)}
+        onMouseEnter={handleHeaderMouseEnter}
+        onMouseLeave={handleHeaderMouseLeave}
         style={{
           position: "fixed",
           top: 0,
@@ -666,6 +741,69 @@ export default function Header({ data }: HeaderProps) {
         }}
         className="rn-header-navbar"
       >
+        {/* Category Mega Menu Navigation Tabs (Jaquar Reference Style) */}
+        <nav
+          className="rn-header-nav-tabs hidden lg:flex items-center gap-7 mr-auto"
+          style={{
+            marginLeft: "clamp(120px, 14vw, 195px)",
+            height: "100%",
+            position: "relative",
+          }}
+          aria-label="Product Categories Navigation"
+        >
+          {([
+            { id: "ptmt" as const, label: "PTMT Faucets" },
+            { id: "cp" as const, label: "CP Faucets" },
+            { id: "showers" as const, label: "Showers" },
+          ]).map(({ id, label }) => {
+            const isActive = activeMegaMenu === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                className={`rn-nav-tab-btn${isActive ? " is-active" : ""}`}
+                onMouseEnter={() => handleNavTabEnter(id)}
+                onMouseLeave={handleNavTabLeave}
+                onClick={() => setActiveMegaMenu(activeMegaMenu === id ? null : id)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  height: "100%",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  padding: "0 4px",
+                  fontSize: "14px",
+                  fontWeight: isActive ? 700 : 600,
+                  fontFamily: "'Manrope', system-ui, sans-serif",
+                  letterSpacing: "-0.01em",
+                  color: isActive ? activeTabColor : textColor,
+                  textShadow: !isTransparentWhite ? "0 1px 4px rgba(0, 0, 0, 0.45)" : "none",
+                  cursor: "pointer",
+                  position: "relative",
+                  transition: "color 0.2s ease, font-weight 0.2s ease",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <span>{label}</span>
+                <span
+                  style={{
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: "3px",
+                    backgroundColor: activeTabColor,
+                    borderRadius: "2px 2px 0 0",
+                    transform: isActive ? "scaleX(1)" : "scaleX(0)",
+                    transformOrigin: "center",
+                    transition: "transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)",
+                  }}
+                />
+              </button>
+            );
+          })}
+        </nav>
+
         {/* Right Action Icons + User Account + Mobile Menu Trigger */}
         <div
           className="rn-header-right-group"
@@ -676,7 +814,7 @@ export default function Header({ data }: HeaderProps) {
         >
           {/* Jaquar Style Embedded Search Bar (Desktop / Tablet) */}
           <div className="hidden md:block mr-4 flex-1 max-w-[580px]">
-            <JaquarSearchBar isDarkBg={!isLightMode} />
+            <JaquarSearchBar isDarkBg={!isTransparentWhite} />
           </div>
 
           <div className="rn-header-action-icons" style={{ display: "flex", alignItems: "center" }}>
@@ -1088,6 +1226,30 @@ export default function Header({ data }: HeaderProps) {
           </button>
         </div>
       </header>
+
+      {/* ── Jaquar Style Category Mega Menu Dropdown ── */}
+      <HeaderMegaMenu
+        activeMenu={activeMegaMenu}
+        onClose={() => setActiveMegaMenu(null)}
+        onMouseEnter={handleMegaMenuEnter}
+        onMouseLeave={handleMegaMenuLeave}
+      />
+
+      {/* Backdrop overlay when Mega Menu is open */}
+      {activeMegaMenu && (
+        <div
+          onClick={() => setActiveMegaMenu(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9997,
+            backgroundColor: "rgba(0, 0, 0, 0.32)",
+            backdropFilter: "blur(2px)",
+            WebkitBackdropFilter: "blur(2px)",
+            transition: "opacity 0.2s ease",
+          }}
+        />
+      )}
 
 
 

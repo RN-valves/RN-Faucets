@@ -49,21 +49,24 @@ const PinterestIcon = () => (
 );
 
 const NAV_COLUMN_1 = [
-  { label: "About Us", href: "/about-us" },
-  { label: "Blogs", href: "/blogs" },
-  { label: "Our CSR", href: "/corporate-social-responsibility" },
-];
-const NAV_COLUMN_2 = [
-  { label: "Become our Dealer", href: "/business-user-registration" },
-  { label: "Our Certification", href: "/certificates" },
+  { label: "About RN Valves", href: "/about-us" },
+  { label: "Career with us", href: "/career" },
+  { label: "Our Blogs", href: "/blogs" },
   { label: "Contact Us", href: "/contact-us" },
 ];
+const NAV_COLUMN_2 = [
+  { label: "PTMT Faucets", href: "/faucets/ptmt-taps-or-faucets" },
+  { label: "CP Faucets", href: "/faucets/cp-faucets" },
+  { label: "Showers", href: "/faucets/showers" },
+  { label: "Store Locator", href: "/store-locator" },
+];
 const NAV_COLUMN_3 = [
-  { label: "Personal Account", href: "/retail-user-registration" },
-  { label: "Business Account", href: "/business-user-registration" },
   { label: "Privacy Policy", href: "/privacy-policy" },
   { label: "Return & Refund Policy", href: "/return-refund-policy" },
   { label: "Terms & Conditions", href: "/terms-conditions" },
+  { label: "Our Certification", href: "/certificates" },
+  { label: "Our CSR", href: "/corporate-social-responsibility" },
+  { label: "Become our Dealer", href: "/business-user-registration" },
 ];
 const SOCIAL_LINKS = [
   { Component: InstagramIcon, label: "Instagram", href: "https://www.instagram.com/rnvalvesandfaucets/" },
