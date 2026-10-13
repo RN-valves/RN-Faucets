@@ -1,9 +1,11 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-const accountId = process.env.CLOUDFLARE_R2_ACCOUNT_ID;
-const accessKeyId = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID || "";
-const secretAccessKey = process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY || "";
+const accountId = process.env.CLOUDFLARE_R2_ACCOUNT_ID || "bf7e318076e373b40fa58fda9d78bfc4";
+const accessKeyId =
+  process.env.CLOUDFLARE_R2_ACCESS_KEY_ID || "d7fb567ac5c01114c7e3baf920878b30";
+const secretAccessKey =
+  process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY || "5f4012de8878f38d845d69cd14a305f7072636904bad67e1e2785cbfd6f740b5";
 
 export const R2_BUCKET = process.env.CLOUDFLARE_R2_BUCKET_NAME || "rnfaucets-media";
 export const R2_ENDPOINT =
@@ -17,6 +19,7 @@ export const r2Client = new S3Client({
     accessKeyId,
     secretAccessKey,
   },
+  maxAttempts: 3,
 });
 
 export async function getPresignedUploadUrl(key: string, contentType: string) {

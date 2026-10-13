@@ -213,7 +213,7 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
         minHeight: "100vh",
         backgroundColor: "#000000",
         color: "#FFFFFF",
-        padding: "clamp(90px, 12vh, 105px) 0 clamp(20px, 3vh, 35px)",
+        padding: "clamp(120px, 15vh, 140px) 0 clamp(24px, 3vh, 35px)",
         overflow: "hidden",
         position: "relative",
         display: "flex",
@@ -591,6 +591,13 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
                       loading="lazy"
                       decoding="async"
                       unoptimized
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        if (!target.dataset.fallback) {
+                          target.dataset.fallback = "1";
+                          target.src = DEFAULT_CATEGORY_PLACEHOLDER;
+                        }
+                      }}
                       style={{
                         objectFit: "cover",
                         objectPosition: "center",
@@ -612,6 +619,13 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
                         loading="lazy"
                         decoding="async"
                         unoptimized
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          if (!target.dataset.fallback) {
+                            target.dataset.fallback = "1";
+                            target.src = cat.image || DEFAULT_CATEGORY_PLACEHOLDER;
+                          }
+                        }}
                         style={{
                           objectFit: "cover",
                           objectPosition: "center",

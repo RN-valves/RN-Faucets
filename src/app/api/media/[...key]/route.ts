@@ -100,18 +100,17 @@ export async function GET(
     if (response.ContentRange) {
       headers.set("Content-Range", response.ContentRange);
     }
-    if (response.ContentLength !== undefined) {
-      headers.set("Content-Length", response.ContentLength.toString());
-    }
 
     const status = response.$metadata?.httpStatusCode || (response.ContentRange ? 206 : 200);
-
+    const isVideo = contentType.startsWith("video/");
     let body: any;
-    if (typeof (response.Body as any)?.transformToWebStream === "function") {
+
+    if (isVideo && typeof (response.Body as any)?.transformToWebStream === "function") {
       body = (response.Body as any).transformToWebStream();
     } else {
       const byteArray = await response.Body.transformToByteArray();
       body = Buffer.from(byteArray);
+      headers.set("Content-Length", body.length.toString());
     }
 
     return new Response(body, {
