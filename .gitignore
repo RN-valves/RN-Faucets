@@ -40,3 +40,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# scratch scripts & reports
+scripts/*.json
+scripts/*.html
+scripts/check-*
+scripts/inspect-*
+scripts/fix-broken-images-db.js
+scripts/update-footer-links.js

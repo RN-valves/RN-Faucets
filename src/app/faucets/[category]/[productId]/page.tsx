@@ -295,7 +295,7 @@ function AlsoLikeProductCard({
           )}
 
           {(() => {
-            const itemSelling = Number(item.inSelling ?? item.price ?? 0);
+            const itemSelling = (Number(item.inSelling) > 0 ? Number(item.inSelling) : (Number(item.price) || Number(item.inMrp) || 0));
             const itemMrp = Number(
               item.inV1Mrp ||
               item.in_v1_mrp ||
@@ -509,11 +509,15 @@ export default function FaucetProductPage({
     name: rawProduct?.name || "RN Bathware Product",
     code: rawProduct?.code || rawProduct?.skuCode || productId,
     price: Number(
-      rawProduct?.inSelling ??
-      rawProduct?.in_selling ??
-      rawProduct?.price ??
-      rawProduct?.inMrp ??
-      (rawProduct?.inV1Mrp || rawProduct?.in_v1_mrp || rawProduct?.v1_mrp ? Number(rawProduct?.inV1Mrp || rawProduct?.in_v1_mrp || rawProduct?.v1_mrp) * 0.5 : 1018)
+      (rawProduct?.inSelling && Number(rawProduct.inSelling) > 0)
+        ? rawProduct.inSelling
+        : (rawProduct?.in_selling && Number(rawProduct.in_selling) > 0)
+        ? rawProduct.in_selling
+        : (rawProduct?.price && Number(rawProduct.price) > 0)
+        ? rawProduct.price
+        : (rawProduct?.inMrp && Number(rawProduct.inMrp) > 0)
+        ? rawProduct.inMrp
+        : (rawProduct?.inV1Mrp || rawProduct?.in_v1_mrp || rawProduct?.v1_mrp ? Number(rawProduct?.inV1Mrp || rawProduct?.in_v1_mrp || rawProduct?.v1_mrp) * 0.5 : 1018)
     ),
     originalPrice: Number(
       (rawProduct?.inV1Mrp && rawProduct.inV1Mrp > 0)
@@ -1383,7 +1387,7 @@ export default function FaucetProductPage({
                         const vId = String(variant.id || variant.code);
                         const vSize = (variant.size || "Standard").trim();
                         const isSelected = String(product.id) === vId || vSize === product.size;
-                        const vPrice = Number(variant.inSelling ?? variant.price ?? product.price);
+                        const vPrice = Number((variant.inSelling && Number(variant.inSelling) > 0) ? variant.inSelling : (variant.price || product.price || 0));
 
                         return (
                           <Link

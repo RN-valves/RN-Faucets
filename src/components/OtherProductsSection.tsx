@@ -112,7 +112,7 @@ export default function OtherProductsSection({
     e.stopPropagation();
 
     const itemId = String(item.code || item.id || item.article || "prod");
-    const sellingPrice = Number(item.inSelling ?? item.price ?? 0);
+    const sellingPrice = (Number(item.inSelling) > 0 ? Number(item.inSelling) : (Number(item.price) || Number(item.inMrp) || 0));
 
     addToCart({
       id: itemId,
@@ -178,7 +178,7 @@ export default function OtherProductsSection({
         >
           {products.map((item, idx) => {
             const itemKey = item.code || item.id || item.article || String(idx);
-            const sellingPrice = Number(item.inSelling ?? item.price ?? 0);
+            const sellingPrice = (Number(item.inSelling) > 0 ? Number(item.inSelling) : (Number(item.price) || Number(item.inMrp) || 0));
             const mrp = Number(item.inMrp ?? item.originalPrice ?? 0);
             const hasDiscount = mrp > sellingPrice && sellingPrice > 0;
             const discountPercent = hasDiscount

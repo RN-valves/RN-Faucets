@@ -105,6 +105,17 @@ function getBaseProductName(name: string): string {
   return base.trim();
 }
 
+function getProductPrice(p: any): number {
+  if (!p) return 0;
+  const inSelling = Number(p.inSelling);
+  if (!isNaN(inSelling) && inSelling > 0) return inSelling;
+  const price = Number(p.price);
+  if (!isNaN(price) && price > 0) return price;
+  const inMrp = Number(p.inMrp);
+  if (!isNaN(inMrp) && inMrp > 0) return inMrp;
+  return 0;
+}
+
 export interface CategoryClientProps {
   category: string;
   initialCategoryData?: any;
@@ -276,7 +287,7 @@ export default function CategoryClient({
     let min = Infinity;
     let max = 0;
     baseProducts.forEach((p) => {
-      const pr = Number(p.inSelling ?? p.price ?? 0);
+      const pr = getProductPrice(p);
       if (pr > 0) {
         if (pr < min) min = pr;
         if (pr > max) max = pr;
@@ -410,7 +421,7 @@ export default function CategoryClient({
     const maxP = parseFloat(maxPriceInput);
 
     const filtered = baseProducts.filter((p) => {
-      const price = Number(p.inSelling ?? p.price ?? 0);
+      const price = getProductPrice(p);
       if (!isNaN(minP) && price < minP) return false;
       if (!isNaN(maxP) && price > maxP) return false;
 
@@ -434,13 +445,13 @@ export default function CategoryClient({
 
     return filtered.sort((a, b) => {
       if (sortBy === "price_low_high") {
-        const priceA = Number(a.inSelling ?? a.price ?? 0);
-        const priceB = Number(b.inSelling ?? b.price ?? 0);
+        const priceA = getProductPrice(a);
+        const priceB = getProductPrice(b);
         return priceA - priceB;
       }
       if (sortBy === "price_high_low") {
-        const priceA = Number(a.inSelling ?? a.price ?? 0);
-        const priceB = Number(b.inSelling ?? b.price ?? 0);
+        const priceA = getProductPrice(a);
+        const priceB = getProductPrice(b);
         return priceB - priceA;
       }
       if (sortBy === "name_a_z") {
@@ -487,7 +498,7 @@ export default function CategoryClient({
       const artCompare = artA.localeCompare(artB, undefined, { numeric: true, sensitivity: "base" });
       if (artCompare !== 0) return artCompare;
 
-      return Number(a.inSelling ?? a.price ?? 0) - Number(b.inSelling ?? b.price ?? 0);
+      return getProductPrice(a) - getProductPrice(b);
     });
   }, [baseProducts, selectedNames, selectedColors, selectedSizes, selectedCollections, minPriceInput, maxPriceInput, sortBy]);
 
@@ -2261,7 +2272,7 @@ export default function CategoryClient({
                     const prodCode = product.code || product.skuCode || product.id;
                     const articleNo = product.article || product.code || product.skuCode || "";
                     const sizeVal = product.size || "";
-                    const priceVal = Number(product.inSelling ?? product.price ?? 0);
+                    const priceVal = getProductPrice(product);
                     const catSegment = (product.subcategoryId || product.category || category || "all")
                       .toString()
                       .toLowerCase()

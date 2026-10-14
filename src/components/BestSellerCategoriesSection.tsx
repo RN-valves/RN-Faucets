@@ -248,7 +248,7 @@ function processCategoryProducts(
 
     if (collectionProducts.length > 0) {
       return collectionProducts.slice(0, 12).map((p: any, idx: number) => {
-        const priceNum = Number(p.inSelling ?? p.price ?? 0);
+        const priceNum = (Number(p.inSelling) > 0 ? Number(p.inSelling) : (Number(p.price) || Number(p.inMrp) || 0));
         const formattedPrice =
           priceNum > 0 ? `₹${priceNum.toLocaleString("en-IN")}` : "₹1,490";
         const sku = p.skuCode || p.code || p.article || `RN-${p.id || idx}`;
@@ -349,7 +349,7 @@ function processCategoryProducts(
       : active.slice(0, 12);
 
   return finalProducts.slice(0, 12).map((p: any, idx: number) => {
-    const priceNum = Number(p.inSelling ?? p.price ?? 0);
+    const priceNum = (Number(p.inSelling) > 0 ? Number(p.inSelling) : (Number(p.price) || Number(p.inMrp) || 0));
     const formattedPrice = priceNum > 0 ? `₹${priceNum.toLocaleString("en-IN")}` : "₹1,490";
     const sku = p.skuCode || p.code || p.article || `RN-${p.id || idx}`;
     const rawImage =

@@ -131,7 +131,7 @@ export default async function CategoryPage({
     const [prodDocs, catDocs, subDocs] = await Promise.all([
       Product.find(productQuery)
         .select(
-          "id code skuCode name image price inSelling size article colorName category categoryId categoryName categorySlug subcategory subcategoryId subcategoryName subcategorySlug collectionName series slug displayOrder createdAt"
+          "id code skuCode name image price inMrp inSelling size article colorName category categoryId categoryName categorySlug subcategory subcategoryId subcategoryName subcategorySlug collectionName series slug displayOrder createdAt"
         )
         .sort({ displayOrder: 1, createdAt: -1 })
         .lean(),

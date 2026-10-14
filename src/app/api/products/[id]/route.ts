@@ -94,6 +94,17 @@ export async function PUT(
       }
     }
 
+    // Safeguard: Ensure inSelling/inMrp/price are synchronized if any positive price exists
+    if ((!body.inSelling || body.inSelling <= 0) && ((body.price && body.price > 0) || (body.inMrp && body.inMrp > 0))) {
+      body.inSelling = (body.price && body.price > 0) ? body.price : body.inMrp;
+    }
+    if ((!body.inMrp || body.inMrp <= 0) && ((body.price && body.price > 0) || (body.inSelling && body.inSelling > 0))) {
+      body.inMrp = (body.price && body.price > 0) ? body.price : body.inSelling;
+    }
+    if ((!body.price || body.price <= 0) && ((body.inSelling && body.inSelling > 0) || (body.inMrp && body.inMrp > 0))) {
+      body.price = (body.inSelling && body.inSelling > 0) ? body.inSelling : body.inMrp;
+    }
+
     // Synchronize stock and stockPcs fields
     if (typeof body.stock === "number") {
       body.stockPcs = body.stock;
