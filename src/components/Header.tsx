@@ -245,7 +245,7 @@ function CatalogueDashboard({
                       width: "100%",
                       height: "100%",
                       objectFit: "contain",
-                      transform: "scale(1.08)",
+                      transform: "scale(1.02)",
                     }}
                     onError={(e) => {
                       (e.currentTarget as HTMLImageElement).src = "/api/media/website/catalogue/products/default/image.webp";
@@ -336,7 +336,6 @@ function CatalogueDashboard({
                       style={{
                         width: "100%",
                         height: "100%",
-                        maxHeight: "195px",
                         objectFit: "contain",
                       }}
                       onError={(e) => {
@@ -384,7 +383,6 @@ function CatalogueDashboard({
                   style={{
                     width: "100%",
                     height: "100%",
-                    maxHeight: "195px",
                     objectFit: "contain",
                   }}
                 />
@@ -1364,13 +1362,13 @@ export default function Header({ data }: HeaderProps) {
 
           /* ── Mega Menu & Catalogue Dashboard Responsive System ── */
           .user-menu-backdrop {
-            flex: 0 0 24vw;
+            flex: 0 0 22vw;
             height: 100%;
             cursor: pointer;
             transition: flex 0.35s cubic-bezier(0.16, 1, 0.3, 1);
           }
           .user-menu-backdrop.is-catalogue-open {
-            flex: 0 0 clamp(16px, 2.5vw, 40px);
+            flex: 0 0 clamp(0px, 1.5vw, 28px);
           }
 
           .user-menu-slider {
@@ -1385,13 +1383,14 @@ export default function Header({ data }: HeaderProps) {
           }
 
           .user-menu-panel {
-            width: 320px;
-            min-width: 320px;
+            width: 310px;
+            min-width: 310px;
             height: 100vh;
+            height: 100dvh;
             overflow-y: auto;
             background: linear-gradient(180deg, #020e1f 0%, #010813 100%);
             border-right: 1px solid rgba(0, 174, 239, 0.12);
-            padding: 32px 36px;
+            padding: 32px 32px;
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
@@ -1399,24 +1398,34 @@ export default function Header({ data }: HeaderProps) {
             transition: width 0.3s ease, min-width 0.3s ease, padding 0.3s ease;
           }
           .user-menu-panel.is-catalogue-open {
-            width: clamp(210px, 15vw, 250px);
-            min-width: clamp(210px, 15vw, 250px);
+            width: clamp(185px, 13.5vw, 235px);
+            min-width: clamp(185px, 13.5vw, 235px);
             padding: 28px 20px;
+          }
+
+          .user-menu-media-panel {
+            flex: 1;
+            display: flex;
+            justify-content: flex-end;
+            align-items: flex-start;
+            overflow: hidden;
+            background: #020e1f;
           }
 
           .catalogue-canvas {
             flex: 1;
             min-width: 0;
             height: 100vh;
+            height: 100dvh;
             background: #eaf0f6;
             background-image:
               radial-gradient(ellipse 95% 80% at 50% 15%, #ffffff 0%, transparent 60%),
               linear-gradient(180deg, #f4f8fb 0%, #eaf0f6 50%, #dfe7ef 100%);
-            padding: 22px 26px;
+            padding: 20px 22px;
             box-sizing: border-box;
             border-left: 1px solid rgba(148, 163, 184, 0.3);
             display: flex;
-            gap: 24px;
+            gap: 20px;
             overflow: hidden;
           }
 
@@ -1424,22 +1433,25 @@ export default function Header({ data }: HeaderProps) {
             display: none;
           }
 
-          /* ── Larger Categories Column (Left/Middle) ── */
+          /* ── Categories Column (Left/Middle) ── */
           .catalogue-categories-aside {
-            width: clamp(370px, 30vw, 470px);
-            min-width: clamp(370px, 30vw, 470px);
+            width: clamp(265px, 21vw, 355px);
+            min-width: clamp(265px, 21vw, 355px);
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            height: calc(100vh - 44px);
+            gap: 10px;
+            height: 100%;
             overflow-y: auto;
-            padding-right: 10px;
+            padding-right: 8px;
+            padding-bottom: 16px;
             flex-shrink: 0;
+            box-sizing: border-box;
             scrollbar-width: thin;
             scrollbar-color: rgba(0, 119, 182, 0.35) transparent;
           }
           .catalogue-categories-aside::-webkit-scrollbar {
             width: 4px;
+            height: 4px;
           }
           .catalogue-categories-aside::-webkit-scrollbar-thumb {
             background: rgba(0, 119, 182, 0.35);
@@ -1450,12 +1462,13 @@ export default function Header({ data }: HeaderProps) {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding-bottom: 12px;
+            padding-bottom: 10px;
             border-bottom: 1px solid rgba(148, 163, 184, 0.25);
-            margin-bottom: 4px;
+            margin-bottom: 2px;
+            flex-shrink: 0;
           }
           .catalogue-categories-header-title {
-            font-size: 13px;
+            font-size: 12.5px;
             font-weight: 800;
             letter-spacing: 0.12em;
             text-transform: uppercase;
@@ -1463,7 +1476,7 @@ export default function Header({ data }: HeaderProps) {
             font-family: 'Manrope', system-ui, sans-serif;
           }
           .catalogue-categories-header-count {
-            font-size: 12.5px;
+            font-size: 12px;
             color: #64748B;
             font-weight: 700;
             font-family: 'Manrope', system-ui, sans-serif;
@@ -1472,49 +1485,49 @@ export default function Header({ data }: HeaderProps) {
           .catalogue-categories-list {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
           }
 
           .catalogue-category-btn {
             display: grid;
-            grid-template-columns: 104px 1fr auto;
+            grid-template-columns: clamp(64px, 5vw, 84px) minmax(0, 1fr) auto;
             align-items: center;
-            gap: 16px;
-            padding: 12px 16px;
-            border-radius: 18px;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: 16px;
             border: 1px solid rgba(203, 213, 225, 0.9);
             background: rgba(255, 255, 255, 0.92);
-            box-shadow: 0 2px 10px rgba(18, 42, 62, 0.07);
+            box-shadow: 0 2px 10px rgba(18, 42, 62, 0.06);
             cursor: pointer;
             text-align: left;
             width: 100%;
-            min-height: 114px;
+            min-height: clamp(80px, 6.2vw, 96px);
             color: inherit;
             transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
             outline: none;
             box-sizing: border-box;
           }
           .catalogue-category-btn:hover {
-            transform: translateX(4px);
+            transform: translateX(3px);
             background: #ffffff;
             border-color: #93c5fd;
-            box-shadow: 0 8px 24px rgba(18, 42, 62, 0.13);
+            box-shadow: 0 6px 20px rgba(18, 42, 62, 0.12);
           }
           .catalogue-category-btn.is-active {
             border: 2px solid #00AEEF;
             background: linear-gradient(90deg, #ffffff 0%, #e0f2fe 100%);
-            box-shadow: 0 6px 22px rgba(0, 174, 239, 0.28);
+            box-shadow: 0 6px 20px rgba(0, 174, 239, 0.24);
           }
 
           .catalogue-category-thumb {
-            width: 104px;
-            height: 104px;
-            border-radius: 16px;
+            width: clamp(64px, 5vw, 84px);
+            height: clamp(64px, 5vw, 84px);
+            border-radius: 12px;
             background-color: #ffffff;
             border: 1px solid rgba(148, 163, 184, 0.3);
             flex-shrink: 0;
             padding: 4px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1523,39 +1536,41 @@ export default function Header({ data }: HeaderProps) {
           }
           .catalogue-category-btn.is-active .catalogue-category-thumb {
             border-color: #00AEEF;
-            box-shadow: 0 2px 12px rgba(0, 174, 239, 0.32);
+            box-shadow: 0 2px 10px rgba(0, 174, 239, 0.28);
           }
 
           .catalogue-category-name {
             margin: 0;
             color: #1e293b;
             font-family: 'Manrope', system-ui, sans-serif;
-            font-size: 16.5px;
+            font-size: clamp(13.5px, 1vw, 15.5px);
             font-weight: 700;
-            line-height: 1.35;
+            line-height: 1.32;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+            overflow-wrap: break-word;
           }
           .catalogue-category-btn.is-active .catalogue-category-name {
             color: #0f172a;
             font-weight: 800;
-            font-size: 17px;
           }
 
-          /* ── Right Column: Subcategories Showcase with Studio Gradient Fill (Like Before) ── */
+          /* ── Right Column: Subcategories Showcase with Studio Gradient Fill ── */
           .catalogue-subcategories-col {
             flex: 1;
             min-width: 0;
             display: flex;
             flex-direction: column;
-            gap: 18px;
-            height: calc(100vh - 44px);
+            gap: 16px;
+            height: 100%;
             overflow-y: auto;
-            padding-right: 8px;
+            padding-right: 6px;
+            padding-bottom: 24px;
             border-left: 1px solid rgba(148, 163, 184, 0.25);
-            padding-left: 24px;
+            padding-left: 20px;
+            box-sizing: border-box;
             scrollbar-width: thin;
             scrollbar-color: rgba(0, 119, 182, 0.35) transparent;
           }
@@ -1573,8 +1588,9 @@ export default function Header({ data }: HeaderProps) {
             justify-content: space-between;
             flex-wrap: wrap;
             gap: 12px;
-            padding-bottom: 14px;
+            padding-bottom: 12px;
             border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+            flex-shrink: 0;
           }
           .catalogue-subcategories-subtitle {
             display: inline-flex;
@@ -1592,7 +1608,7 @@ export default function Header({ data }: HeaderProps) {
             margin: 0;
             color: #0a192f;
             font-family: 'Manrope', system-ui, sans-serif;
-            font-size: clamp(22px, 2vw, 28px);
+            font-size: clamp(19px, 1.7vw, 26px);
             font-weight: 800;
             letter-spacing: -0.02em;
             line-height: 1.25;
@@ -1602,11 +1618,11 @@ export default function Header({ data }: HeaderProps) {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 9px 18px;
+            padding: 9px 16px;
             border-radius: 10px;
             background: linear-gradient(90deg, #0077B6 0%, #00AEEF 100%);
             color: #FFFFFF;
-            font-size: 13px;
+            font-size: 12.5px;
             font-weight: 700;
             font-family: 'Manrope', system-ui, sans-serif;
             border: none;
@@ -1631,9 +1647,9 @@ export default function Header({ data }: HeaderProps) {
 
           .catalogue-subcat-card {
             display: grid;
-            grid-template-columns: clamp(160px, 50%, 220px) 1fr;
-            min-height: 215px;
-            border-radius: 18px;
+            grid-template-columns: minmax(90px, 43%) minmax(0, 57%);
+            min-height: clamp(175px, 13.5vw, 205px);
+            border-radius: 16px;
             overflow: hidden;
             cursor: pointer;
             text-decoration: none;
@@ -1656,9 +1672,9 @@ export default function Header({ data }: HeaderProps) {
           .catalogue-subcat-fallback-card {
             grid-column: 1 / -1;
             display: grid;
-            grid-template-columns: clamp(160px, 45%, 220px) 1fr;
-            min-height: 215px;
-            border-radius: 18px;
+            grid-template-columns: minmax(110px, 40%) minmax(0, 60%);
+            min-height: 195px;
+            border-radius: 16px;
             overflow: hidden;
             cursor: pointer;
             isolation: isolate;
@@ -1672,12 +1688,13 @@ export default function Header({ data }: HeaderProps) {
           }
 
           .catalogue-card-img-panel {
+            width: 100%;
             height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
-            padding: 4px 0 4px 8px;
+            padding: 10px 4px 10px 10px;
             box-sizing: border-box;
             background: transparent !important;
             box-shadow: none !important;
@@ -1685,25 +1702,26 @@ export default function Header({ data }: HeaderProps) {
           .catalogue-card-img {
             width: 100%;
             height: 100%;
-            max-height: 195px;
+            max-height: 155px;
             object-fit: contain;
-            transform: scale(1.22);
-            filter: drop-shadow(0 16px 26px rgba(12, 24, 38, 0.24));
-            transition: transform 0.4s ease, filter 0.4s ease;
+            transform: scale(1.02);
+            filter: drop-shadow(0 12px 20px rgba(12, 24, 38, 0.22));
+            transition: transform 0.35s ease, filter 0.35s ease;
           }
           .catalogue-subcat-card:hover .catalogue-card-img {
-            transform: scale(1.3);
-            filter: drop-shadow(0 20px 32px rgba(12, 24, 38, 0.32));
+            transform: scale(1.08);
+            filter: drop-shadow(0 16px 26px rgba(12, 24, 38, 0.3));
           }
 
           .catalogue-card-info-panel {
-            padding: 18px 16px 16px 8px;
+            padding: 14px 14px 12px 8px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            gap: 8px;
+            gap: 6px;
             box-sizing: border-box;
             min-width: 0;
+            overflow: hidden;
             background: transparent;
           }
 
@@ -1711,27 +1729,34 @@ export default function Header({ data }: HeaderProps) {
             margin: 0;
             color: #0a192f;
             font-family: 'Manrope', system-ui, sans-serif;
-            font-size: clamp(15.5px, 1.2vw, 17.5px);
+            font-size: clamp(14px, 1.05vw, 16.5px);
             font-weight: 800;
-            line-height: 1.3;
+            line-height: 1.28;
             letter-spacing: -0.01em;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            overflow-wrap: break-word;
+            word-break: break-word;
           }
           .catalogue-card-desc {
             margin: 0;
             color: #1e293b;
             font-family: 'Manrope', system-ui, sans-serif;
-            font-size: clamp(12px, 0.95vw, 13px);
+            font-size: clamp(11.5px, 0.85vw, 12.5px);
             font-weight: 600;
-            line-height: 1.45;
+            line-height: 1.4;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+            overflow-wrap: break-word;
           }
 
           .catalogue-card-arrow-circle {
-            width: 34px;
-            height: 34px;
+            width: 32px;
+            height: 32px;
             border-radius: 999px;
             border: 1px solid rgba(255, 255, 255, 0.6);
             display: inline-flex;
@@ -1751,55 +1776,43 @@ export default function Header({ data }: HeaderProps) {
 
           /* ── Responsive Viewport Breakpoints ── */
 
-          /* 1. Smaller Desktop & Laptops (max-width: 1280px) -> Exactly 2 Cards */
-          @media (max-width: 1280px) {
-            .catalogue-subcategories-grid {
-              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-              gap: 12px !important;
-            }
-            .catalogue-categories-aside {
-              width: 300px !important;
-              min-width: 300px !important;
-            }
-            .user-menu-backdrop.is-catalogue-open {
-              flex: 0 0 12px !important;
-            }
-          }
-
-          /* 2. Standard Laptops (max-width: 1100px) -> 2 Cards */
-          @media (max-width: 1100px) {
+          /* 1. Standard Laptops (max-width: 1340px) -> 2 Spacious Cards per Row */
+          @media (max-width: 1340px) {
             .user-menu-backdrop.is-catalogue-open {
               flex: 0 0 0px !important;
               width: 0 !important;
             }
             .user-menu-panel.is-catalogue-open {
-              width: 210px !important;
-              min-width: 210px !important;
+              width: 195px !important;
+              min-width: 195px !important;
               padding: 24px 16px !important;
             }
             .catalogue-canvas {
-              padding: 16px !important;
+              padding: 16px 18px !important;
               gap: 16px !important;
             }
             .catalogue-categories-aside {
-              width: 280px !important;
-              min-width: 280px !important;
+              width: clamp(245px, 23vw, 290px) !important;
+              min-width: clamp(245px, 23vw, 290px) !important;
             }
             .catalogue-subcategories-col {
               padding-left: 16px !important;
             }
             .catalogue-subcategories-grid {
               grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-              gap: 10px !important;
+              gap: 12px !important;
             }
           }
 
-          /* 3. Small Screen Desktops & Tablets (max-width: 900px) */
-          @media (max-width: 900px) {
+          /* 2. Tablets & Small Laptops (max-width: 1024px) -> Stacked Top Categories + 2-Column Grid */
+          @media (max-width: 1024px) {
             .user-menu-backdrop {
+              flex: 0 0 12vw !important;
+            }
+            .user-menu-backdrop.is-catalogue-open {
               display: none !important;
             }
-            .user-menu-slider {
+            .user-menu-slider.is-catalogue-open {
               width: 100vw !important;
               max-width: 100vw !important;
             }
@@ -1810,9 +1823,9 @@ export default function Header({ data }: HeaderProps) {
               display: flex !important;
               align-items: center;
               justify-content: space-between;
-              padding-bottom: 12px;
+              padding-bottom: 10px;
               border-bottom: 1px solid rgba(148, 163, 184, 0.3);
-              margin-bottom: 4px;
+              flex-shrink: 0;
             }
             .catalogue-back-btn {
               display: inline-flex;
@@ -1825,7 +1838,7 @@ export default function Header({ data }: HeaderProps) {
               font-size: 14px;
               font-weight: 700;
               cursor: pointer;
-              padding: 0;
+              padding: 4px 0;
             }
             .catalogue-topbar-title {
               font-family: 'Manrope', system-ui, sans-serif;
@@ -1838,70 +1851,169 @@ export default function Header({ data }: HeaderProps) {
               border: none;
               color: #64748B;
               cursor: pointer;
-              padding: 0;
+              padding: 4px;
               display: flex;
             }
             .catalogue-canvas {
               width: 100vw !important;
               flex-direction: column !important;
               height: 100vh !important;
-              padding: 16px !important;
+              height: 100dvh !important;
+              padding: 14px 16px !important;
               gap: 12px !important;
               border-left: none !important;
+              overflow: hidden !important;
             }
             .catalogue-categories-aside {
               width: 100% !important;
-              min-width: 100% !important;
+              min-width: 0 !important;
               height: auto !important;
-              max-height: 170px !important;
-              flex-direction: row !important;
-              overflow-x: auto !important;
-              overflow-y: hidden !important;
-              padding-bottom: 6px !important;
+              max-height: none !important;
+              flex-shrink: 0 !important;
+              overflow: visible !important;
+              padding-right: 0 !important;
+              padding-bottom: 0 !important;
             }
             .catalogue-categories-header {
               display: none !important;
             }
             .catalogue-categories-list {
+              display: flex !important;
               flex-direction: row !important;
-              gap: 8px !important;
+              flex-wrap: nowrap !important;
+              gap: 10px !important;
               width: 100% !important;
+              overflow-x: auto !important;
+              overflow-y: hidden !important;
+              padding-bottom: 6px !important;
+              -webkit-overflow-scrolling: touch;
+              scrollbar-width: thin;
             }
             .catalogue-category-btn {
-              width: 220px !important;
-              min-width: 220px !important;
+              width: clamp(195px, 34vw, 240px) !important;
+              min-width: clamp(195px, 34vw, 240px) !important;
               flex-shrink: 0 !important;
-              min-height: 70px !important;
-              grid-template-columns: 56px 1fr auto !important;
+              min-height: 66px !important;
+              padding: 8px 12px !important;
+              grid-template-columns: 48px minmax(0, 1fr) auto !important;
               gap: 10px !important;
+              border-radius: 14px !important;
+            }
+            .catalogue-category-btn:hover {
+              transform: none !important;
             }
             .catalogue-category-thumb {
-              width: 56px !important;
-              height: 56px !important;
+              width: 48px !important;
+              height: 48px !important;
+              border-radius: 10px !important;
+            }
+            .catalogue-category-name {
+              font-size: 13px !important;
+              line-height: 1.25 !important;
             }
             .catalogue-subcategories-col {
+              flex: 1 1 0% !important;
+              min-height: 0 !important;
+              height: auto !important;
               width: 100% !important;
               border-left: none !important;
               padding-left: 0 !important;
+              padding-right: 4px !important;
               border-top: 1px solid rgba(148, 163, 184, 0.25) !important;
               padding-top: 12px !important;
-              height: calc(100vh - 230px) !important;
+              overflow-y: auto !important;
+              -webkit-overflow-scrolling: touch;
             }
             .catalogue-subcategories-grid {
               grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-              gap: 10px !important;
+              gap: 12px !important;
+              padding-bottom: 20px !important;
+            }
+            .catalogue-subcat-card {
+              min-height: 165px !important;
+              grid-template-columns: 42% 58% !important;
             }
           }
 
-          /* 4. Mobile Phones (max-width: 640px) */
+          /* 3. Mobile & Small Tablets (max-width: 768px) -> Full-Screen Menu Drawer */
+          @media (max-width: 768px) {
+            .user-menu-backdrop {
+              display: none !important;
+            }
+            .user-menu-slider {
+              width: 100vw !important;
+              max-width: 100vw !important;
+            }
+            .user-menu-panel {
+              width: 100% !important;
+              min-width: 100% !important;
+              padding: 28px 24px !important;
+            }
+            .user-menu-media-panel {
+              display: none !important;
+            }
+          }
+
+          /* 4. Mobile Phones (max-width: 640px) -> 1 Card per Row */
           @media (max-width: 640px) {
+            .catalogue-canvas {
+              padding: 12px !important;
+              gap: 10px !important;
+            }
+            .catalogue-category-btn {
+              width: 185px !important;
+              min-width: 185px !important;
+              min-height: 60px !important;
+              padding: 7px 10px !important;
+              grid-template-columns: 44px minmax(0, 1fr) auto !important;
+              gap: 8px !important;
+            }
+            .catalogue-category-thumb {
+              width: 44px !important;
+              height: 44px !important;
+            }
+            .catalogue-category-name {
+              font-size: 12.5px !important;
+            }
+            .catalogue-subcategories-header {
+              gap: 8px !important;
+              padding-bottom: 10px !important;
+            }
+            .catalogue-subcategories-title {
+              font-size: clamp(16px, 4.5vw, 20px) !important;
+            }
+            .catalogue-view-range-btn {
+              padding: 7px 12px !important;
+              font-size: 12px !important;
+              border-radius: 8px !important;
+              gap: 4px !important;
+            }
             .catalogue-subcategories-grid {
               grid-template-columns: 1fr !important;
               gap: 10px !important;
+              padding-bottom: 24px !important;
             }
-            .catalogue-subcat-card {
-              min-height: 155px !important;
-              grid-template-columns: clamp(105px, 34%, 130px) 1fr !important;
+            .catalogue-subcat-card,
+            .catalogue-subcat-fallback-card {
+              min-height: 145px !important;
+              grid-template-columns: 38% 62% !important;
+              border-radius: 14px !important;
+            }
+            .catalogue-card-img {
+              max-height: 125px !important;
+            }
+            .catalogue-card-info-panel {
+              padding: 12px 12px 12px 6px !important;
+            }
+            .catalogue-card-title {
+              font-size: 15px !important;
+            }
+            .catalogue-card-desc {
+              font-size: 12px !important;
+            }
+            .catalogue-card-arrow-circle {
+              width: 30px !important;
+              height: 30px !important;
             }
           }
         `}</style>
@@ -1934,15 +2046,16 @@ export default function Header({ data }: HeaderProps) {
                 padding: 0,
                 alignSelf: "flex-start",
                 display: "flex",
+                outline: "none",
               }}
             >
               <X size={28} strokeWidth={1.5} />
             </button>
             
             {/* Menu Items */}
-            <ul style={{ listStyle: "none", padding: 0, margin: "48px 0 0" }}>
+            <ul style={{ listStyle: "none", padding: 0, margin: "44px 0 0" }}>
               {USER_MENU_LINKS.map((link) => (
-                <li key={link} style={{ marginBottom: "28px", border: "none", boxShadow: "none" }}>
+                <li key={link} style={{ marginBottom: "26px", border: "none", boxShadow: "none" }}>
                   <a
                     href="#"
                     onClick={(e) => {
@@ -1963,23 +2076,24 @@ export default function Header({ data }: HeaderProps) {
                     style={{
                       textDecoration: "none",
                       fontFamily: "'Inter', 'Helvetica Neue', Helvetica, 'Manrope', system-ui, sans-serif",
-                      fontSize: "22px",
-                      fontWeight: 300,
+                      fontSize: "clamp(18px, 1.35vw, 22px)",
+                      fontWeight: activeUserMenuLink === link ? 500 : 300,
                       letterSpacing: "-0.01em",
                       color:
                         activeUserMenuLink === link ? "#ffffff" : "rgba(255, 255, 255, 0.7)",
                       lineHeight: 1.4,
                       border: "none",
+                      outline: "none",
                       boxShadow: "none",
                       display: "inline-block",
                       transformOrigin: "left center",
                       position: "relative",
-                      paddingLeft: activeUserMenuLink === link ? "12px" : "0px",
-                      transition: "color 0.3s ease, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), text-shadow 0.3s ease",
+                      paddingLeft: activeUserMenuLink === link ? "14px" : "0px",
+                      transition: "color 0.3s ease, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), text-shadow 0.3s ease, padding-left 0.25s ease",
                     }}
                     onMouseEnter={(e) => {
                       (e.currentTarget as HTMLAnchorElement).style.color = "#ffffff";
-                      (e.currentTarget as HTMLAnchorElement).style.transform = "scale(1.08) translateX(4px)";
+                      (e.currentTarget as HTMLAnchorElement).style.transform = "scale(1.05) translateX(4px)";
                       (e.currentTarget as HTMLAnchorElement).style.textShadow = "0 0 15px rgba(255,255,255,0.3)";
                     }}
                     onMouseLeave={(e) => {
@@ -1993,13 +2107,13 @@ export default function Header({ data }: HeaderProps) {
                       <span
                         style={{
                           position: "absolute",
-                          left: "-18px",
-                          top: "2px",
-                          bottom: "2px",
+                          left: "0px",
+                          top: "3px",
+                          bottom: "3px",
                           width: "3px",
                           borderRadius: "999px",
                           background: "linear-gradient(180deg, #00AEEF 0%, #0077B6 100%)",
-                          boxShadow: "0 0 14px rgba(0, 174, 239, 0.85)",
+                          boxShadow: "0 0 12px rgba(0, 174, 239, 0.85)",
                         }}
                       />
                     ) : null}
@@ -2016,16 +2130,7 @@ export default function Header({ data }: HeaderProps) {
               onBack={() => setActiveUserMenuLink(null)}
             />
           ) : (
-            <div
-              style={{
-                flex: 1,
-                display: "flex",
-                justifyContent: "flex-end",
-                alignItems: "flex-start",
-                overflow: "hidden",
-                background: "#020e1f",
-              }}
-            >
+            <div className="user-menu-media-panel">
               {menuVideoSrc && menuVideoSrc.match(/\.(mp4|webm|mov|m4v)(\?.*)?$/i) ? (
                 <video
                   src={menuVideoSrc}

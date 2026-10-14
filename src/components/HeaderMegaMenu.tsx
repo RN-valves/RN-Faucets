@@ -267,20 +267,42 @@ export default function HeaderMegaMenu({
         .rn-megamenu-banner-card:hover img {
           transform: scale(1.04);
         }
+
+        .rn-megamenu-content {
+          max-width: 1440px;
+          margin: 0 auto;
+          padding: 28px clamp(20px, 3.5vw, 56px) 32px;
+          display: flex;
+          gap: clamp(24px, 3.5vw, 48px);
+          align-items: flex-start;
+          box-sizing: border-box;
+          max-height: calc(100vh - 56px);
+          overflow-y: auto;
+        }
+
+        .rn-megamenu-preview-col {
+          width: clamp(280px, 26vw, 390px);
+          flex-shrink: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+
+        @media (max-width: 1200px) {
+          .rn-megamenu-cols-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+          .rn-megamenu-preview-col {
+            width: 260px !important;
+          }
+          .rn-megamenu-banner-card {
+            height: 200px !important;
+          }
+        }
       `}</style>
 
       {/* Main Content Area */}
-      <div
-        style={{
-          maxWidth: "1440px",
-          margin: "0 auto",
-          padding: "32px clamp(24px, 4vw, 64px) 36px",
-          display: "flex",
-          gap: "clamp(32px, 4vw, 56px)",
-          alignItems: "flex-start",
-          boxSizing: "border-box",
-        }}
-      >
+      <div className="rn-megamenu-content">
         {/* Left / Middle: Multi-Column Collections & Subcategories */}
         <div style={{ flex: 1, minWidth: 0 }}>
           {/* Header Row above columns */}
@@ -344,10 +366,11 @@ export default function HeaderMegaMenu({
             </div>
           ) : (
             <div
+              className="rn-megamenu-cols-grid"
               style={{
                 display: "grid",
                 gridTemplateColumns: `repeat(${columns.length || 3}, minmax(0, 1fr))`,
-                gap: "8px 24px",
+                gap: "8px 20px",
                 alignItems: "start",
                 maxHeight: "380px",
                 overflowY: "auto",
@@ -355,7 +378,7 @@ export default function HeaderMegaMenu({
               }}
             >
               {columns.map((col, cIdx) => (
-                <div key={cIdx} style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                <div key={cIdx} style={{ display: "flex", flexDirection: "column", gap: "3px", minWidth: 0 }}>
                   {col.map((sub) => {
                     const isActive = hoveredSub?.id === sub.id;
                     return (
@@ -382,15 +405,7 @@ export default function HeaderMegaMenu({
         </div>
 
         {/* Right Section: Interactive Featured Banner & Preview (Updates on hover) */}
-        <div
-          style={{
-            width: "clamp(320px, 28vw, 410px)",
-            flexShrink: 0,
-            display: "flex",
-            flexDirection: "column",
-            gap: "14px",
-          }}
-        >
+        <div className="rn-megamenu-preview-col">
           {/* Card Media Preview */}
           <div
             className="rn-megamenu-banner-card"

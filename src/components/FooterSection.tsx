@@ -158,8 +158,13 @@ export default function FooterSection({ data }: FooterSectionProps) {
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", lineHeight: 1.75, margin: "0 0 8px 0", whiteSpace: "pre-line" }}>
               {addressText}
             </p>
-            <p style={{ fontSize: 14, margin: "0 0 5px 0" }}>
-              <a href={`tel:${phoneText.replace(/\s+/g, "")}`} style={{ color: "rgba(255,255,255,0.85)", textDecoration: "none" }}>{phoneText}</a>
+            <p style={{ fontSize: 14, margin: "0 0 5px 0", color: "rgba(255,255,255,0.85)" }}>
+              <span style={{ color: "rgba(255,255,255,0.7)" }}>Customer Care: </span>
+              <a href="tel:1800123400400" style={{ color: "rgba(255,255,255,0.95)", textDecoration: "none", fontWeight: 600 }}>1800 12340 0400</a>
+            </p>
+            <p style={{ fontSize: 14, margin: "0 0 5px 0", color: "rgba(255,255,255,0.85)" }}>
+              <span style={{ color: "rgba(255,255,255,0.7)" }}>Complaint No: </span>
+              <a href="tel:+919891201208" style={{ color: "rgba(255,255,255,0.95)", textDecoration: "none", fontWeight: 600 }}>+91 9891201208</a>
             </p>
             <p style={{ fontSize: 14, margin: "0 0 5px 0" }}>
               <a href={`mailto:${email1Text}`} style={{ color: "rgba(255,255,255,0.85)", textDecoration: "none" }}>{email1Text}</a>
