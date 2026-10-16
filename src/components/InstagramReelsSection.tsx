@@ -206,20 +206,27 @@ function ReelCard({
       el.defaultMuted = true;
       el.muted = true;
       el.playsInline = true;
+      el.setAttribute("muted", "");
+      el.setAttribute("playsinline", "");
+      el.setAttribute("webkit-playsinline", "true");
 
-      const handleCanPlay = () => {
-        if (videoRef.current && shouldPlay) {
-          playActiveVideo();
-        }
+      let hasStarted = false;
+      const startOnce = () => {
+        if (hasStarted || !videoRef.current || !shouldPlay) return;
+        hasStarted = true;
+        playActiveVideo();
       };
 
-      el.addEventListener("loadeddata", handleCanPlay);
-      el.addEventListener("canplay", handleCanPlay);
-      playActiveVideo();
+      if (el.readyState >= 2) {
+        startOnce();
+      } else {
+        el.addEventListener("loadeddata", startOnce, { once: true });
+        el.addEventListener("canplay", startOnce, { once: true });
+      }
 
       return () => {
-        el.removeEventListener("loadeddata", handleCanPlay);
-        el.removeEventListener("canplay", handleCanPlay);
+        el.removeEventListener("loadeddata", startOnce);
+        el.removeEventListener("canplay", startOnce);
         clearFallback();
         stopProgress();
       };
@@ -782,7 +789,7 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
         background: "#000000",
         display: "flex",
         alignItems: "center",
-        padding: "85px 0 85px 64px",
+        padding: "85px 36px 85px 64px",
         boxSizing: "border-box",
         overflow: "hidden",
       }}
@@ -808,25 +815,28 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
         .insta-reels-track::-webkit-scrollbar {
           display: none;
         }
-        @media (max-width: 1400px) {
+        @media (max-width: 1540px) {
+          .insta-reels-section {
+            padding: 72px 32px 72px 48px !important;
+          }
           .insta-reels-left {
-            width: 340px !important;
-            margin-right: 36px !important;
+            width: 320px !important;
+            margin-right: 32px !important;
           }
           .insta-reels-heading {
-            font-size: 50px !important;
+            font-size: 46px !important;
           }
         }
         @media (max-width: 1200px) {
           .insta-reels-section {
-            padding: 60px 0 60px 32px !important;
+            padding: 60px 28px 60px 32px !important;
           }
           .insta-reels-left {
-            width: 300px !important;
-            margin-right: 28px !important;
+            width: 280px !important;
+            margin-right: 24px !important;
           }
           .insta-reels-heading {
-            font-size: 42px !important;
+            font-size: 40px !important;
           }
         }
         @media (max-width: 860px) {

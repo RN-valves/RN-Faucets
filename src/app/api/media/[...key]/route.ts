@@ -110,6 +110,9 @@ export async function GET(
 
     if (isVideo && typeof (response.Body as any)?.transformToWebStream === "function") {
       body = (response.Body as any).transformToWebStream();
+      if (response.ContentLength !== undefined) {
+        headers.set("Content-Length", String(response.ContentLength));
+      }
     } else {
       const byteArray = await response.Body.transformToByteArray();
       body = Buffer.from(byteArray);

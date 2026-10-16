@@ -394,6 +394,18 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
           display: none;
         }
 
+        @media (max-height: 900px) and (min-width: 1024px) {
+          .luxury-categories-section {
+            padding: 96px 0 28px !important;
+          }
+          .luxury-card.stagger-mid {
+            margin-top: 10px !important;
+          }
+          .luxury-card.stagger-down {
+            margin-top: 22px !important;
+          }
+        }
+
         @media (max-width: 1023px) and (min-width: 768px) {
           .luxury-categories-section {
             --track-pad: 28px;

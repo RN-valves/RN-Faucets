@@ -707,9 +707,28 @@ export default function BestSellerCategoriesSection({
           transform: scale(0.96);
         }
 
+        @media (max-width: 1540px), (max-height: 900px) and (min-width: 901px) {
+          .best-seller-section {
+            padding: 88px 44px 36px !important;
+          }
+          .best-seller-card {
+            height: 460px !important;
+          }
+          .best-seller-card.is-featured {
+            width: 440px !important;
+            height: 560px !important;
+          }
+          .best-seller-heading {
+            font-size: clamp(32px, 3.4vw, 48px) !important;
+          }
+          .best-seller-desc {
+            font-size: clamp(15px, 1.3vw, 19px) !important;
+            margin-top: 20px !important;
+          }
+        }
         @media (max-width: 1200px) {
           .best-seller-section {
-            padding: 100px 36px 40px !important;
+            padding: 84px 32px 36px !important;
           }
           .best-seller-left {
             width: 32% !important;
@@ -719,10 +738,10 @@ export default function BestSellerCategoriesSection({
             width: 68% !important;
           }
           .best-seller-heading {
-            font-size: clamp(32px, 4.2vw, 48px) !important;
+            font-size: clamp(30px, 3.8vw, 44px) !important;
           }
           .best-seller-desc {
-            font-size: clamp(15px, 1.8vw, 18px) !important;
+            font-size: clamp(14px, 1.6vw, 17px) !important;
           }
         }
         @media (max-width: 900px) {
