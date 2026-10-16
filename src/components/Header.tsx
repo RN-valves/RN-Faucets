@@ -459,6 +459,7 @@ export default function Header({ data }: HeaderProps) {
   const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [isDarkBg, setIsDarkBg] = useState(isHome);
   const [isScrolled, setIsScrolled] = useState(!isHome);
+  const [isLogoCompact, setIsLogoCompact] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [sessionUser, setSessionUser] = useState<CustomerSession | null>(null);
   const [isAdminUser, setIsAdminUser] = useState(false);
@@ -611,6 +612,7 @@ export default function Header({ data }: HeaderProps) {
       // On inner pages (product list, product details, cart, etc.), header has frosted background right from the top
       const isPastTop = window.scrollY >= (isHome ? 50 : 8);
       setIsScrolled(isPastTop);
+      setIsLogoCompact(window.scrollY > 35);
 
       const sections = Array.from(document.querySelectorAll("section, [data-header-theme]"));
       const headerPoint = 45; // top mid-header height px
@@ -657,21 +659,23 @@ export default function Header({ data }: HeaderProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [isHome, pathname]);
 
-  // When hovering header OR when mega-menu is active OR when over light sections:
-  // Show luxury transparent white (frosted glass) as requested ("on hover should be transparent but in white")
-  const isTransparentWhite = isHeaderHovered || activeMegaMenu !== null || !isDarkBg;
+  // When hovering header OR when mega-menu is active OR when over light sections OR when scrolled down:
+  // Show luxury frosted white header so compact logo & nav items stay crisp and readable
+  const isTransparentWhite = isHeaderHovered || activeMegaMenu !== null || !isDarkBg || isLogoCompact;
 
   // Header text & icons adapt dynamically:
   // Over transparent dark hero: crisp white (#ffffff)
-  // Over transparent white (hover/light): luxury dark (#111827)
+  // Over transparent white (hover/light/scrolled): luxury dark (#111827)
   const textColor = isTransparentWhite ? "#111827" : "#ffffff";
   const textMutedColor = isTransparentWhite ? "rgba(17, 24, 39, 0.85)" : "rgba(255, 255, 255, 0.95)";
   const iconColor = isTransparentWhite ? "#111827" : "#ffffff";
   const activeTabColor = isTransparentWhite ? "#0077B6" : "#38BDF8";
 
-  // Transparent header: pure transparent by default; on hover transparent in white (frosted glass)
+  // Transparent header: pure transparent at top of hero; frosted white on hover or scroll
   const headerBg = isTransparentWhite
-    ? "rgba(255, 255, 255, 0.82)"
+    ? isLogoCompact
+      ? "rgba(255, 255, 255, 0.96)"
+      : "rgba(255, 255, 255, 0.82)"
     : "transparent";
   const backdropFilterStyle = isTransparentWhite || isScrolled
     ? "blur(20px) saturate(180%)"
@@ -685,17 +689,18 @@ export default function Header({ data }: HeaderProps) {
 
   return (
     <>
-      {/* ── Prominent Floating Brand Logo (Separated from Header Flow so header stays slim & close to top) ── */}
+      {/* ── Prominent Floating Brand Logo (Shrinks cleanly into navbar on scroll) ── */}
       <div
-        className="rn-floating-brand-logo"
+        className={`rn-floating-brand-logo${isLogoCompact ? " is-logo-compact" : ""}`}
         onMouseEnter={handleHeaderMouseEnter}
         onMouseLeave={handleHeaderMouseLeave}
         style={{
           position: "fixed",
-          top: "4px",
+          top: isLogoCompact ? "3px" : "4px",
           left: "clamp(16px, 4vw, 70px)",
           zIndex: 10000,
           pointerEvents: "auto",
+          transition: "top 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
         }}
       >
         <a href="/" aria-label="RN Valves & Faucets Home" className="flex items-center justify-start cursor-pointer">
@@ -1287,6 +1292,11 @@ export default function Header({ data }: HeaderProps) {
             left: clamp(20px, 4vw, 80px);
             z-index: 10000;
             pointer-events: auto;
+            transition: top 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+          }
+
+          .rn-floating-brand-logo.is-logo-compact {
+            top: 3px !important;
           }
 
           .rn-header-logo-img {
@@ -1295,7 +1305,13 @@ export default function Header({ data }: HeaderProps) {
             width: auto;
             display: block;
             object-fit: contain;
-            transition: all 0.3s ease;
+            transform-origin: top left;
+            transition: height 0.35s cubic-bezier(0.16, 1, 0.3, 1), max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s ease, opacity 0.3s ease;
+          }
+
+          .rn-floating-brand-logo.is-logo-compact .rn-header-logo-img {
+            height: 50px !important;
+            max-height: 50px !important;
           }
 
           .rn-header-right-group {
@@ -1338,9 +1354,18 @@ export default function Header({ data }: HeaderProps) {
               left: 12px !important;
             }
 
+            .rn-floating-brand-logo.is-logo-compact {
+              top: 3px !important;
+            }
+
             .rn-header-logo-img {
               height: 85px !important;
               max-height: 95px !important;
+            }
+
+            .rn-floating-brand-logo.is-logo-compact .rn-header-logo-img {
+              height: 46px !important;
+              max-height: 46px !important;
             }
 
             .rn-header-right-group {
