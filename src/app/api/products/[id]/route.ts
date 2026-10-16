@@ -126,6 +126,18 @@ export async function PUT(
     }
 
     const filter = buildProductFilter(id);
+
+    // If admin updates main image without passing a custom gallery array, sync gallery[0] with the new main image
+    if (body.image && typeof body.image === "string" && !Array.isArray(body.gallery)) {
+      const existingProd = await Product.findOne(filter).select("gallery").lean();
+      if (existingProd && Array.isArray((existingProd as any).gallery) && (existingProd as any).gallery.length > 0) {
+        const rest = (existingProd as any).gallery.slice(1).filter((g: string) => g && g !== body.image);
+        body.gallery = [body.image, ...rest];
+      } else {
+        body.gallery = [body.image];
+      }
+    }
+
     const updated = await Product.findOneAndUpdate(
       filter,
       { $set: body },

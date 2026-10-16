@@ -291,6 +291,16 @@ export default function EditProductPage() {
         commercialWarranty: safeNum(commercialWarranty),
 
         image,
+        gallery: (() => {
+          const existingGal = Array.isArray((product as any)?.gallery)
+            ? (product as any).gallery.filter(Boolean)
+            : [];
+          if (image && existingGal.length > 0) {
+            const rest = existingGal.slice(1).filter((g: string) => g !== image);
+            return [image, ...rest];
+          }
+          return image ? [image] : existingGal;
+        })(),
         videoUrl: videoUrl.trim(),
         amazonLink: amazonLink.trim(),
         flipkartLink: flipkartLink.trim(),

@@ -533,9 +533,17 @@ export default function FaucetProductPage({
         : (rawProduct?.inSelling ? rawProduct.inSelling * 2 : (rawProduct?.inMrp ? rawProduct.inMrp * 2 : 1390))
     ),
     image: rawProduct?.image || "/api/media/website/catalogue/products/default/image.webp",
-    gallery: Array.isArray(rawProduct?.gallery) && rawProduct.gallery.length > 0
-      ? rawProduct.gallery
-      : rawProduct?.image ? [rawProduct.image] : ["/api/media/website/catalogue/products/default/image.webp"],
+    gallery: (() => {
+      const mainImg = rawProduct?.image;
+      const rawGal = Array.isArray(rawProduct?.gallery) ? rawProduct.gallery.filter(Boolean) : [];
+      if (mainImg && rawGal.length > 0) {
+        const rest = rawGal.slice(1).filter((g: string) => g !== mainImg);
+        return [mainImg, ...rest];
+      }
+      if (mainImg) return [mainImg];
+      if (rawGal.length > 0) return rawGal;
+      return ["/api/media/website/catalogue/products/default/image.webp"];
+    })(),
     brand: rawProduct?.brand || "RN Valves & Faucets",
     material: rawProduct?.material || "Brass",
     colorName: rawProduct?.colorName || "Chrome",
