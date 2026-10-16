@@ -1,0 +1,5 @@
+User-agent: *
+Disallow:
+
+Sitemap: https://rnvalves.com/sitemap.xml
+Sitemap: https://rnvalves.com/llms.txt

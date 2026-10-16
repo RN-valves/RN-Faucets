@@ -35,7 +35,7 @@ export async function GET(request: Request) {
           { customerPhone: { $regex: userPhone } },
         ],
       })
-        .sort({ createdAt: -1 })
+        .sort({ legacyId: -1, createdAt: -1 })
         .lean();
 
       return NextResponse.json({
@@ -120,7 +120,9 @@ export async function GET(request: Request) {
       }
     }
 
-    const orders = await Order.find(query).sort({ createdAt: -1 }).lean();
+    const orders = await Order.find(query)
+      .sort({ legacyId: -1, createdAt: -1 })
+      .lean();
 
     const counts = {
       total: await Order.countDocuments(),

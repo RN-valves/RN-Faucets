@@ -146,6 +146,7 @@ const ProductSchema = new Schema<IProduct>(
 ProductSchema.index({ code: 1 });
 ProductSchema.index({ category: 1, isVisibleWebsite: 1, status: 1 });
 ProductSchema.index({ subcategoryId: 1 });
+ProductSchema.index({ subcategoryName: 1 });
 ProductSchema.index({ skuCode: 1 });
 ProductSchema.index({ urlKey: 1 });
 ProductSchema.index({ price: 1 });

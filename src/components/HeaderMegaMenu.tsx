@@ -62,6 +62,8 @@ interface HeaderMegaMenuProps {
   onMouseLeave?: () => void;
 }
 
+let cachedMegaSubcategories: MegaSubcategoryItem[] | null = null;
+
 export default function HeaderMegaMenu({
   activeMenu,
   onClose,
@@ -69,12 +71,22 @@ export default function HeaderMegaMenu({
   onMouseLeave,
 }: HeaderMegaMenuProps) {
   const router = useRouter();
-  const [subcategories, setSubcategories] = useState<MegaSubcategoryItem[]>([]);
+  const [subcategories, setSubcategories] = useState<MegaSubcategoryItem[]>(
+    cachedMegaSubcategories || []
+  );
   const [hoveredSub, setHoveredSub] = useState<MegaSubcategoryItem | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Fetch subcategories once or when menu becomes active
+  // Fetch subcategories once when menu first becomes active
   useEffect(() => {
+    if (!activeMenu) return;
+    if (cachedMegaSubcategories && cachedMegaSubcategories.length > 0) {
+      if (subcategories.length === 0) {
+        setSubcategories(cachedMegaSubcategories);
+      }
+      return;
+    }
+
     let isMounted = true;
     async function loadSubs() {
       try {
@@ -82,8 +94,11 @@ export default function HeaderMegaMenu({
         const res = await fetch("/api/subcategories");
         if (!res.ok) return;
         const data = await res.json();
-        if (isMounted && Array.isArray(data)) {
-          setSubcategories(data);
+        if (Array.isArray(data)) {
+          cachedMegaSubcategories = data;
+          if (isMounted) {
+            setSubcategories(data);
+          }
         }
       } catch (err) {
         console.error("Failed to load subcategories for mega menu:", err);
@@ -92,13 +107,11 @@ export default function HeaderMegaMenu({
       }
     }
 
-    if (activeMenu) {
-      loadSubs();
-    }
+    loadSubs();
     return () => {
       isMounted = false;
     };
-  }, [activeMenu]);
+  }, [activeMenu, subcategories.length]);
 
   // Reset hovered subcategory whenever active category changes
   useEffect(() => {
@@ -134,10 +147,10 @@ export default function HeaderMegaMenu({
       });
   }, [activeMenu, catInfo, subcategories]);
 
-  // Preload banners for fast instant preview on hover
+  // Preload only top 4 banners initially to avoid saturating browser network connections
   useEffect(() => {
     if (!filteredSubs.length) return;
-    filteredSubs.forEach((sub) => {
+    filteredSubs.slice(0, 4).forEach((sub) => {
       const bannerUrl = sub.banner || sub.image;
       if (bannerUrl) preheatImage(bannerUrl);
     });

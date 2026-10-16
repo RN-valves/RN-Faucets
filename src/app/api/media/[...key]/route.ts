@@ -78,8 +78,11 @@ export async function GET(
       // Versioned URLs (?v=...) are immutable and safe to cache for 1 year
       headers.set("Cache-Control", "public, max-age=31536000, immutable");
     } else {
-      // Unversioned URLs must revalidate with R2 ETag
-      headers.set("Cache-Control", "public, max-age=0, must-revalidate");
+      // Cache in browser for 24h & CDN for 7 days with background revalidation
+      headers.set(
+        "Cache-Control",
+        "public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400"
+      );
     }
 
     if (response.ETag) {

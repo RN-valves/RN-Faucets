@@ -1,7 +1,17 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import Header from "@/components/Header";
 import FooterSection from "@/components/FooterSection";
 import AuthSplitSection from "@/components/AuthSplitSection";
+
+export const metadata: Metadata = {
+  title: "Customer & Partner Login | RN Valves & Faucets",
+  description:
+    "Sign in to your RN Valves & Faucets customer or business partner account to manage orders and enquiries.",
+  alternates: {
+    canonical: "https://rnvalves.com/login-user",
+  },
+};
 
 export default function LoginUserPage() {
   return (

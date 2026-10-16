@@ -11,7 +11,20 @@ const ADMIN_ROLES = new Set([
 ]);
 
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname, search } = request.nextUrl;
+
+  // ── 0. Enforce Preferred Domain (non-www: https://rnvalves.com) with 301 ────
+  const rawHost =
+    request.headers.get("x-forwarded-host") ||
+    request.headers.get("host") ||
+    "";
+  const host = rawHost.split(",")[0].trim().toLowerCase();
+  if (host === "www.rnvalves.com" || host.startsWith("www.rnvalves.com:")) {
+    return NextResponse.redirect(
+      `https://rnvalves.com${pathname}${search}`,
+      301
+    );
+  }
 
   // ── 1. Admin Route Protection ───────────────────────────────────────────────
   if (pathname.startsWith("/admin") && pathname !== "/admin/login") {

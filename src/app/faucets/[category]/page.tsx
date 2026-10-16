@@ -43,12 +43,18 @@ export async function generateMetadata({
     console.error("Failed to generate category metadata:", err);
   }
 
+  const canonicalUrl = `https://rnvalves.com/faucets/${category}`;
+
   return {
     title: `${name} | RN Valves & Faucets`,
     description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
     openGraph: {
       title: `${name} | RN Valves & Faucets`,
       description,
+      url: canonicalUrl,
       images: [imageUrl],
     },
   };

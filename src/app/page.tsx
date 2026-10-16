@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   title: "RN Valves & Faucets | Trusted Bath Fittings Since 2000",
   description:
     "26 years, 5,000+ dealers, one promise: Built for Long Life. PTMT & CP faucets, showers, health faucets, valves and accessories under one roof",
+  alternates: {
+    canonical: "https://rnvalves.com",
+  },
   keywords: [
     "PTMT Taps Manufacturer",
     "CP Faucets",
@@ -59,51 +62,38 @@ export default async function Home() {
   try {
     await connectDB();
 
-    try {
-      const settingDoc = await HomeSetting.findOne().lean();
-      if (settingDoc) {
-        initialHomeSetting = JSON.parse(JSON.stringify(settingDoc));
-      }
-    } catch (err) {
-      console.error("Failed to fetch HomeSetting in SSR:", err);
-    }
-
-    try {
-      const catDocs = await Category.find({
+    const [settingRes, catRes, prodRes, blogRes] = await Promise.allSettled([
+      HomeSetting.findOne().lean(),
+      Category.find({
         status: { $ne: "Inactive" },
         isVisibleWebsite: { $ne: false },
         isVisible: { $ne: false },
-      }).lean();
-      if (catDocs && catDocs.length > 0) {
-        initialCategories = JSON.parse(JSON.stringify(catDocs));
-      }
-    } catch (err) {
-      console.error("Failed to fetch Categories in SSR:", err);
-    }
-
-    try {
-      const prodDocs = await Product.find({
+      }).lean(),
+      Product.find({
         status: { $ne: "Inactive" },
         isVisibleWebsite: { $ne: false },
         isVisible: { $ne: false },
-      }).limit(60).lean();
-      if (prodDocs && prodDocs.length > 0) {
-        initialProducts = JSON.parse(JSON.stringify(prodDocs));
-      }
-    } catch (err) {
-      console.error("Failed to fetch Products in SSR:", err);
-    }
-
-    try {
-      const blogDocs = await Blog.find({ status: "Published" })
+      })
+        .limit(60)
+        .lean(),
+      Blog.find({ status: "Published" })
+        .select("-content")
         .sort({ publishedAt: -1, createdAt: -1 })
         .limit(6)
-        .lean();
-      if (blogDocs && blogDocs.length > 0) {
-        initialBlogs = JSON.parse(JSON.stringify(blogDocs));
-      }
-    } catch (err) {
-      console.error("Failed to fetch Blogs in SSR:", err);
+        .lean(),
+    ]);
+
+    if (settingRes.status === "fulfilled" && settingRes.value) {
+      initialHomeSetting = JSON.parse(JSON.stringify(settingRes.value));
+    }
+    if (catRes.status === "fulfilled" && catRes.value?.length) {
+      initialCategories = JSON.parse(JSON.stringify(catRes.value));
+    }
+    if (prodRes.status === "fulfilled" && prodRes.value?.length) {
+      initialProducts = JSON.parse(JSON.stringify(prodRes.value));
+    }
+    if (blogRes.status === "fulfilled" && blogRes.value?.length) {
+      initialBlogs = JSON.parse(JSON.stringify(blogRes.value));
     }
   } catch (err) {
     console.error("Database connection error in Home page:", err);

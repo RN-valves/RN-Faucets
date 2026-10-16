@@ -17,7 +17,10 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://rnvalves.com"),
+  metadataBase: new URL("https://rnvalves.com"),
+  alternates: {
+    canonical: "https://rnvalves.com",
+  },
   title: "RN Valves & Faucets | Trusted Bath Fittings Since 2000",
   description:
     "26 years, 5,000+ dealers, one promise: Built for Long Life. PTMT & CP faucets, showers, health faucets, valves and accessories under one roof",
@@ -83,7 +86,7 @@ const organizationSchemaJsonLd = {
       "@id": "https://rnvalves.com/#organization",
       name: "RN Valves & Faucets",
       url: "https://rnvalves.com",
-      logo: "https://rnvalves.com/apple-touch-icon.png?v=3",
+      logo: "https://rnvalves.com/logo.png",
       description:
         "India's fastest growing modern bathroom solutions company, specializing in Brass & PTMT bath fittings manufacturing with 7000+ products across India.",
       foundingDate: "2000",
@@ -125,7 +128,6 @@ const organizationSchemaJsonLd = {
         "https://www.instagram.com/rnvalvesandfaucets/",
         "https://www.linkedin.com/company/rn-valves-faucets/",
         "https://x.com/RNValves",
-        "https://www.youtube.com/channel/UCpUUF6ZFL88S85IuSsHDRSQ/?sub_confirmation=1",
       ],
       numberOfEmployees: {
         "@type": "QuantitativeValue",
@@ -147,15 +149,36 @@ const organizationSchemaJsonLd = {
       },
       potentialAction: {
         "@type": "SearchAction",
-        target: "https://rnvalves.com/catalogue?q={search_term_string}",
+        target: "https://rnvalves.com/search?q={search_term_string}",
         "query-input": "required name=search_term_string",
+      },
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://rnvalves.com/#webpage",
+      url: "https://rnvalves.com",
+      name: "PTMT & CP Tap Manufacturer | Bathroom Fittings | RN Valves & Faucets",
+      description:
+        "RN Valves & Faucets – India's leading manufacturer of PTMT taps, CP taps, showers, valves, sensor faucets, and bathroom accessories.",
+      isPartOf: { "@id": "https://rnvalves.com/#website" },
+      about: { "@id": "https://rnvalves.com/#organization" },
+      breadcrumb: {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Home",
+            item: "https://rnvalves.com",
+          },
+        ],
       },
     },
     {
       "@type": "LocalBusiness",
       "@id": "https://rnvalves.com/#localbusiness",
       name: "RN Valves & Faucets",
-      image: "https://rnvalves.com/apple-touch-icon.png?v=3",
+      image: "https://rnvalves.com/logo.png",
       url: "https://rnvalves.com",
       telephone: "+91-1800-1234-0400",
       email: "enquiry@rnvalves.com",
@@ -180,11 +203,161 @@ const organizationSchemaJsonLd = {
       },
       priceRange: "₹₹",
       currenciesAccepted: "INR",
-      paymentAccepted: "Cash, Credit Card, Bank Transfer, UPI",
+      paymentAccepted: "Cash, Credit Card, Bank Transfer",
       areaServed: {
         "@type": "Country",
         name: "India",
       },
+    },
+    {
+      "@type": "Manufacturer",
+      "@id": "https://rnvalves.com/#manufacturer",
+      name: "RN Valves & Faucets",
+      brand: {
+        "@type": "Brand",
+        name: "RN Valves & Faucets",
+        logo: "https://rnvalves.com/logo.png",
+        url: "https://rnvalves.com",
+      },
+      makesOffer: [
+        {
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "Product",
+            name: "PTMT Taps",
+            description:
+              "High Grade Engineering Polymer taps that are rust-resistant, corrosion-resistant with superior performance and smooth water flow.",
+            category: "Bathroom Fittings",
+            material: "PTMT (Poly Tetra Methylene Terephthalate)",
+            brand: { "@type": "Brand", name: "RN Valves & Faucets" },
+            url: "https://rnvalves.com",
+          },
+        },
+        {
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "Product",
+            name: "CP Taps & Faucets",
+            description:
+              "Chrome Plated taps and faucets with luxury finish, corrosion-resistant nickel coating.",
+            category: "Bathroom Fittings",
+            material: "Chrome Plated Brass",
+            brand: { "@type": "Brand", name: "RN Valves & Faucets" },
+            url: "https://rnvalves.com",
+          },
+        },
+        {
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "Product",
+            name: "Sensor Faucets",
+            description:
+              "RN Automatic Touchless Sensor Faucets for hygienic, hands-free water flow.",
+            category: "Smart Bathroom Fittings",
+            brand: { "@type": "Brand", name: "RN Valves & Faucets" },
+            url: "https://rnvalves.com",
+          },
+        },
+        {
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "Product",
+            name: "Showers & Overhead Showers",
+            description:
+              "Wide range of showers including overhead showers with adjustable water pressure settings.",
+            category: "Bathroom Fittings",
+            brand: { "@type": "Brand", name: "RN Valves & Faucets" },
+            url: "https://rnvalves.com",
+          },
+        },
+        {
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "Product",
+            name: "CP Bathroom Accessories",
+            description:
+              "Complete range of bathroom accessories including soap baskets, towel shelves, towel rings, paper holders across collections: Black Beauty, Stone Series, Rose Series, Gold Ceramic, and more.",
+            category: "Bathroom Accessories",
+            brand: { "@type": "Brand", name: "RN Valves & Faucets" },
+            url: "https://rnvalves.com/cp-accessories",
+          },
+        },
+        {
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "Product",
+            name: "Valves",
+            description:
+              "Durable plumbing valves for residential and commercial applications.",
+            category: "Plumbing Hardware",
+            brand: { "@type": "Brand", name: "RN Valves & Faucets" },
+            url: "https://rnvalves.com",
+          },
+        },
+        {
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "Product",
+            name: "Allied Products",
+            description:
+              "Teflon tape, tap cleaner and other allied plumbing products.",
+            category: "Plumbing Accessories",
+            brand: { "@type": "Brand", name: "RN Valves & Faucets" },
+            url: "https://rnvalves.com/allied-product",
+          },
+        },
+      ],
+    },
+    {
+      "@type": "FAQPage",
+      url: "https://rnvalves.com",
+      mainEntity: [
+        {
+          "@type": "Question",
+          name: "What products does RN Valves & Faucets manufacture?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "RN Valves & Faucets manufactures Brass & PTMT bath fittings including PTMT taps, CP taps, sensor faucets, showers, overhead showers, valves, bathroom accessories, and allied products. They offer 7000+ products.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Where is RN Valves & Faucets located?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "RN Valves & Faucets is located at B-68, Site-4, Sahibabad Industrial Area, Ghaziabad, Uttar Pradesh – 201010, India.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "How can I become a dealer for RN Valves & Faucets?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "You can become an RN Valves & Faucets dealer by visiting https://rnvalves.com/contact-us or calling their toll-free number 1800-1234-0400. They have 4800+ distributors and dealers across India.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Are RN Valves & Faucets products ISO certified?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Yes, RN Valves & Faucets follows the ISO 9000 Quality Management System across design, research, development, and manufacturing.",
+          },
+        },
+      ],
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": "https://rnvalves.com/#breadcrumbs",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: "https://rnvalves.com" },
+        { "@type": "ListItem", position: 2, name: "About Us", item: "https://rnvalves.com/about-us" },
+        { "@type": "ListItem", position: 3, name: "CP Accessories", item: "https://rnvalves.com/cp-accessories" },
+        { "@type": "ListItem", position: 4, name: "Allied Products", item: "https://rnvalves.com/allied-product" },
+        { "@type": "ListItem", position: 5, name: "Health & Hygiene", item: "https://rnvalves.com/health-hygiene" },
+        { "@type": "ListItem", position: 6, name: "Catalogue", item: "https://rnvalves.com/catalogue" },
+        { "@type": "ListItem", position: 7, name: "Contact Us", item: "https://rnvalves.com/contact-us" },
+      ],
     },
   ],
 };

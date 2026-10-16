@@ -46,34 +46,75 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        source: "/:path*",
+        has: [
+          {
+            type: "host",
+            value: "www.rnvalves.com",
+          },
+        ],
+        destination: "https://rnvalves.com/:path*",
+        statusCode: 301,
+      },
+      {
         source: "/contact/privacy",
         destination: "/privacy-policy",
-        permanent: true,
+        statusCode: 301,
       },
       {
         source: "/contact/return",
         destination: "/return-refund-policy",
-        permanent: true,
+        statusCode: 301,
       },
       {
         source: "/contact/terms-conditions",
         destination: "/terms-conditions",
-        permanent: true,
+        statusCode: 301,
       },
       {
         source: "/contact/certificates",
         destination: "/certificates",
-        permanent: true,
+        statusCode: 301,
       },
       {
         source: "/guest/register",
         destination: "/business-user-registration",
-        permanent: true,
+        statusCode: 301,
       },
       {
         source: "/our-csr",
         destination: "/corporate-social-responsibility",
-        permanent: true,
+        statusCode: 301,
+      },
+      {
+        source: "/catalogue",
+        destination: "/catalogues",
+        statusCode: 301,
+      },
+      {
+        source: "/blog",
+        destination: "/blogs",
+        statusCode: 301,
+      },
+      {
+        source: "/about",
+        destination: "/about-us",
+        statusCode: 301,
+      },
+      {
+        source: "/contact",
+        destination: "/contact-us",
+        statusCode: 301,
+      },
+      {
+        source: "/careers",
+        destination: "/career",
+        statusCode: 301,
+      },
+      {
+        source: "/terms-of-service",
+        destination: "/terms-conditions",
+        statusCode: 301,
       },
     ];
   },

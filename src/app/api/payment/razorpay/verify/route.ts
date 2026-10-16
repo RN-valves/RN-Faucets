@@ -108,29 +108,42 @@ export async function POST(request: Request) {
       }
     }
 
+    const matchConditions: any[] = [
+      { id: orderId },
+      { razorpayOrderId: razorpay_order_id },
+    ];
+    if (orderData?.uuid) {
+      matchConditions.push({ uuid: orderData.uuid });
+    }
+
     const savedOrder = await Order.findOneAndUpdate(
-      { $or: [{ id: orderId }, { uuid: orderData?.uuid }] },
+      { $or: matchConditions },
       {
-        ...orderData,
-        id: orderId,
-        legacyId: legacyId || undefined,
-        customerEmail: customerEmail || orderData?.customerEmail || "",
-        gstNumber: gstNumber || orderData?.gstNumber || "",
-        businessName: businessName || orderData?.businessName || "",
-        paymentStatus: "Paid",
-        paymentMethod: "Online Payment",
-        status: "Processing",
-        razorpayOrderId: razorpay_order_id,
-        razorpayPaymentId: razorpay_payment_id,
-        razorpaySignature: razorpay_signature,
-        orderDate:
-          orderData?.orderDate ||
-          new Date().toLocaleString("en-IN", {
-            dateStyle: "short",
-            timeStyle: "short",
-          }),
+        $set: {
+          ...orderData,
+          id: orderId,
+          legacyId: legacyId || undefined,
+          customerEmail: customerEmail || orderData?.customerEmail || "",
+          gstNumber: gstNumber || orderData?.gstNumber || "",
+          businessName: businessName || orderData?.businessName || "",
+          paymentStatus: "Paid",
+          paymentMethod: "Online Payment",
+          status: "Processing",
+          razorpayOrderId: razorpay_order_id,
+          razorpayPaymentId: razorpay_payment_id,
+          razorpaySignature: razorpay_signature,
+          orderDate:
+            orderData?.orderDate ||
+            new Date().toLocaleString("en-IN", {
+              dateStyle: "short",
+              timeStyle: "short",
+            }),
+        },
+        $setOnInsert: {
+          createdAt: new Date(),
+        },
       },
-      { upsert: true, new: true }
+      { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
     // Send confirmation invoice email to customer and admin

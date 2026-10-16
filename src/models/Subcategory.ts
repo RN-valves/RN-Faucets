@@ -39,6 +39,9 @@ const SubcategorySchema = new Schema<ISubcategory>(
   { timestamps: true }
 );
 
+SubcategorySchema.index({ slug: 1 });
+SubcategorySchema.index({ categoryId: 1, status: 1, displayOrder: 1 });
+
 const Subcategory: Model<ISubcategory> =
   mongoose.models.Subcategory || mongoose.model<ISubcategory>("Subcategory", SubcategorySchema);
 
