@@ -105,10 +105,13 @@ export async function GET(
     }
 
     const status = response.$metadata?.httpStatusCode || (response.ContentRange ? 206 : 200);
-    const isVideo = contentType.startsWith("video/");
+    const isStreamable =
+      contentType.startsWith("video/") ||
+      contentType === "application/pdf" ||
+      (response.ContentLength !== undefined && response.ContentLength > 524288);
     let body: any;
 
-    if (isVideo && typeof (response.Body as any)?.transformToWebStream === "function") {
+    if (isStreamable && typeof (response.Body as any)?.transformToWebStream === "function") {
       body = (response.Body as any).transformToWebStream();
       if (response.ContentLength !== undefined) {
         headers.set("Content-Length", String(response.ContentLength));

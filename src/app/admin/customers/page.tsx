@@ -243,7 +243,12 @@ export default function AdminCustomersPage() {
   async function fetchUsers() {
     setLoading(true);
     try {
-      const res = await fetch("/api/customers");
+      const savedToken = typeof window !== "undefined" ? localStorage.getItem("rn_admin_token") : null;
+      const headers: Record<string, string> = {};
+      if (savedToken) {
+        headers["Authorization"] = `Bearer ${savedToken}`;
+      }
+      const res = await fetch("/api/customers", { headers });
       if (res.ok) {
         const data = await res.json();
         setUsers(data.users || []);
@@ -270,6 +275,9 @@ export default function AdminCustomersPage() {
   useEffect(() => {
     fetchUsers();
     fetchMasterRemarks();
+    const onSynced = () => fetchUsers();
+    window.addEventListener("rn-admin-session-synced", onSynced);
+    return () => window.removeEventListener("rn-admin-session-synced", onSynced);
   }, []);
 
   // When customer is clicked, load their detailed profile, orders, and remark logs

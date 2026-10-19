@@ -197,6 +197,10 @@ export async function GET(request: Request) {
       });
     }
 
+    if (!isAll && !subcategory && !category && !q) {
+      query.limit(600);
+    }
+
     const products = await query.lean();
     return NextResponse.json(products);
   } catch (error) {

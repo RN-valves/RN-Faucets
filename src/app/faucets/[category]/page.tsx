@@ -131,6 +131,19 @@ export default async function CategoryPage({
           { categoryId: String(activeCat.id || activeCat._id) },
           { categoryName: activeCat.name },
         ];
+      } else {
+        // Fallback for unknown slug: strictly match against the slug instead of returning all 7,398 products
+        const rawEscaped = category.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const normEscaped = category.replace(/-/g, " ").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        productQuery.$or = [
+          { subcategorySlug: category },
+          { categorySlug: category },
+          { subcategoryId: category },
+          { categoryId: category },
+          { subcategoryName: { $regex: `^${normEscaped}$`, $options: "i" } },
+          { category: { $regex: `^${normEscaped}$`, $options: "i" } },
+          { subcategoryName: { $regex: `^${rawEscaped}$`, $options: "i" } },
+        ];
       }
     }
 
@@ -140,6 +153,7 @@ export default async function CategoryPage({
           "id code skuCode name image price inMrp inSelling size article colorName category categoryId categoryName categorySlug subcategory subcategoryId subcategoryName subcategorySlug collectionName series slug displayOrder createdAt"
         )
         .sort({ displayOrder: 1, createdAt: -1 })
+        .limit(600)
         .lean(),
       Category.find({
         status: { $ne: "Inactive" },
@@ -159,13 +173,23 @@ export default async function CategoryPage({
     ]);
 
     if (Array.isArray(prodDocs)) {
-      initialProducts = JSON.parse(JSON.stringify(prodDocs));
+      initialProducts = prodDocs.map((doc: any) => ({
+        ...doc,
+        _id: doc._id ? String(doc._id) : undefined,
+        createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : undefined,
+      }));
     }
     if (Array.isArray(catDocs)) {
-      initialCategories = JSON.parse(JSON.stringify(catDocs));
+      initialCategories = catDocs.map((doc: any) => ({
+        ...doc,
+        _id: doc._id ? String(doc._id) : undefined,
+      }));
     }
     if (Array.isArray(subDocs)) {
-      initialSubcategories = JSON.parse(JSON.stringify(subDocs));
+      initialSubcategories = subDocs.map((doc: any) => ({
+        ...doc,
+        _id: doc._id ? String(doc._id) : undefined,
+      }));
     }
   } catch (err) {
     console.error("SSR CategoryPage error:", err);

@@ -236,18 +236,50 @@ function OrdersContent() {
   const textMuted = isDark ? "#8B949E" : "#6B7280";
   const inputBg = isDark ? "#161B22" : "#F9FAFB";
 
-  async function fetchOrders() {
+  async function fetchOrders(isRetry = false) {
     setLoadingOrders(true);
     try {
       const params = new URLSearchParams();
       if (searchQuery) params.set("q", searchQuery);
       if (statusTab !== "All") params.set("status", statusTab);
 
-      const res = await fetch(`/api/orders?${params.toString()}`);
+      const savedToken = typeof window !== "undefined" ? localStorage.getItem("rn_admin_token") : null;
+      const headers: Record<string, string> = {};
+      if (savedToken) {
+        headers["Authorization"] = `Bearer ${savedToken}`;
+      }
+
+      const res = await fetch(`/api/orders?${params.toString()}`, { headers });
       if (res.ok) {
         const data = await res.json();
         setOrders(data.orders || []);
         if (data.counts) setCounts(data.counts);
+      } else if (res.status === 401 && !isRetry && typeof window !== "undefined") {
+        // Renew expired rn_session cookie from active admin localStorage session and retry immediately
+        let authObj: any = {};
+        let userSess: any = {};
+        try {
+          authObj = JSON.parse(localStorage.getItem("rn_admin_session") || "{}");
+          userSess = JSON.parse(localStorage.getItem("rn_user_session") || localStorage.getItem("rn_customer_session") || "{}");
+        } catch {}
+        const syncRes = await fetch("/api/auth/session-sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            token: savedToken || "",
+            mobile: userSess?.mobile || "",
+            email: authObj?.email || "admin@rnvalves.com",
+            role: authObj?.role || "Super Admin",
+          }),
+        });
+        if (syncRes.ok) {
+          const syncData = await syncRes.json();
+          if (syncData?.token) {
+            localStorage.setItem("rn_admin_token", syncData.token);
+            document.cookie = `rn_session=${syncData.token}; path=/; max-age=7776000; SameSite=Lax`;
+          }
+          return await fetchOrders(true);
+        }
       }
     } catch (err) {
       console.error("Failed to fetch orders:", err);
@@ -282,6 +314,9 @@ function OrdersContent() {
   useEffect(() => {
     fetchOrders();
     fetchPayments();
+    const onSynced = () => fetchOrders(true);
+    window.addEventListener("rn-admin-session-synced", onSynced);
+    return () => window.removeEventListener("rn-admin-session-synced", onSynced);
   }, []);
 
   useEffect(() => {

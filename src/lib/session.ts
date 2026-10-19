@@ -16,7 +16,7 @@ export interface SessionPayload {
 }
 
 export const SESSION_COOKIE_NAME = "rn_session";
-const SESSION_EXPIRY_SECONDS = 7 * 24 * 60 * 60; // 7 days
+const SESSION_EXPIRY_SECONDS = 90 * 24 * 60 * 60; // 90 days
 
 // Universal Base64url utilities compatible with Edge and Node.js
 function base64UrlEncodeBytes(bytes: Uint8Array): string {
@@ -138,9 +138,10 @@ export async function verifySessionToken(token: string | null | undefined): Prom
     const payloadJson = base64UrlDecodeToString(encodedPayload);
     const payload: SessionPayload = JSON.parse(payloadJson);
 
-    // Expiry check
+    // Expiry check (allow 90-day window for tokens previously issued with 7-day exp)
     const now = Math.floor(Date.now() / 1000);
-    if (!payload.exp || payload.exp < now) {
+    const graceSeconds = 83 * 24 * 60 * 60;
+    if (!payload.exp || payload.exp + graceSeconds < now) {
       return null;
     }
 

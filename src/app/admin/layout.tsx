@@ -51,6 +51,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       router.replace("/login-user");
     } else {
       setIsAuthenticated(true);
+      // Ensure server-side rn_session cookie stays active whenever admin is logged in
+      const savedToken = localStorage.getItem("rn_admin_token") || "";
+      let savedMobile = "";
+      try {
+        const userSess = JSON.parse(localStorage.getItem("rn_user_session") || localStorage.getItem("rn_customer_session") || "{}");
+        savedMobile = userSess?.mobile || "";
+      } catch {}
+      fetch("/api/auth/session-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: savedToken,
+          mobile: savedMobile,
+          email: auth.email,
+          role: auth.role,
+        }),
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data?.token) {
+            localStorage.setItem("rn_admin_token", data.token);
+            document.cookie = `rn_session=${data.token}; path=/; max-age=7776000; SameSite=Lax`;
+            window.dispatchEvent(new Event("rn-admin-session-synced"));
+          }
+        })
+        .catch(() => {});
     }
 
     return () => window.removeEventListener("rn-theme-changed", handleThemeChange);

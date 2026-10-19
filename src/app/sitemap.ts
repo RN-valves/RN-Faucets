@@ -127,23 +127,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     const categoryUrls: MetadataRoute.Sitemap = (categories || [])
       .filter((c: any) => Boolean(c.slug || c.id))
-      .flatMap((c: any) => {
+      .map((c: any) => {
         const slugOrId = c.slug || c.id;
         const lastMod = c.updatedAt ? new Date(c.updatedAt) : now;
-        return [
-          {
-            url: `${BASE_URL}/${slugOrId}`,
-            lastModified: lastMod,
-            changeFrequency: "weekly" as const,
-            priority: 0.85,
-          },
-          {
-            url: `${BASE_URL}/faucets/${slugOrId}`,
-            lastModified: lastMod,
-            changeFrequency: "weekly" as const,
-            priority: 0.85,
-          },
-        ];
+        return {
+          url: `${BASE_URL}/faucets/${slugOrId}`,
+          lastModified: lastMod,
+          changeFrequency: "weekly" as const,
+          priority: 0.85,
+        };
       });
 
     const subcategoryUrls: MetadataRoute.Sitemap = (subcategories || [])
@@ -158,7 +150,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const blogUrls: MetadataRoute.Sitemap = (blogs || [])
       .filter((b: any) => Boolean(b.slug || b.id))
       .map((b: any) => ({
-        url: `${BASE_URL}/${b.slug || b.id}`,
+        url: `${BASE_URL}/blogs/${b.slug || b.id}`,
         lastModified: b.updatedAt
           ? new Date(b.updatedAt)
           : b.publishedAt

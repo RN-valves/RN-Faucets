@@ -100,7 +100,12 @@ export default function AdminSidebar({
 
     const fetchCounts = async () => {
       try {
-        const res = await fetch("/api/admin/counts");
+        const savedToken = typeof window !== "undefined" ? localStorage.getItem("rn_admin_token") : null;
+        const headers: Record<string, string> = {};
+        if (savedToken) {
+          headers["Authorization"] = `Bearer ${savedToken}`;
+        }
+        const res = await fetch("/api/admin/counts", { headers });
         if (res.ok) {
           const data = await res.json();
           if (!isMounted || !data) return;
@@ -116,10 +121,12 @@ export default function AdminSidebar({
 
     fetchCounts();
     window.addEventListener("rn-admin-data-changed", fetchCounts);
+    window.addEventListener("rn-admin-session-synced", fetchCounts);
 
     return () => {
       isMounted = false;
       window.removeEventListener("rn-admin-data-changed", fetchCounts);
+      window.removeEventListener("rn-admin-session-synced", fetchCounts);
     };
   }, []);
 
