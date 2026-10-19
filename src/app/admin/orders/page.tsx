@@ -745,7 +745,7 @@ function OrdersContent() {
                   size="md"
                   icon={<RefreshCw size={15} />}
                   isDark={isDark}
-                  onClick={fetchOrders}
+                  onClick={() => fetchOrders()}
                   title="Refresh Orders"
                 />
               }

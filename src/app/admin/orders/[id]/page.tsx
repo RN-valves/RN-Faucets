@@ -705,11 +705,11 @@ export default function AdminOrderDetailPage() {
 
   const effectivePayLinkId = order?.pay_link_id || parsedPayData.razorpay_payment_link_id || "";
   const effectivePaymentId =
-    parsedPayData.razorpay_payment_id || order?.razorpayPaymentId || order?.payment_key || "";
+    parsedPayData.razorpay_payment_id || parsedPayData.id || order?.razorpayPaymentId || order?.payment_key || "";
   const effectivePaymentRefId =
     parsedPayData.razorpay_payment_link_reference_id || order?.uuid || order?.id || "";
   const effectivePaymentStatus =
-    parsedPayData.razorpay_payment_link_status || (isPaid ? "paid" : "pending");
+    parsedPayData.razorpay_payment_link_status || parsedPayData.status || (isPaid ? "paid" : "pending");
 
   return (
     <div style={{ minHeight: "100vh", background: isDark ? "#0B0F17" : "#F4F6F9" }}>
@@ -1307,7 +1307,7 @@ export default function AdminOrderDetailPage() {
                     </tr>
                   ) : null}
 
-                  {!effectivePayLinkId && (
+                  {!effectivePayLinkId && !isPaid && (
                     <tr>
                       <td colSpan={2} style={{ padding: "8px 12px", color: textMuted }}>
                         Generate Payment Link

@@ -108,6 +108,25 @@ export async function POST(request: Request) {
       }
     }
 
+    // Fetch full Razorpay payment details so Admin Order Details displays complete payment_data
+    let paymentDataJson = "";
+    try {
+      const rzpKey = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "";
+      const rzpSecret = process.env.RAZORPAY_KEY_SECRET || "";
+      if (rzpKey && rzpSecret) {
+        const auth = Buffer.from(`${rzpKey}:${rzpSecret}`).toString("base64");
+        const payRes = await fetch(`https://api.razorpay.com/v1/payments/${razorpay_payment_id}`, {
+          headers: { Authorization: `Basic ${auth}` },
+        });
+        if (payRes.ok) {
+          const payDetails = await payRes.json();
+          paymentDataJson = JSON.stringify(payDetails);
+        }
+      }
+    } catch (payErr) {
+      console.error("Failed to fetch Razorpay payment details:", payErr);
+    }
+
     const matchConditions: any[] = [
       { id: orderId },
       { razorpayOrderId: razorpay_order_id },
@@ -128,6 +147,9 @@ export async function POST(request: Request) {
           businessName: businessName || orderData?.businessName || "",
           paymentStatus: "Paid",
           paymentMethod: "Online Payment",
+          payment_term: "Prepaid",
+          payment_key: razorpay_payment_id,
+          ...(paymentDataJson ? { payment_data: paymentDataJson } : {}),
           status: "Processing",
           razorpayOrderId: razorpay_order_id,
           razorpayPaymentId: razorpay_payment_id,

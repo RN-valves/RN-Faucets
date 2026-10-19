@@ -22,6 +22,13 @@ export async function POST(
       return NextResponse.json({ error: "Order not found." }, { status: 404 });
     }
 
+    if (order.paymentStatus === "Paid") {
+      return NextResponse.json(
+        { error: "This order is already marked as Paid." },
+        { status: 400 }
+      );
+    }
+
     const paymentLink = await createRazorpayPaymentLink({
       amount: order.totalAmount,
       referenceId: order.uuid || order.id,
