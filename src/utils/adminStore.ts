@@ -135,6 +135,7 @@ export const getAdminProducts = async (params?: {
 }): Promise<AdminProduct[]> => {
   try {
     const query = new URLSearchParams();
+    query.append("admin", "true");
     if (params?.q) query.append("q", params.q);
     if (params?.category) query.append("category", params.category);
     if (params?.subcategory) query.append("subcategory", params.subcategory);
@@ -142,7 +143,7 @@ export const getAdminProducts = async (params?: {
     if (params?.page) query.append("page", params.page.toString());
     if (params?.limit) query.append("limit", params.limit.toString());
 
-    const url = `/api/products${query.toString() ? `?${query.toString()}` : ""}`;
+    const url = `/api/products?${query.toString()}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error("fetch failed");
     const data = await res.json();

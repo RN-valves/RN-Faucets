@@ -157,12 +157,18 @@ export default function ProductsListingPage() {
 
   // Filter Products
   const filteredProducts = products.filter((prod) => {
-    const q = searchQuery.toLowerCase();
+    const q = searchQuery.trim().toLowerCase();
+    const articleStr = String((prod as any).article || "").toLowerCase();
+    const subcatStr = String(prod.subcategoryName || "").toLowerCase();
+    const idStr = String(prod.id || "").toLowerCase();
     const matchesQuery =
       !q ||
-      prod.name.toLowerCase().includes(q) ||
+      (prod.name && prod.name.toLowerCase().includes(q)) ||
       (prod.code && prod.code.toLowerCase().includes(q)) ||
       (prod.skuCode && prod.skuCode.toLowerCase().includes(q)) ||
+      articleStr.includes(q) ||
+      subcatStr.includes(q) ||
+      idStr === q ||
       (prod.category && prod.category.toLowerCase().includes(q));
 
     const matchesCat = categoryFilter === "All" || prod.category === categoryFilter;
