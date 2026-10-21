@@ -3,9 +3,10 @@ import { connectDB } from "@/lib/mongodb";
 import Subcategory from "@/models/Subcategory";
 import Product from "@/models/Product";
 import { requireAdminAuth } from "@/lib/security";
-
-let cachedSubcategoriesResponse: any = null;
-let lastSubcategoriesFetch = 0;
+import {
+  getPublicSubcategoriesCached,
+  invalidateCatalogueAndHeaderCache,
+} from "@/lib/catalogueData";
 
 export async function GET(request: Request) {
   try {
@@ -15,8 +16,13 @@ export async function GET(request: Request) {
       searchParams.get("all") === "true" ||
       searchParams.get("admin") === "true";
 
-    if (!showAll && !categoryId && cachedSubcategoriesResponse && Date.now() - lastSubcategoriesFetch < 60000) {
-      return NextResponse.json(cachedSubcategoriesResponse);
+    if (!showAll && !categoryId) {
+      const { data, cacheStatus } = await getPublicSubcategoriesCached();
+      return NextResponse.json(data, {
+        headers: {
+          "X-Cache": cacheStatus,
+        },
+      });
     }
 
     await connectDB();
@@ -48,11 +54,6 @@ export async function GET(request: Request) {
       };
     });
 
-    if (!showAll && !categoryId) {
-      cachedSubcategoriesResponse = subcategoriesWithCount;
-      lastSubcategoriesFetch = Date.now();
-    }
-
     return NextResponse.json(subcategoriesWithCount);
   } catch (error) {
     console.error("GET /api/subcategories error:", error);
@@ -62,7 +63,6 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    cachedSubcategoriesResponse = null;
     const adminSession = await requireAdminAuth(request);
     if (!adminSession) {
       return NextResponse.json(
@@ -82,6 +82,7 @@ export async function POST(request: Request) {
       slug,
     });
     await subcategory.save();
+    await invalidateCatalogueAndHeaderCache();
     return NextResponse.json(subcategory, { status: 201 });
   } catch (error) {
     console.error("POST /api/subcategories error:", error);

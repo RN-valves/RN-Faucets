@@ -1,10 +1,15 @@
 "use client";
 
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ChevronRight, ArrowRight } from "lucide-react";
-import { preheatImage } from "@/utils/catalogueCache";
+import {
+  preheatImage,
+  getCachedSubcategories,
+  preloadCatalogueData,
+  subscribeCatalogueCache,
+} from "@/utils/catalogueCache";
 
 export type MegaMenuType = "ptmt" | "cp" | "showers";
 
@@ -62,8 +67,6 @@ interface HeaderMegaMenuProps {
   onMouseLeave?: () => void;
 }
 
-let cachedMegaSubcategories: MegaSubcategoryItem[] | null = null;
-
 export default function HeaderMegaMenu({
   activeMenu,
   onClose,
@@ -71,47 +74,41 @@ export default function HeaderMegaMenu({
   onMouseLeave,
 }: HeaderMegaMenuProps) {
   const router = useRouter();
+  const cachedSubs = getCachedSubcategories();
   const [subcategories, setSubcategories] = useState<MegaSubcategoryItem[]>(
-    cachedMegaSubcategories || []
+    (cachedSubs as any) || []
   );
   const [hoveredSub, setHoveredSub] = useState<MegaSubcategoryItem | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Fetch subcategories once when menu first becomes active
+  // Sync with shared Redis-backed catalogueCache immediately
   useEffect(() => {
-    if (!activeMenu) return;
-    if (cachedMegaSubcategories && cachedMegaSubcategories.length > 0) {
-      if (subcategories.length === 0) {
-        setSubcategories(cachedMegaSubcategories);
-      }
-      return;
+    const current = getCachedSubcategories();
+    if (current && current.length > 0) {
+      setSubcategories(current as any);
+      setLoading(false);
     }
 
-    let isMounted = true;
-    async function loadSubs() {
-      try {
-        setLoading(true);
-        const res = await fetch("/api/subcategories");
-        if (!res.ok) return;
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          cachedMegaSubcategories = data;
-          if (isMounted) {
-            setSubcategories(data);
+    const unsubscribe = subscribeCatalogueCache(({ subcategories: subs }) => {
+      if (Array.isArray(subs) && subs.length > 0) {
+        setSubcategories(subs as any);
+        setLoading(false);
+      }
+    });
+
+    if (!current || current.length === 0) {
+      setLoading(true);
+      preloadCatalogueData()
+        .then(({ subcategories: subs }) => {
+          if (Array.isArray(subs) && subs.length > 0) {
+            setSubcategories(subs as any);
           }
-        }
-      } catch (err) {
-        console.error("Failed to load subcategories for mega menu:", err);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
+        })
+        .finally(() => setLoading(false));
     }
 
-    loadSubs();
-    return () => {
-      isMounted = false;
-    };
-  }, [activeMenu, subcategories.length]);
+    return unsubscribe;
+  }, []);
 
   // Reset hovered subcategory whenever active category changes
   useEffect(() => {

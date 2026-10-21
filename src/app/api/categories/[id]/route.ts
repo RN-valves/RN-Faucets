@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Category from "@/models/Category";
 import { requireAdminAuth } from "@/lib/security";
+import { invalidateCatalogueAndHeaderCache } from "@/lib/catalogueData";
 
 export async function GET(
   _request: Request,
@@ -53,6 +54,7 @@ export async function PUT(
       { new: true, runValidators: false }
     );
     if (!updated) return NextResponse.json({ error: "Category not found" }, { status: 404 });
+    await invalidateCatalogueAndHeaderCache();
     return NextResponse.json(updated);
   } catch (error: any) {
     console.error("PUT /api/categories/[id] error:", error);
@@ -77,6 +79,7 @@ export async function DELETE(
     const { id } = await params;
     const deleted = await Category.findOneAndDelete({ $or: [{ id }, { slug: id }] });
     if (!deleted) return NextResponse.json({ error: "Category not found" }, { status: 404 });
+    await invalidateCatalogueAndHeaderCache();
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("DELETE /api/categories/[id] error:", error);

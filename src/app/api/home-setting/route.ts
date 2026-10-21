@@ -193,21 +193,35 @@ const DEFAULT_HOME_SETTINGS = {
   },
 };
 
+import { requireAdminAuth } from "@/lib/security";
+import { getOrSetCache } from "@/lib/redis";
+import {
+  REDIS_CACHE_KEYS,
+  invalidateCatalogueAndHeaderCache,
+} from "@/lib/catalogueData";
+
 export async function GET() {
   try {
-    await connectDB();
-    let setting = await HomeSetting.findOne();
-    if (!setting) {
-      setting = DEFAULT_HOME_SETTINGS;
-    }
-    return NextResponse.json(setting);
+    const { data, cacheStatus } = await getOrSetCache(
+      REDIS_CACHE_KEYS.HOME_SETTING,
+      1800,
+      async () => {
+        await connectDB();
+        const setting = await HomeSetting.findOne().lean();
+        return setting || DEFAULT_HOME_SETTINGS;
+      },
+      120
+    );
+    return NextResponse.json(data, {
+      headers: {
+        "X-Cache": cacheStatus,
+      },
+    });
   } catch (error) {
     console.error("GET /api/home-setting error:", error);
     return NextResponse.json(DEFAULT_HOME_SETTINGS);
   }
 }
-
-import { requireAdminAuth } from "@/lib/security";
 
 export async function POST(req: Request) {
   try {
@@ -229,6 +243,8 @@ export async function POST(req: Request) {
       { $set: updateData },
       { new: true, upsert: true, setDefaultsOnInsert: true, runValidators: false }
     );
+
+    await invalidateCatalogueAndHeaderCache();
 
     return NextResponse.json({ success: true, setting });
   } catch (error: any) {

@@ -3,12 +3,13 @@ import { connectDB } from "@/lib/mongodb";
 import Category from "@/models/Category";
 import Product from "@/models/Product";
 import { requireAdminAuth } from "@/lib/security";
+import {
+  getPublicCategoriesCached,
+  invalidateCatalogueAndHeaderCache,
+} from "@/lib/catalogueData";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-let cachedCategoriesResponse: any = null;
-let lastCategoriesFetch = 0;
 
 export async function GET(request: Request) {
   try {
@@ -17,19 +18,18 @@ export async function GET(request: Request) {
       searchParams.get("all") === "true" ||
       searchParams.get("admin") === "true";
 
-    if (!showAll && cachedCategoriesResponse && Date.now() - lastCategoriesFetch < 60000) {
-      return NextResponse.json(cachedCategoriesResponse);
+    if (!showAll) {
+      const { data, cacheStatus } = await getPublicCategoriesCached();
+      return NextResponse.json(data, {
+        headers: {
+          "X-Cache": cacheStatus,
+        },
+      });
     }
 
     await connectDB();
 
     const filter: Record<string, unknown> = {};
-
-    if (!showAll) {
-      filter.status = { $ne: "Inactive" };
-      filter.isVisibleWebsite = { $ne: false };
-    }
-
     const rawCategories = await Category.find(filter).sort({ createdAt: -1 }).lean();
 
     // Sort categories: items with displayOrder > 0 come first in ascending order (1st, 2nd, 3rd...), then items without displayOrder
@@ -58,11 +58,6 @@ export async function GET(request: Request) {
       };
     });
 
-    if (!showAll) {
-      cachedCategoriesResponse = categoriesWithCount;
-      lastCategoriesFetch = Date.now();
-    }
-
     return NextResponse.json(categoriesWithCount);
   } catch (error) {
     console.error("GET /api/categories error:", error);
@@ -72,7 +67,6 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    cachedCategoriesResponse = null;
     const adminSession = await requireAdminAuth(request);
     if (!adminSession) {
       return NextResponse.json(
@@ -94,6 +88,7 @@ export async function POST(request: Request) {
       isVisibleWebsite: body.isVisibleWebsite !== undefined ? body.isVisibleWebsite : true,
     });
     await category.save();
+    await invalidateCatalogueAndHeaderCache();
     return NextResponse.json(category, { status: 201 });
   } catch (error: any) {
     console.error("POST /api/categories error:", error);

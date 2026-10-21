@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
+import { getRedisStatus } from "@/lib/redis";
 
 export const dynamic = "force-dynamic";
 
@@ -10,11 +11,13 @@ export async function GET() {
     await connectDB();
     const dbState = mongoose.connection.readyState; // 1 = connected
     const mem = process.memoryUsage();
+    const redisStatus = getRedisStatus();
 
     return NextResponse.json(
       {
         status: dbState === 1 ? "ok" : "degraded",
         db: dbState === 1 ? "connected" : "disconnected",
+        redis: redisStatus,
         uptimeSeconds: Math.floor(process.uptime()),
         responseTimeMs: Date.now() - start,
         memoryMB: {

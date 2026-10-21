@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import Product from "@/models/Product";
 import { requireAdminAuth, escapeRegex } from "@/lib/security";
+import { invalidateCatalogueAndHeaderCache } from "@/lib/catalogueData";
 
 function buildProductFilter(rawId: string) {
   const id = decodeURIComponent(rawId).trim();
@@ -147,6 +148,7 @@ export async function PUT(
     if (!updated) {
       return NextResponse.json({ error: `Product not found with identifier: ${id}` }, { status: 404 });
     }
+    await invalidateCatalogueAndHeaderCache();
     return NextResponse.json(updated);
   } catch (error: any) {
     console.error("PUT /api/products/[id] error:", error);
@@ -172,6 +174,7 @@ export async function DELETE(
     const filter = buildProductFilter(id);
     const deleted = await Product.findOneAndDelete(filter);
     if (!deleted) return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    await invalidateCatalogueAndHeaderCache();
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("DELETE /api/products/[id] error:", error);

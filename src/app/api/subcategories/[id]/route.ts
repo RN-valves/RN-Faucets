@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Subcategory from "@/models/Subcategory";
 import { requireAdminAuth } from "@/lib/security";
+import { invalidateCatalogueAndHeaderCache } from "@/lib/catalogueData";
 
 export async function GET(
   _request: Request,
@@ -49,6 +50,7 @@ export async function PUT(
       { new: true }
     );
     if (!updated) return NextResponse.json({ error: "Subcategory not found" }, { status: 404 });
+    await invalidateCatalogueAndHeaderCache();
     return NextResponse.json(updated);
   } catch (error: any) {
     console.error("PUT /api/subcategories/[id] error:", error);
@@ -73,6 +75,7 @@ export async function DELETE(
     const { id } = await params;
     const deleted = await Subcategory.findOneAndDelete({ $or: [{ id }, { slug: id }] });
     if (!deleted) return NextResponse.json({ error: "Subcategory not found" }, { status: 404 });
+    await invalidateCatalogueAndHeaderCache();
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("DELETE /api/subcategories/[id] error:", error);

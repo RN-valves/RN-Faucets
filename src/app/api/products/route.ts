@@ -4,11 +4,13 @@ import Product from "@/models/Product";
 import Subcategory from "@/models/Subcategory";
 import Category from "@/models/Category";
 import { requireAdminAuth, escapeRegex } from "@/lib/security";
+import { getOrSetCache } from "@/lib/redis";
+import { invalidateCatalogueAndHeaderCache } from "@/lib/catalogueData";
 
 export async function GET(request: Request) {
   try {
-    await connectDB();
     const { searchParams } = new URL(request.url);
+    const isAll = searchParams.get("all") === "true" || searchParams.get("admin") === "true";
     const q = searchParams.get("q") || searchParams.get("search") || "";
     const category = searchParams.get("category") || "";
     const subcategory = searchParams.get("subcategory") || "";
@@ -17,7 +19,64 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get("limit") || "0", 10);
     const countOnly = searchParams.get("countOnly") === "true" || searchParams.get("count") === "true";
 
-    const conditions: Record<string, unknown>[] = [];
+    // Cache public search and category product queries in Redis (5 min TTL)
+    if (!isAll && (limit > 0 || countOnly || category || subcategory || q)) {
+      const cacheKey = `rn:catalogue:products:q:${searchParams.toString().toLowerCase()}`;
+      const { data, cacheStatus } = await getOrSetCache(
+        cacheKey,
+        300,
+        async () => {
+          return executeProductQuery(searchParams, {
+            isAll,
+            q,
+            category,
+            subcategory,
+            status,
+            page,
+            limit,
+            countOnly,
+          });
+        },
+        60
+      );
+      return NextResponse.json(data, {
+        headers: { "X-Cache": cacheStatus },
+      });
+    }
+
+    const result = await executeProductQuery(searchParams, {
+      isAll,
+      q,
+      category,
+      subcategory,
+      status,
+      page,
+      limit,
+      countOnly,
+    });
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error("GET /api/products error:", error);
+    return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 });
+  }
+}
+
+async function executeProductQuery(
+  searchParams: URLSearchParams,
+  params: {
+    isAll: boolean;
+    q: string;
+    category: string;
+    subcategory: string;
+    status: string;
+    page: number;
+    limit: number;
+    countOnly: boolean;
+  }
+) {
+  await connectDB();
+  const { isAll, q, category, subcategory, status, page, limit, countOnly } = params;
+  const conditions: Record<string, unknown>[] = [];
 
     // 1. Comprehensive multi-field text search (SKU, Article, Name, Category, Color, Keywords)
     if (q) {
@@ -140,7 +199,6 @@ export async function GET(request: Request) {
     }
 
     // 8. Website Visibility Filter (Matches Laravel: is_visible_website == 1)
-    const isAll = searchParams.get("all") === "true" || searchParams.get("admin") === "true";
     if (!isAll) {
       conditions.push({ isVisibleWebsite: { $ne: false } });
     }
@@ -160,7 +218,7 @@ export async function GET(request: Request) {
 
     if (countOnly) {
       const total = await Product.countDocuments(filter);
-      return NextResponse.json({ total, count: total });
+      return { total, count: total };
     }
 
     const sortBy = searchParams.get("sortBy") || searchParams.get("sort") || "";
@@ -188,13 +246,13 @@ export async function GET(request: Request) {
       const skip = (page - 1) * limit;
       const total = await Product.countDocuments(filter);
       const products = await query.skip(skip).limit(limit).lean();
-      return NextResponse.json({
+      return {
         products,
         total,
         page,
         totalPages: Math.ceil(total / limit),
         hasMore: skip + products.length < total,
-      });
+      };
     }
 
     if (!isAll && !subcategory && !category && !q) {
@@ -202,11 +260,7 @@ export async function GET(request: Request) {
     }
 
     const products = await query.lean();
-    return NextResponse.json(products);
-  } catch (error) {
-    console.error("GET /api/products error:", error);
-    return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 });
-  }
+    return products;
 }
 
 export async function POST(request: Request) {
@@ -275,6 +329,7 @@ export async function POST(request: Request) {
 
     const product = new Product(productData);
     await product.save();
+    await invalidateCatalogueAndHeaderCache();
     return NextResponse.json(product, { status: 201 });
   } catch (error) {
     console.error("POST /api/products error:", error);

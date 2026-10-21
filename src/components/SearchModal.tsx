@@ -3,6 +3,12 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { X, Loader2, TrendingUp, Clock, Sparkles, Search, ArrowRight } from "lucide-react";
+import {
+  getCachedCategories,
+  getCachedSubcategories,
+  preloadCatalogueData,
+  subscribeCatalogueCache,
+} from "@/utils/catalogueCache";
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -104,57 +110,55 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
     } catch {}
   };
 
-  // Pre-fetch categories & subcategories once
+  // Sync categories & subcategories from shared Redis-backed catalogueCache
   useEffect(() => {
-    let isMounted = true;
-    async function loadData() {
-      try {
-        const [catRes, subRes] = await Promise.all([
-          fetch("/api/categories"),
-          fetch("/api/subcategories"),
-        ]);
-
-        const cats = catRes.ok ? await catRes.json() : [];
-        const subs = subRes.ok ? await subRes.json() : [];
-
-        const combined: CategoryItem[] = [];
-
-        if (Array.isArray(cats)) {
-          cats.forEach((c) => {
-            combined.push({
-              id: c.id || c._id,
-              name: c.name,
-              slug: c.slug || c.id,
-              count: c.productCount || undefined,
-              type: "category",
-            });
+    const buildCombined = (cats: any[] | null, subs: any[] | null) => {
+      const combined: CategoryItem[] = [];
+      if (Array.isArray(cats)) {
+        cats.forEach((c) => {
+          combined.push({
+            id: c.id || c._id,
+            name: c.name,
+            slug: c.slug || c.id,
+            count: c.productCount || undefined,
+            type: "category",
           });
-        }
-
-        if (Array.isArray(subs)) {
-          subs.forEach((s) => {
-            combined.push({
-              id: s.id || s._id,
-              name: s.name,
-              slug: s.slug || s.id,
-              count: s.productCount || undefined,
-              type: "subcategory",
-            });
-          });
-        }
-
-        if (isMounted) {
-          setAllCategories(combined);
-        }
-      } catch (err) {
-        console.error("Failed to prefetch search categories:", err);
+        });
       }
-    }
-    loadData();
-    return () => {
-      isMounted = false;
+      if (Array.isArray(subs)) {
+        subs.forEach((s) => {
+          combined.push({
+            id: s.id || s._id,
+            name: s.name,
+            slug: s.slug || s.id,
+            count: s.productCount || undefined,
+            type: "subcategory",
+          });
+        });
+      }
+      if (combined.length > 0) {
+        setAllCategories(combined);
+      }
     };
-  }, []);
+
+    const cachedCats = getCachedCategories();
+    const cachedSubs = getCachedSubcategories();
+    if (cachedCats && cachedSubs) {
+      buildCombined(cachedCats, cachedSubs);
+    }
+
+    const unsubscribe = subscribeCatalogueCache(({ categories, subcategories }) => {
+      buildCombined(categories, subcategories);
+    });
+
+    if (isOpen && (!cachedCats || !cachedSubs)) {
+      preloadCatalogueData().then(({ categories, subcategories }) => {
+        buildCombined(categories, subcategories);
+      });
+    }
+
+    return unsubscribe;
+  }, [isOpen]);
 
   // Jaquar-Style Auto-Type Animation Effect
   useEffect(() => {

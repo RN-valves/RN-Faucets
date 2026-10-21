@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Loader2 } from "lucide-react";
+import { getCachedCategories, getCachedSubcategories } from "@/utils/catalogueCache";
 
 interface JaquarSearchBarProps {
   isDarkBg?: boolean;
@@ -140,15 +141,28 @@ export default function JaquarSearchBar({ isDarkBg = false }: JaquarSearchBarPro
       return;
     }
 
+    // 1. Instant 0ms suggestions from preset keywords + Redis-cached categories & subcategories
+    const presetMatches = PRESET_KEYWORDS.filter((k) =>
+      k.toLowerCase().includes(trimmed)
+    );
+    const cachedCats = (getCachedCategories() || [])
+      .map((c) => c.name?.toLowerCase().trim())
+      .filter((n): n is string => Boolean(n && n.includes(trimmed)));
+    const cachedSubs = (getCachedSubcategories() || [])
+      .map((s) => s.name?.toLowerCase().trim())
+      .filter((n): n is string => Boolean(n && n.includes(trimmed)));
+
+    const instantMatches = Array.from(
+      new Set([...cachedSubs, ...cachedCats, ...presetMatches])
+    ).slice(0, 8);
+    if (instantMatches.length > 0) {
+      setSuggestions(instantMatches);
+    }
+
     setLoading(true);
     const delayDebounce = setTimeout(async () => {
       try {
-        // 1. Filter from predefined keywords
-        const presetMatches = PRESET_KEYWORDS.filter((k) =>
-          k.toLowerCase().includes(trimmed)
-        );
-
-        // 2. Fetch live matching products/categories from API
+        // 2. Fetch live matching products from Redis-cached API
         let apiMatches: string[] = [];
         try {
           const res = await fetch(`/api/products?q=${encodeURIComponent(trimmed)}&limit=8`);
@@ -163,7 +177,7 @@ export default function JaquarSearchBar({ isDarkBg = false }: JaquarSearchBarPro
 
         // Combine and deduplicate
         const combined = Array.from(
-          new Set([...presetMatches, ...apiMatches])
+          new Set([...cachedSubs, ...cachedCats, ...presetMatches, ...apiMatches])
         ).slice(0, 8);
 
         setSuggestions(combined);

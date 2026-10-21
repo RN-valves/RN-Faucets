@@ -53,7 +53,10 @@ import {
   preloadCatalogueData,
   getCachedCategories,
   getCachedSubcategories,
+  getCachedHeaderConfig,
+  subscribeCatalogueCache,
   preheatImage,
+  preheatOurProductsImages,
 } from "@/utils/catalogueCache";
 
 function CatalogueDashboard({
@@ -76,41 +79,44 @@ function CatalogueDashboard({
   const [loading, setLoading] = useState(!cachedCats || cachedCats.length === 0);
 
   useEffect(() => {
+    const applyData = (cats: any[], subs: any[]) => {
+      if (Array.isArray(cats) && cats.length > 0) {
+        setCategories(cats);
+        setActiveCategoryId((prev) =>
+          prev || cats[0].id || (cats[0] as any)._id || cats[0].slug
+        );
+      }
+      if (Array.isArray(subs) && subs.length > 0) {
+        setSubcategories(subs);
+      }
+      if (Array.isArray(cats) && cats.length > 0) {
+        setLoading(false);
+      }
+    };
+
     const memCats = getCachedCategories();
     const memSubs = getCachedSubcategories();
     if (memCats && memSubs && memCats.length > 0) {
-      setCategories(memCats as any);
-      setSubcategories(memSubs as any);
-      setActiveCategoryId(memCats[0].id || (memCats[0] as any)._id || memCats[0].slug);
-      setLoading(false);
+      applyData(memCats, memSubs);
+      preheatOurProductsImages();
       return;
     }
 
-    async function loadCatalogueData() {
-      try {
-        setLoading(true);
-        const [catRes, subRes] = await Promise.all([
-          fetch("/api/categories"),
-          fetch("/api/subcategories"),
-        ]);
+    setLoading(true);
+    const unsubscribe = subscribeCatalogueCache(({ categories: c, subcategories: s }) => {
+      applyData(c, s);
+    });
 
-        const cats = catRes.ok ? await catRes.json() : [];
-        const subs = subRes.ok ? await subRes.json() : [];
-
-        if (Array.isArray(cats) && cats.length > 0) {
-          setCategories(cats);
-          setActiveCategoryId(cats[0].id || (cats[0] as any)._id || cats[0].slug);
-        }
-        if (Array.isArray(subs) && subs.length > 0) {
-          setSubcategories(subs);
-        }
-      } catch (err) {
-        console.error("Failed to load dynamic catalogue dashboard data:", err);
-      } finally {
+    preloadCatalogueData()
+      .then(({ categories: c, subcategories: s }) => {
+        applyData(c, s);
+        preheatOurProductsImages();
+      })
+      .finally(() => {
         setLoading(false);
-      }
-    }
-    loadCatalogueData();
+      });
+
+    return unsubscribe;
   }, []);
 
   const activeCategory =
@@ -227,6 +233,19 @@ function CatalogueDashboard({
               <button
                 key={item.id || idx}
                 type="button"
+                onMouseEnter={() => {
+                  const catId = item.id || (item as any)._id;
+                  subcategories
+                    .filter(
+                      (s) =>
+                        String(s.categoryId) === String(catId) ||
+                        (s.categoryName &&
+                          item.name &&
+                          s.categoryName.toLowerCase().trim() === item.name.toLowerCase().trim())
+                    )
+                    .slice(0, 9)
+                    .forEach((s) => preheatImage(s.image));
+                }}
                 onClick={() => setActiveCategoryId(item.id || (item as any)._id || item.slug)}
                 className={`catalogue-category-btn${isSelected ? " is-active" : ""}`}
               >
@@ -422,8 +441,11 @@ interface HeaderProps {
 }
 
 export default function Header({ data }: HeaderProps) {
-  const [logoSrc, setLogoSrc] = useState<string>(data?.logo || DEFAULT_LOGO);
-  const [menuVideoSrc, setMenuVideoSrc] = useState<string>(data?.menuVideo || DEFAULT_MENU_VIDEO);
+  const cachedHdr = getCachedHeaderConfig();
+  const [logoSrc, setLogoSrc] = useState<string>(data?.logo || cachedHdr?.logo || DEFAULT_LOGO);
+  const [menuVideoSrc, setMenuVideoSrc] = useState<string>(
+    data?.menuVideo || cachedHdr?.menuVideo || DEFAULT_MENU_VIDEO
+  );
 
   useEffect(() => {
     if (data?.logo) {
@@ -432,14 +454,15 @@ export default function Header({ data }: HeaderProps) {
     if (data?.menuVideo) {
       setMenuVideoSrc(data.menuVideo);
     }
-    fetch("/api/home-setting")
-      .then((res) => res.json())
-      .then((json) => {
-        if (json?.header?.logo && !data?.logo) {
-          setLogoSrc(json.header.logo);
+
+    // Fetch unified Redis-cached Header + Our Products Catalogue bundle in 1 request
+    preloadCatalogueData()
+      .then(({ header }) => {
+        if (header?.logo && !data?.logo) {
+          setLogoSrc(header.logo);
         }
-        if (json?.header?.menuVideo && !data?.menuVideo) {
-          setMenuVideoSrc(json.header.menuVideo);
+        if (header?.menuVideo && !data?.menuVideo) {
+          setMenuVideoSrc(header.menuVideo);
         }
       })
       .catch(() => {});
@@ -1168,9 +1191,13 @@ export default function Header({ data }: HeaderProps) {
           <button
             type="button"
             className="rn-header-menu-btn group"
-            onMouseEnter={preloadCatalogueData}
+            onMouseEnter={() => {
+              preloadCatalogueData();
+              preheatOurProductsImages();
+            }}
             onClick={() => {
               preloadCatalogueData();
+              preheatOurProductsImages();
               setActiveUserMenuLink(null);
               setUserMenuOpen(true);
             }}
@@ -2120,6 +2147,10 @@ export default function Header({ data }: HeaderProps) {
                       (e.currentTarget as HTMLAnchorElement).style.color = "#ffffff";
                       (e.currentTarget as HTMLAnchorElement).style.transform = "scale(1.05) translateX(4px)";
                       (e.currentTarget as HTMLAnchorElement).style.textShadow = "0 0 15px rgba(255,255,255,0.3)";
+                      if (link === "Our Products") {
+                        preloadCatalogueData();
+                        preheatOurProductsImages();
+                      }
                     }}
                     onMouseLeave={(e) => {
                       (e.currentTarget as HTMLAnchorElement).style.color =
