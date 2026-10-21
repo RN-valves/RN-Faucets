@@ -21,7 +21,7 @@ const TRUST_ITEMS: TrustItem[] = [
     description:
       "Every product backed by a manufacturer warranty of 1 to 10 years, depending on the range — built for long-term reliability.",
     linkLabel: "→ See Warranty Terms",
-    href: "/return-refund-policy",
+    href: "/warranty-policy",
   },
   {
     title: "Free & Fast Delivery",
@@ -73,9 +73,12 @@ export default function WhyBuySection({ data }: WhyBuySectionProps) {
   if (!isVisible || rawItems.length === 0) return null;
 
   const itemsList = rawItems.map((item: any) => {
+    const isWarrantyItem =
+      String(item.title || "").toLowerCase().includes("warranty") ||
+      String(item.linkLabel || "").toLowerCase().includes("warranty");
     return {
       ...item,
-      href: item.href || "/contact-us",
+      href: isWarrantyItem ? "/warranty-policy" : item.href || "/contact-us",
       linkLabel: item.linkLabel || "Learn More",
     };
   });

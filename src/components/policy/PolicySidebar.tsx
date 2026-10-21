@@ -12,6 +12,8 @@ import {
   ChevronRight,
   Headphones,
   Mail,
+  Download,
+  BadgeCheck,
 } from "lucide-react";
 
 interface PolicyItem {
@@ -22,6 +24,12 @@ interface PolicyItem {
 }
 
 const POLICY_LINKS: PolicyItem[] = [
+  {
+    name: "Warranty Policy",
+    href: "/warranty-policy",
+    subtitle: "CP fittings coverage & PDF download",
+    icon: BadgeCheck,
+  },
   {
     name: "Privacy Policy",
     href: "/privacy-policy",
@@ -154,10 +162,66 @@ export default function PolicySidebar() {
         })}
       </div>
 
+      {/* Quick Warranty PDF Download Box in Sidebar */}
+      <div
+        style={{
+          marginTop: "18px",
+          background: "linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%)",
+          border: "1px solid #BAE6FD",
+          borderRadius: "14px",
+          padding: "18px 20px",
+        }}
+      >
+        <div
+          style={{
+            fontSize: "12.5px",
+            fontWeight: 800,
+            color: "#063963",
+            textTransform: "uppercase",
+            letterSpacing: "0.04em",
+            marginBottom: "6px",
+          }}
+        >
+          Warranty Policy PDF
+        </div>
+        <p
+          style={{
+            fontSize: "12.5px",
+            color: "#334155",
+            lineHeight: 1.5,
+            margin: "0 0 12px 0",
+          }}
+        >
+          Download the official 7-page RN CP Fittings Warranty Policy booklet (Version 1.1).
+        </p>
+        <a
+          href="/documents/RN_CP_Fittings_Warranty_Policy.pdf"
+          download="RN_CP_Fittings_Warranty_Policy_Effective_01_Oct_2026_v1.1.pdf"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px",
+            width: "100%",
+            padding: "10px 14px",
+            borderRadius: "10px",
+            background: "#063963",
+            color: "#FFFFFF",
+            fontSize: "13px",
+            fontWeight: 700,
+            textDecoration: "none",
+            boxSizing: "border-box",
+          }}
+        >
+          <Download size={15} />
+          <span>Download Warranty PDF</span>
+        </a>
+      </div>
+
       {/* Support Contact Box */}
       <div
         style={{
-          marginTop: "24px",
+          marginTop: "18px",
           background: "#F8FAFC",
           border: "1px solid #E2E8F0",
           borderRadius: "14px",
@@ -188,7 +252,7 @@ export default function PolicySidebar() {
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           <a
-            href="tel:1800123400400"
+            href="tel:9891201208"
             style={{
               display: "flex",
               alignItems: "center",
@@ -199,7 +263,7 @@ export default function PolicySidebar() {
               textDecoration: "none",
             }}
           >
-            <Headphones size={15} /> 1800 12340 0400
+            <Headphones size={15} /> +91 98912 01208 / 1800 123 400 400
           </a>
           <a
             href="mailto:enquiry@rnvalves.com"

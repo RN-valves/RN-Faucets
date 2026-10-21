@@ -86,7 +86,7 @@ const DEFAULT_HOME_SETTINGS = {
         description:
           "Every product backed by a manufacturer warranty of 1 to 10 years, depending on the range — built for long-term reliability.",
         linkLabel: "→ See Warranty Terms",
-        href: "/return-refund-policy",
+        href: "/warranty-policy",
       },
       {
         title: "Free & Fast Delivery",
@@ -175,6 +175,7 @@ const DEFAULT_HOME_SETTINGS = {
       { label: "Store Locator", href: "/store-locator" },
     ],
     col3Links: [
+      { label: "Warranty Policy", href: "/warranty-policy" },
       { label: "Privacy Policy", href: "/privacy-policy" },
       { label: "Return & Refund Policy", href: "/return-refund-policy" },
       { label: "Terms & Conditions", href: "/terms-conditions" },

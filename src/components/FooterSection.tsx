@@ -52,6 +52,7 @@ const NAV_COL_2 = [
   { label: "Store Locator", href: "/store-locator" },
 ];
 const NAV_COL_3 = [
+  { label: "Warranty Policy", href: "/warranty-policy" },
   { label: "Privacy Policy", href: "/privacy-policy" },
   { label: "Return & Refund Policy", href: "/return-refund-policy" },
   { label: "Terms & Conditions", href: "/terms-conditions" },
