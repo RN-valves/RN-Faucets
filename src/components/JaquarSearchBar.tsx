@@ -214,12 +214,12 @@ export default function JaquarSearchBar({ isDarkBg = false }: JaquarSearchBarPro
       ref={containerRef}
       style={{
         position: "relative",
-        width: "100%",
-        maxWidth: "580px",
-        minWidth: "320px",
+        width: "clamp(190px, 23vw, 450px)",
+        maxWidth: "450px",
+        minWidth: "180px",
         fontFamily: "'Manrope', system-ui, sans-serif",
       }}
-      className="jaquar-search-container w-[320px] md:w-[380px] lg:w-[480px] xl:w-[580px]"
+      className="jaquar-search-container"
     >
       {/* Search Input Form (Pill Shape) */}
       <form onSubmit={handleSubmit} style={{ position: "relative", width: "100%", margin: 0 }}>
@@ -236,14 +236,14 @@ export default function JaquarSearchBar({ isDarkBg = false }: JaquarSearchBarPro
           aria-label="Search products"
           style={{
             width: "100%",
-            height: "42px",
+            height: "38px",
             borderRadius: "9999px",
             border: `1.5px solid ${inputBorder}`,
             background: inputBg,
             color: textColor,
-            paddingLeft: "20px",
-            paddingRight: "44px",
-            fontSize: "14px",
+            paddingLeft: "16px",
+            paddingRight: "40px",
+            fontSize: "13.5px",
             fontWeight: 400,
             outline: "none",
             boxSizing: "border-box",

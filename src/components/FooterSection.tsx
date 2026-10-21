@@ -121,7 +121,7 @@ export default function FooterSection({ data }: FooterSectionProps) {
       />
 
       {/* ── All content sits on top via z-index ── */}
-      <div style={{ position: "relative", zIndex: 1, maxWidth: 1320, margin: "0 auto", padding: "40px 48px 0 48px" }}>
+      <div className="rn-footer-container" style={{ position: "relative", zIndex: 1, maxWidth: 1320, margin: "0 auto", padding: "40px clamp(20px, 4vw, 48px) 0" }}>
 
         {/* Logo — top-left */}
         <div style={{ marginBottom: 32 }}>
@@ -142,13 +142,7 @@ export default function FooterSection({ data }: FooterSectionProps) {
         </div>
 
         {/* 4-column grid */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "1.5fr 1fr 1fr 1.3fr",
-          gap: "0 56px",
-          alignItems: "start",
-          marginBottom: 36,
-        }}>
+        <div className="rn-footer-grid">
 
           {/* Col 1 — Get In Touch */}
           <div>
@@ -246,6 +240,25 @@ export default function FooterSection({ data }: FooterSectionProps) {
           </nav>
 
           <style>{`
+            .rn-footer-grid {
+              display: grid;
+              grid-template-columns: 1.5fr 1fr 1fr 1.3fr;
+              gap: 28px clamp(24px, 4vw, 56px);
+              align-items: start;
+              margin-bottom: 36px;
+            }
+            @media (max-width: 1024px) {
+              .rn-footer-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 32px 36px;
+              }
+            }
+            @media (max-width: 640px) {
+              .rn-footer-grid {
+                grid-template-columns: 1fr;
+                gap: 24px;
+              }
+            }
             .rn-footer-nav-link {
               display: block;
               font-size: 14.5px;

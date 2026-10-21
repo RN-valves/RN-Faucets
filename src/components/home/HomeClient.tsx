@@ -407,14 +407,40 @@ export default function HomeClient({
       <section
         ref={heroSectionRef}
         data-header-theme="dark"
-        style={{
-          position: "relative",
-          width: "100%",
-          height: "100vh",
-          overflow: "hidden",
-          background: "#020914",
-        }}
+        className="rn-hero-section"
       >
+        <style>{`
+          .rn-hero-section {
+            position: relative;
+            width: 100%;
+            height: min(100vh, 56.5vw);
+            min-height: 280px;
+            overflow: hidden;
+            background: #020914;
+          }
+          .rn-hero-overlay-content {
+            position: absolute;
+            inset: 0;
+            zIndex: 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 0 20px clamp(52px, 10vh, 110px);
+            text-align: center;
+            gap: 0;
+            pointer-events: none;
+          }
+          @media (max-width: 768px) {
+            .rn-hero-section {
+              height: clamp(250px, 56.5vw, 460px);
+              min-height: 250px;
+            }
+            .rn-hero-overlay-content {
+              padding: 0 16px 44px;
+            }
+          }
+        `}</style>
         {/* ── Shimmer placeholder until database hero loads ── */}
         {heroSequence.length === 0 && (
           <div
@@ -530,30 +556,19 @@ export default function HomeClient({
         {/* ── Hero text + progress rings ── */}
         {heroSequence.length > 0 && (
           <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              zIndex: 3,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "flex-end",
-              paddingBottom: "12vh",
-              textAlign: "center",
-              gap: 0,
-              pointerEvents: "none",
-            }}
+            className="rn-hero-overlay-content"
+            style={{ zIndex: 3 }}
           >
             {/* Label */}
             {current?.subtitle && (
               <p
                 style={{
                   color: "rgba(255,255,255,0.65)",
-                  fontSize: 13,
+                  fontSize: "clamp(11px, 1.1vw, 13px)",
                   fontWeight: 400,
                   letterSpacing: "0.22em",
                   textTransform: "uppercase",
-                  marginBottom: 14,
+                  marginBottom: "clamp(8px, 1.2vh, 14px)",
                   fontFamily: "'Manrope', system-ui, sans-serif",
                   WebkitFontSmoothing: "antialiased",
                   MozOsxFontSmoothing: "grayscale" as const,
@@ -568,12 +583,12 @@ export default function HomeClient({
               <h1
                 style={{
                   color: "rgba(255,255,255,0.96)",
-                  fontSize: "clamp(28px, 5vw, 52px)",
+                  fontSize: "clamp(22px, 4.2vw, 52px)",
                   fontWeight: 600,
-                  lineHeight: 1.05,
+                  lineHeight: 1.08,
                   letterSpacing: "-0.03em",
                   whiteSpace: "pre-line",
-                  marginBottom: 28,
+                  marginBottom: "clamp(16px, 2.5vh, 28px)",
                   fontFamily: "'Manrope', system-ui, sans-serif",
                   maxWidth: 600,
                   WebkitFontSmoothing: "antialiased",
@@ -617,15 +632,16 @@ export default function HomeClient({
         <button
           type="button"
           onClick={() => {
+            const targetTop = heroSectionRef.current?.offsetHeight || window.innerHeight;
             window.scrollTo({
-              top: window.innerHeight,
+              top: targetTop,
               behavior: "smooth",
             });
           }}
           aria-label="Scroll down to next section"
           style={{
             position: "absolute",
-            bottom: "28px",
+            bottom: "clamp(12px, 2.5vh, 28px)",
             left: "50%",
             transform: "translateX(-50%)",
             zIndex: 10,

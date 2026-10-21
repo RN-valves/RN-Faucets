@@ -281,9 +281,9 @@ export default function HeaderMegaMenu({
         .rn-megamenu-content {
           max-width: 1440px;
           margin: 0 auto;
-          padding: 28px clamp(20px, 3.5vw, 56px) 32px;
+          padding: 24px clamp(16px, 3vw, 56px) 28px;
           display: flex;
-          gap: clamp(24px, 3.5vw, 48px);
+          gap: clamp(20px, 3vw, 48px);
           align-items: flex-start;
           box-sizing: border-box;
           max-height: calc(100vh - 56px);
@@ -291,7 +291,7 @@ export default function HeaderMegaMenu({
         }
 
         .rn-megamenu-preview-col {
-          width: clamp(280px, 26vw, 390px);
+          width: clamp(240px, 24vw, 380px);
           flex-shrink: 0;
           display: flex;
           flex-direction: column;
@@ -300,13 +300,27 @@ export default function HeaderMegaMenu({
 
         @media (max-width: 1200px) {
           .rn-megamenu-cols-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 6px 12px !important;
+          }
+          .rn-megamenu-item {
+            padding: 7px 10px !important;
+            font-size: 13.5px !important;
+          }
+          .rn-megamenu-preview-col {
+            width: 245px !important;
+          }
+          .rn-megamenu-banner-card {
+            height: 195px !important;
+          }
+        }
+
+        @media (max-width: 980px) {
+          .rn-megamenu-cols-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
           }
           .rn-megamenu-preview-col {
-            width: 260px !important;
-          }
-          .rn-megamenu-banner-card {
-            height: 200px !important;
+            width: 220px !important;
           }
         }
       `}</style>

@@ -694,9 +694,12 @@ export default function Header({ data }: HeaderProps) {
   const iconColor = isTransparentWhite ? "#111827" : "#ffffff";
   const activeTabColor = isTransparentWhite ? "#0077B6" : "#38BDF8";
 
+  // Compact logo whenever scrolled down OR when Mega Menu / User Menu is open so logo never overlaps Mega Menu content
+  const isCompactHeaderLogo = isLogoCompact || activeMegaMenu !== null || userMenuOpen;
+
   // Transparent header: pure transparent at top of hero; frosted white on hover or scroll
   const headerBg = isTransparentWhite
-    ? isLogoCompact
+    ? isCompactHeaderLogo
       ? "rgba(255, 255, 255, 0.96)"
       : "rgba(255, 255, 255, 0.82)"
     : "transparent";
@@ -712,15 +715,15 @@ export default function Header({ data }: HeaderProps) {
 
   return (
     <>
-      {/* ── Prominent Floating Brand Logo (Shrinks cleanly into navbar on scroll) ── */}
+      {/* ── Prominent Floating Brand Logo (Shrinks cleanly into navbar on scroll or when mega menu opens) ── */}
       <div
-        className={`rn-floating-brand-logo${isLogoCompact ? " is-logo-compact" : ""}`}
+        className={`rn-floating-brand-logo${isCompactHeaderLogo ? " is-logo-compact" : ""}`}
         onMouseEnter={handleHeaderMouseEnter}
         onMouseLeave={handleHeaderMouseLeave}
         style={{
           position: "fixed",
-          top: isLogoCompact ? "3px" : "4px",
-          left: "clamp(16px, 4vw, 70px)",
+          top: isCompactHeaderLogo ? "3px" : "4px",
+          left: "clamp(16px, 3vw, 70px)",
           zIndex: 10000,
           pointerEvents: "auto",
           transition: "top 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
@@ -769,11 +772,16 @@ export default function Header({ data }: HeaderProps) {
       >
         {/* Category Mega Menu Navigation Tabs (Jaquar Reference Style) */}
         <nav
-          className="rn-header-nav-tabs hidden lg:flex items-center gap-7 mr-auto"
+          className="rn-header-nav-tabs hidden lg:flex items-center mr-auto"
           style={{
-            marginLeft: "clamp(120px, 14vw, 195px)",
+            marginLeft: isCompactHeaderLogo
+              ? "clamp(82px, 8.5vw, 128px)"
+              : "clamp(112px, 12vw, 185px)",
+            marginRight: "16px",
+            gap: "clamp(14px, 1.8vw, 28px)",
             height: "100%",
             position: "relative",
+            transition: "margin-left 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
           }}
           aria-label="Product Categories Navigation"
         >
@@ -798,7 +806,7 @@ export default function Header({ data }: HeaderProps) {
                   display: "inline-flex",
                   alignItems: "center",
                   padding: "0 4px",
-                  fontSize: "14px",
+                  fontSize: "clamp(13px, 1vw, 14px)",
                   fontWeight: isActive ? 700 : 600,
                   fontFamily: "'Manrope', system-ui, sans-serif",
                   letterSpacing: "-0.01em",
@@ -839,7 +847,7 @@ export default function Header({ data }: HeaderProps) {
           }}
         >
           {/* Jaquar Style Embedded Search Bar (Desktop / Tablet) */}
-          <div className="hidden md:block mr-4 flex-1 max-w-[580px]">
+          <div className="hidden md:block mr-2 lg:mr-3 flex-1 max-w-[460px]">
             <JaquarSearchBar isDarkBg={!isTransparentWhite} />
           </div>
 
@@ -1306,8 +1314,8 @@ export default function Header({ data }: HeaderProps) {
           /* ── Floating Header Navbar Responsive System ── */
           .rn-header-navbar {
             height: 56px;
-            padding-left: clamp(20px, 4vw, 80px);
-            padding-right: clamp(20px, 4vw, 80px);
+            padding-left: clamp(16px, 3vw, 80px);
+            padding-right: clamp(16px, 3vw, 80px);
             display: flex;
             align-items: center;
             justify-content: flex-end;
@@ -1316,7 +1324,7 @@ export default function Header({ data }: HeaderProps) {
           .rn-floating-brand-logo {
             position: fixed;
             top: 4px;
-            left: clamp(20px, 4vw, 80px);
+            left: clamp(16px, 3vw, 80px);
             z-index: 10000;
             pointer-events: auto;
             transition: top 0.35s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1344,14 +1352,14 @@ export default function Header({ data }: HeaderProps) {
           .rn-header-right-group {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 16px;
             margin-left: auto;
           }
 
           .rn-header-action-icons {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 14px;
           }
 
           .rn-header-divider {
@@ -1366,6 +1374,36 @@ export default function Header({ data }: HeaderProps) {
 
           .rn-header-menu-text {
             display: inline-block;
+          }
+
+          /* Laptop / Small Desktop Responsive Header (max-width: 1280px) */
+          @media (max-width: 1280px) {
+            .rn-header-navbar {
+              padding-left: clamp(14px, 2vw, 32px) !important;
+              padding-right: clamp(14px, 2vw, 32px) !important;
+            }
+
+            .rn-floating-brand-logo {
+              left: clamp(14px, 2vw, 32px) !important;
+            }
+
+            .rn-header-logo-img {
+              height: 102px !important;
+              max-height: 112px !important;
+            }
+
+            .rn-floating-brand-logo.is-logo-compact .rn-header-logo-img {
+              height: 48px !important;
+              max-height: 48px !important;
+            }
+
+            .rn-header-right-group {
+              gap: 12px !important;
+            }
+
+            .rn-header-action-icons {
+              gap: 12px !important;
+            }
           }
 
           /* Mobile / Tablet Responsive Header (max-width: 768px) */
