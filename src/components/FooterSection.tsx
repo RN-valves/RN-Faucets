@@ -211,17 +211,38 @@ export default function FooterSection({ data }: FooterSectionProps) {
 
           {/* Col 4 */}
           <nav aria-label="Footer links 3" style={{ paddingTop: 4 }}>
-            {(data?.col3Links && data.col3Links.length > 0 ? data.col3Links : NAV_COL_3)
-              .filter((l) => {
-                const label = l.label?.toLowerCase() || "";
-                const href = l.href?.toLowerCase() || "";
-                return !label.includes("personal account") &&
-                       !label.includes("business account") &&
-                       !href.includes("retail-user-registration");
-              })
-              .map((l) => (
-                <Link key={l.label} href={l.href} className="rn-footer-nav-link">{l.label}</Link>
-              ))}
+            {(() => {
+              const baseCol3 =
+                data?.col3Links && data.col3Links.length > 0 ? data.col3Links : NAV_COL_3;
+              const hasWarranty = baseCol3.some(
+                (l) =>
+                  l.href === "/warranty-policy" ||
+                  l.label?.toLowerCase().includes("warranty")
+              );
+              const mergedCol3 = hasWarranty
+                ? baseCol3.map((l) =>
+                    l.label?.toLowerCase().includes("warranty")
+                      ? { label: "Warranty Policy", href: "/warranty-policy" }
+                      : l
+                  )
+                : [{ label: "Warranty Policy", href: "/warranty-policy" }, ...baseCol3];
+
+              return mergedCol3
+                .filter((l) => {
+                  const label = l.label?.toLowerCase() || "";
+                  const href = l.href?.toLowerCase() || "";
+                  return (
+                    !label.includes("personal account") &&
+                    !label.includes("business account") &&
+                    !href.includes("retail-user-registration")
+                  );
+                })
+                .map((l) => (
+                  <Link key={l.label} href={l.href} className="rn-footer-nav-link">
+                    {l.label}
+                  </Link>
+                ));
+            })()}
           </nav>
 
           <style>{`
