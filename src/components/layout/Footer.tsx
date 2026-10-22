@@ -61,12 +61,13 @@ const NAV_COLUMN_2 = [
   { label: "Store Locator", href: "/store-locator" },
 ];
 const NAV_COLUMN_3 = [
-  { label: "Privacy Policy", href: "/privacy-policy" },
-  { label: "Return & Refund Policy", href: "/return-refund-policy" },
-  { label: "Terms & Conditions", href: "/terms-conditions" },
-  { label: "Our Certification", href: "/certificates" },
   { label: "Our CSR", href: "/corporate-social-responsibility" },
+  { label: "Our Certification", href: "/certificates" },
   { label: "Become our Dealer", href: "/business-user-registration" },
+  { label: "Privacy Policy", href: "/privacy-policy" },
+  { label: "Terms & Conditions", href: "/terms-conditions" },
+  { label: "Return & Refund Policy", href: "/return-refund-policy" },
+  { label: "Warranty Policy", href: "/warranty-policy" },
 ];
 const SOCIAL_LINKS = [
   { Component: InstagramIcon, label: "Instagram", href: "https://www.instagram.com/rnvalvesandfaucets/" },
