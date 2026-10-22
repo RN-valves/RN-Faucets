@@ -9,14 +9,19 @@ interface JaquarSearchBarProps {
   isDarkBg?: boolean;
 }
 
-const SEARCH_WORDS = [
-  "Search Faucets...",
-  "Search Showers...",
-  "Search Diverters...",
-  "Search Basin Mixers...",
-  "Search Pillar Cocks...",
-  "Search Bath Accessories...",
+const DEFAULT_SEARCH_PHRASES = [
+  "Search for Single Lever Basin Mixer...",
+  "Search for Overhead Rain Showers...",
+  "Search for Black Chrome Pillar Cock...",
+  "Search for Concealed Shower Diverters...",
+  "Search for PTMT Bib Cock with Flange...",
+  "Search for Wall Mounted Sink Mixer...",
+  "Search for Rose Gold Bath Fittings...",
+  "Search for Two Way Angle Valves...",
+  "Search for Tall Body Basin Faucets...",
 ];
+
+const SEARCH_PREFIX = "Search for ";
 
 // Comprehensive keyword dictionary matching bathroom & sanitaryware terminology (Jaquar taxonomy)
 const PRESET_KEYWORDS = [
@@ -92,35 +97,60 @@ export default function JaquarSearchBar({ isDarkBg = false }: JaquarSearchBarPro
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Dynamic AI-powered phrase list (seeded with Jaquar-style defaults)
+  const [searchPhrases, setSearchPhrases] = useState<string[]>(DEFAULT_SEARCH_PHRASES);
+
   // Auto-typing placeholder animation
-  const [placeholder, setPlaceholder] = useState("");
+  const [placeholder, setPlaceholder] = useState(SEARCH_PREFIX);
   const [wordIdx, setWordIdx] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Typewriter Loop
+  // Load Gemini AI generated phrases (Redis-cached on server)
   useEffect(() => {
-    if (isOpen || query.length > 0) return;
+    let mounted = true;
+    fetch("/api/search/phrases")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (mounted && Array.isArray(data?.phrases) && data.phrases.length > 0) {
+          const normalized = data.phrases.map((p: string) =>
+            p.toLowerCase().startsWith("search") ? p : `${SEARCH_PREFIX}${p}`
+          );
+          setSearchPhrases(normalized);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
-    const currentWord = SEARCH_WORDS[wordIdx];
-    const typingSpeed = isDeleting ? 35 : 75;
+  // Jaquar-style Phrase Typewriter Loop (keeps "Search for " prefix steady while typing/deleting the phrase)
+  useEffect(() => {
+    if (isOpen || query.length > 0 || searchPhrases.length === 0) return;
+
+    const currentPhrase = searchPhrases[wordIdx % searchPhrases.length] || DEFAULT_SEARCH_PHRASES[0];
+    const minPrefixLen = currentPhrase.startsWith(SEARCH_PREFIX) ? SEARCH_PREFIX.length : 0;
+    const typingSpeed = isDeleting ? 28 : 62;
 
     const timer = setTimeout(() => {
       if (!isDeleting) {
-        setPlaceholder(currentWord.substring(0, placeholder.length + 1));
-        if (placeholder.length + 1 === currentWord.length) {
-          setTimeout(() => setIsDeleting(true), 1800);
+        const nextLen = placeholder.length + 1;
+        setPlaceholder(currentPhrase.substring(0, nextLen));
+        if (nextLen >= currentPhrase.length) {
+          setTimeout(() => setIsDeleting(true), 1900);
         }
       } else {
-        setPlaceholder(currentWord.substring(0, placeholder.length - 1));
-        if (placeholder.length === 0) {
+        const nextLen = Math.max(minPrefixLen, placeholder.length - 1);
+        setPlaceholder(currentPhrase.substring(0, nextLen));
+        if (nextLen <= minPrefixLen) {
           setIsDeleting(false);
-          setWordIdx((prev) => (prev + 1) % SEARCH_WORDS.length);
+          setWordIdx((prev) => (prev + 1) % searchPhrases.length);
         }
       }
     }, typingSpeed);
 
     return () => clearTimeout(timer);
-  }, [placeholder, isDeleting, wordIdx, isOpen, query]);
+  }, [placeholder, isDeleting, wordIdx, isOpen, query, searchPhrases]);
 
   // Click outside to close dropdown
   useEffect(() => {
@@ -133,7 +163,7 @@ export default function JaquarSearchBar({ isDarkBg = false }: JaquarSearchBarPro
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Fetch & filter suggestions dynamically
+  // Fetch & filter suggestions dynamically (Local + Redis Catalogue + Gemini AI Phrases)
   useEffect(() => {
     const trimmed = query.trim().toLowerCase();
     if (!trimmed) {
@@ -162,22 +192,36 @@ export default function JaquarSearchBar({ isDarkBg = false }: JaquarSearchBarPro
     setLoading(true);
     const delayDebounce = setTimeout(async () => {
       try {
-        // 2. Fetch live matching products from Redis-cached API
+        // 2. Fetch live matching products + Gemini AI phrase suggestions in parallel
+        const [prodRes, aiRes] = await Promise.allSettled([
+          fetch(`/api/products?q=${encodeURIComponent(trimmed)}&limit=6`),
+          trimmed.length >= 2
+            ? fetch(`/api/search/phrases?q=${encodeURIComponent(trimmed)}`)
+            : Promise.resolve(null),
+        ]);
+
         let apiMatches: string[] = [];
-        try {
-          const res = await fetch(`/api/products?q=${encodeURIComponent(trimmed)}&limit=8`);
-          if (res.ok) {
-            const data = await res.json();
-            const prods = Array.isArray(data) ? data : data.products || [];
-            apiMatches = prods
-              .map((p: any) => p.name?.toLowerCase().trim())
+        if (prodRes.status === "fulfilled" && prodRes.value && prodRes.value.ok) {
+          const data = await prodRes.value.json();
+          const prods = Array.isArray(data) ? data : data.products || [];
+          apiMatches = prods
+            .map((p: any) => p.name?.toLowerCase().trim())
+            .filter(Boolean);
+        }
+
+        let aiMatches: string[] = [];
+        if (aiRes.status === "fulfilled" && aiRes.value && aiRes.value.ok) {
+          const aiData = await aiRes.value.json();
+          if (Array.isArray(aiData?.suggestions)) {
+            aiMatches = aiData.suggestions
+              .map((s: any) => String(s || "").toLowerCase().trim())
               .filter(Boolean);
           }
-        } catch {}
+        }
 
         // Combine and deduplicate
         const combined = Array.from(
-          new Set([...cachedSubs, ...cachedCats, ...presetMatches, ...apiMatches])
+          new Set([...cachedSubs, ...cachedCats, ...presetMatches, ...aiMatches, ...apiMatches])
         ).slice(0, 8);
 
         setSuggestions(combined);
@@ -186,7 +230,7 @@ export default function JaquarSearchBar({ isDarkBg = false }: JaquarSearchBarPro
       } finally {
         setLoading(false);
       }
-    }, 150);
+    }, 180);
 
     return () => clearTimeout(delayDebounce);
   }, [query]);
