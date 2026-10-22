@@ -239,30 +239,36 @@ export async function POST(request: Request) {
     }
 
     const finalPaymentStatus =
-      body.paymentStatus || (body.paymentMethod === "Online Payment" ? "Paid" : "Pending");
+      body.paymentStatus || "Pending";
+
+    const crypto = await import("crypto");
+    const orderUuid = body.uuid || crypto.randomUUID();
+    const requestOrigin = new URL(request.url).origin;
+    const callbackUrl = `${requestOrigin}/api/payment/razorpay/callback`;
 
     let payLinkId = body.pay_link_id || "";
     let payLinkUrl = body.pay_link_url || "";
     let paymentDataStr = body.payment_data || "";
+    const rzpKeyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_live_suYcAnCphr9CQ8";
 
-    // Automatically generate a Razorpay Payment Link for Pending orders so Order Details always has a ready payment link
+    // Automatically generate an ORIGINAL Razorpay Payment Link (https://rzp.io/rzp/... -> razorpay.com/payment-link/plink_...)
     if (finalPaymentStatus !== "Paid" && !payLinkId && Number(body.totalAmount) > 0) {
       try {
         const { createRazorpayPaymentLink } = await import("@/lib/razorpay");
         const Payment = (await import("@/models/Payment")).default;
         const paymentLink = await createRazorpayPaymentLink({
           amount: Number(body.totalAmount),
-          referenceId: `${orderId}-${Date.now().toString().slice(-4)}`,
+          referenceId: orderUuid,
           description: `RN Valves Order #${orderId}`,
           customer: {
             name: body.customerName || body.shippingAddress?.firstName || "Customer",
             contact: body.customerPhone || body.shippingAddress?.phone || "9999999999",
             email: customerEmail || body.customerEmail || body.shippingAddress?.email || "ecommerce@rnvalves.com",
           },
+          callbackUrl,
         });
         payLinkId = paymentLink.id || "";
         payLinkUrl = paymentLink.short_url || "";
-        paymentDataStr = JSON.stringify(paymentLink);
 
         const numericOrderId = legacyId || numPart || parseInt(orderId.replace(/\D/g, ""), 10) || null;
         const lastPayment: any = await Payment.findOne().sort({ id: -1 }).lean();
@@ -280,8 +286,10 @@ export async function POST(request: Request) {
           city: body.shippingAddress?.city || "",
           zipcode: body.shippingAddress?.pinCode || "",
           paymentGateway: "Razorpay",
-          status: "Pending",
-          paymentData: paymentDataStr,
+          paymentKey: rzpKeyId,
+          gatewayPaymentId: orderUuid,
+          status: "Created",
+          paymentData: "",
           amount: Number(body.totalAmount),
         });
       } catch (plinkErr) {
@@ -292,12 +300,14 @@ export async function POST(request: Request) {
     const order = await Order.create({
       ...body,
       id: orderId,
+      uuid: orderUuid,
       legacyId: legacyId || numPart || undefined,
       customerEmail: customerEmail || body.customerEmail || "",
       gstNumber: gstNumber || body.gstNumber || "",
       businessName: businessName || body.businessName || "",
       status: body.status || "Pending",
       paymentStatus: finalPaymentStatus,
+      payment_key: body.payment_key || rzpKeyId,
       ...(payLinkId ? { pay_link_id: payLinkId } : {}),
       ...(payLinkUrl ? { pay_link_url: payLinkUrl } : {}),
       ...(paymentDataStr ? { payment_data: paymentDataStr } : {}),
@@ -307,10 +317,12 @@ export async function POST(request: Request) {
       }),
     });
 
-    // Send confirmation & invoice email in background
-    sendOrderInvoiceEmail(order).catch((err) =>
-      console.error("Async invoice email error:", err)
-    );
+    // Only send invoice email immediately if already Paid or COD; for Online Payment link redirects, callback sends it upon payment
+    if (finalPaymentStatus === "Paid" || body.paymentMethod === "Cash on Delivery") {
+      sendOrderInvoiceEmail(order).catch((err) =>
+        console.error("Async invoice email error:", err)
+      );
+    }
 
     return NextResponse.json(order, { status: 201 });
   } catch (error: any) {

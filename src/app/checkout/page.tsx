@@ -379,7 +379,7 @@ export default function CheckoutPage() {
       })),
       totalAmount: finalTotal,
       paymentMethod: paymentMethod === "online" ? "Online Payment" : "Cash on Delivery",
-      paymentStatus: paymentMethod === "online" ? "Paid" : "Pending",
+      paymentStatus: "Pending",
       status: "Pending",
       shippingAddress: {
         firstName: selectedAddress.name,
@@ -402,6 +402,32 @@ export default function CheckoutPage() {
     if (paymentMethod === "online") {
       setIsProcessing(true);
       try {
+        // Create Order + Original Razorpay Payment Link (plink_... / https://rzp.io/rzp/...)
+        const orderRes = await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(orderPayload),
+        });
+        const createdOrder = await orderRes.json();
+        if (orderRes.ok && createdOrder?.pay_link_url) {
+          localStorage.setItem(
+            "last_placed_order",
+            JSON.stringify({
+              items: cartItems,
+              total: finalTotal,
+              paymentMethod: "Online Payment",
+              paymentStatus: "Paid",
+              orderId: createdOrder.id || generatedOrderId,
+              paymentId: createdOrder.pay_link_id || "",
+              orderNote,
+              shipping: orderPayload.shippingAddress,
+            })
+          );
+          saveCartItems([]);
+          window.location.href = createdOrder.pay_link_url;
+          return;
+        }
+
         const loaded = await loadRazorpayScript();
         if (!loaded) {
           alert("Unable to load Razorpay payment gateway. Please check your internet connection.");
@@ -414,11 +440,11 @@ export default function CheckoutPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             amount: finalTotal,
-            receipt: generatedOrderId,
+            receipt: createdOrder?.id || generatedOrderId,
             notes: {
               customer_name: customerName,
               customer_phone: customerPhone,
-              order_id: generatedOrderId,
+              order_id: createdOrder?.id || generatedOrderId,
             },
           }),
         });

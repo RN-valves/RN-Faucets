@@ -105,9 +105,33 @@ export function verifyRazorpayPaymentSignature({
   return generatedSignature === signature;
 }
 
-/**
- * Fetches details of a payment from Razorpay
- */
+export function verifyRazorpayPaymentLinkSignature({
+  paymentLinkId,
+  referenceId,
+  status,
+  paymentId,
+  signature,
+}: {
+  paymentLinkId: string;
+  referenceId: string;
+  status: string;
+  paymentId: string;
+  signature: string;
+}): boolean {
+  const { keySecret } = getRazorpayCredentials();
+  if (!keySecret) {
+    throw new Error("Razorpay Secret is missing.");
+  }
+
+  const payload = `${paymentLinkId}|${referenceId}|${status}|${paymentId}`;
+  const generatedSignature = crypto
+    .createHmac("sha256", keySecret)
+    .update(payload)
+    .digest("hex");
+
+  return generatedSignature === signature;
+}
+
 /**
  * Creates a Razorpay Payment Link
  */
@@ -116,6 +140,7 @@ export async function createRazorpayPaymentLink({
   referenceId,
   description,
   customer,
+  callbackUrl,
 }: {
   amount: number;
   referenceId?: string;
@@ -125,6 +150,7 @@ export async function createRazorpayPaymentLink({
     contact: string;
     email?: string;
   };
+  callbackUrl?: string;
 }) {
   const { keyId, keySecret } = getRazorpayCredentials();
   if (!keyId || !keySecret) throw new Error("Razorpay credentials missing in environment");
@@ -132,33 +158,40 @@ export async function createRazorpayPaymentLink({
   const amountInPaise = Math.round(amount * 100);
   const authHeader = `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString("base64")}`;
 
+  const payload: Record<string, any> = {
+    amount: amountInPaise,
+    currency: "INR",
+    accept_partial: false,
+    reference_id: referenceId,
+    description: description || `RN Valves Order ${referenceId || ""}`,
+    customer: {
+      name: customer.name || "Customer",
+      contact: customer.contact ? customer.contact.replace(/\D/g, "").slice(-10) : "9999999999",
+      email: customer.email && customer.email.includes("@") ? customer.email : "ecommerce@rnvalves.com",
+    },
+    notify: {
+      sms: true,
+      email: true,
+      whatsapp: true,
+    },
+    reminder_enable: true,
+    notes: {
+      company: "RN Valves & Faucets",
+    },
+  };
+
+  if (callbackUrl) {
+    payload.callback_url = callbackUrl;
+    payload.callback_method = "get";
+  }
+
   const response = await fetch("https://api.razorpay.com/v1/payment_links", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: authHeader,
     },
-    body: JSON.stringify({
-      amount: amountInPaise,
-      currency: "INR",
-      accept_partial: false,
-      reference_id: referenceId,
-      description: description || `RN Valves Order ${referenceId || ""}`,
-      customer: {
-        name: customer.name || "Customer",
-        contact: customer.contact ? customer.contact.replace(/\D/g, "").slice(-10) : "9999999999",
-        email: customer.email && customer.email.includes("@") ? customer.email : "ecommerce@rnvalves.com",
-      },
-      notify: {
-        sms: true,
-        email: true,
-        whatsapp: true,
-      },
-      reminder_enable: true,
-      notes: {
-        company: "RN Valves & Faucets",
-      },
-    }),
+    body: JSON.stringify(payload),
   });
 
   const data = await response.json();
@@ -188,4 +221,5 @@ export async function fetchRazorpayPaymentLink(payLinkId: string) {
   if (!response.ok) return null;
   return response.json();
 }
+
 

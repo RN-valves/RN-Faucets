@@ -722,14 +722,6 @@ export default function AdminOrderDetailPage() {
     : isPaymentCancelledOrExpired
     ? `Failed (${rawPayStatus})`
     : "Pending";
-  const effectivePayLinkUrl =
-    order?.pay_link_url ||
-    parsedPayData.short_url ||
-    (isPaymentSuccess && order?.id ? `/payment-link/${order.id}` : "");
-  const displayPayLinkUrl =
-    effectivePayLinkUrl.startsWith("/") && typeof window !== "undefined"
-      ? `${window.location.origin}${effectivePayLinkUrl}`
-      : effectivePayLinkUrl;
   const effectivePaymentId =
     parsedPayData.razorpay_payment_id ||
     (typeof parsedPayData.id === "string" && parsedPayData.id.startsWith("pay_") ? parsedPayData.id : "") ||
@@ -738,6 +730,16 @@ export default function AdminOrderDetailPage() {
     "";
   const effectivePaymentRefId =
     parsedPayData.razorpay_payment_link_reference_id || parsedPayData.reference_id || order?.uuid || order?.id || "";
+  const rawPayLinkUrl =
+    (order?.pay_link_url && !order.pay_link_url.includes("/payment-link/") ? order.pay_link_url : "") ||
+    parsedPayData.short_url ||
+    "";
+  const effectivePayLinkUrl =
+    rawPayLinkUrl ||
+    (effectivePaymentId.startsWith("pay_")
+      ? `https://dashboard.razorpay.com/app/payments/${effectivePaymentId}`
+      : "");
+  const displayPayLinkUrl = effectivePayLinkUrl;
 
   return (
     <div style={{ minHeight: "100vh", background: isDark ? "#0B0F17" : "#F4F6F9" }}>
