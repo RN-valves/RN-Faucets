@@ -21,7 +21,7 @@ export async function GET(request: Request) {
 
     // Cache public search and category product queries in Redis (5 min TTL)
     if (!isAll && (limit > 0 || countOnly || category || subcategory || q)) {
-      const cacheKey = `rn:catalogue:products:q:${searchParams.toString().toLowerCase()}`;
+      const cacheKey = `rn:catalogue:products:v2:q:${searchParams.toString().toLowerCase()}`;
       const { data, cacheStatus } = await getOrSetCache(
         cacheKey,
         300,
@@ -77,6 +77,8 @@ async function executeProductQuery(
   await connectDB();
   const { isAll, q, category, subcategory, status, page, limit, countOnly } = params;
   const conditions: Record<string, unknown>[] = [];
+
+    let keywordConditionRef: Record<string, unknown> | null = null;
 
     // 1. Comprehensive multi-field & natural-language text search (SKU, Article, Name, Category, Color, Price Range)
     if (q) {
@@ -213,7 +215,8 @@ async function executeProductQuery(
       ];
 
       if (words.length === 1) {
-        conditions.push({ $or: getFieldOrConditions(words[0]) });
+        keywordConditionRef = { $or: getFieldOrConditions(words[0]) };
+        conditions.push(keywordConditionRef);
       } else if (words.length > 1) {
         // Multi-word: Match full phrase in ANY field OR match ALL extracted keywords across fields (AND logic)
         const fullPhraseCondition = { $or: getFieldOrConditions(safeQ) };
@@ -222,7 +225,8 @@ async function executeProductQuery(
             $or: getFieldOrConditions(w),
           })),
         };
-        conditions.push({ $or: [fullPhraseCondition, allWordsCondition] });
+        keywordConditionRef = { $or: [fullPhraseCondition, allWordsCondition] };
+        conditions.push(keywordConditionRef);
       }
     }
 
@@ -356,7 +360,21 @@ async function executeProductQuery(
     if (limit > 0) {
       const skip = (page - 1) * limit;
       const total = await Product.countDocuments(filter);
-      const products = await query.skip(skip).limit(limit).lean();
+      let products = await query.skip(skip).limit(limit).lean();
+
+      // Smart Multi-Word Fallback if strict AND returned 0 results
+      if (products.length === 0 && q) {
+        const nonKeywordConds = conditions.filter((c) => c !== keywordConditionRef);
+        const fallbackList = await runMultiWordFallbackQuery(q, nonKeywordConds, limit);
+        return {
+          products: fallbackList,
+          total: fallbackList.length,
+          page: 1,
+          totalPages: 1,
+          hasMore: false,
+        };
+      }
+
       return {
         products,
         total,
@@ -370,8 +388,97 @@ async function executeProductQuery(
       query.limit(600);
     }
 
-    const products = await query.lean();
+    let products = await query.lean();
+
+    // Smart Multi-Word Fallback if strict AND returned 0 results (e.g. "Concealed shower diverter for bathroom")
+    if (products.length === 0 && q) {
+      const nonKeywordConds = conditions.filter((c) => c !== keywordConditionRef);
+      products = await runMultiWordFallbackQuery(q, nonKeywordConds, 600);
+    }
+
     return products;
+}
+
+async function runMultiWordFallbackQuery(
+  rawQ: string,
+  nonTextConditions: Record<string, unknown>[],
+  maxResults = 600
+) {
+  const stopWords = new Set([
+    "suggest", "show", "me", "find", "search", "for", "in", "on", "at", "with", "without",
+    "ranging", "from", "to", "between", "and", "or", "below", "under", "above", "over",
+    "rupees", "rupee", "rs", "inr", "price", "range", "shape", "type", "style", "finish",
+    "the", "a", "an", "of", "best", "good", "luxury", "modern", "bathroom", "washroom", "sanitaryware",
+  ]);
+
+  const cleaned = rawQ
+    .replace(/(?:ranging\s+)?(?:from|between)\s+\d+\s+(?:to|and|-)\s+\d+/gi, " ")
+    .replace(/(?:below|under|above|over|less\s+than|more\s+than)\s+\d+/gi, " ");
+
+  const words = cleaned
+    .split(/\s+/)
+    .map((w) => w.replace(/[^a-zA-Z0-9-]/g, "").trim().toLowerCase())
+    .filter((w) => w.length >= 2 && !stopWords.has(w) && !/^\d+$/.test(w))
+    .map((w) =>
+      /^(showers|faucets|mixers|diverters|valves|taps|panels|cocks|spouts|cisterns)$/i.test(w)
+        ? w.slice(0, -1)
+        : w
+    );
+
+  if (words.length === 0) return [];
+
+  const getFieldOrConditions = (term: string) => {
+    const safe = escapeRegex(term);
+    return [
+      { name: { $regex: safe, $options: "i" } },
+      { code: { $regex: safe, $options: "i" } },
+      { skuCode: { $regex: safe, $options: "i" } },
+      { article: { $regex: safe, $options: "i" } },
+      { category: { $regex: safe, $options: "i" } },
+      { subcategoryName: { $regex: safe, $options: "i" } },
+      { colorName: { $regex: safe, $options: "i" } },
+      { size: { $regex: safe, $options: "i" } },
+    ];
+  };
+
+  const broadKeywordOr = {
+    $or: words.flatMap((w) => getFieldOrConditions(w)),
+  };
+  const fallbackFilter =
+    nonTextConditions.length > 0
+      ? { $and: [broadKeywordOr, ...nonTextConditions] }
+      : broadKeywordOr;
+
+  const candidates: any[] = await Product.find(fallbackFilter)
+    .select("-bullets -description -keywords -searchKeywords -gallery")
+    .limit(1200)
+    .lean();
+
+  if (candidates.length === 0) return [];
+
+  // Score each candidate by how many query words it matches (weighted higher for name & subcategoryName matches)
+  const scored = candidates.map((p) => {
+    const primaryHaystack = `${p.name || ""} ${p.subcategoryName || ""}`.toLowerCase();
+    const fullHaystack = `${primaryHaystack} ${p.category || ""} ${p.colorName || ""} ${p.code || ""} ${p.size || ""}`.toLowerCase();
+    let matchedCount = 0;
+    let score = 0;
+    for (const w of words) {
+      if (fullHaystack.includes(w)) {
+        matchedCount += 1;
+        score += primaryHaystack.includes(w) ? 15 : 8;
+      }
+    }
+    return { product: p, matchedCount, score };
+  });
+
+  const maxMatched = Math.max(...scored.map((s) => s.matchedCount));
+  const minRequired = maxMatched >= 2 ? maxMatched : 1;
+
+  return scored
+    .filter((s) => s.matchedCount >= minRequired)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, maxResults)
+    .map((s) => s.product);
 }
 
 export async function POST(request: Request) {

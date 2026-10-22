@@ -138,10 +138,14 @@ export default function CategoryClient({
   const [categoryData, setCategoryData] = useState<any>(
     () => initialCategoryData || getCachedCategoryOrSubcategory(category)
   );
-  const [dbProducts, setDbProducts] = useState<any[]>(initialProducts);
+  const [dbProducts, setDbProducts] = useState<any[]>(() =>
+    searchQuery ? [] : initialProducts
+  );
   const [allCategories, setAllCategories] = useState<any[]>(initialCategories);
   const [relatedSubcategories, setRelatedSubcategories] = useState<any[]>(initialSubcategories);
-  const [isLoadingProducts, setIsLoadingProducts] = useState(initialProducts.length === 0);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(
+    Boolean(searchQuery) || initialProducts.length === 0
+  );
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   // Filter & Sort states
@@ -166,6 +170,18 @@ export default function CategoryClient({
   // Infinite Scroll Pagination State (25 items per chunk)
   const [visibleCount, setVisibleCount] = useState<number>(25);
   const scrollTriggerRef = useRef<HTMLDivElement>(null);
+
+  // Clear sidebar filters when user performs a new search query
+  useEffect(() => {
+    if (searchQuery) {
+      setSelectedNames([]);
+      setSelectedColors([]);
+      setSelectedSizes([]);
+      setSelectedCollections([]);
+      setMinPriceInput("");
+      setMaxPriceInput("");
+    }
+  }, [searchQuery]);
 
   // Reset pagination when category, search, or filters change
   useEffect(() => {
