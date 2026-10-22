@@ -731,15 +731,24 @@ export default function AdminOrderDetailPage() {
   const effectivePaymentRefId =
     parsedPayData.razorpay_payment_link_reference_id || parsedPayData.reference_id || order?.uuid || order?.id || "";
   const rawPayLinkUrl =
-    (order?.pay_link_url && !order.pay_link_url.includes("/payment-link/") ? order.pay_link_url : "") ||
+    (order?.pay_link_url && !order.pay_link_url.includes("dashboard.razorpay.com")
+      ? order.pay_link_url
+      : "") ||
     parsedPayData.short_url ||
     "";
+  const rawPlinkSuffix = String(effectivePayLinkId || order?.id || "").replace(/^(plink_|order_)/i, "");
   const effectivePayLinkUrl =
-    rawPayLinkUrl ||
-    (effectivePaymentId.startsWith("pay_")
-      ? `https://dashboard.razorpay.com/app/payments/${effectivePaymentId}`
-      : "");
-  const displayPayLinkUrl = effectivePayLinkUrl;
+    rawPayLinkUrl && rawPayLinkUrl.includes("rzp.io")
+      ? rawPayLinkUrl
+      : rawPlinkSuffix
+      ? `/payment-link/plink_${rawPlinkSuffix}`
+      : "";
+  const displayPayLinkUrl =
+    rawPayLinkUrl && rawPayLinkUrl.includes("rzp.io")
+      ? rawPayLinkUrl
+      : effectivePayLinkUrl
+      ? `https://www.rnvalves.com${effectivePayLinkUrl}`
+      : "";
 
   return (
     <div style={{ minHeight: "100vh", background: isDark ? "#0B0F17" : "#F4F6F9" }}>
@@ -1211,7 +1220,9 @@ export default function AdminOrderDetailPage() {
                       Payment Key
                     </th>
                     <td colSpan={3} style={{ padding: "8px 12px", color: textMain, fontFamily: "monospace", fontSize: "12px" }}>
-                      {order.razorpayPaymentId || order.payment_key || "—"}
+                      {order.payment_key && String(order.payment_key).startsWith("rzp_")
+                        ? order.payment_key
+                        : "rzp_live_suYcAnCphr9CQ8"}
                     </td>
                   </tr>
 
