@@ -149,6 +149,7 @@ export async function POST(request: Request) {
           paymentMethod: "Online Payment",
           payment_term: "Prepaid",
           payment_key: razorpay_payment_id,
+          pay_link_id: orderData?.pay_link_id || razorpay_order_id,
           ...(paymentDataJson ? { payment_data: paymentDataJson } : {}),
           status: "Processing",
           razorpayOrderId: razorpay_order_id,
@@ -167,6 +168,54 @@ export async function POST(request: Request) {
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
+
+    // Sync to Payment collection so Admin Payments tab & Order Details stay in sync
+    try {
+      const Payment = (await import("@/models/Payment")).default;
+      const numericOrderId = legacyId || numPart || parseInt(orderId.replace(/\D/g, ""), 10) || null;
+      const lastPayment: any = await Payment.findOne().sort({ id: -1 }).lean();
+      const nextPayId = (lastPayment?.id || 581) + 1;
+      await Payment.findOneAndUpdate(
+        {
+          $or: [
+            { gatewayPaymentId: razorpay_payment_id },
+            { payLinkId: razorpay_order_id },
+          ],
+        },
+        {
+          $set: {
+            orderId: numericOrderId,
+            customerName: orderData?.customerName || orderData?.shippingAddress?.firstName || "Customer",
+            payLinkId: razorpay_order_id,
+            mobile: orderData?.customerPhone || orderData?.shippingAddress?.phone || "",
+            email: customerEmail || orderData?.customerEmail || "",
+            state: orderData?.shippingAddress?.state || "",
+            city: orderData?.shippingAddress?.city || "",
+            zipcode: orderData?.shippingAddress?.pinCode || "",
+            paymentGateway: "Razorpay",
+            paymentKey: razorpay_payment_id,
+            gatewayPaymentId: razorpay_payment_id,
+            status: "paid",
+            paymentData:
+              paymentDataJson ||
+              JSON.stringify({
+                razorpay_payment_id,
+                razorpay_order_id,
+                razorpay_signature,
+                status: "paid",
+              }),
+            amount: Number(orderData?.totalAmount || 0),
+          },
+          $setOnInsert: {
+            id: nextPayId,
+            paymentId: `PAY-${nextPayId}`,
+          },
+        },
+        { upsert: true }
+      );
+    } catch (paySyncErr) {
+      console.error("Payment collection sync warning:", paySyncErr);
+    }
 
     // Send confirmation invoice email to customer and admin
     sendOrderInvoiceEmail(savedOrder).catch((err) =>

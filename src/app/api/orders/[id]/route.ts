@@ -7,6 +7,7 @@ import User from "@/models/User";
 import { requireAdminAuth, requireAuth } from "@/lib/security";
 import { sendOrderStatusEmail } from "@/lib/email";
 import { getOrderSearchQuery } from "@/lib/orderUtils";
+import { fetchRazorpayPaymentLink } from "@/lib/razorpay";
 
 export async function GET(
   request: Request,
@@ -119,6 +120,51 @@ export async function GET(
         if (!order.payment_data && paymentRecord.paymentData) {
           order.payment_data = paymentRecord.paymentData;
         }
+      }
+    }
+
+    // Live Razorpay Payment Link Status Sync:
+    // If order has a Razorpay Payment Link (plink_...) and is not yet marked Paid, check Razorpay live API
+    if (order.pay_link_id && order.pay_link_id.startsWith("plink_") && order.paymentStatus !== "Paid") {
+      try {
+        const liveLink = await fetchRazorpayPaymentLink(order.pay_link_id);
+        if (liveLink) {
+          const linkStatus = String(liveLink.status || "").toLowerCase();
+          const linkPayments = Array.isArray(liveLink.payments) ? liveLink.payments : [];
+          const capturedPayment = linkPayments.find(
+            (p: any) => p.status === "captured" || p.status === "paid"
+          ) || linkPayments[0];
+
+          if (linkStatus === "paid" || (liveLink.amount_paid && liveLink.amount_paid >= liveLink.amount)) {
+            const rzpPayId = capturedPayment?.payment_id || order.razorpayPaymentId || "";
+            const updatedFields: Record<string, any> = {
+              paymentStatus: "Paid",
+              pay_link_url: liveLink.short_url || order.pay_link_url || "",
+              payment_data: JSON.stringify(liveLink),
+            };
+            if (rzpPayId) {
+              updatedFields.razorpayPaymentId = rzpPayId;
+              updatedFields.payment_key = rzpPayId;
+            }
+            await Order.updateOne({ _id: order._id }, { $set: updatedFields });
+            await Payment.updateMany(
+              { payLinkId: order.pay_link_id },
+              {
+                $set: {
+                  status: "paid",
+                  paymentData: JSON.stringify(liveLink),
+                  ...(rzpPayId ? { gatewayPaymentId: rzpPayId } : {}),
+                },
+              }
+            );
+            Object.assign(order, updatedFields);
+          } else {
+            order.pay_link_url = liveLink.short_url || order.pay_link_url || "";
+            order.payment_data = JSON.stringify(liveLink);
+          }
+        }
+      } catch (err) {
+        console.error("Live Razorpay Payment Link sync error:", err);
       }
     }
 

@@ -168,3 +168,24 @@ export async function createRazorpayPaymentLink({
 
   return data;
 }
+
+/**
+ * Fetches live status & details of a Razorpay Payment Link
+ */
+export async function fetchRazorpayPaymentLink(payLinkId: string) {
+  const { keyId, keySecret } = getRazorpayCredentials();
+  if (!keyId || !keySecret || !payLinkId) return null;
+
+  const authHeader = `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString("base64")}`;
+  const response = await fetch(`https://api.razorpay.com/v1/payment_links/${encodeURIComponent(payLinkId)}`, {
+    method: "GET",
+    headers: {
+      Authorization: authHeader,
+    },
+    cache: "no-store",
+  });
+
+  if (!response.ok) return null;
+  return response.json();
+}
+

@@ -703,13 +703,34 @@ export default function AdminOrderDetailPage() {
     }
   }
 
-  const effectivePayLinkId = order?.pay_link_id || parsedPayData.razorpay_payment_link_id || "";
+  const effectivePayLinkId =
+    order?.pay_link_id ||
+    parsedPayData.razorpay_payment_link_id ||
+    (typeof parsedPayData.id === "string" && parsedPayData.id.startsWith("plink_") ? parsedPayData.id : "") ||
+    order?.razorpayOrderId ||
+    parsedPayData.order_id ||
+    "";
+  const effectivePayLinkUrl = order?.pay_link_url || parsedPayData.short_url || "";
   const effectivePaymentId =
-    parsedPayData.razorpay_payment_id || parsedPayData.id || order?.razorpayPaymentId || order?.payment_key || "";
+    parsedPayData.razorpay_payment_id ||
+    (typeof parsedPayData.id === "string" && parsedPayData.id.startsWith("pay_") ? parsedPayData.id : "") ||
+    order?.razorpayPaymentId ||
+    (order?.payment_key && !String(order.payment_key).startsWith("rzp_") ? order.payment_key : "") ||
+    "";
   const effectivePaymentRefId =
-    parsedPayData.razorpay_payment_link_reference_id || order?.uuid || order?.id || "";
-  const effectivePaymentStatus =
-    parsedPayData.razorpay_payment_link_status || parsedPayData.status || (isPaid ? "paid" : "pending");
+    parsedPayData.razorpay_payment_link_reference_id || parsedPayData.reference_id || order?.uuid || order?.id || "";
+  const rawPayStatus = String(
+    parsedPayData.razorpay_payment_link_status || parsedPayData.status || (isPaid ? "paid" : "pending")
+  ).toLowerCase();
+  const isPaymentSuccess =
+    isPaid || rawPayStatus === "paid" || rawPayStatus === "captured" || rawPayStatus === "success";
+  const isPaymentCancelledOrExpired =
+    !isPaymentSuccess && (rawPayStatus === "cancelled" || rawPayStatus === "expired" || rawPayStatus === "failed");
+  const effectivePaymentStatus = isPaymentSuccess
+    ? "Success / Paid"
+    : isPaymentCancelledOrExpired
+    ? `Failed (${rawPayStatus})`
+    : "Pending";
 
   return (
     <div style={{ minHeight: "100vh", background: isDark ? "#0B0F17" : "#F4F6F9" }}>
@@ -1242,21 +1263,67 @@ export default function AdminOrderDetailPage() {
                       Payment Link Id
                     </th>
                     <td style={{ width: "32%", padding: "8px 12px", color: textMain, borderRight: `1px solid ${border}`, fontFamily: "monospace" }}>
-                      {effectivePayLinkId || "—"}
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                        <span>{effectivePayLinkId || "—"}</span>
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            padding: "2px 8px",
+                            borderRadius: "999px",
+                            fontSize: "11px",
+                            fontFamily: "sans-serif",
+                            fontWeight: 700,
+                            background: isPaymentSuccess
+                              ? "rgba(25, 135, 84, 0.14)"
+                              : isPaymentCancelledOrExpired
+                              ? "rgba(220, 53, 69, 0.14)"
+                              : "rgba(217, 119, 6, 0.15)",
+                            color: isPaymentSuccess
+                              ? "#198754"
+                              : isPaymentCancelledOrExpired
+                              ? "#DC3545"
+                              : "#D97706",
+                            border: `1px solid ${
+                              isPaymentSuccess
+                                ? "rgba(25, 135, 84, 0.35)"
+                                : isPaymentCancelledOrExpired
+                                ? "rgba(220, 53, 69, 0.35)"
+                                : "rgba(217, 119, 6, 0.35)"
+                            }`,
+                          }}
+                        >
+                          {isPaymentSuccess ? "● Success (Paid)" : isPaymentCancelledOrExpired ? `● ${effectivePaymentStatus}` : "● Pending"}
+                        </span>
+                      </div>
                     </td>
                     <th style={{ width: "180px", padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
                       Payment URL
                     </th>
                     <td style={{ padding: "8px 12px", color: textMain }}>
-                      {order.pay_link_url ? (
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          <span style={{ fontFamily: "monospace", fontSize: "12px" }}>{order.pay_link_url}</span>
+                      {effectivePayLinkUrl ? (
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                           <a
-                            href={order.pay_link_url}
+                            href={effectivePayLinkUrl}
                             target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              fontFamily: "monospace",
+                              fontSize: "12px",
+                              color: "#0077B6",
+                              textDecoration: "underline",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {effectivePayLinkUrl}
+                          </a>
+                          <a
+                            href={effectivePayLinkUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             style={{
                               padding: "4px 10px",
-                              background: "#212529",
+                              background: isPaymentSuccess ? "#198754" : "#212529",
                               color: "#FFF",
                               borderRadius: "4px",
                               fontSize: "12px",
@@ -1264,40 +1331,110 @@ export default function AdminOrderDetailPage() {
                               textDecoration: "none",
                               whiteSpace: "nowrap",
                             }}
-                           rel="noopener noreferrer">
-                            Click for Payment
+                          >
+                            {isPaymentSuccess ? "View Paid Link" : "Click for Payment"}
                           </a>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (typeof navigator !== "undefined" && navigator.clipboard) {
+                                navigator.clipboard.writeText(effectivePayLinkUrl);
+                                alert(`Payment link copied: ${effectivePayLinkUrl}`);
+                              }
+                            }}
+                            style={{
+                              padding: "4px 10px",
+                              background: headerBg,
+                              color: textMain,
+                              border: `1px solid ${border}`,
+                              borderRadius: "4px",
+                              fontSize: "11.5px",
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            Copy Link
+                          </button>
                         </div>
+                      ) : isPaymentSuccess ? (
+                        <span style={{ color: "#198754", fontWeight: 700, fontSize: "12.5px" }}>
+                          ✓ Paid directly via Razorpay Online Checkout ({effectivePaymentId || "Verified"})
+                        </span>
                       ) : (
-                        <span style={{ color: textMuted }}>—</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                          <span style={{ color: "#D97706", fontWeight: 600, fontSize: "12px" }}>
+                            Pending (No Payment Link Generated Yet)
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleGeneratePaymentLink}
+                            disabled={isGeneratingLink}
+                            style={{
+                              padding: "4px 12px",
+                              background: "#0077B6",
+                              color: "#FFF",
+                              borderRadius: "4px",
+                              fontSize: "12px",
+                              fontWeight: 700,
+                              border: "none",
+                              cursor: isGeneratingLink ? "not-allowed" : "pointer",
+                            }}
+                          >
+                            {isGeneratingLink ? "Generating Link..." : "Generate Payment Link"}
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>
 
-                  {effectivePaymentId || effectivePaymentRefId ? (
-                    <tr style={{ borderBottom: `1px solid ${border}` }}>
-                      <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
-                        Payment Id
-                      </th>
-                      <td style={{ padding: "8px 12px", color: textMain, borderRight: `1px solid ${border}`, fontFamily: "monospace" }}>
-                        {effectivePaymentId || "—"}
-                      </td>
-                      <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
-                        Payment Ref. Id
-                      </th>
-                      <td style={{ padding: "8px 12px", color: textMain }}>
-                        <span style={{ fontFamily: "monospace" }}>{effectivePaymentRefId}</span>
-                        <strong
+                  <tr style={{ borderBottom: `1px solid ${border}` }}>
+                    <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                      Payment Id
+                    </th>
+                    <td style={{ padding: "8px 12px", color: textMain, borderRight: `1px solid ${border}`, fontFamily: "monospace" }}>
+                      {effectivePaymentId || (isPaymentSuccess ? "Confirmed" : "Pending Payment")}
+                    </td>
+                    <th style={{ padding: "8px 12px", textAlign: "left", background: headerBg, borderRight: `1px solid ${border}`, color: textMain }}>
+                      Payment Ref. Id &amp; Status
+                    </th>
+                    <td style={{ padding: "8px 12px", color: textMain }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                        <span style={{ fontFamily: "monospace" }}>{effectivePaymentRefId || "—"}</span>
+                        <span
                           style={{
-                            color: effectivePaymentStatus.toLowerCase().includes("paid") ? "#198754" : "#DC3545",
-                            marginLeft: "6px",
+                            display: "inline-block",
+                            padding: "2px 10px",
+                            borderRadius: "4px",
+                            background: isPaymentSuccess ? "#198754" : isPaymentCancelledOrExpired ? "#DC3545" : "#D97706",
+                            color: "#FFF",
+                            fontWeight: 700,
+                            fontSize: "11.5px",
                           }}
                         >
-                          ({effectivePaymentStatus})
-                        </strong>
-                      </td>
-                    </tr>
-                  ) : null}
+                          {effectivePaymentStatus}
+                        </span>
+                        {!isPaymentSuccess && effectivePayLinkUrl && (
+                          <button
+                            type="button"
+                            onClick={fetchOrder}
+                            style={{
+                              padding: "2px 8px",
+                              background: "transparent",
+                              color: "#0077B6",
+                              border: "1px solid #0077B6",
+                              borderRadius: "4px",
+                              fontSize: "11px",
+                              fontWeight: 700,
+                              cursor: "pointer",
+                            }}
+                          >
+                            ↻ Check Live Status
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
 
                   {order.payment_data ? (
                     <tr style={{ borderBottom: `1px solid ${border}` }}>
@@ -1306,32 +1443,6 @@ export default function AdminOrderDetailPage() {
                       </td>
                     </tr>
                   ) : null}
-
-                  {!effectivePayLinkId && !isPaid && (
-                    <tr>
-                      <td colSpan={2} style={{ padding: "8px 12px", color: textMuted }}>
-                        Generate Payment Link
-                      </td>
-                      <td colSpan={2} style={{ padding: "8px 12px" }}>
-                        <button
-                          onClick={handleGeneratePaymentLink}
-                          disabled={isGeneratingLink}
-                          style={{
-                            padding: "4px 14px",
-                            background: "#212529",
-                            color: "#FFF",
-                            borderRadius: "4px",
-                            fontSize: "12px",
-                            fontWeight: 700,
-                            border: "none",
-                            cursor: "pointer",
-                          }}
-                        >
-                          {isGeneratingLink ? "Generating Link..." : "Generate"}
-                        </button>
-                      </td>
-                    </tr>
-                  )}
                 </tbody>
               </table>
             </div>

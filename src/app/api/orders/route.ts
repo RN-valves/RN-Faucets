@@ -238,6 +238,57 @@ export async function POST(request: Request) {
       }
     }
 
+    const finalPaymentStatus =
+      body.paymentStatus || (body.paymentMethod === "Online Payment" ? "Paid" : "Pending");
+
+    let payLinkId = body.pay_link_id || "";
+    let payLinkUrl = body.pay_link_url || "";
+    let paymentDataStr = body.payment_data || "";
+
+    // Automatically generate a Razorpay Payment Link for Pending orders so Order Details always has a ready payment link
+    if (finalPaymentStatus !== "Paid" && !payLinkId && Number(body.totalAmount) > 0) {
+      try {
+        const { createRazorpayPaymentLink } = await import("@/lib/razorpay");
+        const Payment = (await import("@/models/Payment")).default;
+        const paymentLink = await createRazorpayPaymentLink({
+          amount: Number(body.totalAmount),
+          referenceId: `${orderId}-${Date.now().toString().slice(-4)}`,
+          description: `RN Valves Order #${orderId}`,
+          customer: {
+            name: body.customerName || body.shippingAddress?.firstName || "Customer",
+            contact: body.customerPhone || body.shippingAddress?.phone || "9999999999",
+            email: customerEmail || body.customerEmail || body.shippingAddress?.email || "ecommerce@rnvalves.com",
+          },
+        });
+        payLinkId = paymentLink.id || "";
+        payLinkUrl = paymentLink.short_url || "";
+        paymentDataStr = JSON.stringify(paymentLink);
+
+        const numericOrderId = legacyId || numPart || parseInt(orderId.replace(/\D/g, ""), 10) || null;
+        const lastPayment: any = await Payment.findOne().sort({ id: -1 }).lean();
+        const nextPayId = (lastPayment?.id || 581) + 1;
+        await Payment.create({
+          id: nextPayId,
+          paymentId: `PAY-${nextPayId}`,
+          orderId: numericOrderId,
+          customerName: body.customerName || body.shippingAddress?.firstName || "Customer",
+          payLinkId,
+          shortUrl: payLinkUrl,
+          mobile: body.customerPhone || body.shippingAddress?.phone || "",
+          email: customerEmail || body.customerEmail || "",
+          state: body.shippingAddress?.state || "",
+          city: body.shippingAddress?.city || "",
+          zipcode: body.shippingAddress?.pinCode || "",
+          paymentGateway: "Razorpay",
+          status: "Pending",
+          paymentData: paymentDataStr,
+          amount: Number(body.totalAmount),
+        });
+      } catch (plinkErr) {
+        console.error("Auto Razorpay payment link creation warning:", plinkErr);
+      }
+    }
+
     const order = await Order.create({
       ...body,
       id: orderId,
@@ -246,7 +297,10 @@ export async function POST(request: Request) {
       gstNumber: gstNumber || body.gstNumber || "",
       businessName: businessName || body.businessName || "",
       status: body.status || "Pending",
-      paymentStatus: body.paymentStatus || (body.paymentMethod === "Online Payment" ? "Paid" : "Pending"),
+      paymentStatus: finalPaymentStatus,
+      ...(payLinkId ? { pay_link_id: payLinkId } : {}),
+      ...(payLinkUrl ? { pay_link_url: payLinkUrl } : {}),
+      ...(paymentDataStr ? { payment_data: paymentDataStr } : {}),
       orderDate: new Date().toLocaleString("en-IN", {
         dateStyle: "short",
         timeStyle: "short",
@@ -264,3 +318,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message || "Failed to create order" }, { status: 500 });
   }
 }
+
