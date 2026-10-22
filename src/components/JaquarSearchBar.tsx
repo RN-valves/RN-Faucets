@@ -10,21 +10,32 @@ interface JaquarSearchBarProps {
 }
 
 const DEFAULT_SEARCH_PHRASES = [
-  "Search for Single Lever Basin Mixer...",
-  "Search for Overhead Rain Showers...",
-  "Search for Black Chrome Pillar Cock...",
-  "Search for Concealed Shower Diverters...",
-  "Search for PTMT Bib Cock with Flange...",
-  "Search for Wall Mounted Sink Mixer...",
-  "Search for Rose Gold Bath Fittings...",
-  "Search for Two Way Angle Valves...",
-  "Search for Tall Body Basin Faucets...",
+  "Sanitaryware ranging from 1000 to 15000 rupees",
+  "Shower panel for bathroom",
+  "Overhead showers in square shape in black",
+  "Suggest basin mixer below 5000 rupees",
+  "CP Faucets ranging from 1000 to 5000 rupees",
+  "Single lever basin mixer in black chrome",
+  "Suggest pillar cock below 2000 rupees",
+  "Concealed shower diverter for bathroom",
+  "Overhead showers in round shape in rose gold",
+  "2 in 1 bib cock with flange for bathroom",
 ];
-
-const SEARCH_PREFIX = "Search for ";
 
 // Comprehensive keyword & multi-word phrase dictionary (Jaquar taxonomy + RN Valves catalogue)
 const PRESET_KEYWORDS = [
+  "sanitaryware ranging from 1000 to 15000 rupees",
+  "sanitaryware ranging from 6000 to 20000 rupees",
+  "shower panel for bathroom",
+  "overhead showers in square shape in black",
+  "overhead showers in round shape in black chrome",
+  "overhead showers in square shape in rose gold",
+  "suggest basin mixer below 5000 rupees",
+  "suggest pillar cock below 2000 rupees",
+  "suggest concealed diverter below 4000 rupees",
+  "cp faucets ranging from 1000 to 5000 rupees",
+  "ptmt faucets ranging from 200 to 1500 rupees",
+  "single lever basin mixer in black chrome",
   "shower",
   "showers",
   "shower arm",
@@ -128,11 +139,11 @@ function rankMultiWordPhrases(query: string, corpus: string[], limit = 8): strin
       continue;
     }
     if (phrase.startsWith(cleanQ)) {
-      scored.push({ phrase, score: 105 - Math.min(20, phrase.length * 0.25) });
+      scored.push({ phrase, score: 105 - Math.min(20, phrase.length * 0.2) });
       continue;
     }
     if (phrase.includes(` ${cleanQ}`)) {
-      scored.push({ phrase, score: 88 - Math.min(20, phrase.length * 0.25) });
+      scored.push({ phrase, score: 88 - Math.min(20, phrase.length * 0.2) });
       continue;
     }
     if (words.length > 1) {
@@ -146,11 +157,11 @@ function rankMultiWordPhrases(query: string, corpus: string[], limit = 8): strin
           : 0;
         scored.push({
           phrase,
-          score: 68 + startsWithFirst + wordBoundaryBonus - Math.min(20, phrase.length * 0.2),
+          score: 68 + startsWithFirst + wordBoundaryBonus - Math.min(20, phrase.length * 0.15),
         });
       }
     } else if (phrase.includes(cleanQ)) {
-      scored.push({ phrase, score: 52 - Math.min(20, phrase.length * 0.25) });
+      scored.push({ phrase, score: 52 - Math.min(20, phrase.length * 0.2) });
     }
   }
 
@@ -173,7 +184,7 @@ export default function JaquarSearchBar({ isDarkBg = false }: JaquarSearchBarPro
   const [serverCorpus, setServerCorpus] = useState<string[]>([]);
 
   // Auto-typing placeholder animation
-  const [placeholder, setPlaceholder] = useState(SEARCH_PREFIX);
+  const [placeholder, setPlaceholder] = useState("");
   const [wordIdx, setWordIdx] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -181,7 +192,7 @@ export default function JaquarSearchBar({ isDarkBg = false }: JaquarSearchBarPro
   useEffect(() => {
     let mounted = true;
     try {
-      const cachedRaw = sessionStorage.getItem("rn_phrase_corpus_v2");
+      const cachedRaw = sessionStorage.getItem("rn_phrase_corpus_v3");
       if (cachedRaw) {
         const parsed = JSON.parse(cachedRaw);
         if (Array.isArray(parsed?.corpus) && parsed.corpus.length > 0) {
@@ -199,7 +210,7 @@ export default function JaquarSearchBar({ isDarkBg = false }: JaquarSearchBarPro
         if (!mounted || !data) return;
         if (Array.isArray(data.phrases) && data.phrases.length > 0) {
           const normalized = data.phrases.map((p: string) =>
-            p.toLowerCase().startsWith("search") ? p : `${SEARCH_PREFIX}${p}`
+            String(p || "").replace(/^Search for\s+/i, "").replace(/\.{3}$/, "").trim()
           );
           setSearchPhrases(normalized);
         }
@@ -207,7 +218,7 @@ export default function JaquarSearchBar({ isDarkBg = false }: JaquarSearchBarPro
           setServerCorpus(data.corpus);
           try {
             sessionStorage.setItem(
-              "rn_phrase_corpus_v2",
+              "rn_phrase_corpus_v3",
               JSON.stringify({ phrases: data.phrases, corpus: data.corpus })
             );
           } catch {}
@@ -233,25 +244,24 @@ export default function JaquarSearchBar({ isDarkBg = false }: JaquarSearchBarPro
     );
   }, [serverCorpus]);
 
-  // Jaquar-style Phrase Typewriter Loop (keeps "Search for " prefix steady while typing/deleting the phrase)
+  // Jaquar-style Natural Sentence Typewriter Loop (types full phrases like "Sanitaryware ranging from 1000 to 15000 rupees", "Shower panel for bathroom", etc.)
   useEffect(() => {
     if (isOpen || query.length > 0 || searchPhrases.length === 0) return;
 
     const currentPhrase = searchPhrases[wordIdx % searchPhrases.length] || DEFAULT_SEARCH_PHRASES[0];
-    const minPrefixLen = currentPhrase.startsWith(SEARCH_PREFIX) ? SEARCH_PREFIX.length : 0;
-    const typingSpeed = isDeleting ? 28 : 62;
+    const typingSpeed = isDeleting ? 24 : 55;
 
     const timer = setTimeout(() => {
       if (!isDeleting) {
         const nextLen = placeholder.length + 1;
         setPlaceholder(currentPhrase.substring(0, nextLen));
         if (nextLen >= currentPhrase.length) {
-          setTimeout(() => setIsDeleting(true), 1900);
+          setTimeout(() => setIsDeleting(true), 2000);
         }
       } else {
-        const nextLen = Math.max(minPrefixLen, placeholder.length - 1);
+        const nextLen = Math.max(0, placeholder.length - 1);
         setPlaceholder(currentPhrase.substring(0, nextLen));
-        if (nextLen <= minPrefixLen) {
+        if (nextLen <= 0) {
           setIsDeleting(false);
           setWordIdx((prev) => (prev + 1) % searchPhrases.length);
         }

@@ -3,17 +3,44 @@ import { connectDB } from "@/lib/mongodb";
 import Product from "@/models/Product";
 import { getOrSetCache } from "@/lib/redis";
 
+// Exact Jaquar-style natural language & price-range typewriter phrases
 const DEFAULT_JAQUAR_PHRASES = [
-  "Search for Single Lever Basin Mixer...",
-  "Search for Overhead Rain Showers...",
-  "Search for Black Chrome Pillar Cock...",
-  "Search for Concealed Shower Diverters...",
-  "Search for PTMT Bib Cock with Flange...",
-  "Search for Wall Mounted Sink Mixer...",
-  "Search for Rose Gold Bath Fittings...",
-  "Search for Two Way Angle Valves...",
-  "Search for Tall Body Basin Faucets...",
-  "Search for ABS Health Faucet Sets...",
+  "Sanitaryware ranging from 1000 to 15000 rupees",
+  "Shower panel for bathroom",
+  "Overhead showers in square shape in black",
+  "Suggest basin mixer below 5000 rupees",
+  "CP Faucets ranging from 1000 to 5000 rupees",
+  "Single lever basin mixer in black chrome",
+  "Suggest pillar cock below 2000 rupees",
+  "Concealed shower diverter for bathroom",
+  "Overhead showers in round shape in rose gold",
+  "2 in 1 bib cock with flange for bathroom",
+  "Bath accessories set below 6000 rupees",
+  "PTMT faucets ranging from 200 to 1500 rupees",
+];
+
+const CONVERSATIONAL_SEARCH_PHRASES = [
+  "sanitaryware ranging from 1000 to 15000 rupees",
+  "sanitaryware ranging from 6000 to 20000 rupees",
+  "shower panel for bathroom",
+  "overhead showers in square shape in black",
+  "overhead showers in round shape in black chrome",
+  "overhead showers in square shape in rose gold",
+  "suggest basin mixer below 5000 rupees",
+  "suggest pillar cock below 2000 rupees",
+  "suggest concealed diverter below 4000 rupees",
+  "suggest shower panel below 15000 rupees",
+  "cp faucets ranging from 1000 to 5000 rupees",
+  "ptmt faucets ranging from 200 to 1500 rupees",
+  "single lever basin mixer in black chrome",
+  "single lever basin mixer in rose gold",
+  "pillar cock in black chrome for wash basin",
+  "2 in 1 bib cock with flange for bathroom",
+  "2 in 1 angle cock with flange for bathroom",
+  "wall mixer with overhead shower set for bathroom",
+  "bath accessories set in black chrome",
+  "bath accessories set in rose gold",
+  "health faucet with hose and hook for bathroom",
 ];
 
 const CORE_PRODUCT_TYPES = [
@@ -30,6 +57,7 @@ const CORE_PRODUCT_TYPES = [
   "sink mixer",
   "swan neck",
   "overhead shower",
+  "shower panel",
   "hand shower",
   "health faucet",
   "flush cock",
@@ -62,14 +90,14 @@ function normalizePhrase(raw: string): string {
 
 /**
  * Builds a rich multi-word search phrase corpus directly from the 7,398 products,
- * subcategories, categories, and color finishes in MongoDB (cached in Redis).
+ * subcategories, categories, color finishes, and Jaquar-style natural phrases (cached in Redis).
  */
 async function getCataloguePhraseIndex(): Promise<{
   typewriterPhrases: string[];
   corpus: string[];
 }> {
   const { data } = await getOrSetCache(
-    "rn:search:catalogue_phrase_index:v2",
+    "rn:search:catalogue_phrase_index:v3",
     3600,
     async () => {
       await connectDB();
@@ -84,12 +112,18 @@ async function getCataloguePhraseIndex(): Promise<{
 
       const phraseSet = new Set<string>();
 
-      // 1. Add core product types
-      for (const pt of CORE_PRODUCT_TYPES) {
-        phraseSet.add(pt);
+      // 1. Add Jaquar-style conversational & price-range phrases first
+      for (const cp of CONVERSATIONAL_SEARCH_PHRASES) {
+        phraseSet.add(cp);
       }
 
-      // 2. Add normalized categories & subcategories
+      // 2. Add core product types
+      for (const pt of CORE_PRODUCT_TYPES) {
+        phraseSet.add(pt);
+        phraseSet.add(`${pt} for bathroom`);
+      }
+
+      // 3. Add normalized categories & subcategories
       for (const cat of distinctCats) {
         const clean = normalizePhrase(String(cat || ""));
         if (clean.length >= 3 && clean.length <= 55) {
@@ -106,7 +140,7 @@ async function getCataloguePhraseIndex(): Promise<{
         }
       }
 
-      // 3. Add normalized product names from the 7,398 products
+      // 4. Add normalized product names from the 7,398 products
       for (const rawName of distinctNames) {
         const clean = normalizePhrase(String(rawName || ""));
         if (clean.length >= 4 && clean.length <= 65) {
@@ -114,10 +148,10 @@ async function getCataloguePhraseIndex(): Promise<{
         }
       }
 
-      // 4. Generate smart Product Type + Color Finish combinations (Jaquar-style)
+      // 5. Generate smart Product Type + Color Finish + Shape combinations (Jaquar-style)
       const topFinishes = [
-        "black chrome",
         "black",
+        "black chrome",
         "rose gold",
         "gold",
         "brushed golden",
@@ -149,6 +183,7 @@ async function getCataloguePhraseIndex(): Promise<{
         "sink mixer",
         "swan neck",
         "overhead shower",
+        "shower panel",
         "hand shower",
         "health faucet",
         "bath spout",
@@ -156,12 +191,35 @@ async function getCataloguePhraseIndex(): Promise<{
       ];
 
       for (const type of combinableTypes) {
-        for (const finish of topFinishes.slice(0, 18)) {
+        for (const finish of topFinishes.slice(0, 16)) {
+          phraseSet.add(`${type} in ${finish}`);
           phraseSet.add(`${type} ${finish}`);
         }
       }
 
-      // 5. Generate Collection + Product Type combinations for major collections
+      // Overhead shower shape + color phrases (like "Overhead showers in square shape in black")
+      for (const shape of ["square", "round", "oval", "slim"]) {
+        for (const finish of ["black", "black chrome", "chrome", "rose gold", "gold"]) {
+          phraseSet.add(`overhead showers in ${shape} shape in ${finish}`);
+        }
+      }
+
+      // Price range & "Suggest ... below X rupees" phrases for popular categories
+      for (const item of [
+        { name: "basin mixer", low: 1500, high: 6000, below: 5000 },
+        { name: "pillar cock", low: 500, high: 3500, below: 2000 },
+        { name: "overhead shower", low: 800, high: 8000, below: 4000 },
+        { name: "shower panel", low: 3000, high: 18000, below: 15000 },
+        { name: "concealed diverter", low: 1200, high: 5000, below: 3500 },
+        { name: "cp faucets", low: 1000, high: 5000, below: 3000 },
+        { name: "ptmt faucets", low: 200, high: 1500, below: 1000 },
+        { name: "bath accessories set", low: 1500, high: 8000, below: 5000 },
+      ]) {
+        phraseSet.add(`${item.name} ranging from ${item.low} to ${item.high} rupees`);
+        phraseSet.add(`suggest ${item.name} below ${item.below} rupees`);
+      }
+
+      // 6. Generate Collection + Product Type combinations
       for (const sub of cleanSubcats.slice(0, 35)) {
         if (sub.includes("collection") || sub.includes("series")) {
           const shortSub = sub.replace(/\s*(collection|series)\s*/g, "").trim();
@@ -174,24 +232,24 @@ async function getCataloguePhraseIndex(): Promise<{
         }
       }
 
-      // 6. Build typewriter phrases from Gemini AI + real catalogue highlights
+      // 7. Build typewriter phrases from Gemini AI + Jaquar-style highlights
       let geminiTypewriter: string[] = [];
       try {
         geminiTypewriter = await callGeminiForPhrases(
-          `You are powering the luxury search bar placeholder typewriter on RN Valves & Faucets (similar to Jaquar bath fittings).
-Return a JSON array of 8 short, natural search placeholder phrases starting with "Search for " and ending with "..." for bathroom faucets, CP fittings, PTMT taps, showers, diverters, basin mixers, pillar cocks, angle valves, and bath accessories.`
+          `You are powering the luxury search bar placeholder typewriter on RN Valves & Faucets (exact Jaquar.com style).
+Return a JSON array of 8 natural-language search phrases (WITHOUT "Search for" prefix) matching these exact patterns:
+- "Sanitaryware ranging from 1000 to 15000 rupees"
+- "Shower panel for bathroom"
+- "Overhead showers in square shape in black"
+- "Suggest basin mixer below 5000 rupees"
+- "Single lever basin mixer in black chrome"
+- "CP Faucets ranging from 1000 to 5000 rupees"`
         );
       } catch {}
 
       const dynamicTypewriter = [
-        ...geminiTypewriter,
         ...DEFAULT_JAQUAR_PHRASES,
-        "Search for 2 Way Hi-Flow Concealed Diverter...",
-        "Search for 2 In 1 Bib Cock With Flange...",
-        "Search for Forged Brass Ball Valves...",
-        "Search for Black Chrome Bath Fittings...",
-        "Search for Wall Mixer Overhead Shower Set...",
-        "Search for Abhidu Pro Collection Faucets...",
+        ...geminiTypewriter,
       ];
 
       return {
@@ -222,12 +280,11 @@ function rankPhrases(query: string, corpus: string[], limit = 8): string[] {
       continue;
     }
     if (phrase.startsWith(cleanQ)) {
-      // Prefer concise phrases first
-      scored.push({ phrase, score: 100 - Math.min(20, phrase.length * 0.25) });
+      scored.push({ phrase, score: 100 - Math.min(20, phrase.length * 0.2) });
       continue;
     }
     if (phrase.includes(` ${cleanQ}`)) {
-      scored.push({ phrase, score: 85 - Math.min(20, phrase.length * 0.25) });
+      scored.push({ phrase, score: 85 - Math.min(20, phrase.length * 0.2) });
       continue;
     }
     if (words.length > 1) {
@@ -236,11 +293,11 @@ function rankPhrases(query: string, corpus: string[], limit = 8): string[] {
         const startsWithFirst = phrase.startsWith(words[0]) ? 12 : 0;
         scored.push({
           phrase,
-          score: 65 + startsWithFirst - Math.min(20, phrase.length * 0.2),
+          score: 65 + startsWithFirst - Math.min(20, phrase.length * 0.15),
         });
       }
     } else if (phrase.includes(cleanQ)) {
-      scored.push({ phrase, score: 50 - Math.min(20, phrase.length * 0.25) });
+      scored.push({ phrase, score: 50 - Math.min(20, phrase.length * 0.2) });
     }
   }
 
@@ -275,7 +332,7 @@ async function callGeminiForPhrases(prompt: string): Promise<string[]> {
   if (Array.isArray(parsed)) {
     return parsed
       .map((item) => String(item || "").trim())
-      .filter((item) => item.length > 3 && item.length <= 65);
+      .filter((item) => item.length > 3 && item.length <= 70);
   }
   return [];
 }
@@ -287,7 +344,6 @@ export async function GET(request: Request) {
 
     const index = await getCataloguePhraseIndex();
 
-    // Mode 1: Initial load — returns Typewriter phrases + full 7,398-product phrase corpus for <5ms client matching
     if (!q) {
       return NextResponse.json(
         {
@@ -298,22 +354,20 @@ export async function GET(request: Request) {
       );
     }
 
-    // Mode 2: Query suggestions — instant <5ms ranking from 7,398-product corpus (+ optional Gemini fallback)
     const fastMatches = rankPhrases(q, index.corpus, 8);
 
     if (fastMatches.length >= 5 || !process.env.GEMINI_API_KEY) {
       return NextResponse.json({ suggestions: fastMatches });
     }
 
-    // Only call Gemini if the user typed an unusual conversational query with <5 catalogue matches
     const safeKey = q.replace(/[^a-z0-9\s-]/g, "").slice(0, 32);
     const { data: aiSuggestions } = await getOrSetCache<string[]>(
-      `rn:search:gemini_suggest:v2:${safeKey}`,
+      `rn:search:gemini_suggest:v3:${safeKey}`,
       3600,
       async () => {
         try {
           const res = await callGeminiForPhrases(
-            `A customer on RN Valves & Faucets typed "${q}". Return a JSON array of 6 short lowercase bathroom faucet/shower search phrases matching "${q}".`
+            `A customer on RN Valves & Faucets typed "${q}". Return a JSON array of 6 natural Jaquar-style lowercase bathroom faucet/shower search phrases matching "${q}" (such as "${q} for bathroom", "suggest ${q} below 5000 rupees", "${q} in black chrome", "${q} ranging from 1000 to 5000 rupees").`
           );
           return res.map((s) => s.toLowerCase());
         } catch {

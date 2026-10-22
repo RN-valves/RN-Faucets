@@ -78,11 +78,122 @@ async function executeProductQuery(
   const { isAll, q, category, subcategory, status, page, limit, countOnly } = params;
   const conditions: Record<string, unknown>[] = [];
 
-    // 1. Comprehensive multi-field text search (SKU, Article, Name, Category, Color, Keywords)
+    // 1. Comprehensive multi-field & natural-language text search (SKU, Article, Name, Category, Color, Price Range)
     if (q) {
-      const cleanQ = q.trim();
-      const safeQ = escapeRegex(cleanQ);
-      const words = cleanQ.split(/\s+/).map((w) => escapeRegex(w)).filter((w) => w.length > 0);
+      let cleanQ = q.trim();
+      let minPrice: number | null = null;
+      let maxPrice: number | null = null;
+
+      // Parse natural-language price ranges (e.g. "ranging from 1000 to 15000 rupees", "below 5000 rupees", "under 2000")
+      const rangeMatch = cleanQ.match(
+        /(?:ranging\s+)?(?:from|between)\s+(\d+)\s+(?:to|and|-)\s+(\d+)(?:\s*(?:rupees|rupee|rs\.?|inr))?/i
+      );
+      if (rangeMatch) {
+        minPrice = Number(rangeMatch[1]);
+        maxPrice = Number(rangeMatch[2]);
+        cleanQ = cleanQ.replace(rangeMatch[0], " ");
+      }
+
+      const belowMatch = cleanQ.match(
+        /(?:below|under|less\s+than)\s+(\d+)(?:\s*(?:rupees|rupee|rs\.?|inr))?/i
+      );
+      if (belowMatch) {
+        maxPrice = Number(belowMatch[1]);
+        cleanQ = cleanQ.replace(belowMatch[0], " ");
+      }
+
+      const aboveMatch = cleanQ.match(
+        /(?:above|over|more\s+than)\s+(\d+)(?:\s*(?:rupees|rupee|rs\.?|inr))?/i
+      );
+      if (aboveMatch) {
+        minPrice = Number(aboveMatch[1]);
+        cleanQ = cleanQ.replace(aboveMatch[0], " ");
+      }
+
+      if (minPrice !== null || maxPrice !== null) {
+        const priceRangeCond: Record<string, number> = {};
+        if (minPrice !== null) priceRangeCond.$gte = minPrice;
+        if (maxPrice !== null) priceRangeCond.$lte = maxPrice;
+        conditions.push({
+          $or: [
+            { inSelling: priceRangeCond },
+            { price: priceRangeCond },
+            { inMrp: priceRangeCond },
+          ],
+        });
+      }
+
+      const stopWords = new Set([
+        "suggest",
+        "show",
+        "me",
+        "find",
+        "search",
+        "for",
+        "in",
+        "on",
+        "at",
+        "with",
+        "without",
+        "ranging",
+        "from",
+        "to",
+        "between",
+        "and",
+        "or",
+        "below",
+        "under",
+        "above",
+        "over",
+        "rupees",
+        "rupee",
+        "rs",
+        "inr",
+        "price",
+        "range",
+        "shape",
+        "type",
+        "style",
+        "finish",
+        "the",
+        "a",
+        "an",
+        "of",
+        "best",
+        "good",
+        "luxury",
+        "modern",
+        "bathroom",
+        "washroom",
+        "sanitaryware",
+      ]);
+
+      const rawWords = cleanQ
+        .split(/\s+/)
+        .map((w) => w.replace(/[^a-zA-Z0-9-]/g, "").trim())
+        .filter((w) => w.length > 0);
+
+      const filteredWords = rawWords
+        .filter((w) => !stopWords.has(w.toLowerCase()))
+        .map((w) => {
+          const lower = w.toLowerCase();
+          if (
+            /^(showers|faucets|mixers|diverters|valves|taps|panels|cocks|spouts|cisterns)$/i.test(
+              lower
+            )
+          ) {
+            return escapeRegex(w.slice(0, -1));
+          }
+          return escapeRegex(w);
+        });
+
+      const safeQ = escapeRegex(cleanQ.trim());
+      const words =
+        filteredWords.length > 0
+          ? filteredWords
+          : rawWords
+              .filter((w) => !stopWords.has(w.toLowerCase()))
+              .map((w) => escapeRegex(w));
 
       const getFieldOrConditions = (term: string) => [
         { name: { $regex: term, $options: "i" } },
@@ -101,10 +212,10 @@ async function executeProductQuery(
         { description: { $regex: term, $options: "i" } },
       ];
 
-      if (words.length <= 1) {
-        conditions.push({ $or: getFieldOrConditions(safeQ) });
-      } else {
-        // Multi-word: Match full phrase in ANY field OR match ALL words across fields (AND logic)
+      if (words.length === 1) {
+        conditions.push({ $or: getFieldOrConditions(words[0]) });
+      } else if (words.length > 1) {
+        // Multi-word: Match full phrase in ANY field OR match ALL extracted keywords across fields (AND logic)
         const fullPhraseCondition = { $or: getFieldOrConditions(safeQ) };
         const allWordsCondition = {
           $and: words.map((w) => ({
