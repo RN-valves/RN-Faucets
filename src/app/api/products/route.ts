@@ -21,7 +21,7 @@ export async function GET(request: Request) {
 
     // Cache public search and category product queries in Redis (5 min TTL)
     if (!isAll && (limit > 0 || countOnly || category || subcategory || q)) {
-      const cacheKey = `rn:catalogue:products:v2:q:${searchParams.toString().toLowerCase()}`;
+      const cacheKey = `rn:catalogue:products:v3:q:${searchParams.toString().toLowerCase()}`;
       const { data, cacheStatus } = await getOrSetCache(
         cacheKey,
         300,
@@ -82,22 +82,26 @@ async function executeProductQuery(
 
     // 1. Comprehensive multi-field & natural-language text search (SKU, Article, Name, Category, Color, Price Range)
     if (q) {
-      let cleanQ = q.trim();
+      // Remove commas inside numbers (e.g. "14,000" -> "14000")
+      let cleanQ = q.trim().replace(/(\d),(\d)/g, "$1$2");
       let minPrice: number | null = null;
       let maxPrice: number | null = null;
 
-      // Parse natural-language price ranges (e.g. "ranging from 1000 to 15000 rupees", "below 5000 rupees", "under 2000")
+      // Parse natural-language price ranges:
+      // Matches "ranging from 1000 to 15000 rupees", "from 1000 to 5000", "between 1000 and 5000", "14000 to 100000 rupees", "1000 - 5000 rs"
       const rangeMatch = cleanQ.match(
-        /(?:ranging\s+)?(?:from|between)\s+(\d+)\s+(?:to|and|-)\s+(\d+)(?:\s*(?:rupees|rupee|rs\.?|inr))?/i
+        /(?:(?:ranging\s+)?(?:from|between)\s+)?(?:₹|rs\.?\s*|inr\s*)?(\d{3,7})\s*(?:to|and|-|–)\s*(?:₹|rs\.?\s*|inr\s*)?(\d{3,7})(?:\s*(?:rupees|rupee|rs\.?|inr))?/i
       );
       if (rangeMatch) {
-        minPrice = Number(rangeMatch[1]);
-        maxPrice = Number(rangeMatch[2]);
+        const n1 = Number(rangeMatch[1]);
+        const n2 = Number(rangeMatch[2]);
+        minPrice = Math.min(n1, n2);
+        maxPrice = Math.max(n1, n2);
         cleanQ = cleanQ.replace(rangeMatch[0], " ");
       }
 
       const belowMatch = cleanQ.match(
-        /(?:below|under|less\s+than)\s+(\d+)(?:\s*(?:rupees|rupee|rs\.?|inr))?/i
+        /(?:below|under|upto|up\s+to|less\s+than)\s+(?:₹|rs\.?\s*|inr\s*)?(\d{3,7})(?:\s*(?:rupees|rupee|rs\.?|inr))?/i
       );
       if (belowMatch) {
         maxPrice = Number(belowMatch[1]);
@@ -105,7 +109,7 @@ async function executeProductQuery(
       }
 
       const aboveMatch = cleanQ.match(
-        /(?:above|over|more\s+than)\s+(\d+)(?:\s*(?:rupees|rupee|rs\.?|inr))?/i
+        /(?:above|over|more\s+than|starting\s+from)\s+(?:₹|rs\.?\s*|inr\s*)?(\d{3,7})(?:\s*(?:rupees|rupee|rs\.?|inr))?/i
       );
       if (aboveMatch) {
         minPrice = Number(aboveMatch[1]);
@@ -119,8 +123,7 @@ async function executeProductQuery(
         conditions.push({
           $or: [
             { inSelling: priceRangeCond },
-            { price: priceRangeCond },
-            { inMrp: priceRangeCond },
+            { inSelling: { $in: [0, null] }, price: priceRangeCond },
           ],
         });
       }
@@ -412,8 +415,9 @@ async function runMultiWordFallbackQuery(
   ]);
 
   const cleaned = rawQ
-    .replace(/(?:ranging\s+)?(?:from|between)\s+\d+\s+(?:to|and|-)\s+\d+/gi, " ")
-    .replace(/(?:below|under|above|over|less\s+than|more\s+than)\s+\d+/gi, " ");
+    .replace(/(\d),(\d)/g, "$1$2")
+    .replace(/(?:(?:ranging\s+)?(?:from|between)\s+)?(?:₹|rs\.?\s*|inr\s*)?\d{3,7}\s*(?:to|and|-|–)\s*(?:₹|rs\.?\s*|inr\s*)?\d{3,7}/gi, " ")
+    .replace(/(?:below|under|upto|up\s+to|above|over|less\s+than|more\s+than|starting\s+from)\s+(?:₹|rs\.?\s*|inr\s*)?\d{3,7}/gi, " ");
 
   const words = cleaned
     .split(/\s+/)

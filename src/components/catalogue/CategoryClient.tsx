@@ -296,7 +296,43 @@ export default function CategoryClient({
     };
   }, [isMobileFilterOpen]);
 
-  const baseProducts = dbProducts;
+  // Strictly enforce any price range embedded in searchQuery (e.g., "14000 to 100000 rupees", "below 5000")
+  const baseProducts = useMemo(() => {
+    if (!searchQuery) return dbProducts;
+
+    const normalizedQ = searchQuery.replace(/(\d),(\d)/g, "$1$2");
+    let qMin: number | null = null;
+    let qMax: number | null = null;
+
+    const rangeMatch = normalizedQ.match(
+      /(?:(?:ranging\s+)?(?:from|between)\s+)?(?:₹|rs\.?\s*|inr\s*)?(\d{3,7})\s*(?:to|and|-|–)\s*(?:₹|rs\.?\s*|inr\s*)?(\d{3,7})(?:\s*(?:rupees|rupee|rs\.?|inr))?/i
+    );
+    if (rangeMatch) {
+      const n1 = Number(rangeMatch[1]);
+      const n2 = Number(rangeMatch[2]);
+      qMin = Math.min(n1, n2);
+      qMax = Math.max(n1, n2);
+    } else {
+      const belowMatch = normalizedQ.match(
+        /(?:below|under|upto|up\s+to|less\s+than)\s+(?:₹|rs\.?\s*|inr\s*)?(\d{3,7})(?:\s*(?:rupees|rupee|rs\.?|inr))?/i
+      );
+      if (belowMatch) qMax = Number(belowMatch[1]);
+
+      const aboveMatch = normalizedQ.match(
+        /(?:above|over|more\s+than|starting\s+from)\s+(?:₹|rs\.?\s*|inr\s*)?(\d{3,7})(?:\s*(?:rupees|rupee|rs\.?|inr))?/i
+      );
+      if (aboveMatch) qMin = Number(aboveMatch[1]);
+    }
+
+    if (qMin === null && qMax === null) return dbProducts;
+
+    return dbProducts.filter((p) => {
+      const pr = getProductPrice(p);
+      if (qMin !== null && pr < qMin) return false;
+      if (qMax !== null && pr > qMax) return false;
+      return true;
+    });
+  }, [dbProducts, searchQuery]);
 
   // Compute Min & Max Price bounds across all loaded products
   const { minAvailablePrice, maxAvailablePrice } = useMemo(() => {
