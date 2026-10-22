@@ -174,8 +174,17 @@ async function getCataloguePhraseIndex(): Promise<{
         }
       }
 
-      // 6. Build typewriter phrases from real catalogue highlights
+      // 6. Build typewriter phrases from Gemini AI + real catalogue highlights
+      let geminiTypewriter: string[] = [];
+      try {
+        geminiTypewriter = await callGeminiForPhrases(
+          `You are powering the luxury search bar placeholder typewriter on RN Valves & Faucets (similar to Jaquar bath fittings).
+Return a JSON array of 8 short, natural search placeholder phrases starting with "Search for " and ending with "..." for bathroom faucets, CP fittings, PTMT taps, showers, diverters, basin mixers, pillar cocks, angle valves, and bath accessories.`
+        );
+      } catch {}
+
       const dynamicTypewriter = [
+        ...geminiTypewriter,
         ...DEFAULT_JAQUAR_PHRASES,
         "Search for 2 Way Hi-Flow Concealed Diverter...",
         "Search for 2 In 1 Bib Cock With Flange...",
