@@ -135,6 +135,12 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        source: "/.well-known/-/:path*",
+        headers: [
+          { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
+        ],
+      },
+      {
         source: "/:path*",
         headers: [
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
