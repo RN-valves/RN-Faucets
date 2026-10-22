@@ -710,15 +710,6 @@ export default function AdminOrderDetailPage() {
     order?.razorpayOrderId ||
     parsedPayData.order_id ||
     "";
-  const effectivePayLinkUrl = order?.pay_link_url || parsedPayData.short_url || "";
-  const effectivePaymentId =
-    parsedPayData.razorpay_payment_id ||
-    (typeof parsedPayData.id === "string" && parsedPayData.id.startsWith("pay_") ? parsedPayData.id : "") ||
-    order?.razorpayPaymentId ||
-    (order?.payment_key && !String(order.payment_key).startsWith("rzp_") ? order.payment_key : "") ||
-    "";
-  const effectivePaymentRefId =
-    parsedPayData.razorpay_payment_link_reference_id || parsedPayData.reference_id || order?.uuid || order?.id || "";
   const rawPayStatus = String(
     parsedPayData.razorpay_payment_link_status || parsedPayData.status || (isPaid ? "paid" : "pending")
   ).toLowerCase();
@@ -731,6 +722,22 @@ export default function AdminOrderDetailPage() {
     : isPaymentCancelledOrExpired
     ? `Failed (${rawPayStatus})`
     : "Pending";
+  const effectivePayLinkUrl =
+    order?.pay_link_url ||
+    parsedPayData.short_url ||
+    (isPaymentSuccess && order?.id ? `/payment-link/${order.id}` : "");
+  const displayPayLinkUrl =
+    effectivePayLinkUrl.startsWith("/") && typeof window !== "undefined"
+      ? `${window.location.origin}${effectivePayLinkUrl}`
+      : effectivePayLinkUrl;
+  const effectivePaymentId =
+    parsedPayData.razorpay_payment_id ||
+    (typeof parsedPayData.id === "string" && parsedPayData.id.startsWith("pay_") ? parsedPayData.id : "") ||
+    order?.razorpayPaymentId ||
+    (order?.payment_key && !String(order.payment_key).startsWith("rzp_") ? order.payment_key : "") ||
+    "";
+  const effectivePaymentRefId =
+    parsedPayData.razorpay_payment_link_reference_id || parsedPayData.reference_id || order?.uuid || order?.id || "";
 
   return (
     <div style={{ minHeight: "100vh", background: isDark ? "#0B0F17" : "#F4F6F9" }}>
@@ -1315,7 +1322,7 @@ export default function AdminOrderDetailPage() {
                               fontWeight: 600,
                             }}
                           >
-                            {effectivePayLinkUrl}
+                            {displayPayLinkUrl}
                           </a>
                           <a
                             href={effectivePayLinkUrl}
@@ -1338,8 +1345,8 @@ export default function AdminOrderDetailPage() {
                             type="button"
                             onClick={() => {
                               if (typeof navigator !== "undefined" && navigator.clipboard) {
-                                navigator.clipboard.writeText(effectivePayLinkUrl);
-                                alert(`Payment link copied: ${effectivePayLinkUrl}`);
+                                navigator.clipboard.writeText(displayPayLinkUrl);
+                                alert(`Payment link copied: ${displayPayLinkUrl}`);
                               }
                             }}
                             style={{
@@ -1357,10 +1364,6 @@ export default function AdminOrderDetailPage() {
                             Copy Link
                           </button>
                         </div>
-                      ) : isPaymentSuccess ? (
-                        <span style={{ color: "#198754", fontWeight: 700, fontSize: "12.5px" }}>
-                          ✓ Paid directly via Razorpay Online Checkout ({effectivePaymentId || "Verified"})
-                        </span>
                       ) : (
                         <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
                           <span style={{ color: "#D97706", fontWeight: 600, fontSize: "12px" }}>
