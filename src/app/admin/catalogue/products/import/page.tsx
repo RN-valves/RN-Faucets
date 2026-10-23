@@ -169,12 +169,12 @@ export default function BulkProductsImportPage() {
       product_length: p.productLength || 0,
       product_breadth: p.productBreadth || 0,
       product_height: p.productHeight || 0,
-      residential_warranty: p.residentialWarranty || 0,
-      commercial_warranty: p.commercialWarranty || 0,
-      amazon_link: p.amazonLink || "",
-      flipkart_link: p.flipkartLink || "",
-      video_url: p.videoUrl || "",
-      is_full_turn: p.isFullTurn ? "1" : "0",
+      residential_warranty: p.residentialWarranty || (p as any).residential_warranty || 0,
+      commercial_warranty: p.commercialWarranty || (p as any).commercial_warranty || 0,
+      amazon_link: p.amazonLink || (p as any).amazon_link || "",
+      flipkart_link: p.flipkartLink || (p as any).flipkart_link || "",
+      video_url: p.videoUrl || (p as any).video_url || "",
+      is_full_turn: p.isFullTurn || (p as any).is_full_turn ? "1" : "0",
       status: p.status || "In Stock",
     }));
 

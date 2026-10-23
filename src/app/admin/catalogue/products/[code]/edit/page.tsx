@@ -208,9 +208,9 @@ export default function EditProductPage() {
         setCommercialWarranty(prodData.commercialWarranty || 0);
 
         setImage(prodData.image || "");
-        setVideoUrl(prodData.videoUrl || "");
-        setAmazonLink(prodData.amazonLink || "");
-        setFlipkartLink(prodData.flipkartLink || "");
+        setVideoUrl(prodData.videoUrl || (prodData as any).video_url || "");
+        setAmazonLink(prodData.amazonLink || (prodData as any).amazon_link || "");
+        setFlipkartLink(prodData.flipkartLink || (prodData as any).flipkart_link || "");
 
         setTitle(prodData.title || "");
         setKeywords(prodData.keywords || "");

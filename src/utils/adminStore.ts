@@ -274,7 +274,8 @@ export const importProductsJSON = async (jsonData: unknown): Promise<{ success: 
   try {
     const res = await fetch("/api/products/import", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: typeof jsonData === "string" ? jsonData : JSON.stringify(jsonData),
     });
     const data = await res.json();

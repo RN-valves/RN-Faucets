@@ -559,8 +559,32 @@ export default function FaucetProductPage({
     subcategoryId: rawProduct?.subcategoryId || "",
     subcategoryName: rawProduct?.subcategoryName || "",
     innerPcs: typeof rawProduct?.innerPcs === "number" ? rawProduct.innerPcs : (typeof rawProduct?.inner_pcs === "number" ? rawProduct.inner_pcs : 0),
-    amazonLink: rawProduct?.amazonLink || rawProduct?.amazon_link || rawProduct?.productAttribute?.amazon_link || "",
-    flipkartLink: rawProduct?.flipkartLink || rawProduct?.flipkart_link || rawProduct?.productAttribute?.flipkart_link || "",
+    amazonLink: (() => {
+      const raw = String(
+        rawProduct?.amazonLink ||
+        rawProduct?.amazon_link ||
+        rawProduct?.productAttribute?.amazon_link ||
+        rawProduct?.productAttribute?.amazonLink ||
+        ""
+      ).trim();
+      if (!raw || ["-", "null", "undefined", "na", "n/a", "none", "0", "false", "#"].includes(raw.toLowerCase())) {
+        return "";
+      }
+      return /^https?:\/\//i.test(raw) ? raw : `https://${raw.replace(/^\/+/, "")}`;
+    })(),
+    flipkartLink: (() => {
+      const raw = String(
+        rawProduct?.flipkartLink ||
+        rawProduct?.flipkart_link ||
+        rawProduct?.productAttribute?.flipkart_link ||
+        rawProduct?.productAttribute?.flipkartLink ||
+        ""
+      ).trim();
+      if (!raw || ["-", "null", "undefined", "na", "n/a", "none", "0", "false", "#"].includes(raw.toLowerCase())) {
+        return "";
+      }
+      return /^https?:\/\//i.test(raw) ? raw : `https://${raw.replace(/^\/+/, "")}`;
+    })(),
     isFullTurn: !!(rawProduct?.isFullTurn || rawProduct?.is_full_turn),
     fullTurnCode: rawProduct?.fullTurnCode || rawProduct?.full_turn_code || "",
     residentialWarranty: rawProduct?.residentialWarranty || rawProduct?.residential_warranty || rawProduct?.productAttribute?.residential_warranty || 0,
@@ -1184,42 +1208,70 @@ export default function FaucetProductPage({
                     Buy Options
                   </p>
                   <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-                    {product.flipkartLink && (
-                      <a
-                        href={product.flipkartLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          padding: "6px 14px",
-                          border: "1px solid #e2e8f0",
-                          borderRadius: "8px",
-                          background: "#ffffff",
-                          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-                        }}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src="/users/images/flipkart.png" width="110" alt="Buy on Flipkart" style={{ objectFit: "contain", height: "26px" }} />
-                      </a>
-                    )}
                     {product.amazonLink && (
                       <a
                         href={product.amazonLink}
                         target="_blank"
                         rel="noopener noreferrer"
+                        title="Buy on Amazon"
                         style={{
                           display: "inline-flex",
                           alignItems: "center",
-                          padding: "6px 14px",
-                          border: "1px solid #e2e8f0",
+                          justifyContent: "center",
+                          padding: "8px 16px",
+                          border: "1px solid #cbd5e1",
                           borderRadius: "8px",
                           background: "#ffffff",
-                          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                          transition: "all 0.2s ease",
+                          cursor: "pointer",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = "#f59e0b";
+                          e.currentTarget.style.boxShadow = "0 4px 10px rgba(245, 158, 11, 0.15)";
+                          e.currentTarget.style.transform = "translateY(-1px)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = "#cbd5e1";
+                          e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.05)";
+                          e.currentTarget.style.transform = "translateY(0)";
                         }}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src="/users/images/amazon.png" width="110" alt="Buy on Amazon" style={{ objectFit: "contain", height: "26px" }} />
+                      </a>
+                    )}
+                    {product.flipkartLink && (
+                      <a
+                        href={product.flipkartLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Buy on Flipkart"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          padding: "8px 16px",
+                          border: "1px solid #cbd5e1",
+                          borderRadius: "8px",
+                          background: "#ffffff",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                          transition: "all 0.2s ease",
+                          cursor: "pointer",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = "#2563eb";
+                          e.currentTarget.style.boxShadow = "0 4px 10px rgba(37, 99, 235, 0.15)";
+                          e.currentTarget.style.transform = "translateY(-1px)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = "#cbd5e1";
+                          e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.05)";
+                          e.currentTarget.style.transform = "translateY(0)";
+                        }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/users/images/flipkart.png" width="110" alt="Buy on Flipkart" style={{ objectFit: "contain", height: "26px" }} />
                       </a>
                     )}
                   </div>

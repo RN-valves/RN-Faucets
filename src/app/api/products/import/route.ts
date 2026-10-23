@@ -4,6 +4,15 @@ import Product from "@/models/Product";
 import Subcategory from "@/models/Subcategory";
 import Category from "@/models/Category";
 import { requireAdminAuth } from "@/lib/security";
+import { invalidateCatalogueAndHeaderCache } from "@/lib/catalogueData";
+
+function normalizeExternalLink(val: unknown): string {
+  const raw = String(val ?? "").trim();
+  if (!raw || ["-", "null", "undefined", "na", "n/a", "none", "0", "false", "#"].includes(raw.toLowerCase())) {
+    return "";
+  }
+  return /^https?:\/\//i.test(raw) ? raw : `https://${raw.replace(/^\/+/, "")}`;
+}
 
 export async function POST(request: Request) {
   try {
@@ -23,10 +32,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid array provided for import" }, { status: 400 });
     }
 
-    // Pre-fetch all subcategories and categories for quick lookup & normalization
-    const [allSubcategories, allCategories] = await Promise.all([
+    // Pre-fetch all subcategories, categories, and existing product identifiers for fast bulk lookup
+    const [allSubcategories, allCategories, existingProducts] = await Promise.all([
       Subcategory.find({}).lean(),
       Category.find({}).lean(),
+      Product.find({}).select("_id id code skuCode").lean(),
     ]);
 
     const subMap = new Map<string, any>();
@@ -43,8 +53,16 @@ export async function POST(request: Request) {
       if (c.id) catMap.set(String(c.id).trim().toLowerCase(), c);
     }
 
+    const existingByKey = new Map<string, any>();
+    for (const p of existingProducts as any[]) {
+      if (p.skuCode) existingByKey.set(`sku:${String(p.skuCode).trim().toLowerCase()}`, p);
+      if (p.code) existingByKey.set(`code:${String(p.code).trim().toLowerCase()}`, p);
+      if (p.id !== undefined && p.id !== null) existingByKey.set(`id:${String(p.id).trim().toLowerCase()}`, p);
+    }
+
     let successCount = 0;
     let errorCount = 0;
+    const bulkOps: any[] = [];
 
     for (const item of items) {
       try {
@@ -58,15 +76,17 @@ export async function POST(request: Request) {
         const id = (item.id || code).toString().trim();
         const article = item.article ? item.article.toString().trim() : "";
 
-        // Find existing product to preserve non-provided fields
-        const existing = await Product.findOne({
-          $or: [{ id }, { code }, { skuCode: code }, ...(article ? [{ article }] : [])],
-        });
+        const existing =
+          existingByKey.get(`sku:${code.toLowerCase()}`) ||
+          existingByKey.get(`code:${code.toLowerCase()}`) ||
+          existingByKey.get(`id:${id.toLowerCase()}`);
 
         const updateData: Record<string, any> = {};
 
-        // Helper to check if a key exists in item
+        // Helper to check if a key has a non-empty value in item
         const hasKey = (key: string) => item[key] !== undefined && item[key] !== null && item[key] !== "";
+        // Helper to check if a column exists in the spreadsheet row (even if empty, for clearing links)
+        const hasColumn = (key: string) => Object.prototype.hasOwnProperty.call(item, key);
 
         if (hasKey("name")) updateData.name = item.name;
         if (code) {
@@ -176,8 +196,14 @@ export async function POST(request: Request) {
           updateData.image = item.image;
           updateData.gallery = [item.image];
         }
-        if (hasKey("amazon_link") || hasKey("amazonLink")) updateData.amazonLink = item.amazon_link ?? item.amazonLink;
-        if (hasKey("flipkart_link") || hasKey("flipkartLink")) updateData.flipkartLink = item.flipkart_link ?? item.flipkartLink;
+        if (hasColumn("amazon_link") || hasColumn("amazonLink") || hasColumn("Amazon Link")) {
+          const rawAmz = item.amazon_link ?? item.amazonLink ?? item["Amazon Link"];
+          updateData.amazonLink = normalizeExternalLink(rawAmz);
+        }
+        if (hasColumn("flipkart_link") || hasColumn("flipkartLink") || hasColumn("Flipkart Link")) {
+          const rawFlp = item.flipkart_link ?? item.flipkartLink ?? item["Flipkart Link"];
+          updateData.flipkartLink = normalizeExternalLink(rawFlp);
+        }
         if (hasKey("short_description") || hasKey("shortDescription")) updateData.shortDescription = item.short_description ?? item.shortDescription;
         if (hasKey("video_url") || hasKey("videoUrl")) updateData.videoUrl = item.video_url ?? item.videoUrl;
 
@@ -223,18 +249,33 @@ export async function POST(request: Request) {
           updateData.createdDate = new Date().toISOString().split("T")[0];
         }
 
-        await Product.findOneAndUpdate(
-          { $or: [{ id }, { code }, { skuCode: code }, ...(article ? [{ article }] : [])] },
-          { $set: updateData },
-          { upsert: true, new: true }
-        );
+        const filter = existing?._id
+          ? { _id: existing._id }
+          : { $or: [{ skuCode: code }, { code }, { id }] };
+
+        bulkOps.push({
+          updateOne: {
+            filter,
+            update: { $set: updateData },
+            upsert: true,
+          },
+        });
 
         successCount++;
       } catch (err) {
-        console.error("Error importing item:", err);
+        console.error("Error preparing import item:", err);
         errorCount++;
       }
     }
+
+    // Execute bulk operations in chunks of 500 for fast performance on 7,000+ rows
+    const CHUNK_SIZE = 500;
+    for (let i = 0; i < bulkOps.length; i += CHUNK_SIZE) {
+      const chunk = bulkOps.slice(i, i + CHUNK_SIZE);
+      await Product.bulkWrite(chunk, { ordered: false });
+    }
+
+    await invalidateCatalogueAndHeaderCache();
 
     return NextResponse.json({
       success: true,

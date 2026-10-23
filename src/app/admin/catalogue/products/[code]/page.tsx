@@ -310,18 +310,18 @@ export default function ProductDetailPage() {
               </div>
 
               <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", paddingTop: "12px", borderTop: `1px solid ${border}` }}>
-                {product.videoUrl && (
-                  <a href={product.videoUrl} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#DC2626", fontWeight: 700, fontSize: "13px", textDecoration: "none" }}>
+                {(product.videoUrl || (product as any).video_url) && (
+                  <a href={product.videoUrl || (product as any).video_url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#DC2626", fontWeight: 700, fontSize: "13px", textDecoration: "none" }}>
                     <Video size={16} /> YouTube Video
                   </a>
                 )}
-                {product.amazonLink && (
-                  <a href={product.amazonLink} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#D97706", fontWeight: 700, fontSize: "13px", textDecoration: "none" }}>
+                {(product.amazonLink || (product as any).amazon_link) && (
+                  <a href={product.amazonLink || (product as any).amazon_link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#D97706", fontWeight: 700, fontSize: "13px", textDecoration: "none" }}>
                     <ShoppingCart size={16} /> Amazon India
                   </a>
                 )}
-                {product.flipkartLink && (
-                  <a href={product.flipkartLink} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#2563EB", fontWeight: 700, fontSize: "13px", textDecoration: "none" }}>
+                {(product.flipkartLink || (product as any).flipkart_link) && (
+                  <a href={product.flipkartLink || (product as any).flipkart_link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#2563EB", fontWeight: 700, fontSize: "13px", textDecoration: "none" }}>
                     <ShoppingCart size={16} /> Flipkart
                   </a>
                 )}
