@@ -51,24 +51,24 @@ export async function POST(request: Request) {
       }
     }
 
-    if (!isAdminAccount) {
-      // Rate limit per IP: max 5 requests per minute
-      const ipLimit = checkRateLimit(`send-otp:ip:${ip}`, 5, 60 * 1000);
-      if (!ipLimit.allowed) {
-        return NextResponse.json(
-          { error: "Too many OTP requests from this connection. Please wait a minute." },
-          { status: 429 }
-        );
-      }
+    // Rate limit per IP (allow slightly higher burst for admin testing, but block SMS bombing)
+    const ipMax = isAdminAccount ? 10 : 5;
+    const ipLimit = checkRateLimit(`send-otp:ip:${ip}`, ipMax, 60 * 1000);
+    if (!ipLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many OTP requests from this connection. Please wait a minute." },
+        { status: 429 }
+      );
+    }
 
-      // Rate limit per phone number: max 3 requests per 2 minutes
-      const phoneLimit = checkRateLimit(`send-otp:phone:${cleanMobile}`, 3, 2 * 60 * 1000);
-      if (!phoneLimit.allowed) {
-        return NextResponse.json(
-          { error: "An OTP was recently sent. Please wait before requesting another." },
-          { status: 429 }
-        );
-      }
+    // Rate limit per phone number
+    const phoneMax = isAdminAccount ? 6 : 3;
+    const phoneLimit = checkRateLimit(`send-otp:phone:${cleanMobile}`, phoneMax, 2 * 60 * 1000);
+    if (!phoneLimit.allowed) {
+      return NextResponse.json(
+        { error: "An OTP was recently sent. Please wait before requesting another." },
+        { status: 429 }
+      );
     }
 
     // Generate cryptographically random 4-digit OTP (1000 - 9999)

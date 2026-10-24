@@ -298,7 +298,14 @@ function OrdersContent() {
       if (paymentSearch.trim()) params.set("q", paymentSearch.trim());
       if (paymentStatusFilter) params.set("status", paymentStatusFilter);
 
-      const res = await fetch(`/api/payments?${params.toString()}`);
+      const savedToken = typeof window !== "undefined" ? localStorage.getItem("rn_admin_token") : null;
+      const headers: Record<string, string> = {};
+      if (savedToken) headers["Authorization"] = `Bearer ${savedToken}`;
+
+      const res = await fetch(`/api/payments?${params.toString()}`, {
+        credentials: "include",
+        headers,
+      });
       if (res.ok) {
         const data = await res.json();
         setPayments(data.payments || []);

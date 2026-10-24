@@ -3,6 +3,7 @@ import { verifyRazorpayPaymentSignature } from "@/lib/razorpay";
 import { connectDB } from "@/lib/mongodb";
 import Order from "@/models/Order";
 import User from "@/models/User";
+import { getNextAtomicOrderIdentity, getNextAtomicPaymentIdentity } from "@/models/Counter";
 import { sendOrderInvoiceEmail } from "@/lib/email";
 
 export async function POST(request: Request) {
@@ -37,47 +38,47 @@ export async function POST(request: Request) {
 
     await connectDB();
 
-    let rawId = orderData?.id ? orderData.id.replace(/-/g, "").replace(/ORD/i, "OD") : "";
+    let rawId = orderData?.id ? String(orderData.id).replace(/-/g, "").replace(/ORD/i, "OD") : "";
     let legacyId = orderData?.legacyId;
-    const numPart = parseInt(rawId.replace(/\D/g, "") || "0");
+    const numPart = parseInt(rawId.replace(/\D/g, "") || "0", 10);
 
-    if (!rawId || numPart >= 100000) {
-      const highestSequential = await Order.findOne({
-        $or: [
-          { legacyId: { $gt: 0, $lt: 100000 } },
-          { id: { $regex: /^RNOD\d{1,5}$/i } },
-        ],
-      })
-        .sort({ legacyId: -1, createdAt: -1 })
-        .lean();
+    const matchConditions: any[] = [{ razorpayOrderId: razorpay_order_id }];
+    if (rawId && numPart < 100000) {
+      matchConditions.unshift({ id: rawId });
+    }
+    if (orderData?.uuid) {
+      matchConditions.push({ uuid: orderData.uuid });
+    }
 
-      let maxNum = 829;
-      if (highestSequential) {
-        const idNum = parseInt(highestSequential.id?.replace(/\D/g, "") || "0");
-        const legNum = highestSequential.legacyId || 0;
-        const valid = Math.max(idNum < 100000 ? idNum : 0, legNum < 100000 ? legNum : 0);
-        if (valid > maxNum) maxNum = valid;
-      }
-      legacyId = maxNum + 1;
-      rawId = `RNOD${legacyId}`;
+    const existingOrder: any = await Order.findOne({ $or: matchConditions }).lean();
+
+    if (existingOrder) {
+      rawId = existingOrder.id;
+      legacyId = existingOrder.legacyId;
+    } else if (!rawId || numPart >= 100000) {
+      const seq = await getNextAtomicOrderIdentity();
+      rawId = seq.id;
+      legacyId = seq.legacyId;
     }
 
     const orderId = rawId;
+    const wasAlreadyPaid = existingOrder?.paymentStatus === "Paid";
 
-    // Lookup user by phone for email and GST enrichment
-    let customerEmail = orderData?.customerEmail;
-    let gstNumber = orderData?.gstNumber;
-    let businessName = orderData?.businessName;
+    // Lookup user by phone for email and GST enrichment (read-only)
+    let customerEmail = existingOrder?.customerEmail || orderData?.customerEmail;
+    let gstNumber = existingOrder?.gstNumber || orderData?.gstNumber;
+    let businessName = existingOrder?.businessName || orderData?.businessName;
 
-    if (orderData?.customerPhone) {
-      const cleanPhone = String(orderData.customerPhone).replace(/\D/g, "").slice(-10);
+    const lookupPhone = existingOrder?.customerPhone || orderData?.customerPhone;
+    if (lookupPhone) {
+      const cleanPhone = String(lookupPhone).replace(/\D/g, "").slice(-10);
       const userDoc: any = await User.findOne({
         $or: [
           { mobile: cleanPhone },
           { mobile: `+91${cleanPhone}` },
           { mobile: `91${cleanPhone}` },
         ],
-      });
+      }).lean();
 
       if (userDoc) {
         if ((!customerEmail || customerEmail.includes("noreply")) && userDoc.email) {
@@ -89,59 +90,75 @@ export async function POST(request: Request) {
         if (!businessName && userDoc.businessName) {
           businessName = userDoc.businessName;
         }
-
-        // Sync back any newly provided email or GST to the user profile
-        const userUpdates: any = {};
-        if (orderData.customerEmail && !orderData.customerEmail.includes("noreply") && !userDoc.email) {
-          userUpdates.email = orderData.customerEmail;
-        }
-        if (orderData.gstNumber && !userDoc.gstNumber) {
-          userUpdates.gstNumber = orderData.gstNumber;
-          userUpdates.userType = "Business";
-        }
-        if (orderData.businessName && !userDoc.businessName) {
-          userUpdates.businessName = orderData.businessName;
-        }
-        if (Object.keys(userUpdates).length > 0) {
-          await User.findByIdAndUpdate(userDoc._id, { $set: userUpdates });
-        }
       }
     }
 
-    // Fetch full Razorpay payment details so Admin Order Details displays complete payment_data
+    // Fetch full Razorpay payment details and verify paid amount matches authoritative order total
     let paymentDataJson = "";
+    let rzpPaidAmountRupees: number | null = null;
     try {
       const rzpKey = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "";
       const rzpSecret = process.env.RAZORPAY_KEY_SECRET || "";
       if (rzpKey && rzpSecret) {
         const auth = Buffer.from(`${rzpKey}:${rzpSecret}`).toString("base64");
-        const payRes = await fetch(`https://api.razorpay.com/v1/payments/${razorpay_payment_id}`, {
+        const payRes = await fetch(`https://api.razorpay.com/v1/payments/${encodeURIComponent(razorpay_payment_id)}`, {
           headers: { Authorization: `Basic ${auth}` },
         });
         if (payRes.ok) {
           const payDetails = await payRes.json();
           paymentDataJson = JSON.stringify(payDetails);
+          if (payDetails.order_id && payDetails.order_id !== razorpay_order_id) {
+            return NextResponse.json(
+              { error: "Razorpay payment order_id mismatch" },
+              { status: 400 }
+            );
+          }
+          if (typeof payDetails.amount === "number") {
+            rzpPaidAmountRupees = Math.round(payDetails.amount / 100);
+          }
         }
       }
     } catch (payErr) {
       console.error("Failed to fetch Razorpay payment details:", payErr);
     }
 
-    const matchConditions: any[] = [
-      { id: orderId },
-      { razorpayOrderId: razorpay_order_id },
-    ];
-    if (orderData?.uuid) {
-      matchConditions.push({ uuid: orderData.uuid });
+    const expectedTotal = Number(existingOrder?.totalAmount || orderData?.totalAmount || 0);
+    if (
+      rzpPaidAmountRupees !== null &&
+      expectedTotal > 0 &&
+      Math.abs(rzpPaidAmountRupees - Math.round(expectedTotal)) > 1
+    ) {
+      return NextResponse.json(
+        { error: `Paid amount (₹${rzpPaidAmountRupees}) does not match order total (₹${expectedTotal}).` },
+        { status: 400 }
+      );
     }
 
-    const savedOrder = await Order.findOneAndUpdate(
-      { $or: matchConditions },
-      {
-        $set: {
+    const updateSet: Record<string, any> = existingOrder
+      ? {
+          customerEmail: customerEmail || existingOrder.customerEmail || "",
+          gstNumber: gstNumber || existingOrder.gstNumber || "",
+          businessName: businessName || existingOrder.businessName || "",
+          paymentStatus: "Paid",
+          paymentMethod: "Online Payment",
+          payment_term: "Prepaid",
+          payment_key: razorpay_payment_id,
+          pay_link_id: existingOrder.pay_link_id || orderData?.pay_link_id || razorpay_order_id,
+          pay_link_url:
+            existingOrder.pay_link_url ||
+            orderData?.pay_link_url ||
+            `https://dashboard.razorpay.com/app/payments/${razorpay_payment_id}`,
+          ...(paymentDataJson ? { payment_data: paymentDataJson } : {}),
+          status: existingOrder.status === "Pending" ? "Processing" : existingOrder.status || "Processing",
+          razorpayOrderId: razorpay_order_id,
+          razorpayPaymentId: razorpay_payment_id,
+          razorpaySignature: razorpay_signature,
+        }
+      : {
           ...orderData,
           id: orderId,
           legacyId: legacyId || undefined,
+          totalAmount: rzpPaidAmountRupees ?? expectedTotal,
           customerEmail: customerEmail || orderData?.customerEmail || "",
           gstNumber: gstNumber || orderData?.gstNumber || "",
           businessName: businessName || orderData?.businessName || "",
@@ -150,7 +167,9 @@ export async function POST(request: Request) {
           payment_term: "Prepaid",
           payment_key: razorpay_payment_id,
           pay_link_id: orderData?.pay_link_id || razorpay_order_id,
-          pay_link_url: orderData?.pay_link_url || `https://dashboard.razorpay.com/app/payments/${razorpay_payment_id}`,
+          pay_link_url:
+            orderData?.pay_link_url ||
+            `https://dashboard.razorpay.com/app/payments/${razorpay_payment_id}`,
           ...(paymentDataJson ? { payment_data: paymentDataJson } : {}),
           status: "Processing",
           razorpayOrderId: razorpay_order_id,
@@ -162,7 +181,12 @@ export async function POST(request: Request) {
               dateStyle: "short",
               timeStyle: "short",
             }),
-        },
+        };
+
+    const savedOrder = await Order.findOneAndUpdate(
+      existingOrder ? { _id: existingOrder._id } : { $or: [{ id: orderId }, { razorpayOrderId: razorpay_order_id }] },
+      {
+        $set: updateSet,
         $setOnInsert: {
           createdAt: new Date(),
         },
@@ -174,26 +198,45 @@ export async function POST(request: Request) {
     try {
       const Payment = (await import("@/models/Payment")).default;
       const numericOrderId = legacyId || numPart || parseInt(orderId.replace(/\D/g, ""), 10) || null;
-      const lastPayment: any = await Payment.findOne().sort({ id: -1 }).lean();
-      const nextPayId = (lastPayment?.id || 581) + 1;
+      const existingPay = await Payment.findOne({
+        $or: [
+          { gatewayPaymentId: razorpay_payment_id },
+          { payLinkId: razorpay_order_id },
+          ...(numericOrderId ? [{ orderId: numericOrderId }] : []),
+        ],
+      }).lean();
+
+      const paySeq = existingPay
+        ? { id: existingPay.id, paymentId: existingPay.paymentId }
+        : await getNextAtomicPaymentIdentity();
+
       await Payment.findOneAndUpdate(
-        {
-          $or: [
-            { gatewayPaymentId: razorpay_payment_id },
-            { payLinkId: razorpay_order_id },
-          ],
-        },
+        existingPay
+          ? { _id: existingPay._id }
+          : {
+              $or: [
+                { gatewayPaymentId: razorpay_payment_id },
+                { payLinkId: razorpay_order_id },
+              ],
+            },
         {
           $set: {
             orderId: numericOrderId,
-            customerName: orderData?.customerName || orderData?.shippingAddress?.firstName || "Customer",
-            payLinkId: orderData?.pay_link_id || razorpay_order_id,
-            shortUrl: orderData?.pay_link_url || `https://dashboard.razorpay.com/app/payments/${razorpay_payment_id}`,
-            mobile: orderData?.customerPhone || orderData?.shippingAddress?.phone || "",
+            customerName:
+              savedOrder?.customerName ||
+              orderData?.customerName ||
+              orderData?.shippingAddress?.firstName ||
+              "Customer",
+            payLinkId: savedOrder?.pay_link_id || orderData?.pay_link_id || razorpay_order_id,
+            shortUrl:
+              savedOrder?.pay_link_url ||
+              orderData?.pay_link_url ||
+              `https://dashboard.razorpay.com/app/payments/${razorpay_payment_id}`,
+            mobile: savedOrder?.customerPhone || orderData?.customerPhone || orderData?.shippingAddress?.phone || "",
             email: customerEmail || orderData?.customerEmail || "",
-            state: orderData?.shippingAddress?.state || "",
-            city: orderData?.shippingAddress?.city || "",
-            zipcode: orderData?.shippingAddress?.pinCode || "",
+            state: savedOrder?.shippingAddress?.state || orderData?.shippingAddress?.state || "",
+            city: savedOrder?.shippingAddress?.city || orderData?.shippingAddress?.city || "",
+            zipcode: savedOrder?.shippingAddress?.pinCode || orderData?.shippingAddress?.pinCode || "",
             paymentGateway: "Razorpay",
             paymentKey: razorpay_payment_id,
             gatewayPaymentId: razorpay_payment_id,
@@ -206,11 +249,11 @@ export async function POST(request: Request) {
                 razorpay_signature,
                 status: "paid",
               }),
-            amount: Number(orderData?.totalAmount || 0),
+            amount: Number(savedOrder?.totalAmount || expectedTotal || 0),
           },
           $setOnInsert: {
-            id: nextPayId,
-            paymentId: `PAY-${nextPayId}`,
+            id: paySeq.id,
+            paymentId: paySeq.paymentId,
           },
         },
         { upsert: true }
@@ -219,10 +262,12 @@ export async function POST(request: Request) {
       console.error("Payment collection sync warning:", paySyncErr);
     }
 
-    // Send confirmation invoice email to customer and admin
-    sendOrderInvoiceEmail(savedOrder).catch((err) =>
-      console.error("Async invoice email error:", err)
-    );
+    // Send confirmation invoice email only once per paid transition
+    if (!wasAlreadyPaid && savedOrder) {
+      sendOrderInvoiceEmail(savedOrder).catch((err) =>
+        console.error("Async invoice email error:", err)
+      );
+    }
 
     return NextResponse.json({
       success: true,

@@ -1,12 +1,18 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import BPoint from "@/models/BPoint";
+import { requireAdminAuth } from "@/lib/security";
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const admin = await requireAdminAuth(request);
+    if (!admin) {
+      return NextResponse.json({ error: "Unauthorized. Admin access required." }, { status: 401 });
+    }
+
     await connectDB();
     const { id } = await params;
     const deleted = await BPoint.findOneAndDelete({ id });

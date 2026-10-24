@@ -1,4 +1,4 @@
-﻿import nodemailer from "nodemailer";
+import nodemailer from "nodemailer";
 
 const smtpHost = process.env.SMTP_HOST || "smtp.gmail.com";
 const smtpPort = parseInt(process.env.SMTP_PORT || "587");
@@ -17,14 +17,27 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+function escapeHtml(value: any): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export async function sendOrderInvoiceEmail(order: any) {
   try {
     const customerEmail =
       order.customerEmail || order.shippingAddress?.email || "";
-    const customerName =
+    const customerName = escapeHtml(
       order.customerName ||
-      `${order.shippingAddress?.firstName || ""} ${order.shippingAddress?.lastName || ""}`.trim() ||
-      "Valued Customer";
+        `${order.shippingAddress?.firstName || ""} ${order.shippingAddress?.lastName || ""}`.trim() ||
+        "Valued Customer"
+    );
+    const safeOrderId = escapeHtml(order.id);
+    const safePaymentMethod = escapeHtml(order.paymentMethod || "");
+    const safeRazorpayPaymentId = escapeHtml(order.razorpayPaymentId || "");
 
     const items = order.items || [];
     const subtotal = items.reduce(
@@ -41,18 +54,18 @@ export async function sendOrderInvoiceEmail(order: any) {
         (item: any) => `
         <tr>
           <td style="padding: 10px; border-bottom: 1px solid #E5E7EB; text-align: left; font-size: 13px; color: #1F2937;">
-            <strong>${item.name}</strong>
-            ${item.code ? `<div style="font-size: 11px; color: #6B7280;">Code: ${item.code}</div>` : ""}
-            ${item.color ? `<div style="font-size: 11px; color: #6B7280;">Finish: ${item.color}</div>` : ""}
+            <strong>${escapeHtml(item.name)}</strong>
+            ${item.code ? `<div style="font-size: 11px; color: #6B7280;">Code: ${escapeHtml(item.code)}</div>` : ""}
+            ${item.color ? `<div style="font-size: 11px; color: #6B7280;">Finish: ${escapeHtml(item.color)}</div>` : ""}
           </td>
           <td style="padding: 10px; border-bottom: 1px solid #E5E7EB; text-align: right; font-size: 13px; color: #1F2937;">
             ₹${Number(item.price).toLocaleString("en-IN")}
           </td>
           <td style="padding: 10px; border-bottom: 1px solid #E5E7EB; text-align: center; font-size: 13px; color: #1F2937;">
-            ${item.quantity}
+            ${Number(item.quantity) || 1}
           </td>
           <td style="padding: 10px; border-bottom: 1px solid #E5E7EB; text-align: right; font-size: 13px; font-weight: 700; color: #1F2937;">
-            ₹${(Number(item.price) * Number(item.quantity)).toLocaleString("en-IN")}
+            ₹${(Number(item.price) * (Number(item.quantity) || 1)).toLocaleString("en-IN")}
           </td>
         </tr>
       `
@@ -64,21 +77,21 @@ export async function sendOrderInvoiceEmail(order: any) {
 <html>
 <head>
   <meta charset="utf-8">
-  <title>RN Valves - Order Confirmation #${order.id}</title>
+  <title>RN Valves - Order Confirmation #${safeOrderId}</title>
 </head>
 <body style="font-family: Arial, Helvetica, sans-serif; background-color: #F3F4F6; margin: 0; padding: 20px; color: #1F2937;">
   <div style="max-width: 650px; margin: 0 auto; background: #FFFFFF; border-radius: 12px; overflow: hidden; border: 1px solid #E5E7EB; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
     <!-- Header -->
     <div style="background: #0077B6; padding: 24px; text-align: center; color: #FFFFFF;">
       <h1 style="margin: 0; font-size: 22px; letter-spacing: 1px; font-weight: 800;">RN VALVES & FAUCETS</h1>
-      <p style="margin: 6px 0 0 0; font-size: 13px; opacity: 0.9;">Order Invoice & Confirmation • #${order.id}</p>
+      <p style="margin: 6px 0 0 0; font-size: 13px; opacity: 0.9;">Order Invoice & Confirmation • #${safeOrderId}</p>
     </div>
 
     <!-- Body -->
     <div style="padding: 24px;">
       <p style="font-size: 15px; margin-top: 0;">Dear <strong>${customerName}</strong>,</p>
       <p style="font-size: 13.5px; color: #4B5563; line-height: 1.5;">
-        Thank you for choosing RN Valves & Faucets. Your order <strong>#${order.id}</strong> has been successfully received and recorded in our system.
+        Thank you for choosing RN Valves & Faucets. Your order <strong>#${safeOrderId}</strong> has been successfully received and recorded in our system.
       </p>
 
       <!-- Order Summary Card -->
@@ -87,24 +100,24 @@ export async function sendOrderInvoiceEmail(order: any) {
         <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
           <tr>
             <td style="padding: 4px 0; color: #6B7280;">Order ID:</td>
-            <td style="padding: 4px 0; font-weight: 700; text-align: right;">#${order.id}</td>
+            <td style="padding: 4px 0; font-weight: 700; text-align: right;">#${safeOrderId}</td>
           </tr>
           <tr>
             <td style="padding: 4px 0; color: #6B7280;">Order Date:</td>
-            <td style="padding: 4px 0; text-align: right;">${order.orderDate || new Date().toLocaleDateString("en-IN")}</td>
+            <td style="padding: 4px 0; text-align: right;">${escapeHtml(order.orderDate || new Date().toLocaleDateString("en-IN"))}</td>
           </tr>
           <tr>
             <td style="padding: 4px 0; color: #6B7280;">Payment Method:</td>
             <td style="padding: 4px 0; font-weight: 700; text-align: right; color: ${order.paymentStatus === "Paid" ? "#10B981" : "#D97706"};">
-              ${order.paymentMethod} (${order.paymentStatus === "Paid" ? "PAID" : "PENDING"})
+              ${safePaymentMethod} (${order.paymentStatus === "Paid" ? "PAID" : "PENDING"})
             </td>
           </tr>
           ${
-            order.razorpayPaymentId
+            safeRazorpayPaymentId
               ? `
           <tr>
             <td style="padding: 4px 0; color: #6B7280;">Transaction ID:</td>
-            <td style="padding: 4px 0; text-align: right; font-family: monospace;">${order.razorpayPaymentId}</td>
+            <td style="padding: 4px 0; text-align: right; font-family: monospace;">${safeRazorpayPaymentId}</td>
           </tr>
           `
               : ""
@@ -116,10 +129,10 @@ export async function sendOrderInvoiceEmail(order: any) {
       <div style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px; padding: 16px; margin: 20px 0;">
         <h3 style="margin: 0 0 8px 0; font-size: 14px; color: #0077B6; text-transform: uppercase;">Shipping Destination</h3>
         <p style="margin: 0; font-size: 13px; color: #374151; line-height: 1.5;">
-          <strong>${order.shippingAddress?.firstName || customerName} ${order.shippingAddress?.lastName || ""}</strong><br/>
-          ${order.shippingAddress?.address || ""}<br/>
-          ${order.shippingAddress?.city || ""}, ${order.shippingAddress?.state || ""} - ${order.shippingAddress?.pinCode || ""}<br/>
-          Phone: ${order.shippingAddress?.phone || order.customerPhone || "N/A"}
+          <strong>${escapeHtml(order.shippingAddress?.firstName || order.customerName || "Valued Customer")} ${escapeHtml(order.shippingAddress?.lastName || "")}</strong><br/>
+          ${escapeHtml(order.shippingAddress?.address || "")}<br/>
+          ${escapeHtml(order.shippingAddress?.city || "")}, ${escapeHtml(order.shippingAddress?.state || "")} - ${escapeHtml(order.shippingAddress?.pinCode || "")}<br/>
+          Phone: ${escapeHtml(order.shippingAddress?.phone || order.customerPhone || "N/A")}
         </p>
       </div>
 
@@ -183,7 +196,7 @@ export async function sendOrderInvoiceEmail(order: any) {
       from: smtpFrom,
       to: customerEmail && customerEmail.includes("@") ? customerEmail : adminEmail,
       cc: customerEmail && customerEmail.includes("@") ? adminEmail : undefined,
-      subject: `RN Valves Order Confirmation - #${order.id}`,
+      subject: `RN Valves Order Confirmation - #${safeOrderId}`,
       html,
     };
 
@@ -200,36 +213,39 @@ export async function sendOrderStatusEmail(order: any, newStatus: string) {
   try {
     const customerEmail =
       order.customerEmail || order.shippingAddress?.email || "";
-    const customerName =
+    const customerName = escapeHtml(
       order.customerName ||
-      `${order.shippingAddress?.firstName || ""} ${order.shippingAddress?.lastName || ""}`.trim() ||
-      "Valued Customer";
+        `${order.shippingAddress?.firstName || ""} ${order.shippingAddress?.lastName || ""}`.trim() ||
+        "Valued Customer"
+    );
+    const safeOrderId = escapeHtml(order.id);
+    const safeNewStatus = escapeHtml(newStatus);
 
     const html = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>RN Valves - Order Status Updated #${order.id}</title>
+  <title>RN Valves - Order Status Updated #${safeOrderId}</title>
 </head>
 <body style="font-family: Arial, Helvetica, sans-serif; background-color: #F3F4F6; margin: 0; padding: 20px; color: #1F2937;">
   <div style="max-width: 650px; margin: 0 auto; background: #FFFFFF; border-radius: 12px; overflow: hidden; border: 1px solid #E5E7EB; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
     <!-- Header -->
     <div style="background: #0077B6; padding: 24px; text-align: center; color: #FFFFFF;">
       <h1 style="margin: 0; font-size: 22px; letter-spacing: 1px; font-weight: 800;">RN VALVES & FAUCETS</h1>
-      <p style="margin: 6px 0 0 0; font-size: 13px; opacity: 0.9;">Order Update Notification • #${order.id}</p>
+      <p style="margin: 6px 0 0 0; font-size: 13px; opacity: 0.9;">Order Update Notification • #${safeOrderId}</p>
     </div>
 
     <!-- Body -->
     <div style="padding: 24px;">
       <p style="font-size: 15px; margin-top: 0;">Dear <strong>${customerName}</strong>,</p>
       <p style="font-size: 13.5px; color: #4B5563; line-height: 1.5;">
-        Your order <strong>#${order.id}</strong> status has been updated to:
+        Your order <strong>#${safeOrderId}</strong> status has been updated to:
       </p>
 
       <div style="text-align: center; margin: 24px 0;">
         <span style="display: inline-block; padding: 10px 24px; background: #0077B6; color: #FFFFFF; font-weight: 800; font-size: 16px; border-radius: 50px; letter-spacing: 1px; text-transform: uppercase;">
-          ${newStatus}
+          ${safeNewStatus}
         </span>
       </div>
 
@@ -239,9 +255,9 @@ export async function sendOrderStatusEmail(order: any, newStatus: string) {
       <div style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px; padding: 16px; margin: 20px 0;">
         <h3 style="margin: 0 0 12px 0; font-size: 14px; color: #0077B6; text-transform: uppercase;">Dispatch & Courier Tracking</h3>
         <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
-          ${order.courierPartner ? `<tr><td style="padding: 4px 0; color: #6B7280;">Transport Partner:</td><td style="padding: 4px 0; font-weight: 700; text-align: right;">${order.courierPartner}</td></tr>` : ""}
-          ${order.trackingNumber ? `<tr><td style="padding: 4px 0; color: #6B7280;">Tracking / LR Number:</td><td style="padding: 4px 0; font-weight: 700; text-align: right; font-family: monospace;">${order.trackingNumber}</td></tr>` : ""}
-          ${order.dispatchDate ? `<tr><td style="padding: 4px 0; color: #6B7280;">Dispatch Date:</td><td style="padding: 4px 0; text-align: right;">${order.dispatchDate}</td></tr>` : ""}
+          ${order.courierPartner ? `<tr><td style="padding: 4px 0; color: #6B7280;">Transport Partner:</td><td style="padding: 4px 0; font-weight: 700; text-align: right;">${escapeHtml(order.courierPartner)}</td></tr>` : ""}
+          ${order.trackingNumber ? `<tr><td style="padding: 4px 0; color: #6B7280;">Tracking / LR Number:</td><td style="padding: 4px 0; font-weight: 700; text-align: right; font-family: monospace;">${escapeHtml(order.trackingNumber)}</td></tr>` : ""}
+          ${order.dispatchDate ? `<tr><td style="padding: 4px 0; color: #6B7280;">Dispatch Date:</td><td style="padding: 4px 0; text-align: right;">${escapeHtml(order.dispatchDate)}</td></tr>` : ""}
         </table>
       </div>
       `

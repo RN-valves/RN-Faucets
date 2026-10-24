@@ -45,7 +45,7 @@ export async function GET(request: Request) {
       query.approvalStatus = approval;
     }
 
-    const users = await User.find(query).sort({ createdAt: -1 }).lean();
+    const users = await User.find(query).select("-password -local_password").sort({ createdAt: -1 }).lean();
 
     const pendingCount = await User.countDocuments({ approvalStatus: "Pending" });
     const businessCount = await User.countDocuments({ userType: "Business" });

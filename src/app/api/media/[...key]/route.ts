@@ -71,8 +71,16 @@ export async function GET(
 
     const headers = new Headers();
     headers.set("Content-Type", contentType);
+    headers.set("X-Content-Type-Options", "nosniff");
     headers.set("Accept-Ranges", "bytes");
     headers.set("Vary", "Range, Accept-Encoding");
+
+    if (contentType === "image/svg+xml") {
+      headers.set(
+        "Content-Security-Policy",
+        "default-src 'none'; style-src 'unsafe-inline'; sandbox"
+      );
+    }
 
     if (hasVersion) {
       // Versioned URLs (?v=...) are immutable and safe to cache for 1 year

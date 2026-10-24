@@ -153,7 +153,7 @@ export const getAdminProducts = async (params?: {
   }
 };
 
-function getAuthHeaders(): Record<string, string> {
+export function getAuthHeaders(): Record<string, string> {
   if (typeof document === "undefined") return {};
   const cookies = document.cookie
     ? Object.fromEntries(
@@ -332,7 +332,8 @@ export const addAdminBPoint = async (payload: { modelId: string; name: string })
   try {
     const res = await fetch("/api/bpoints", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify({ ...payload, modelType: "Category" }),
     });
     if (!res.ok) throw new Error("fetch failed");
@@ -344,7 +345,11 @@ export const addAdminBPoint = async (payload: { modelId: string; name: string })
 
 export const deleteAdminBPoint = async (id: string): Promise<boolean> => {
   try {
-    const res = await fetch(`/api/bpoints/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/bpoints/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { ...getAuthHeaders() },
+    });
     return res.ok;
   } catch {
     return false;
@@ -357,7 +362,8 @@ export const addAdminCategory = async (
   try {
     const res = await fetch("/api/categories", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify(category),
     });
     if (!res.ok) throw new Error("fetch failed");
@@ -376,7 +382,8 @@ export const updateAdminCategory = async (
   try {
     const res = await fetch(`/api/categories/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify(updatedFields),
     });
     if (!res.ok) throw new Error("fetch failed");
@@ -390,7 +397,11 @@ export const updateAdminCategory = async (
 
 export const deleteAdminCategory = async (id: string): Promise<boolean> => {
   try {
-    const res = await fetch(`/api/categories/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/categories/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { ...getAuthHeaders() },
+    });
     if (res.ok && typeof window !== "undefined") {
       window.dispatchEvent(new Event("rn-admin-data-changed"));
     }
@@ -403,7 +414,7 @@ export const deleteAdminCategory = async (id: string): Promise<boolean> => {
 export const getAdminSubcategories = async (categoryId?: string): Promise<AdminSubcategory[]> => {
   try {
     const url = categoryId ? `/api/subcategories?categoryId=${categoryId}&all=true` : "/api/subcategories?all=true";
-    const res = await fetch(url);
+    const res = await fetch(url, { credentials: "include", headers: { ...getAuthHeaders() } });
     if (!res.ok) throw new Error("fetch failed");
     return res.json();
   } catch {
@@ -437,7 +448,8 @@ export const addAdminSubcategory = async (
   try {
     const res = await fetch("/api/subcategories", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify(subcategory),
     });
     if (!res.ok) throw new Error("fetch failed");
@@ -456,7 +468,8 @@ export const updateAdminSubcategory = async (
   try {
     const res = await fetch(`/api/subcategories/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify(updatedFields),
     });
     if (!res.ok) throw new Error("fetch failed");
@@ -470,7 +483,11 @@ export const updateAdminSubcategory = async (
 
 export const deleteAdminSubcategory = async (id: string): Promise<boolean> => {
   try {
-    const res = await fetch(`/api/subcategories/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/subcategories/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { ...getAuthHeaders() },
+    });
     if (res.ok && typeof window !== "undefined") {
       window.dispatchEvent(new Event("rn-admin-data-changed"));
     }
@@ -501,7 +518,8 @@ export const addAdminAttribute = async (
   try {
     const res = await fetch("/api/attributes", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify(attribute),
     });
     if (!res.ok) throw new Error("fetch failed");
@@ -513,7 +531,11 @@ export const addAdminAttribute = async (
 
 export const deleteAdminAttribute = async (id: string): Promise<boolean> => {
   try {
-    const res = await fetch(`/api/attributes?id=${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/attributes?id=${id}`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { ...getAuthHeaders() },
+    });
     return res.ok;
   } catch {
     return false;
@@ -540,7 +562,8 @@ export const addAdminCatalogue = async (
   try {
     const res = await fetch("/api/catalogues", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify(catalogue),
     });
     if (!res.ok) throw new Error("fetch failed");
@@ -552,7 +575,11 @@ export const addAdminCatalogue = async (
 
 export const deleteAdminCatalogue = async (id: string): Promise<boolean> => {
   try {
-    const res = await fetch(`/api/catalogues/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/catalogues/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { ...getAuthHeaders() },
+    });
     return res.ok;
   } catch {
     return false;
@@ -575,7 +602,8 @@ export const addAdminDiscount = async (
   try {
     const res = await fetch("/api/discounts", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify(discount),
     });
     if (!res.ok) throw new Error("fetch failed");
@@ -592,7 +620,8 @@ export const updateAdminDiscount = async (
   try {
     const res = await fetch(`/api/discounts/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify(updatedFields),
     });
     if (!res.ok) throw new Error("fetch failed");
@@ -604,7 +633,11 @@ export const updateAdminDiscount = async (
 
 export const deleteAdminDiscount = async (id: string): Promise<boolean> => {
   try {
-    const res = await fetch(`/api/discounts/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/discounts/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { ...getAuthHeaders() },
+    });
     return res.ok;
   } catch {
     return false;
@@ -617,7 +650,10 @@ export const deleteAdminDiscount = async (id: string): Promise<boolean> => {
 
 export const getAdminOrders = async (): Promise<AdminOrder[]> => {
   try {
-    const res = await fetch("/api/orders");
+    const res = await fetch("/api/orders", {
+      credentials: "include",
+      headers: { ...getAuthHeaders() },
+    });
     if (!res.ok) throw new Error("fetch failed");
     const data = await res.json();
     return Array.isArray(data) ? data : data.orders || [];
@@ -632,7 +668,8 @@ export const createOrder = async (
   try {
     const res = await fetch("/api/orders", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify(orderData),
     });
     if (!res.ok) throw new Error("fetch failed");
@@ -652,7 +689,8 @@ export const updateOrderStatus = async (
     if (paymentStatus) body.paymentStatus = paymentStatus;
     const res = await fetch(`/api/orders/${orderId}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error("fetch failed");
@@ -664,7 +702,10 @@ export const updateOrderStatus = async (
 
 export const getAdminEnquiries = async (): Promise<AdminEnquiry[]> => {
   try {
-    const res = await fetch("/api/enquiries");
+    const res = await fetch("/api/enquiries", {
+      credentials: "include",
+      headers: { ...getAuthHeaders() },
+    });
     if (!res.ok) throw new Error("fetch failed");
     return res.json();
   } catch {
@@ -679,7 +720,8 @@ export const updateEnquiryStatus = async (
   try {
     const res = await fetch(`/api/enquiries/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify({ status }),
     });
     if (!res.ok) throw new Error("fetch failed");
@@ -877,7 +919,8 @@ export const addAdminSize = async (payload: { name: string }): Promise<AdminSize
   try {
     const res = await fetch("/api/sizes", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error("fetch failed");
@@ -891,7 +934,8 @@ export const updateAdminSize = async (payload: { id: string; name: string; statu
   try {
     const res = await fetch("/api/sizes", {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error("fetch failed");
@@ -903,7 +947,11 @@ export const updateAdminSize = async (payload: { id: string; name: string; statu
 
 export const deleteAdminSize = async (id: string): Promise<boolean> => {
   try {
-    const res = await fetch(`/api/sizes?id=${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/sizes?id=${id}`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { ...getAuthHeaders() },
+    });
     return res.ok;
   } catch {
     return false;
@@ -961,7 +1009,8 @@ export const addAdminColor = async (payload: { name: string; icon?: string; hexC
   try {
     const res = await fetch("/api/colors", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error("fetch failed");
@@ -975,7 +1024,8 @@ export const updateAdminColor = async (payload: { id: string; name: string; icon
   try {
     const res = await fetch("/api/colors", {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error("fetch failed");
@@ -987,7 +1037,11 @@ export const updateAdminColor = async (payload: { id: string; name: string; icon
 
 export const deleteAdminColor = async (id: string): Promise<boolean> => {
   try {
-    const res = await fetch(`/api/colors?id=${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/colors?id=${id}`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { ...getAuthHeaders() },
+    });
     return res.ok;
   } catch {
     return false;

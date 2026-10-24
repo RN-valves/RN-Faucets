@@ -23,11 +23,11 @@ export async function GET(
 
     let user: any = null;
     if (id.match(/^[0-9a-fA-F]{24}$/)) {
-      user = await User.findById(id).lean();
+      user = await User.findById(id).select("-password -local_password").lean();
     } else if (!isNaN(Number(id))) {
-      user = await User.findOne({ legacyId: Number(id) }).lean();
+      user = await User.findOne({ legacyId: Number(id) }).select("-password -local_password").lean();
     } else {
-      user = await User.findOne({ $or: [{ userCode: id }, { uuid: id }] }).lean();
+      user = await User.findOne({ $or: [{ userCode: id }, { uuid: id }] }).select("-password -local_password").lean();
     }
 
     if (!user) {

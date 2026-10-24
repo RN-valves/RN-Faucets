@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Blog from "@/models/Blog";
+import { escapeRegex, requireAdminAuth, sanitizeObject } from "@/lib/security";
 
 export async function GET(request: Request) {
   try {
@@ -10,10 +11,11 @@ export async function GET(request: Request) {
 
     const query: any = {};
     if (q) {
+      const safeQ = escapeRegex(q);
       query.$or = [
-        { title: { $regex: q, $options: "i" } },
-        { category: { $regex: q, $options: "i" } },
-        { summary: { $regex: q, $options: "i" } },
+        { title: { $regex: safeQ, $options: "i" } },
+        { category: { $regex: safeQ, $options: "i" } },
+        { summary: { $regex: safeQ, $options: "i" } },
       ];
     }
 
@@ -27,8 +29,14 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const admin = await requireAdminAuth(request);
+    if (!admin) {
+      return NextResponse.json({ error: "Unauthorized. Admin access required." }, { status: 401 });
+    }
+
     await connectDB();
-    const body = await request.json();
+    const rawBody = await request.json();
+    const body = sanitizeObject(rawBody);
 
     if (!body.title) {
       return NextResponse.json({ error: "Blog title is required." }, { status: 400 });

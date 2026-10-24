@@ -235,18 +235,31 @@ export async function invalidateCache(keysOrPrefixes: string | string[]): Promis
     }
   }
 
-  // 2. Clear matching keys from L2 Redis
+  // 2. Clear matching keys from L2 Redis using non-blocking cursor SCAN
   const redis = getRedisClient();
   if (redis && redis.status === "ready") {
     try {
       const keysToDelete = new Set<string>();
       for (const target of targets) {
         keysToDelete.add(target);
-        const matched = await redis.keys(`${target}*`);
-        matched.forEach((m) => keysToDelete.add(m));
+        let cursor = "0";
+        do {
+          const [nextCursor, matched] = await redis.scan(
+            cursor,
+            "MATCH",
+            `${target}*`,
+            "COUNT",
+            100
+          );
+          cursor = nextCursor;
+          matched.forEach((m) => keysToDelete.add(m));
+        } while (cursor !== "0");
       }
       if (keysToDelete.size > 0) {
-        await redis.del(...Array.from(keysToDelete));
+        const batch = Array.from(keysToDelete);
+        for (let i = 0; i < batch.length; i += 200) {
+          await redis.del(...batch.slice(i, i + 200));
+        }
       }
     } catch {
       // Ignore Redis deletion errors

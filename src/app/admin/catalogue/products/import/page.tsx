@@ -118,7 +118,11 @@ export default function BulkProductsImportPage() {
   const handleDownloadCurrentUpdateExcel = async () => {
     let prods: any[] = [];
     try {
-      const res = await fetch("/api/reports?type=products&export=true");
+      const savedToken = typeof window !== "undefined" ? localStorage.getItem("rn_admin_token") : null;
+      const res = await fetch("/api/reports?type=products&export=true", {
+        credentials: "include",
+        headers: savedToken ? { Authorization: `Bearer ${savedToken}` } : {},
+      });
       if (res.ok) {
         const data = await res.json();
         prods = data.products || [];

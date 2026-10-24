@@ -409,21 +409,26 @@ export default function CheckoutPage() {
           body: JSON.stringify(orderPayload),
         });
         const createdOrder = await orderRes.json();
-        if (orderRes.ok && createdOrder?.pay_link_url) {
+        if (!orderRes.ok) {
+          throw new Error(createdOrder?.error || "Failed to initialize order. Please try again.");
+        }
+        const authoritativeOrderId = createdOrder?.id || generatedOrderId;
+        const authoritativeTotal = Number(createdOrder?.totalAmount) || finalTotal;
+
+        if (createdOrder?.pay_link_url) {
           localStorage.setItem(
             "last_placed_order",
             JSON.stringify({
               items: cartItems,
-              total: finalTotal,
+              total: authoritativeTotal,
               paymentMethod: "Online Payment",
-              paymentStatus: "Paid",
-              orderId: createdOrder.id || generatedOrderId,
+              paymentStatus: "Pending",
+              orderId: authoritativeOrderId,
               paymentId: createdOrder.pay_link_id || "",
               orderNote,
               shipping: orderPayload.shippingAddress,
             })
           );
-          saveCartItems([]);
           window.location.href = createdOrder.pay_link_url;
           return;
         }
@@ -439,12 +444,12 @@ export default function CheckoutPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            amount: finalTotal,
-            receipt: createdOrder?.id || generatedOrderId,
+            amount: authoritativeTotal,
+            receipt: authoritativeOrderId,
             notes: {
               customer_name: customerName,
               customer_phone: customerPhone,
-              order_id: createdOrder?.id || generatedOrderId,
+              order_id: authoritativeOrderId,
             },
           }),
         });
@@ -459,7 +464,7 @@ export default function CheckoutPage() {
           amount: orderData.amount,
           currency: orderData.currency || "INR",
           name: "RN Valves & Faucets",
-          description: `Order ${generatedOrderId} - ${cartItems.length} item(s)`,
+          description: `Order ${authoritativeOrderId} - ${cartItems.length} item(s)`,
           image: "/images/logo.png",
           order_id: orderData.orderId,
           handler: async function (response: any) {
@@ -473,7 +478,10 @@ export default function CheckoutPage() {
                   razorpay_signature: response.razorpay_signature,
                   orderData: {
                     ...orderPayload,
-                    id: generatedOrderId,
+                    id: authoritativeOrderId,
+                    uuid: createdOrder?.uuid,
+                    legacyId: createdOrder?.legacyId,
+                    totalAmount: authoritativeTotal,
                   },
                 }),
               });
@@ -484,10 +492,10 @@ export default function CheckoutPage() {
                   "last_placed_order",
                   JSON.stringify({
                     items: cartItems,
-                    total: finalTotal,
+                    total: authoritativeTotal,
                     paymentMethod: "Online Payment",
                     paymentStatus: "Paid",
-                    orderId: generatedOrderId,
+                    orderId: verifyResult.order?.id || authoritativeOrderId,
                     paymentId: response.razorpay_payment_id,
                     orderNote,
                     shipping: orderPayload.shippingAddress,

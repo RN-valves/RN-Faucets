@@ -2,8 +2,29 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Order from "@/models/Order";
 import User from "@/models/User";
+import Product from "@/models/Product";
+import Discount from "@/models/Discount";
+import { getNextAtomicOrderIdentity, getNextAtomicPaymentIdentity } from "@/models/Counter";
 import { requireAdminAuth, requireAuth, escapeRegex, checkRateLimit, getClientIp, sanitizeObject } from "@/lib/security";
 import { sendOrderInvoiceEmail } from "@/lib/email";
+
+function resolveAuthoritativeProductPrice(rawProduct: any, fallbackPrice: number): number {
+  if (!rawProduct) return Math.max(1, Number(fallbackPrice) || 1018);
+  const price = Number(
+    rawProduct.inSelling && Number(rawProduct.inSelling) > 0
+      ? rawProduct.inSelling
+      : rawProduct.in_selling && Number(rawProduct.in_selling) > 0
+      ? rawProduct.in_selling
+      : rawProduct.price && Number(rawProduct.price) > 0
+      ? rawProduct.price
+      : rawProduct.inMrp && Number(rawProduct.inMrp) > 0
+      ? rawProduct.inMrp
+      : rawProduct.inV1Mrp || rawProduct.in_v1_mrp || rawProduct.v1_mrp
+      ? Number(rawProduct.inV1Mrp || rawProduct.in_v1_mrp || rawProduct.v1_mrp) * 0.5
+      : fallbackPrice || 1018
+  );
+  return Math.max(1, Math.round(price));
+}
 
 export async function GET(request: Request) {
   try {
@@ -13,6 +34,10 @@ export async function GET(request: Request) {
     const phone = searchParams.get("phone") || "";
     const email = searchParams.get("email") || "";
     const status = searchParams.get("status") || "All";
+    const limitParam = parseInt(searchParams.get("limit") || "500", 10);
+    const pageParam = parseInt(searchParams.get("page") || "1", 10);
+    const safeLimit = Math.min(1000, Math.max(1, isNaN(limitParam) ? 500 : limitParam));
+    const safePage = Math.max(1, isNaN(pageParam) ? 1 : pageParam);
 
     const adminSession = await requireAdminAuth(request);
     const userSession = !adminSession ? await requireAuth(request) : null;
@@ -27,7 +52,7 @@ export async function GET(request: Request) {
       }
 
       // Customer view: only their own phone
-      const userPhone = userSession.mobile.replace(/[^\d]/g, "").slice(-10);
+      const userPhone = escapeRegex(userSession.mobile.replace(/[^\d]/g, "").slice(-10));
       const orders = await Order.find({
         $or: [
           { customerPhone: userPhone },
@@ -36,6 +61,7 @@ export async function GET(request: Request) {
         ],
       })
         .sort({ legacyId: -1, createdAt: -1 })
+        .limit(200)
         .lean();
 
       return NextResponse.json({
@@ -83,54 +109,33 @@ export async function GET(request: Request) {
       query.status = status;
     }
 
-    // Auto-normalize any random large 6-digit order IDs in background to maintain sequential consistency
-    const unsequencedOrders = await Order.find({
-      $or: [
-        { id: { $regex: /\d{6}/ } },
-        { id: { $regex: /813901|914697/ } },
-        { legacyId: { $gte: 100000 } },
-      ],
-    }).sort({ createdAt: 1, _id: 1 });
-
-    if (unsequencedOrders.length > 0) {
-      const highestSequential = await Order.findOne({
-        id: { $not: { $regex: /\d{6}/ } },
-        $or: [
-          { legacyId: { $gt: 0, $lt: 100000 } },
-          { id: { $regex: /^(RNOD|RN-ORD-)\d{1,5}$/i } },
-        ],
-      })
+    const [orders, statusCountsAgg] = await Promise.all([
+      Order.find(query)
         .sort({ legacyId: -1, createdAt: -1 })
-        .lean();
+        .skip((safePage - 1) * safeLimit)
+        .limit(safeLimit)
+        .lean(),
+      Order.aggregate([
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+      ]),
+    ]);
 
-      let nextBase = 829;
-      if (highestSequential) {
-        const idNum = parseInt(highestSequential.id?.replace(/\D/g, "") || "0");
-        const legNum = highestSequential.legacyId || 0;
-        const validMax = Math.max(idNum < 100000 ? idNum : 0, legNum < 100000 ? legNum : 0);
-        if (validMax > nextBase) nextBase = validMax;
+    const statusMap: Record<string, number> = {};
+    let totalOrdersCount = 0;
+    for (const row of statusCountsAgg) {
+      if (row && row._id) {
+        statusMap[String(row._id)] = Number(row.count) || 0;
       }
-
-      for (const ord of unsequencedOrders) {
-        nextBase += 1;
-        await Order.findByIdAndUpdate(ord._id, {
-          id: `RNOD${nextBase}`,
-          legacyId: nextBase,
-        });
-      }
+      totalOrdersCount += Number(row?.count) || 0;
     }
 
-    const orders = await Order.find(query)
-      .sort({ legacyId: -1, createdAt: -1 })
-      .lean();
-
     const counts = {
-      total: await Order.countDocuments(),
-      pending: await Order.countDocuments({ status: "Pending" }),
-      processing: await Order.countDocuments({ status: "Processing" }),
-      shipped: await Order.countDocuments({ status: "Shipped" }),
-      delivered: await Order.countDocuments({ status: "Delivered" }),
-      cancelled: await Order.countDocuments({ status: "Cancelled" }),
+      total: totalOrdersCount,
+      pending: statusMap["Pending"] || 0,
+      processing: statusMap["Processing"] || 0,
+      shipped: statusMap["Shipped"] || 0,
+      delivered: statusMap["Delivered"] || 0,
+      cancelled: statusMap["Cancelled"] || 0,
     };
 
     return NextResponse.json({ orders, counts });
@@ -138,32 +143,6 @@ export async function GET(request: Request) {
     console.error("GET /api/orders error:", error);
     return NextResponse.json({ error: error.message || "Failed to fetch orders" }, { status: 500 });
   }
-}
-
-async function getNextSequentialOrderId(): Promise<{ id: string; legacyId: number }> {
-  const highestSequential = await Order.findOne({
-    id: { $not: { $regex: /\d{6}/ } },
-    $or: [
-      { legacyId: { $gt: 0, $lt: 100000 } },
-      { id: { $regex: /^(RNOD|RN-ORD-)\d{1,5}$/i } },
-    ],
-  })
-    .sort({ legacyId: -1, createdAt: -1 })
-    .lean();
-
-  let maxNum = 829;
-  if (highestSequential) {
-    const idNum = parseInt(highestSequential.id?.replace(/\D/g, "") || "0");
-    const legNum = highestSequential.legacyId || 0;
-    const valid = Math.max(idNum < 100000 ? idNum : 0, legNum < 100000 ? legNum : 0);
-    if (valid > maxNum) maxNum = valid;
-  }
-
-  const nextNum = maxNum + 1;
-  return {
-    id: `RNOD${nextNum}`,
-    legacyId: nextNum,
-  };
 }
 
 export async function POST(request: Request) {
@@ -178,23 +157,115 @@ export async function POST(request: Request) {
     }
 
     await connectDB();
+    const adminSession = await requireAdminAuth(request);
     const rawBody = await request.json();
     const body = sanitizeObject(rawBody);
 
-    const rawId = body.id ? body.id.replace(/-/g, "").replace(/ORD/i, "OD") : "";
-    const numPart = parseInt(rawId.replace(/\D/g, "") || "0");
+    if (!Array.isArray(body.items) || body.items.length === 0) {
+      return NextResponse.json({ error: "Order must contain at least one item." }, { status: 400 });
+    }
+
+    // ── 1. Authoritative Server-Side Product Price & Stock Validation ──
+    const verifiedItems: any[] = [];
+    let serverSubtotal = 0;
+
+    for (const rawItem of body.items) {
+      const qty = Math.max(1, Math.min(1000, Math.floor(Number(rawItem.quantity) || 1)));
+      const itemIdOrCode = String(rawItem.code || rawItem.id || "").trim();
+
+      let dbProd: any = null;
+      if (itemIdOrCode && !itemIdOrCode.startsWith("bestseller-")) {
+        dbProd = await Product.findOne({
+          $or: [
+            { id: itemIdOrCode },
+            { code: itemIdOrCode },
+            { skuCode: itemIdOrCode },
+          ],
+        }).lean();
+      }
+
+      if (dbProd) {
+        const prodStatus = String(dbProd.status || "In Stock");
+        if (
+          prodStatus === "Out of Stock" ||
+          prodStatus === "Inactive" ||
+          prodStatus === "InActive" ||
+          prodStatus === "Discontinued"
+        ) {
+          return NextResponse.json(
+            { error: `Item "${dbProd.name || rawItem.name}" is currently out of stock.` },
+            { status: 400 }
+          );
+        }
+      }
+
+      const unitPrice = dbProd
+        ? resolveAuthoritativeProductPrice(dbProd, Number(rawItem.price))
+        : Math.max(500, Math.round(Number(rawItem.price) || 1018));
+
+      serverSubtotal += unitPrice * qty;
+      verifiedItems.push({
+        id: dbProd?.id || rawItem.id || itemIdOrCode,
+        name: dbProd?.name || rawItem.name || "RN Bathware Product",
+        code: dbProd?.code || dbProd?.skuCode || rawItem.code || itemIdOrCode,
+        color: rawItem.color || dbProd?.colorName || "Standard",
+        size: rawItem.size || dbProd?.size || undefined,
+        price: unitPrice,
+        quantity: qty,
+        image: rawItem.image || dbProd?.image || "",
+      });
+    }
+
+    // ── 2. Authoritative Server-Side Coupon / Slab Discount Validation ──
+    let serverDiscountAmount = 0;
+    let verifiedDiscountCode: string | undefined = undefined;
+    const requestedCoupon = String(body.discountCode || body.couponCode || "").trim();
+
+    if (requestedCoupon) {
+      const safeCouponRegex = new RegExp(`^${escapeRegex(requestedCoupon)}$`, "i");
+      const discountDoc: any = await Discount.findOne({
+        name: { $regex: safeCouponRegex },
+        status: "Active",
+      }).lean();
+
+      if (discountDoc) {
+        const isExpired =
+          discountDoc.expiredAt &&
+          !isNaN(new Date(discountDoc.expiredAt).getTime()) &&
+          new Date(discountDoc.expiredAt).getTime() < Date.now();
+        const minAmt = Number(discountDoc.startValue) || 0;
+        const maxAmt = Number(discountDoc.endValue) || 999999999;
+
+        if (!isExpired && serverSubtotal >= minAmt && (maxAmt <= minAmt || serverSubtotal <= maxAmt)) {
+          const dType = String(discountDoc.type || "").toLowerCase();
+          if (dType === "amount" || dType === "flat" || dType === "fixed") {
+            serverDiscountAmount = Math.round(Number(discountDoc.value) || 0);
+          } else {
+            const pct = Number(discountDoc.value) || 0;
+            serverDiscountAmount = Math.round((serverSubtotal * pct) / 100);
+          }
+          serverDiscountAmount = Math.min(serverDiscountAmount, serverSubtotal);
+          verifiedDiscountCode = discountDoc.name;
+        }
+      }
+    }
+
+    const serverTotalAmount = Math.max(1, serverSubtotal - serverDiscountAmount);
+
+    // ── 3. Atomic Sequential Order ID Generation ──
+    const rawId = body.id ? String(body.id).replace(/-/g, "").replace(/ORD/i, "OD") : "";
+    const numPart = parseInt(rawId.replace(/\D/g, "") || "0", 10);
 
     let orderId = rawId;
     let legacyId = body.legacyId;
 
-    // If no order ID or if it was generated with a random 6-digit number, use sequential number
-    if (!orderId || numPart >= 100000) {
-      const seq = await getNextSequentialOrderId();
+    if (!orderId || numPart >= 100000 || !adminSession) {
+      const seq = await getNextAtomicOrderIdentity();
       orderId = seq.id;
       legacyId = seq.legacyId;
     }
 
-    // Lookup user by phone for email and GST enrichment
+    // ── 4. Lookup user by phone for email and GST enrichment (Read-Only for unauthenticated) ──
     let customerEmail = body.customerEmail;
     let gstNumber = body.gstNumber;
     let businessName = body.businessName;
@@ -207,7 +278,7 @@ export async function POST(request: Request) {
           { mobile: `+91${cleanPhone}` },
           { mobile: `91${cleanPhone}` },
         ],
-      });
+      }).lean();
 
       if (userDoc) {
         if ((!customerEmail || customerEmail.includes("noreply")) && userDoc.email) {
@@ -219,27 +290,12 @@ export async function POST(request: Request) {
         if (!businessName && userDoc.businessName) {
           businessName = userDoc.businessName;
         }
-
-        // Sync back any newly provided email or GST to the user profile
-        const userUpdates: any = {};
-        if (body.customerEmail && !body.customerEmail.includes("noreply") && !userDoc.email) {
-          userUpdates.email = body.customerEmail;
-        }
-        if (body.gstNumber && !userDoc.gstNumber) {
-          userUpdates.gstNumber = body.gstNumber;
-          userUpdates.userType = "Business";
-        }
-        if (body.businessName && !userDoc.businessName) {
-          userUpdates.businessName = body.businessName;
-        }
-        if (Object.keys(userUpdates).length > 0) {
-          await User.findByIdAndUpdate(userDoc._id, { $set: userUpdates });
-        }
       }
     }
 
-    const finalPaymentStatus =
-      body.paymentStatus || "Pending";
+    // Only an authenticated Admin can directly create a "Paid" order; customer orders start as "Pending"
+    const finalPaymentStatus = adminSession && body.paymentStatus === "Paid" ? "Paid" : "Pending";
+    const finalOrderStatus = adminSession && body.status ? body.status : "Pending";
 
     const crypto = await import("crypto");
     const orderUuid = body.uuid || crypto.randomUUID();
@@ -248,16 +304,21 @@ export async function POST(request: Request) {
 
     let payLinkId = body.pay_link_id || "";
     let payLinkUrl = body.pay_link_url || "";
-    let paymentDataStr = body.payment_data || "";
+    const paymentDataStr = body.payment_data || "";
     const rzpKeyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_live_suYcAnCphr9CQ8";
 
-    // Automatically generate an ORIGINAL Razorpay Payment Link (https://rzp.io/rzp/... -> razorpay.com/payment-link/plink_...)
-    if (finalPaymentStatus !== "Paid" && !payLinkId && Number(body.totalAmount) > 0) {
+    // Automatically generate an ORIGINAL Razorpay Payment Link for Online Payment orders
+    if (
+      finalPaymentStatus !== "Paid" &&
+      body.paymentMethod !== "Cash on Delivery" &&
+      !payLinkId &&
+      serverTotalAmount > 0
+    ) {
       try {
         const { createRazorpayPaymentLink } = await import("@/lib/razorpay");
         const Payment = (await import("@/models/Payment")).default;
         const paymentLink = await createRazorpayPaymentLink({
-          amount: Number(body.totalAmount),
+          amount: serverTotalAmount,
           referenceId: orderUuid,
           description: `RN Valves Order #${orderId}`,
           customer: {
@@ -271,11 +332,10 @@ export async function POST(request: Request) {
         payLinkUrl = paymentLink.short_url || "";
 
         const numericOrderId = legacyId || numPart || parseInt(orderId.replace(/\D/g, ""), 10) || null;
-        const lastPayment: any = await Payment.findOne().sort({ id: -1 }).lean();
-        const nextPayId = (lastPayment?.id || 581) + 1;
+        const paySeq = await getNextAtomicPaymentIdentity();
         await Payment.create({
-          id: nextPayId,
-          paymentId: `PAY-${nextPayId}`,
+          id: paySeq.id,
+          paymentId: paySeq.paymentId,
           orderId: numericOrderId,
           customerName: body.customerName || body.shippingAddress?.firstName || "Customer",
           payLinkId,
@@ -290,22 +350,26 @@ export async function POST(request: Request) {
           gatewayPaymentId: orderUuid,
           status: "Created",
           paymentData: "",
-          amount: Number(body.totalAmount),
+          amount: serverTotalAmount,
         });
       } catch (plinkErr) {
         console.error("Auto Razorpay payment link creation warning:", plinkErr);
       }
     }
 
-    const order = await Order.create({
+    const orderDocPayload = {
       ...body,
       id: orderId,
       uuid: orderUuid,
       legacyId: legacyId || numPart || undefined,
+      items: verifiedItems,
+      discountCode: verifiedDiscountCode,
+      discountAmount: serverDiscountAmount,
+      totalAmount: serverTotalAmount,
       customerEmail: customerEmail || body.customerEmail || "",
       gstNumber: gstNumber || body.gstNumber || "",
       businessName: businessName || body.businessName || "",
-      status: body.status || "Pending",
+      status: finalOrderStatus,
       paymentStatus: finalPaymentStatus,
       payment_key: body.payment_key || rzpKeyId,
       ...(payLinkId ? { pay_link_id: payLinkId } : {}),
@@ -315,7 +379,24 @@ export async function POST(request: Request) {
         dateStyle: "short",
         timeStyle: "short",
       }),
-    });
+    };
+
+    let order: any;
+    try {
+      order = await Order.create(orderDocPayload);
+    } catch (createErr: any) {
+      // Retry once with a fresh atomic order ID if a duplicate key race ever occurs
+      if (createErr?.code === 11000) {
+        const retrySeq = await getNextAtomicOrderIdentity();
+        order = await Order.create({
+          ...orderDocPayload,
+          id: retrySeq.id,
+          legacyId: retrySeq.legacyId,
+        });
+      } else {
+        throw createErr;
+      }
+    }
 
     // Only send invoice email immediately if already Paid or COD; for Online Payment link redirects, callback sends it upon payment
     if (finalPaymentStatus === "Paid" || body.paymentMethod === "Cash on Delivery") {
@@ -330,4 +411,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message || "Failed to create order" }, { status: 500 });
   }
 }
+
 

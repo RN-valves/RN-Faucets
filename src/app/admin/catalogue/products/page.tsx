@@ -319,7 +319,11 @@ export default function ProductsListingPage() {
         rawProducts = products.filter((p) => selectedIds.includes(p.id) || selectedIds.includes((p as any)._id));
       } else {
         // Fetch full catalogue export directly from server without pagination limits
-        const res = await fetch("/api/reports?type=products&export=true");
+        const savedToken = typeof window !== "undefined" ? localStorage.getItem("rn_admin_token") : null;
+        const res = await fetch("/api/reports?type=products&export=true", {
+          credentials: "include",
+          headers: savedToken ? { Authorization: `Bearer ${savedToken}` } : {},
+        });
         if (res.ok) {
           const data = await res.json();
           rawProducts = data.products || [];

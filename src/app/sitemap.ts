@@ -2,11 +2,21 @@ import type { MetadataRoute } from "next";
 import { connectDB } from "@/lib/mongodb";
 import Category from "@/models/Category";
 import Subcategory from "@/models/Subcategory";
+import Product from "@/models/Product";
 import Blog from "@/models/Blog";
 
 export const revalidate = 3600; // Revalidate sitemap every 1 hour
 
 const BASE_URL = "https://rnvalves.com";
+
+function slugifySegment(str: string): string {
+  return String(str || "collection")
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "") || "collection";
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
@@ -107,18 +117,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     await connectDB();
 
-    const [categories, subcategories, blogs] = await Promise.all([
+    const [categories, subcategories, products, blogs] = await Promise.all([
       Category.find({
         status: { $ne: "Inactive" },
         isVisibleWebsite: { $ne: false },
       })
-        .select("slug id updatedAt")
+        .select("slug id name updatedAt")
         .lean(),
       Subcategory.find({
         status: { $ne: "Inactive" },
         isVisibleWebsite: { $ne: false },
       })
-        .select("slug id updatedAt")
+        .select("slug id name updatedAt")
+        .lean(),
+      Product.find({
+        status: { $ne: "Out of Stock" },
+        isVisibleWebsite: { $ne: false },
+      })
+        .select("id slug category subcategory updatedAt")
+        .limit(10000)
         .lean(),
       Blog.find({ status: "Published" })
         .select("slug id updatedAt publishedAt")
@@ -147,6 +164,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.8,
       }));
 
+    const productUrls: MetadataRoute.Sitemap = (products || [])
+      .filter((p: any) => Boolean(p.slug || p.id))
+      .map((p: any) => {
+        const catSlug = slugifySegment(p.subcategory || p.category || "collection");
+        const prodSlug = encodeURIComponent(String(p.slug || p.id));
+        return {
+          url: `${BASE_URL}/faucets/${catSlug}/${prodSlug}`,
+          lastModified: p.updatedAt ? new Date(p.updatedAt) : now,
+          changeFrequency: "weekly" as const,
+          priority: 0.75,
+        };
+      });
+
     const blogUrls: MetadataRoute.Sitemap = (blogs || [])
       .filter((b: any) => Boolean(b.slug || b.id))
       .map((b: any) => ({
@@ -163,7 +193,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Deduplicate URLs
     const seen = new Set<string>();
     const allEntries: MetadataRoute.Sitemap = [];
-    for (const item of [...staticRoutes, ...categoryUrls, ...subcategoryUrls, ...blogUrls]) {
+    for (const item of [
+      ...staticRoutes,
+      ...categoryUrls,
+      ...subcategoryUrls,
+      ...blogUrls,
+      ...productUrls,
+    ]) {
       if (!seen.has(item.url)) {
         seen.add(item.url);
         allEntries.push(item);

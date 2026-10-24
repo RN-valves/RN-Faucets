@@ -34,23 +34,33 @@ export default function OrderSuccessPage() {
   useEffect(() => {
     setIsMounted(true);
 
+    const searchParams = new URLSearchParams(window.location.search);
+    const urlOrderId = searchParams.get("orderId");
+    const urlPaymentId = searchParams.get("paymentId");
+
     // Retrieve order details
     const stored = localStorage.getItem("last_placed_order");
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
+        if (urlOrderId) parsed.orderId = urlOrderId;
+        if (urlPaymentId) {
+          parsed.paymentId = urlPaymentId;
+          parsed.paymentStatus = "Paid";
+        }
+        localStorage.setItem("last_placed_order", JSON.stringify(parsed));
         setOrderInfo(parsed);
-        const rawId = parsed.orderId || parsed.id || `RNOD${Math.floor(100000 + Math.random() * 900000)}`;
+        const rawId = urlOrderId || parsed.orderId || parsed.id || `RNOD${Math.floor(100000 + Math.random() * 900000)}`;
         setOrderNumber(rawId.replace(/-/g, "").replace(/ORD/i, "OD"));
       } catch (e) {
         console.error(e);
-        setOrderNumber(`RNOD${Math.floor(100000 + Math.random() * 900000)}`);
+        setOrderNumber(urlOrderId || `RNOD${Math.floor(100000 + Math.random() * 900000)}`);
       }
     } else {
-      setOrderNumber(`RNOD${Math.floor(100000 + Math.random() * 900000)}`);
+      setOrderNumber(urlOrderId || `RNOD${Math.floor(100000 + Math.random() * 900000)}`);
     }
 
-    // Clear cart items in localStorage
+    // Clear cart items in localStorage only after reaching order-success
     saveCartItems([]);
   }, []);
 

@@ -60,6 +60,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       } catch {}
       fetch("/api/auth/session-sync", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           token: savedToken,
@@ -68,7 +69,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           role: auth.role,
         }),
       })
-        .then((r) => (r.ok ? r.json() : null))
+        .then(async (r) => {
+          if (r.status === 401 || r.status === 403) {
+            localStorage.removeItem("rn_admin_session");
+            localStorage.removeItem("rn_admin_token");
+            router.replace(`/login-user?redirect=${encodeURIComponent(pathname || "/admin/dashboard")}`);
+            return null;
+          }
+          return r.ok ? r.json() : null;
+        })
         .then((data) => {
           if (data?.token) {
             localStorage.setItem("rn_admin_token", data.token);

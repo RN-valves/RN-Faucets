@@ -44,6 +44,11 @@ export default function AdminEnquiriesPage() {
 
   const [selectedEnquiry, setSelectedEnquiry] = useState<EnquiryItem | null>(null);
 
+  function getAdminHeaders(): Record<string, string> {
+    const savedToken = typeof window !== "undefined" ? localStorage.getItem("rn_admin_token") : null;
+    return savedToken ? { Authorization: `Bearer ${savedToken}` } : {};
+  }
+
   async function fetchEnquiries() {
     setLoading(true);
     try {
@@ -51,7 +56,10 @@ export default function AdminEnquiriesPage() {
       if (searchQuery) params.set("q", searchQuery);
       if (statusTab !== "All") params.set("status", statusTab);
 
-      const res = await fetch(`/api/enquiries?${params.toString()}`);
+      const res = await fetch(`/api/enquiries?${params.toString()}`, {
+        credentials: "include",
+        headers: getAdminHeaders(),
+      });
       if (res.ok) {
         const data = await res.json();
         setEnquiries(data.enquiries || []);
@@ -71,7 +79,8 @@ export default function AdminEnquiriesPage() {
     try {
       const res = await fetch(`/api/enquiries/${item._id || item.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        headers: { "Content-Type": "application/json", ...getAdminHeaders() },
         body: JSON.stringify({ status: newStatus }),
       });
       if (res.ok) {
@@ -92,6 +101,8 @@ export default function AdminEnquiriesPage() {
     try {
       const res = await fetch(`/api/enquiries/${item._id || item.id}`, {
         method: "DELETE",
+        credentials: "include",
+        headers: getAdminHeaders(),
       });
       if (res.ok) {
         setSelectedEnquiry(null);

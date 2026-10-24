@@ -42,6 +42,16 @@ export async function GET(request: Request) {
       razorpay_signature,
     });
 
+    const existingOrder: any = await Order.findOne({
+      $or: [
+        { pay_link_id: razorpay_payment_link_id },
+        { uuid: razorpay_payment_link_reference_id },
+        { id: razorpay_payment_link_reference_id },
+      ],
+    }).lean();
+
+    const wasAlreadyPaid = existingOrder?.paymentStatus === "Paid";
+
     const order = await Order.findOneAndUpdate(
       {
         $or: [
@@ -58,7 +68,10 @@ export async function GET(request: Request) {
           razorpayPaymentId: razorpay_payment_id,
           razorpaySignature: razorpay_signature,
           payment_data: paymentDataJson,
-          status: "Processing",
+          status:
+            existingOrder?.status && existingOrder.status !== "Pending"
+              ? existingOrder.status
+              : "Processing",
         },
       },
       { new: true }
@@ -79,7 +92,7 @@ export async function GET(request: Request) {
       }
     );
 
-    if (order) {
+    if (order && !wasAlreadyPaid) {
       sendOrderInvoiceEmail(order).catch((err) =>
         console.error("Callback invoice email error:", err)
       );
@@ -91,6 +104,6 @@ export async function GET(request: Request) {
     return NextResponse.redirect(successUrl);
   } catch (error) {
     console.error("Razorpay Payment Link Callback Error:", error);
-    return NextResponse.redirect(new URL("/order-success", request.url));
+    return NextResponse.redirect(new URL("/checkout?error=payment_callback_error", request.url));
   }
 }

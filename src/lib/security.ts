@@ -234,6 +234,8 @@ export const ADMIN_ROLES = new Set([
   "Super Admin",
   "Admin",
   "Employee",
+  "Staff",
+  "Manager",
   "Catalogue Manager",
   "Order Dispatcher",
   "Customer Support Manager",

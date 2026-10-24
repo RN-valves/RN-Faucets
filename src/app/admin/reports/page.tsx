@@ -337,7 +337,14 @@ function AdminReportsContent() {
         if (selectedAdmin !== "All") params.set("adminUser", selectedAdmin);
       }
 
-      const res = await fetch(`/api/reports?${params.toString()}`);
+      const savedToken = typeof window !== "undefined" ? localStorage.getItem("rn_admin_token") : null;
+      const headers: Record<string, string> = {};
+      if (savedToken) headers["Authorization"] = `Bearer ${savedToken}`;
+
+      const res = await fetch(`/api/reports?${params.toString()}`, {
+        credentials: "include",
+        headers,
+      });
       if (res.ok) {
         const data = await res.json();
         if (data.globalSummary) setGlobalSummary(data.globalSummary);
@@ -416,7 +423,14 @@ function AdminReportsContent() {
         if (selectedAdmin !== "All") params.set("adminUser", selectedAdmin);
       }
 
-      const res = await fetch(`/api/reports?${params.toString()}`);
+      const savedToken = typeof window !== "undefined" ? localStorage.getItem("rn_admin_token") : null;
+      const headers: Record<string, string> = {};
+      if (savedToken) headers["Authorization"] = `Bearer ${savedToken}`;
+
+      const res = await fetch(`/api/reports?${params.toString()}`, {
+        credentials: "include",
+        headers,
+      });
       if (!res.ok) throw new Error("Export data fetch failed");
       const data = await res.json();
 

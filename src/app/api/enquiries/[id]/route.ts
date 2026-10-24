@@ -1,15 +1,22 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Enquiry from "@/models/Enquiry";
+import { requireAdminAuth, sanitizeObject } from "@/lib/security";
 
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const admin = await requireAdminAuth(request);
+    if (!admin) {
+      return NextResponse.json({ error: "Unauthorized. Admin access required." }, { status: 401 });
+    }
+
     await connectDB();
     const { id } = await params;
-    const body = await request.json();
+    const rawBody = await request.json();
+    const body = sanitizeObject(rawBody);
 
     const updated = await Enquiry.findOneAndUpdate(
       { $or: [{ _id: id }, { id }] },
@@ -26,10 +33,15 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const admin = await requireAdminAuth(request);
+    if (!admin) {
+      return NextResponse.json({ error: "Unauthorized. Admin access required." }, { status: 401 });
+    }
+
     await connectDB();
     const { id } = await params;
     const deleted = await Enquiry.findOneAndDelete({ $or: [{ _id: id }, { id }] });

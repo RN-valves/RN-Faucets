@@ -56,6 +56,11 @@ export default function RetailUserRegistrationPage() {
         } else {
           router.push("/account/orders");
         }
+      } else {
+        alert(data.error || "Registration failed. Please sign in with OTP.");
+        if (res.status === 409) {
+          router.push("/login-user");
+        }
       }
     } catch (err) {
       console.error(err);

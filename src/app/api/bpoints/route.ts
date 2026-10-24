@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import BPoint from "@/models/BPoint";
+import { requireAdminAuth, sanitizeObject } from "@/lib/security";
 
 export async function GET(request: Request) {
   try {
@@ -23,8 +24,14 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const admin = await requireAdminAuth(request);
+    if (!admin) {
+      return NextResponse.json({ error: "Unauthorized. Admin access required." }, { status: 401 });
+    }
+
     await connectDB();
-    const body = await request.json();
+    const rawBody = await request.json();
+    const body = sanitizeObject(rawBody);
     const { name, modelId, modelType } = body;
 
     if (!name || !modelId) {

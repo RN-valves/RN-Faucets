@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Color from "@/models/Color";
+import { escapeRegex, requireAdminAuth } from "@/lib/security";
 
 export async function GET(request: Request) {
   try {
@@ -15,9 +16,10 @@ export async function GET(request: Request) {
 
     const filter: Record<string, unknown> = {};
     if (search.trim()) {
+      const safeSearch = escapeRegex(search.trim());
       filter.$or = [
-        { name: { $regex: search.trim(), $options: "i" } },
-        { code: { $regex: search.trim(), $options: "i" } },
+        { name: { $regex: safeSearch, $options: "i" } },
+        { code: { $regex: safeSearch, $options: "i" } },
       ];
     }
 
@@ -52,6 +54,11 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const admin = await requireAdminAuth(request);
+    if (!admin) {
+      return NextResponse.json({ error: "Unauthorized. Admin access required." }, { status: 401 });
+    }
+
     await connectDB();
     const body = await request.json();
     const name = (body.name || "").trim();
@@ -92,6 +99,11 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
+    const admin = await requireAdminAuth(request);
+    if (!admin) {
+      return NextResponse.json({ error: "Unauthorized. Admin access required." }, { status: 401 });
+    }
+
     await connectDB();
     const body = await request.json();
     const { id, name, icon, hexCode, status } = body;
@@ -124,6 +136,11 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    const admin = await requireAdminAuth(request);
+    if (!admin) {
+      return NextResponse.json({ error: "Unauthorized. Admin access required." }, { status: 401 });
+    }
+
     await connectDB();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");

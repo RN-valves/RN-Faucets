@@ -213,10 +213,19 @@ function BlogsContent() {
     setShowBlogModal(true);
   };
 
+  const getAdminHeaders = (): Record<string, string> => {
+    const savedToken = typeof window !== "undefined" ? localStorage.getItem("rn_admin_token") : null;
+    return savedToken ? { Authorization: `Bearer ${savedToken}` } : {};
+  };
+
   const handleDeleteBlog = async (item: BlogItem) => {
     if (!confirm(`Are you sure you want to delete article "${item.title}"?`)) return;
     try {
-      const res = await fetch(`/api/blogs/${item._id || item.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/blogs/${item._id || item.id}`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: getAdminHeaders(),
+      });
       if (res.ok) fetchBlogs();
     } catch (err) {
       console.error("Failed to delete blog:", err);
@@ -231,7 +240,8 @@ function BlogsContent() {
       if (editingBlog) {
         const res = await fetch(`/api/blogs/${editingBlog._id || editingBlog.id}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          headers: { "Content-Type": "application/json", ...getAdminHeaders() },
           body: JSON.stringify(blogFormData),
         });
         if (res.ok) {
@@ -241,7 +251,8 @@ function BlogsContent() {
       } else {
         const res = await fetch("/api/blogs", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          headers: { "Content-Type": "application/json", ...getAdminHeaders() },
           body: JSON.stringify(blogFormData),
         });
         if (res.ok) {

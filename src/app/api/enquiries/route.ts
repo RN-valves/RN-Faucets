@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Enquiry from "@/models/Enquiry";
+import { checkRateLimit, escapeRegex, getClientIp, requireAdminAuth, sanitizeObject } from "@/lib/security";
 
 const DEFAULT_MOCK_ENQUIRIES = [
   {
@@ -37,6 +38,11 @@ const DEFAULT_MOCK_ENQUIRIES = [
 
 export async function GET(request: Request) {
   try {
+    const admin = await requireAdminAuth(request);
+    if (!admin) {
+      return NextResponse.json({ error: "Unauthorized. Admin access required." }, { status: 401 });
+    }
+
     await connectDB();
     const { searchParams } = new URL(request.url);
     const q = searchParams.get("q") || "";
@@ -49,11 +55,12 @@ export async function GET(request: Request) {
 
     const query: any = {};
     if (q) {
+      const safeQ = escapeRegex(q);
       query.$or = [
-        { customerName: { $regex: q, $options: "i" } },
-        { email: { $regex: q, $options: "i" } },
-        { phone: { $regex: q, $options: "i" } },
-        { subject: { $regex: q, $options: "i" } },
+        { customerName: { $regex: safeQ, $options: "i" } },
+        { email: { $regex: safeQ, $options: "i" } },
+        { phone: { $regex: safeQ, $options: "i" } },
+        { subject: { $regex: safeQ, $options: "i" } },
       ];
     }
     if (status !== "All") {
@@ -76,8 +83,15 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+    const rate = checkRateLimit(`enquiry:${ip}`, 10, 60 * 1000);
+    if (!rate.allowed) {
+      return NextResponse.json({ error: "Too many enquiries submitted. Please wait a minute." }, { status: 429 });
+    }
+
     await connectDB();
-    const body = await request.json();
+    const rawBody = await request.json();
+    const body = sanitizeObject(rawBody);
 
     if (!body.customerName || !body.email) {
       return NextResponse.json({ error: "Customer name and email are required." }, { status: 400 });

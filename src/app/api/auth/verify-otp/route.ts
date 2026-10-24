@@ -55,10 +55,11 @@ export async function POST(request: Request) {
         );
       }
 
-      if (user && (user.userType === "Admin" || user.role === "Super Admin" || user.role === "Admin")) {
+      // Prevent takeover of ANY existing Customer, Business, or Admin account without OTP
+      if (user) {
         return NextResponse.json(
-          { error: "This mobile is associated with an admin account. Please verify via OTP." },
-          { status: 403 }
+          { error: "An account with this mobile number already exists. Please sign in using OTP verification." },
+          { status: 409 }
         );
       }
     } else {
@@ -67,16 +68,23 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "OTP is required." }, { status: 400 });
       }
 
-      let isValidOtp = false;
-
-      // 1. Check in MongoDB Otp collection
-      const otpRecord = await Otp.findOne({
+      const activeOtpDoc = await Otp.findOne({
         mobile: cleanMobile,
-        otp: enteredOtp,
         expiresAt: { $gt: new Date() },
       });
 
-      if (otpRecord) {
+      if (activeOtpDoc && (activeOtpDoc.attempts || 0) >= 5) {
+        await Otp.deleteMany({ mobile: cleanMobile });
+        return NextResponse.json(
+          { error: "Too many failed OTP attempts. Please request a new OTP." },
+          { status: 429 }
+        );
+      }
+
+      let isValidOtp = false;
+
+      // 1. Check in MongoDB Otp collection
+      if (activeOtpDoc && activeOtpDoc.otp === enteredOtp) {
         isValidOtp = true;
         // Clean up verified OTP
         await Otp.deleteMany({ mobile: cleanMobile });
@@ -86,7 +94,7 @@ export async function POST(request: Request) {
         const baseUrl = process.env.MSG91_BASE_URL || "https://control.msg91.com/api/v5";
         if (authKey) {
           try {
-            const verifyUrl = `${baseUrl}/otp/verify?otp=${enteredOtp}&mobile=91${cleanMobile}`;
+            const verifyUrl = `${baseUrl}/otp/verify?otp=${encodeURIComponent(enteredOtp)}&mobile=91${cleanMobile}`;
             const verifyRes = await fetch(verifyUrl, {
               method: "GET",
               headers: { authkey: authKey },
@@ -99,6 +107,7 @@ export async function POST(request: Request) {
                 verifyData.message === "OTP verified success.")
             ) {
               isValidOtp = true;
+              await Otp.deleteMany({ mobile: cleanMobile });
             }
           } catch (vErr) {
             console.error("MSG91 OTP verify error:", vErr);
@@ -107,6 +116,14 @@ export async function POST(request: Request) {
       }
 
       if (!isValidOtp) {
+        if (activeOtpDoc) {
+          const nextAttempts = (activeOtpDoc.attempts || 0) + 1;
+          if (nextAttempts >= 5) {
+            await Otp.deleteMany({ mobile: cleanMobile });
+          } else {
+            await Otp.updateOne({ _id: activeOtpDoc._id }, { $inc: { attempts: 1 } });
+          }
+        }
         return NextResponse.json(
           { error: "Invalid or expired OTP. Please enter the correct code." },
           { status: 400 }

@@ -6,7 +6,7 @@ import Product from "@/models/Product";
 import RemarkLog from "@/models/RemarkLog";
 import Category from "@/models/Category";
 import Subcategory from "@/models/Subcategory";
-import { escapeRegex } from "@/lib/security";
+import { escapeRegex, requireAdminAuth } from "@/lib/security";
 
 function parseDateBoundary(dateStr: string | null, isEnd: boolean = false): Date | null {
   if (!dateStr || typeof dateStr !== "string") return null;
@@ -40,6 +40,11 @@ function parseDateBoundary(dateStr: string | null, isEnd: boolean = false): Date
 
 export async function GET(request: Request) {
   try {
+    const admin = await requireAdminAuth(request);
+    if (!admin) {
+      return NextResponse.json({ error: "Unauthorized. Admin access required." }, { status: 401 });
+    }
+
     await connectDB();
     const db = mongoose.connection.db;
     if (!db) {
