@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { connectDB } from "@/lib/mongodb";
 import Category from "@/models/Category";
 import Blog from "@/models/Blog";
+
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -9,6 +12,9 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  if (!slug || slug.toLowerCase() === "index" || slug.toLowerCase() === "index.html") {
+    redirect("/");
+  }
   const canonicalUrl = `https://rnvalves.com/${slug}`;
 
   let title =

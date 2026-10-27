@@ -369,7 +369,7 @@ function CatalogueDashboard({
                         {sub.name}
                       </h3>
                       <p className="catalogue-card-desc">
-                        {sub.description || "Precision engineered collection for modern luxury."}
+                        {sub.description || "Precision-engineered collection for modern luxury."}
                       </p>
                     </div>
 

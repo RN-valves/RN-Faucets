@@ -39,7 +39,7 @@ export default function JaquarSupportSection({ data }: JaquarSupportSectionProps
     },
     {
       title: "RN Care",
-      description: "Expert support. Trusted Service. Industry leading warranty.",
+      description: "Expert support. Trusted service. Industry-leading warranty.",
       cta: "Let's Connect",
       href: "/contact-us",
       image: "/uploads/support/rn-care.webp",

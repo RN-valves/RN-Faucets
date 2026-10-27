@@ -137,7 +137,7 @@ export default function BusinessUserRegistrationSection() {
         >
           <Image
             src={BUSINESS_BG}
-            alt="Anti-skid tile showcase"
+            alt="RN Valves & Faucets luxury bathware showcase"
             fill
             style={{ objectFit: "cover", objectPosition: "center" }}
             priority
@@ -174,7 +174,7 @@ export default function BusinessUserRegistrationSection() {
                 letterSpacing: "-0.01em",
               }}
             >
-              Join as Business User Registration
+              Business User Registration
             </h1>
 
             <p
@@ -221,7 +221,7 @@ export default function BusinessUserRegistrationSection() {
               />
               <input
                 type="text"
-                placeholder="Company GST number*"
+                placeholder="Company GST Number*"
                 value={gstNumber}
                 onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
                 style={inputStyle}
@@ -399,7 +399,7 @@ export default function BusinessUserRegistrationSection() {
                 }}
               />
               <span>
-                I have gone through the{" "}
+                I have read and agree to the{" "}
                 <Link
                   href="/privacy-policy"
                   target="_blank"
@@ -450,7 +450,7 @@ export default function BusinessUserRegistrationSection() {
                 fontSize: "13px",
               }}
             >
-              Already have an account.{" "}
+              Already have an account?{" "}
               <button
                 type="button"
                 onClick={() => router.push("/login-user")}
@@ -465,7 +465,7 @@ export default function BusinessUserRegistrationSection() {
                   fontWeight: 600,
                 }}
               >
-                Login Now
+                Log In Now
               </button>
             </p>
 

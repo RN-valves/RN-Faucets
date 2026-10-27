@@ -41,7 +41,7 @@ const PinterestIcon = () => (
 
 const NAV_COL_1 = [
   { label: "About RN Valves", href: "/about-us" },
-  { label: "Career with us", href: "/career" },
+  { label: "Career with Us", href: "/career" },
   { label: "Our Blogs", href: "/blogs" },
   { label: "Contact Us", href: "/contact-us" },
 ];
@@ -53,8 +53,8 @@ const NAV_COL_2 = [
 ];
 const NAV_COL_3 = [
   { label: "Our CSR", href: "/corporate-social-responsibility" },
-  { label: "Our Certification", href: "/certificates" },
-  { label: "Become our Dealer", href: "/business-user-registration" },
+  { label: "Our Certifications", href: "/certificates" },
+  { label: "Become Our Dealer", href: "/business-user-registration" },
   { label: "Privacy Policy", href: "/privacy-policy" },
   { label: "Terms & Conditions", href: "/terms-conditions" },
   { label: "Return & Refund Policy", href: "/return-refund-policy" },
@@ -63,8 +63,8 @@ const NAV_COL_3 = [
 const SOCIALS = [
   { Icon: InstagramIcon, label: "Instagram", href: "https://www.instagram.com/rnvalvesandfaucets/" },
   { Icon: FacebookIcon, label: "Facebook", href: "https://www.facebook.com/rnvalvesandfaucets/" },
-  { Icon: YoutubeIcon, label: "Youtube", href: "https://www.youtube.com/channel/UCpUUF6ZFL88S85IuSsHDRSQ/?sub_confirmation=1" },
-  { Icon: LinkedinIcon, label: "Linkedin", href: "https://www.linkedin.com/company/rn-valves-faucets/" },
+  { Icon: YoutubeIcon, label: "YouTube", href: "https://www.youtube.com/channel/UCpUUF6ZFL88S85IuSsHDRSQ/?sub_confirmation=1" },
+  { Icon: LinkedinIcon, label: "LinkedIn", href: "https://www.linkedin.com/company/rn-valves-faucets/" },
   { Icon: TwitterXIcon, label: "Twitter X", href: "https://twitter.com/RNValves" },
   { Icon: PinterestIcon, label: "Pinterest", href: "https://in.pinterest.com/infornvalves/" },
 ];

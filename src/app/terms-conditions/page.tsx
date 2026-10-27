@@ -132,7 +132,7 @@ export default function TermsConditionsPage() {
                   </div>
                   <div>
                     <h2 style={{ margin: 0, fontSize: "18px", color: "#0F172A", fontWeight: 700 }}>
-                      Orders Terms &amp; Conditions
+                      Order Terms &amp; Conditions
                     </h2>
                     <span style={{ fontSize: "12.5px", color: "#64748B" }}>Payment and Order Processing</span>
                   </div>
@@ -142,7 +142,7 @@ export default function TermsConditionsPage() {
                   <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
                     <CheckCircle2 size={18} color="#00AEEF" style={{ flexShrink: 0, marginTop: "2px" }} />
                     <p style={{ margin: 0, fontSize: "14px", color: "#334155", lineHeight: 1.6 }}>
-                      <strong>High Value Orders (Above ₹50,000):</strong> Payment for all purchase orders above ₹50,000 must be completed through authenticated online banking / RTGS / NEFT or verified gateway as guided by company sales executives prior to consignment release.
+                      <strong>High Value Orders (Above ₹50,000):</strong> Payment for all purchase orders above ₹50,000 must be completed through authenticated online banking / RTGS / NEFT or a verified payment gateway as guided by company sales executives prior to consignment release.
                     </p>
                   </div>
 
@@ -232,7 +232,7 @@ export default function TermsConditionsPage() {
                       2. Specialized / Imported Components (21+ Days)
                     </h4>
                     <p style={{ margin: 0, fontSize: "13.5px", color: "#475569", lineHeight: 1.6 }}>
-                      Items designated with extended procurement lead times or specialized luxury fixtures requiring overseas component importation may require <strong>21 or more business days</strong>. Rest assured our logistics dispatch desk coordinates proactively to track your consignment until delivery.
+                      Items designated with extended procurement lead times or specialized luxury fixtures requiring overseas component importation may require <strong>21 or more business days</strong>. Rest assured, our logistics dispatch desk coordinates proactively to track your consignment until delivery.
                     </p>
                   </div>
                 </div>
@@ -252,7 +252,7 @@ export default function TermsConditionsPage() {
                   </div>
                 </div>
                 <p style={{ margin: 0, fontSize: "14px", color: "#334155", lineHeight: 1.7 }}>
-                  We process all domestic deliveries exclusively through certified commercial Transport and authorized RN Valves &amp; Faucets Channel Partners. Consignees receive an official Bilty / Tracking ID upon consignment handover to follow their shipment in real time.
+                  We process all domestic deliveries exclusively through certified commercial transport partners and authorized RN Valves &amp; Faucets channel partners. Consignees receive an official Bilty / Tracking ID upon consignment handover to follow their shipment in real time.
                 </p>
               </div>
             </article>

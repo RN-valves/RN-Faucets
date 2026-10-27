@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   },
   title: "RN Valves & Faucets | Trusted Bath Fittings Since 2000",
   description:
-    "26 years, 5,000+ dealers, one promise: Built for Long Life. PTMT & CP faucets, showers, health faucets, valves and accessories under one roof",
+    "26 years, 5,000+ dealers, one promise: Built for Long Life. PTMT & CP faucets, showers, health faucets, valves and accessories under one roof.",
   keywords: [
     "RN Valves & Faucets",
     "PTMT Taps",
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "RN Valves & Faucets | Trusted Bath Fittings Since 2000",
     description:
-      "26 years, 5,000+ dealers, one promise: Built for Long Life. PTMT & CP faucets, showers, health faucets, valves and accessories under one roof",
+      "26 years, 5,000+ dealers, one promise: Built for Long Life. PTMT & CP faucets, showers, health faucets, valves and accessories under one roof.",
     url: "https://rnvalves.com",
     siteName: "RN Valves & Faucets",
     images: [
@@ -73,7 +73,7 @@ export const metadata: Metadata = {
     creator: "@RNValves",
     title: "RN Valves & Faucets | Trusted Bath Fittings Since 2000",
     description:
-      "26 years, 5,000+ dealers, one promise: Built for Long Life. PTMT & CP faucets, showers, health faucets, valves and accessories under one roof",
+      "26 years, 5,000+ dealers, one promise: Built for Long Life. PTMT & CP faucets, showers, health faucets, valves and accessories under one roof.",
     images: ["/apple-touch-icon.png?v=4"],
   },
 };
@@ -106,7 +106,7 @@ const organizationSchemaJsonLd = {
       contactPoint: [
         {
           "@type": "ContactPoint",
-          telephone: "+91-1800-1234-0400",
+          telephone: "+91-1800-12340-0400",
           contactType: "customer service",
           areaServed: "IN",
           availableLanguage: ["Hindi", "English"],
@@ -180,7 +180,7 @@ const organizationSchemaJsonLd = {
       name: "RN Valves & Faucets",
       image: "https://rnvalves.com/logo.png",
       url: "https://rnvalves.com",
-      telephone: "+91-1800-1234-0400",
+      telephone: "+91-1800-12340-0400",
       email: "enquiry@rnvalves.com",
       address: {
         "@type": "PostalAddress",
@@ -333,7 +333,7 @@ const organizationSchemaJsonLd = {
           name: "How can I become a dealer for RN Valves & Faucets?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "You can become an RN Valves & Faucets dealer by visiting https://rnvalves.com/contact-us or calling their toll-free number 1800-1234-0400. They have 4800+ distributors and dealers across India.",
+            text: "You can become an RN Valves & Faucets dealer by visiting https://rnvalves.com/contact-us or calling their toll-free number 1800 12340 0400. They have 4800+ distributors and dealers across India.",
           },
         },
         {
@@ -341,7 +341,7 @@ const organizationSchemaJsonLd = {
           name: "Are RN Valves & Faucets products ISO certified?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Yes, RN Valves & Faucets follows the ISO 9000 Quality Management System across design, research, development, and manufacturing.",
+            text: "Yes, RN Valves & Faucets follows the ISO 9001 Quality Management System across design, research, development, and manufacturing.",
           },
         },
       ],

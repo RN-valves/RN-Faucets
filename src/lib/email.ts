@@ -179,13 +179,13 @@ export async function sendOrderInvoiceEmail(order: any) {
       </table>
 
       <div style="border-top: 1px solid #E5E7EB; padding-top: 16px; font-size: 12px; color: #6B7280; line-height: 1.5;">
-        <p style="margin: 0;">If you have any questions or queries regarding this order, please contact our support team at <a href="mailto:ecommerce@rnvalves.com" style="color: #0077B6;">ecommerce@rnvalves.com</a> or call <strong>+91 99990 00000</strong>.</p>
+        <p style="margin: 0;">If you have any questions or queries regarding this order, please contact our support team at <a href="mailto:ecommerce@rnvalves.com" style="color: #0077B6;">ecommerce@rnvalves.com</a> or call <strong>1800 12340 0400</strong>.</p>
       </div>
     </div>
 
     <!-- Footer -->
     <div style="background: #F9FAFB; padding: 16px 24px; text-align: center; font-size: 12px; color: #9CA3AF; border-top: 1px solid #E5E7EB;">
-      &copy; ${new Date().getFullYear()} RN Valves & Faucets. All rights reserved. • B-7/1, Site-II, Loni Road Industrial Area, Mohan Nagar, Ghaziabad, UP 201007
+      &copy; ${new Date().getFullYear()} RN Valves & Faucets. All rights reserved. • B-68, Site-4, Sahibabad Industrial Area, Ghaziabad, Uttar Pradesh 201010
     </div>
   </div>
 </body>

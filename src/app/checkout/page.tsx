@@ -1563,7 +1563,7 @@ export default function CheckoutPage() {
                       color: "#111111",
                     }}
                   >
-                    <span>Sub Total</span>
+                    <span>Total Payable</span>
                     <span>₹{formatPrice(finalTotal)}.00</span>
                   </div>
                 </div>

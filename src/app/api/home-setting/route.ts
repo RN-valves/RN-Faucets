@@ -84,7 +84,7 @@ const DEFAULT_HOME_SETTINGS = {
       {
         title: "Warranty Up to 10 Years",
         description:
-          "Every product backed by a manufacturer warranty of 1 to 10 years, depending on the range — built for long-term reliability.",
+          "Every product is backed by a manufacturer warranty of 1 to 10 years, depending on the range — built for long-term reliability.",
         linkLabel: "→ See Warranty Terms",
         href: "/warranty-policy",
       },
@@ -128,7 +128,7 @@ const DEFAULT_HOME_SETTINGS = {
     visible: true,
     cards: [
       {
-        title: "Become A Dealer / Distributor",
+        title: "Become a Dealer / Distributor",
         description: "Join our pan-India network and partner with India's trusted bath fittings manufacturer.",
         cta: "Join Our Network",
         href: "/business-user-registration",
@@ -137,7 +137,7 @@ const DEFAULT_HOME_SETTINGS = {
       },
       {
         title: "RN Care",
-        description: "Expert support. Trusted Service. Industry leading warranty.",
+        description: "Expert support. Trusted service. Industry-leading warranty.",
         cta: "Let's Connect",
         href: "/contact-us",
         image: "/uploads/support/rn-care.webp",
@@ -164,7 +164,7 @@ const DEFAULT_HOME_SETTINGS = {
     copyrightText: "© Copyright | RN Valves & Faucets | All Rights Reserved",
     col1Links: [
       { label: "About RN Valves", href: "/about-us" },
-      { label: "Career with us", href: "/career" },
+      { label: "Career with Us", href: "/career" },
       { label: "Our Blogs", href: "/blogs" },
       { label: "Contact Us", href: "/contact-us" },
     ],
@@ -179,15 +179,15 @@ const DEFAULT_HOME_SETTINGS = {
       { label: "Privacy Policy", href: "/privacy-policy" },
       { label: "Return & Refund Policy", href: "/return-refund-policy" },
       { label: "Terms & Conditions", href: "/terms-conditions" },
-      { label: "Our Certification", href: "/certificates" },
+      { label: "Our Certifications", href: "/certificates" },
       { label: "Our CSR", href: "/corporate-social-responsibility" },
-      { label: "Become our Dealer", href: "/business-user-registration" },
+      { label: "Become Our Dealer", href: "/business-user-registration" },
     ],
     socials: [
       { label: "Instagram", href: "https://www.instagram.com/rnvalvesandfaucets/" },
       { label: "Facebook", href: "https://www.facebook.com/rnvalvesandfaucets/" },
-      { label: "Youtube", href: "https://www.youtube.com/channel/UCpUUF6ZFL88S85IuSsHDRSQ/?sub_confirmation=1" },
-      { label: "Linkedin", href: "https://www.linkedin.com/company/rn-valves-faucets/" },
+      { label: "YouTube", href: "https://www.youtube.com/channel/UCpUUF6ZFL88S85IuSsHDRSQ/?sub_confirmation=1" },
+      { label: "LinkedIn", href: "https://www.linkedin.com/company/rn-valves-faucets/" },
       { label: "Twitter X", href: "https://twitter.com/RNValves" },
       { label: "Pinterest", href: "https://in.pinterest.com/infornvalves/" },
     ],

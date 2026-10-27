@@ -250,7 +250,7 @@ export default function CorporateSocialResponsibilityPage() {
                       margin: "0 0 16px 0",
                     }}
                   >
-                    We, at <strong>RN Valves &amp; Faucets</strong>, firmly believe in empowering social and economic development by providing technology and expertise. With our constant efforts in upbringing growth in social responsibilities, we are determined towards the welfare of society and the environment.
+                    We, at <strong>RN Valves &amp; Faucets</strong>, firmly believe in empowering social and economic development by providing technology and expertise. Through our constant efforts to foster social responsibility, we remain dedicated to the welfare of society and the environment.
                   </p>
                   <p
                     style={{
@@ -260,7 +260,7 @@ export default function CorporateSocialResponsibilityPage() {
                       margin: 0,
                     }}
                   >
-                    The RN Valves cluster is a quickly growing multi-diversified Valves and Faucets Manufacturer. Today, it caters to varied socio-economic segments with brands like Precious, Ornate, and CP Fittings, alongside RN Valves within the premium segment. RN Valves cluster is an undisputed leader of the organized marketplace for faucets and valves in India, and one of the quickest growing across the nation. Moving forward with our vision of achieving a <em>&ldquo;Swachh, Swastha Avam Shikshit Bharat&rdquo;</em>, we the family of RN Valves are tenacious towards creating a lasting difference in society.
+                    The RN Valves group is a fast-growing, diversified valves and faucets manufacturer. Today, it caters to varied socio-economic segments with brands like Precious, Ornate, and CP Fittings, alongside RN Valves within the premium segment. The RN Valves group is a recognized leader in India&apos;s organized marketplace for faucets and valves, and one of the fastest-growing across the nation. Moving forward with our vision of achieving a <em>&ldquo;Swachh, Swastha Avam Shikshit Bharat&rdquo;</em>, we, the RN Valves family, are committed to creating a lasting difference in society.
                   </p>
                 </div>
               </div>

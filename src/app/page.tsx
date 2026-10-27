@@ -6,12 +6,12 @@ import Product from "@/models/Product";
 import Blog from "@/models/Blog";
 import HomeClient from "@/components/home/HomeClient";
 
-export const revalidate = 300; // ISR: Revalidate in background every 5 minutes
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "RN Valves & Faucets | Trusted Bath Fittings Since 2000",
   description:
-    "26 years, 5,000+ dealers, one promise: Built for Long Life. PTMT & CP faucets, showers, health faucets, valves and accessories under one roof",
+    "26 years, 5,000+ dealers, one promise: Built for Long Life. PTMT & CP faucets, showers, health faucets, valves and accessories under one roof.",
   alternates: {
     canonical: "https://rnvalves.com",
   },
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "RN Valves & Faucets | Trusted Bath Fittings Since 2000",
     description:
-      "26 years, 5,000+ dealers, one promise: Built for Long Life. PTMT & CP faucets, showers, health faucets, valves and accessories under one roof",
+      "26 years, 5,000+ dealers, one promise: Built for Long Life. PTMT & CP faucets, showers, health faucets, valves and accessories under one roof.",
     url: "https://rnvalves.com",
     siteName: "RN Valves & Faucets",
     images: [
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
     creator: "@RNValves",
     title: "RN Valves & Faucets | Trusted Bath Fittings Since 2000",
     description:
-      "26 years, 5,000+ dealers, one promise: Built for Long Life. PTMT & CP faucets, showers, health faucets, valves and accessories under one roof",
+      "26 years, 5,000+ dealers, one promise: Built for Long Life. PTMT & CP faucets, showers, health faucets, valves and accessories under one roof.",
     images: ["/apple-touch-icon.png?v=4"],
   },
 };

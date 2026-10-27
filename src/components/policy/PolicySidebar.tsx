@@ -49,7 +49,7 @@ const POLICY_LINKS: PolicyItem[] = [
     icon: FileText,
   },
   {
-    name: "Our Certification",
+    name: "Our Certifications",
     href: "/certificates",
     subtitle: "ISO, BIS, CE & quality badges",
     icon: Award,
@@ -61,7 +61,7 @@ const POLICY_LINKS: PolicyItem[] = [
     icon: HeartHandshake,
   },
   {
-    name: "Become our Dealer",
+    name: "Become Our Dealer",
     href: "/business-user-registration",
     subtitle: "Register as an authorized partner",
     icon: Briefcase,
@@ -248,7 +248,7 @@ export default function PolicySidebar() {
             margin: "0 0 14px 0",
           }}
         >
-          Our customer and dealer relations desk is here to clarify policies and assist your order.
+          Our customer and dealer relations desk is here to clarify policies and assist with your order.
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           <a
@@ -263,7 +263,7 @@ export default function PolicySidebar() {
               textDecoration: "none",
             }}
           >
-            <Headphones size={15} /> +91 98912 01208 / 1800 123 400 400
+            <Headphones size={15} /> +91 98912 01208 / 1800 12340 0400
           </a>
           <a
             href="mailto:enquiry@rnvalves.com"

@@ -19,7 +19,7 @@ const TRUST_ITEMS: TrustItem[] = [
   {
     title: "Warranty Up to 10 Years",
     description:
-      "Every product backed by a manufacturer warranty of 1 to 10 years, depending on the range — built for long-term reliability.",
+      "Every product is backed by a manufacturer warranty of 1 to 10 years, depending on the range — built for long-term reliability.",
     linkLabel: "→ See Warranty Terms",
     href: "/warranty-policy",
   },

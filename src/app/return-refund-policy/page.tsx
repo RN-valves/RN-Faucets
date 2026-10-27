@@ -167,7 +167,7 @@ export default function ReturnRefundPolicyPage() {
                     </h4>
                   </div>
                   <p style={{ margin: 0, fontSize: "13.5px", color: "#475569", lineHeight: 1.6 }}>
-                    Kindly inform your assigned Sales Executive or CRM immediately. If approved in writing, arrange to return items within a week or maximum <strong>15 days from invoicing</strong>, whichever is earlier.
+                    Kindly inform your assigned Sales Executive or CRM immediately. If approved in writing, arrange to return items within a week or a maximum of <strong>15 days from invoicing</strong>, whichever is earlier.
                   </p>
                 </div>
 
@@ -180,7 +180,7 @@ export default function ReturnRefundPolicyPage() {
                     </h4>
                   </div>
                   <p style={{ margin: 0, fontSize: "13.5px", color: "#475569", lineHeight: 1.6 }}>
-                    In case of return due to manufacturing defects, only verified defective goods are accepted after confirmation in writing, returned within <strong>90 days from date of supply</strong>. Defective goods will be replaced with the exact same article.
+                    In the event of a return due to manufacturing defects, only verified defective goods are accepted after confirmation in writing, returned within <strong>90 days from the date of supply</strong>. Defective goods will be replaced with the same article.
                   </p>
                 </div>
 
@@ -193,7 +193,7 @@ export default function ReturnRefundPolicyPage() {
                     </h4>
                   </div>
                   <p style={{ margin: 0, fontSize: "13.5px", color: "#475569", lineHeight: 1.6 }}>
-                    If any goods are returned without prior written confirmation from the official email ID <strong>enquiry@rnvalves.com</strong>, the company will debit <strong>25% of net Goods Return amount</strong> (based on invoice MRP or current MRP, whichever is lower).
+                    If any goods are returned without prior written confirmation from the official email ID <strong>enquiry@rnvalves.com</strong>, the company will debit <strong>25% of the net Goods Return amount</strong> (based on invoice MRP or current MRP, whichever is lower).
                   </p>
                 </div>
 
@@ -206,7 +206,7 @@ export default function ReturnRefundPolicyPage() {
                     </h4>
                   </div>
                   <p style={{ margin: 0, fontSize: "13.5px", color: "#475569", lineHeight: 1.6 }}>
-                    As RN Valves delivers goods freight paid, the same standard is expected from distributors: all return consignments must be dispatched <strong>Freight Paid</strong>. Unpaid freight charges will be debited to customer account.
+                    As RN Valves delivers goods freight paid, the same standard is expected from distributors: all return consignments must be dispatched <strong>Freight Paid</strong>. Unpaid freight charges will be debited to the customer&apos;s account.
                   </p>
                 </div>
               </div>
@@ -249,7 +249,7 @@ export default function ReturnRefundPolicyPage() {
                   </div>
                   <div>
                     <h5 style={{ margin: "0 0 4px 0", fontSize: "14.5px", color: "#0F172A", fontWeight: 600 }}>
-                      Debit Note with Pertaining Invoice Reference
+                      Debit Note with Relevant Invoice Reference
                     </h5>
                     <p style={{ margin: 0, fontSize: "13px", color: "#64748B", lineHeight: 1.5 }}>
                       Must clearly state Item Code, Product Series, Size, Quantity, MRP, Original Invoice Number, and exact reason for return.

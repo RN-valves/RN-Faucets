@@ -158,7 +158,7 @@ export default function PrivacyPolicyPage() {
               className="legal-prose"
             >
               <p>
-                We, at <strong>RN Valves &amp; Faucets</strong>, assure you that your information is safe with us. We are committed to your privacy to the fullest. This Privacy Policy explains how we collect, protect, and process data provided by visitors, customers, and partners across our websites and mobile services.
+                We, at <strong>RN Valves &amp; Faucets</strong>, assure you that your information is safe with us. We are committed to safeguarding your privacy to the fullest extent. This Privacy Policy explains how we collect, protect, and process data provided by visitors, customers, and partners across our websites and mobile services.
               </p>
 
               <h3>Personal Information Required for Processing:</h3>
@@ -188,7 +188,7 @@ export default function PrivacyPolicyPage() {
                   <h3 style={{ margin: 0, color: "#0369A1", fontSize: "18px" }}>Quality Policy &amp; ISO Certification</h3>
                 </div>
                 <p style={{ margin: "0 0 12px 0", color: "#0F172A", fontSize: "14px" }}>
-                  Quality is the center of our enterprise management. We execute the full implementation of the <strong>ISO 9000 Quality Management System</strong> from design research, development, to automated injection moulding and machining. The whole process of tracking and inspection ensures that every process is strictly controlled to guarantee consistent, defect-free excellence.
+                  Quality is the center of our enterprise management. We execute the full implementation of the <strong>ISO 9001 Quality Management System</strong> from design research and development to automated injection moulding and machining. End-to-end tracking and inspection ensure that every stage is strictly controlled to guarantee consistent, defect-free excellence.
                 </p>
                 <p style={{ margin: 0, color: "#0F172A", fontSize: "14px" }}>
                   Inspection is a critical vehicle to control and verify product performance. All raw polymers, brass rods, spare components, and cartridge units undergo early-stage stress and flow-rate testing; non-conforming items are eliminated immediately.
@@ -229,7 +229,7 @@ export default function PrivacyPolicyPage() {
                 We process your information to administer our services, verify orders, calculate shipping charges, coordinate dispatch with transport agencies, prevent fraudulent attempts, and comply with state and national tax documentation requirements.
               </p>
 
-              <h2 id="section-3">3. When And With Whom Do We Share Your Information?</h2>
+              <h2 id="section-3">3. When And With Whom Do We Share Your Personal Information?</h2>
               <p>
                 We share information strictly with verified partners essential to order completion:
               </p>
@@ -259,12 +259,12 @@ export default function PrivacyPolicyPage() {
                 Most modern browsers include Do-Not-Track (DNT) signals. Our website respects standard browser privacy preferences and maintains minimal cookie usage strictly for session security and shopping cart operations.
               </p>
 
-              <h2 id="section-8">8. Updates To This Notice</h2>
+              <h2 id="section-8">8. Do We Make Updates To This Notice?</h2>
               <p>
                 We may periodically update this policy to reflect operational improvements or regulatory updates. The latest version will always be published on this page with an updated timestamp.
               </p>
 
-              <h2 id="section-9">9. How Can You Contact Us?</h2>
+              <h2 id="section-9">9. How Can You Contact Us About This Notice?</h2>
               <p>
                 For questions regarding this policy or data inquiries, contact us at:
               </p>
@@ -273,7 +273,7 @@ export default function PrivacyPolicyPage() {
                   RN Valves &amp; Faucets
                 </p>
                 <p style={{ margin: "0 0 6px 0", color: "#475569" }}>
-                  B-68 SITE-4 SAHIBABAD Ghaziabad Uttar Pradesh 201010, India
+                  B-68, Site-4, Sahibabad Industrial Area, Ghaziabad, Uttar Pradesh 201010, India
                 </p>
                 <p style={{ margin: "0", color: "#475569" }}>
                   Email: <a href="mailto:enquiry@rnvalves.com">enquiry@rnvalves.com</a> | Toll-Free: <a href="tel:1800123400400">1800 12340 0400</a> | Website: <a href="https://www.rnvalves.com" target="_blank" rel="noopener noreferrer">www.rnvalves.com</a>

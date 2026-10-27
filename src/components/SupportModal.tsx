@@ -438,7 +438,7 @@ export default function SupportModal({ open, onClose }: SupportModalProps) {
                 <input
                   className="support-input"
                   type="email"
-                  placeholder="Email Id*"
+                  placeholder="Email ID*"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required

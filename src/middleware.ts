@@ -29,6 +29,17 @@ export async function middleware(request: NextRequest) {
     );
   }
 
+  // ── 0b. Prevent /index from matching [slug] and colliding with root / ISR cache ──
+  const lowerPath = pathname.toLowerCase();
+  if (
+    lowerPath === "/index" ||
+    lowerPath === "/index.html" ||
+    lowerPath === "/index.php" ||
+    lowerPath === "/index.htm"
+  ) {
+    return NextResponse.redirect(new URL(`/${search}`, request.url), 301);
+  }
+
   // ── 1. Admin Route Protection ───────────────────────────────────────────────
   if (pathname.startsWith("/admin") && pathname !== "/admin/login") {
     const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value;

@@ -398,7 +398,7 @@ export default function CartPage() {
                         }}
                       >
                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <span>Color : {item.color}</span>
+                          <span>Color: {item.color}</span>
                           <span
                             style={{
                               width: "14px",

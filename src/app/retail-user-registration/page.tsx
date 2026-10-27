@@ -268,7 +268,7 @@ export default function RetailUserRegistrationPage() {
                     }}
                   />
                   <span>
-                    I have gone through the{" "}
+                    I have read and agree to the{" "}
                     <Link
                       href="/privacy-policy"
                       target="_blank"
@@ -322,7 +322,7 @@ export default function RetailUserRegistrationPage() {
                     fontSize: "14px",
                   }}
                 >
-                  Already have an account.{" "}
+                  Already have an account?{" "}
                   <button
                     type="button"
                     onClick={() => router.push("/login-user")}
@@ -336,7 +336,7 @@ export default function RetailUserRegistrationPage() {
                       fontSize: "14px",
                     }}
                   >
-                    Login Now
+                    Log In Now
                   </button>
                 </p>
 
@@ -384,7 +384,7 @@ export default function RetailUserRegistrationPage() {
                           lineHeight: 1.5,
                         }}
                       >
-                        Register as business user &amp; unlock exclusive
+                        Register as a business user &amp; unlock exclusive
                         features.
                       </div>
                     </div>

@@ -76,7 +76,7 @@ const CERT_STANDARDS = [
   },
   {
     title: "NSF / ANSI Drinking Water Safety",
-    desc: "Ensures that all polymer and metallic contact materials releasing water are non-toxic, lead-free, and safe for potable water supply.",
+    desc: "Ensures that all polymer and metallic materials in contact with water are non-toxic, lead-free, and safe for potable water supply.",
     icon: CheckCircle2,
   },
   {
@@ -163,7 +163,7 @@ export default function CertificatesPage() {
             <ChevronRight size={13} />
             <span style={{ color: "#64748B" }}>Company</span>
             <ChevronRight size={13} />
-            <span style={{ color: "#00AEEF", fontWeight: 600 }}>Our Certification</span>
+            <span style={{ color: "#00AEEF", fontWeight: 600 }}>Our Certifications</span>
           </nav>
 
           {/* Page Heading */}
@@ -180,7 +180,7 @@ export default function CertificatesPage() {
                 letterSpacing: "-0.02em",
               }}
             >
-              Our Certification
+              Our Certifications
             </h1>
             <div
               style={{
@@ -358,7 +358,7 @@ export default function CertificatesPage() {
                 }}
               >
                 <h3 style={{ margin: "0 0 8px 0", fontSize: "18px", color: "#0F172A", fontWeight: 700 }}>
-                  Standard Technical Standards &amp; Certifications
+                  Global Technical Standards &amp; Certifications
                 </h3>
                 <p style={{ margin: "0 0 24px 0", fontSize: "14px", color: "#64748B" }}>
                   Every fitting designed by RN Valves adheres to benchmark Indian and International standard protocols:

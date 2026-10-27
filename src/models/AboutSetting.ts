@@ -102,7 +102,7 @@ const AboutSettingSchema = new Schema<IAboutSetting>(
           label: { type: String },
         },
       ],
-      heading: { type: String, default: "State-Of-The-Art Manufacturing and Operations Excellence." },
+      heading: { type: String, default: "State-of-the-Art Manufacturing and Operational Excellence." },
       description: {
         type: String,
         default:
@@ -135,7 +135,7 @@ const AboutSettingSchema = new Schema<IAboutSetting>(
       description: {
         type: String,
         default:
-          "Pan India distribution network powered by 1500+ channel partners, our centralized manufacturing facility, branch offices, and warehouse hubs ensuring efficient supply and nationwide product availability.",
+          "Pan-India distribution network powered by 1,500+ channel partners, our centralized manufacturing facility, branch offices, and warehouse hubs ensuring efficient supply and nationwide product availability.",
       },
       stats: [
         {

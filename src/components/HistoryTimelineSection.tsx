@@ -14,32 +14,32 @@ const MILESTONES = [
   {
     year: "2025",
     title: "Establishing a Global Footprint",
-    text: "Successfully hosted international-level exhibitions across India, establishing a strong global presence and building long-term partnerships with international clients",
+    text: "Successfully hosted international-level exhibitions across India, establishing a strong global presence and building long-term partnerships with international clients.",
   },
   {
     year: "2020",
     title: "Acknowledged as India's Most Promising Brand",
-    text: "RN recognised as India's Most Promising Brand by Global Real Estate Congress Launched our factory in Sahibabad with the certificate of registration. Over 500+ employees work here. Currently launched new series of faucets",
+    text: "RN was recognised as India's Most Promising Brand by the Global Real Estate Congress. Launched our factory in Sahibabad with over 500 employees, and introduced a new series of luxury faucets.",
   },
   {
     year: "2015",
-    title: "Successfully exhibition of faucets and debut on all social media platforms",
-    text: "Every year, we have a successful product display. Hyderabad, Mumbai, Bangalore, and Delhi all hosted exhibitions. We successfully managed to archive authorized dealers all over the country. Successfully made a space for the RN family in the capital along with 200 employees. RN made its debut on all social media platforms Our website was launched",
+    title: "Successful Exhibition of Faucets & Social Media Debut",
+    text: "Hosted successful product exhibitions across Hyderabad, Mumbai, Bengaluru, and Delhi. Onboarded authorized dealers nationwide, expanded our capital team to 200+ employees, and launched our official website and social media presence.",
   },
   {
     year: "2010",
-    title: "Got our quality management application",
-    text: "Our clients' trust has risen to new heights. Various varieties of faucets have been introduced at various price points to satisfy the needs of customers We execute the full application of ISO90000 Quality management system from design research, development, and manufacture, as demand increases and we are trusted by the customers. RN bathroom accessories portfolio has been expanded to encompass a full range of lighting solutions for both residential and commercial applications.",
+    title: "ISO Quality Management Certification",
+    text: "Introduced diverse faucet collections across multiple price points to meet growing customer demand. Implemented the ISO 9001 Quality Management System across design research, development, and manufacturing, and expanded our bath accessories portfolio for residential and commercial spaces.",
   },
   {
     year: "2005",
-    title: "Growth of the firm",
-    text: "We added new members to our RN family. The products demand contributed to the growth of the customers' love and trust. As a result, faucets with fashionable designs with some new valves were also released.",
+    title: "Expansion of Product Range",
+    text: "Welcomed new members to the RN family as growing customer trust drove strong demand, leading to the launch of contemporary faucet designs and new valve series.",
   },
   {
     year: "2000",
-    title: "Launch of the company",
-    text: "RN Valves & Faucets came into existence Valves were launched offline.",
+    title: "Foundation of the Company",
+    text: "RN Valves & Faucets was established, marking the offline launch of our flagship valve range.",
   },
 ];
 

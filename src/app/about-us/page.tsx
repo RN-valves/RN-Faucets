@@ -19,7 +19,7 @@ const YOUTUBE_EMBED = "https://www.youtube.com/embed/EV7CsqilJzo";
 const COUNTERS = [
   { value: "01", label: "MANUFACTURING PLANT" },
   { value: "05", label: "DEPOTS" },
-  { value: "1,500 ++", label: "CHANNEL PARTNERS" },
+  { value: "1,500+", label: "CHANNEL PARTNERS" },
 ] as const;
 
 const MANUFACTURING_FEATURES = [
@@ -106,7 +106,7 @@ export default function AboutUsPage() {
   const mission = aboutSetting?.introVisionMission?.missionText || "Our mission is to redefine bathroom aesthetics and functionality through high-performance PTMT polymer engineering, precision CP brass craftsmanship, and zero-defect manufacturing — delivering unmatched value, long-term reliability, and water efficiency for every customer.";
   const mfgStatement = aboutSetting?.manufacturingSection?.statement || "Our centralized state-of-the-art manufacturing facility in Sahibabad (Ghaziabad) powers our pan-India distributor network with precision-engineered bath solutions.";
   const mfgCounters = aboutSetting?.manufacturingSection?.counters && aboutSetting.manufacturingSection.counters.length > 0 ? aboutSetting.manufacturingSection.counters : COUNTERS;
-  const mfgHeading = aboutSetting?.manufacturingSection?.heading || "State-Of-The-Art Manufacturing and Operations Excellence.";
+  const mfgHeading = aboutSetting?.manufacturingSection?.heading || "State-of-the-Art Manufacturing and Operational Excellence.";
   const mfgDesc = aboutSetting?.manufacturingSection?.description || "Our advanced manufacturing plant integrates computerized PTMT injection moulding, precision brass CNC machining, and automated chrome-finishing lines. Every batch undergoes rigorous pressure, leak, and endurance testing to guarantee flawless quality, dimensional accuracy, and lifetime corrosion resistance.";
   const mfgFeatures = aboutSetting?.manufacturingSection?.features && aboutSetting.manufacturingSection.features.length > 0 ? aboutSetting.manufacturingSection.features : MANUFACTURING_FEATURES;
   const youtubeUrl = aboutSetting?.manufacturingSection?.youtubeEmbed || YOUTUBE_EMBED;

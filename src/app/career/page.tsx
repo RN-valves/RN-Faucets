@@ -82,11 +82,11 @@ const OPEN_POSITIONS: JobOpening[] = [
     type: "Full Time",
     experience: "3 - 6 Years",
     description:
-      "Drive channel partner expansion, build deep relationships with distributors, sanitaryware showrooms, and builders across designated territory.",
+      "Drive channel partner expansion, build deep relationships with distributors, sanitaryware showrooms, and builders across the designated territory.",
     responsibilities: [
       "Expand primary and secondary distributor networks across target territories.",
       "Engage with leading architects, MEP consultants, and builders for project orders.",
-      "Achieve monthly and annual sales revenue targets with healthy product mix.",
+      "Achieve monthly and annual sales revenue targets with a healthy product mix.",
     ],
   },
   {
@@ -114,11 +114,11 @@ const OPEN_POSITIONS: JobOpening[] = [
     type: "Full Time",
     experience: "4 - 8 Years",
     description:
-      "Expertise in multi-cavity injection moulding tools, mold maintenance, and precision machining for high-grade polymer plumbing components.",
+      "Expertise in multi-cavity injection moulding tools, mould maintenance, and precision machining for high-grade polymer plumbing components.",
     responsibilities: [
       "Maintain, service, and optimize high-precision multi-cavity moulds.",
       "Troubleshoot tool defects to minimize cycle times and component flash.",
-      "Collaborate with R&D team on prototype tooling for new faucet collections.",
+      "Collaborate with the R&D team on prototype tooling for new faucet collections.",
     ],
   },
   {
@@ -1069,7 +1069,7 @@ export default function CareerPage() {
                   Connect with HR
                 </h3>
                 <p style={{ fontSize: "13.5px", color: "#64748B", lineHeight: 1.6, margin: "0 0 20px 0" }}>
-                  Prefer to email your resume directly? Send your CV along with target designation to our talent acquisition team.
+                  Prefer to email your resume directly? Send your CV along with your target designation to our talent acquisition team.
                 </p>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>

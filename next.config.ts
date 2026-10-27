@@ -57,6 +57,21 @@ const nextConfig: NextConfig = {
         statusCode: 301,
       },
       {
+        source: "/index",
+        destination: "/",
+        statusCode: 301,
+      },
+      {
+        source: "/index.html",
+        destination: "/",
+        statusCode: 301,
+      },
+      {
+        source: "/index.php",
+        destination: "/",
+        statusCode: 301,
+      },
+      {
         source: "/contact/privacy",
         destination: "/privacy-policy",
         statusCode: 301,

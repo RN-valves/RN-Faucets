@@ -385,7 +385,7 @@ export default function AuthSplitSection() {
                     lineHeight: 1.6,
                   }}
                 >
-                  We have sent a 4-digit OTP code to <br />
+                  We have sent a 4-digit OTP to <br />
                   <strong style={{ color: "#1b1b1b" }}>+91 {mobile}</strong>
                 </p>
 
@@ -615,7 +615,7 @@ export default function AuthSplitSection() {
                     }}
                   />
                   <span>
-                    I have gone through the{" "}
+                    I have read and agree to the{" "}
                     <Link
                       href="/privacy-policy"
                       target="_blank"

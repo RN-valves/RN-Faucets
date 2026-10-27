@@ -6,6 +6,7 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import SupportLinksSection from "@/components/SupportLinksSection";
 import FooterSection from "@/components/FooterSection";
+import HomeClient from "@/components/home/HomeClient";
 
 const DEFAULT_HERO_IMAGE =
   "/api/media/website/catalogue/products/default/image.webp";
@@ -23,11 +24,13 @@ interface CategoryData {
 
 export default function DynamicCategoryPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
+  const isIndexSlug = !slug || slug.toLowerCase() === "index" || slug.toLowerCase() === "index.html";
   const [category, setCategory] = useState<CategoryData | null>(null);
   const [subcategories, setSubcategories] = useState<any[]>([]);
   const [blogs, setBlogs] = useState<any[]>([]);
 
   useEffect(() => {
+    if (isIndexSlug) return;
     async function loadCategoryAndSubcategories() {
       try {
         // 1. Fetch Category by slug
@@ -68,7 +71,11 @@ export default function DynamicCategoryPage({ params }: { params: Promise<{ slug
     }
 
     loadCategoryAndSubcategories();
-  }, [slug]);
+  }, [slug, isIndexSlug]);
+
+  if (isIndexSlug) {
+    return <HomeClient />;
+  }
 
   const categoryName = category?.name || slug.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
   // Category Banner from Admin panel, fallback to Category Image, fallback to default hero

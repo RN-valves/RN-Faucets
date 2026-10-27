@@ -418,7 +418,7 @@ export default function ContactUsPage() {
                   margin: 0,
                 }}
               >
-                Avail the exclusive offers and much more.
+                Unlock exclusive offers, trade pricing, and much more.
               </p>
             </div>
 
@@ -584,7 +584,7 @@ export default function ContactUsPage() {
                     name="zipcode"
                     value={form.zipcode}
                     onChange={handleChange}
-                    placeholder="zipcode"
+                    placeholder="Pin Code / Zipcode"
                     maxLength={6}
                     className="contact-input-field"
                   />
@@ -601,7 +601,7 @@ export default function ContactUsPage() {
                   name="address"
                   value={form.address}
                   onChange={handleChange}
-                  placeholder="address"
+                  placeholder="Full Address"
                   className="contact-input-field"
                 />
               </div>
@@ -615,7 +615,7 @@ export default function ContactUsPage() {
                   name="purpose"
                   value={form.purpose}
                   onChange={handleChange}
-                  placeholder="purpose / requirements"
+                  placeholder="Purpose / Requirements"
                   className="contact-textarea-field"
                 />
               </div>

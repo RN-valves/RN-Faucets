@@ -168,4 +168,10 @@ export async function invalidateCatalogueAndHeaderCache(): Promise<void> {
     "rn:catalogue:",
     "rn:home:",
   ]);
+  try {
+    const { revalidatePath } = await import("next/cache");
+    revalidatePath("/");
+  } catch {
+    // Ignore when called outside Next.js request context
+  }
 }
