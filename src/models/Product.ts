@@ -74,9 +74,9 @@ export interface IProduct extends Document {
 
 const ProductSchema = new Schema<IProduct>(
   {
-    id: { type: String, required: true, unique: true },
-    name: { type: String, required: true },
-    code: { type: String, required: true },
+    id: { type: String, required: true, unique: true, trim: true },
+    name: { type: String, required: true, trim: true },
+    code: { type: String, required: true, unique: true, trim: true, uppercase: true },
     price: { type: Number, required: true },
     originalPrice: { type: Number, default: 0 },
     image: { type: String, default: "" },
@@ -89,8 +89,8 @@ const ProductSchema = new Schema<IProduct>(
     colorName: { type: String, default: "" },
     colorIcon: { type: String, default: "" },
     size: { type: String, default: "" },
-    article: { type: String, default: "" },
-    skuCode: { type: String, default: "" },
+    article: { type: String, default: "", trim: true },
+    skuCode: { type: String, default: "", trim: true, uppercase: true },
     hsn: { type: String, default: "" },
     saleType: { type: String, default: "" },
 

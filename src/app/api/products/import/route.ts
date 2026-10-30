@@ -63,9 +63,15 @@ export async function POST(request: Request) {
 
     const existingByKey = new Map<string, any>();
     for (const p of sortedExisting) {
-      if (p.skuCode) existingByKey.set(`sku:${String(p.skuCode).trim().toLowerCase()}`, p);
-      if (p.code) existingByKey.set(`code:${String(p.code).trim().toLowerCase()}`, p);
-      if (p.id !== undefined && p.id !== null) existingByKey.set(`id:${String(p.id).trim().toLowerCase()}`, p);
+      if (p.skuCode) {
+        existingByKey.set(`sku:${String(p.skuCode).replace(/\s+/g, "").toLowerCase()}`, p);
+      }
+      if (p.code) {
+        existingByKey.set(`code:${String(p.code).replace(/\s+/g, "").toLowerCase()}`, p);
+      }
+      if (p.id !== undefined && p.id !== null) {
+        existingByKey.set(`id:${String(p.id).trim().toLowerCase()}`, p);
+      }
     }
 
     let successCount = 0;
@@ -80,10 +86,12 @@ export async function POST(request: Request) {
           continue;
         }
 
-        const code = skuCodeVal.toString().trim();
-        const id = (item.id || code).toString().trim();
+        // Strip all leading/trailing/internal spaces so " RNG2032D06" and "RNG2032D06" always map to the same SKU
+        const code = String(skuCodeVal).replace(/\s+/g, "").toUpperCase();
+        const id = (item.id ? String(item.id).trim() : code);
         const article = item.article ? item.article.toString().trim() : "";
 
+        // Match by SKU/code first so duplicate Excel rows with a different numeric id never create a second SKU row
         const existing =
           existingByKey.get(`sku:${code.toLowerCase()}`) ||
           existingByKey.get(`code:${code.toLowerCase()}`) ||
@@ -96,10 +104,12 @@ export async function POST(request: Request) {
         // Helper to check if a column exists in the spreadsheet row (even if empty, for clearing links)
         const hasColumn = (key: string) => Object.prototype.hasOwnProperty.call(item, key);
 
-        if (hasKey("name")) updateData.name = item.name;
+        if (hasKey("name")) updateData.name = String(item.name).trim();
         if (code) {
           updateData.code = code;
-          updateData.skuCode = item.sku_code ?? item.skuCode ?? code;
+          updateData.skuCode = item.sku_code ?? item.skuCode
+            ? String(item.sku_code ?? item.skuCode).replace(/\s+/g, "").toUpperCase()
+            : code;
         }
         if (article) updateData.article = article;
 

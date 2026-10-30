@@ -127,12 +127,45 @@ export async function PUT(
     }
 
     const filter = buildProductFilter(id);
+    const currentProd = await Product.findOne(filter).select("_id code skuCode gallery").lean();
+    if (!currentProd) {
+      return NextResponse.json({ error: `Product not found with identifier: ${id}` }, { status: 404 });
+    }
+
+    // Normalize code / skuCode (strip any spaces) and reject duplicates
+    if (body.code !== undefined || body.skuCode !== undefined) {
+      const cleanCode = String(body.code || body.skuCode || "")
+        .replace(/\s+/g, "")
+        .toUpperCase();
+      if (cleanCode) {
+        body.code = cleanCode;
+        body.skuCode = body.skuCode
+          ? String(body.skuCode).replace(/\s+/g, "").toUpperCase()
+          : cleanCode;
+
+        const dupRegex = new RegExp(`^\\s*${escapeRegex(cleanCode)}\\s*$`, "i");
+        const conflict = await Product.findOne({
+          _id: { $ne: (currentProd as any)._id },
+          $or: [{ code: dupRegex }, { skuCode: dupRegex }],
+        })
+          .select("_id id code name")
+          .lean();
+
+        if (conflict) {
+          return NextResponse.json(
+            {
+              error: `SKU / Code "${cleanCode}" is already used by product "${(conflict as any).name}" (ID: ${(conflict as any).id}). Duplicate SKU codes are not allowed.`,
+            },
+            { status: 409 }
+          );
+        }
+      }
+    }
 
     // If admin updates main image without passing a custom gallery array, sync gallery[0] with the new main image
     if (body.image && typeof body.image === "string" && !Array.isArray(body.gallery)) {
-      const existingProd = await Product.findOne(filter).select("gallery").lean();
-      if (existingProd && Array.isArray((existingProd as any).gallery) && (existingProd as any).gallery.length > 0) {
-        const rest = (existingProd as any).gallery.slice(1).filter((g: string) => g && g !== body.image);
+      if (Array.isArray((currentProd as any).gallery) && (currentProd as any).gallery.length > 0) {
+        const rest = (currentProd as any).gallery.slice(1).filter((g: string) => g && g !== body.image);
         body.gallery = [body.image, ...rest];
       } else {
         body.gallery = [body.image];
@@ -140,7 +173,7 @@ export async function PUT(
     }
 
     const updated = await Product.findOneAndUpdate(
-      filter,
+      { _id: (currentProd as any)._id },
       { $set: body },
       { new: true, returnDocument: "after" }
     );

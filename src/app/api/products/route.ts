@@ -316,9 +316,10 @@ async function executeProductQuery(
       conditions.push({ status });
     }
 
-    // 8. Website Visibility Filter (Matches Laravel: is_visible_website == 1)
+    // 8. Website Visibility Filter (Matches Laravel: is_visible_website == 1) & Exclude Deactivated Items
     if (!isAll) {
       conditions.push({ isVisibleWebsite: { $ne: false } });
+      conditions.push({ status: { $nin: ["Inactive", "InActive", "inactive"] } });
     }
 
     // 9. New Arrival & Featured Filters
@@ -497,8 +498,32 @@ export async function POST(request: Request) {
 
     await connectDB();
     const body = await request.json();
-    const code = body.code ? body.code.toUpperCase().trim() : `RN-${Date.now()}`;
-    
+    const rawCode = body.code || body.skuCode || body.sku_code || "";
+    const code = rawCode
+      ? String(rawCode).replace(/\s+/g, "").toUpperCase()
+      : `RN-${Date.now()}`;
+    const skuCode =
+      body.skuCode || body.sku_code
+        ? String(body.skuCode || body.sku_code).replace(/\s+/g, "").toUpperCase()
+        : code;
+
+    // Reject duplicate SKU / Code (even if spaces or different casing were entered)
+    const dupRegex = new RegExp(`^\\s*${escapeRegex(code)}\\s*$`, "i");
+    const existingProduct = await Product.findOne({
+      $or: [{ code: dupRegex }, { skuCode: dupRegex }],
+    })
+      .select("_id id code name")
+      .lean();
+
+    if (existingProduct) {
+      return NextResponse.json(
+        {
+          error: `Product with SKU / Code "${code}" already exists ("${(existingProduct as any).name}", ID: ${(existingProduct as any).id}). Duplicate SKU codes are not allowed.`,
+        },
+        { status: 409 }
+      );
+    }
+
     // Auto-increment numeric ID (find highest numeric id < 1000000)
     let assignedId = body.id ? String(body.id).trim() : "";
     if (!assignedId || assignedId.startsWith("PROD-") || isNaN(parseInt(assignedId, 10)) || parseInt(assignedId, 10) > 1000000) {
@@ -539,6 +564,7 @@ export async function POST(request: Request) {
       ...body,
       id: assignedId,
       code,
+      skuCode,
       urlKey,
       subcategoryId,
       subcategoryName,

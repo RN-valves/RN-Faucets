@@ -82,7 +82,8 @@ export default async function CategoryPage({
     if (category && category !== "all") {
       activeSub = await Subcategory.findOne({
         $or: [{ slug: category }, { id: category }],
-        status: { $ne: "Inactive" },
+        status: { $not: /^inactive$/i },
+        isVisibleWebsite: { $ne: false },
       }).lean();
 
       if (activeSub) {
@@ -90,7 +91,8 @@ export default async function CategoryPage({
       } else {
         activeCat = await Category.findOne({
           $or: [{ slug: category }, { id: category }],
-          status: { $ne: "Inactive" },
+          status: { $not: /^inactive$/i },
+          isVisibleWebsite: { $ne: false },
         }).lean();
         if (activeCat) {
           initialCategoryData = JSON.parse(JSON.stringify(activeCat));
@@ -100,7 +102,7 @@ export default async function CategoryPage({
 
     // 2. Fetch products for this category / subcategory
     let productQuery: any = {
-      status: { $ne: "Inactive" },
+      status: { $nin: ["Inactive", "InActive", "inactive"] },
       isVisibleWebsite: { $ne: false },
       isVisible: { $ne: false },
     };
