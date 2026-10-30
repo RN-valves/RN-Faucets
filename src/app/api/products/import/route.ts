@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     const [allSubcategories, allCategories, existingProducts] = await Promise.all([
       Subcategory.find({}).lean(),
       Category.find({}).lean(),
-      Product.find({}).select("_id id code skuCode").lean(),
+      Product.find({}).select("_id id code skuCode isVisibleWebsite").lean(),
     ]);
 
     const subMap = new Map<string, any>();
@@ -53,8 +53,16 @@ export async function POST(request: Request) {
       if (c.id) catMap.set(String(c.id).trim().toLowerCase(), c);
     }
 
+    // Sort so hidden duplicate rows are processed first and primary visible rows (lowest id) win in the lookup Map
+    const sortedExisting = [...(existingProducts as any[])].sort((a, b) => {
+      const visA = a.isVisibleWebsite !== false ? 1 : 0;
+      const visB = b.isVisibleWebsite !== false ? 1 : 0;
+      if (visA !== visB) return visA - visB; // visible last so it overwrites hidden
+      return Number(b.id || 0) - Number(a.id || 0); // lower primary id last so it overwrites higher duplicate id
+    });
+
     const existingByKey = new Map<string, any>();
-    for (const p of existingProducts as any[]) {
+    for (const p of sortedExisting) {
       if (p.skuCode) existingByKey.set(`sku:${String(p.skuCode).trim().toLowerCase()}`, p);
       if (p.code) existingByKey.set(`code:${String(p.code).trim().toLowerCase()}`, p);
       if (p.id !== undefined && p.id !== null) existingByKey.set(`id:${String(p.id).trim().toLowerCase()}`, p);

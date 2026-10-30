@@ -296,9 +296,29 @@ export default function CategoryClient({
     };
   }, [isMobileFilterOpen]);
 
-  // Strictly enforce any price range embedded in searchQuery (e.g., "14000 to 100000 rupees", "below 5000")
+  // Strictly enforce any price range embedded in searchQuery and deduplicate by SKU/code
   const baseProducts = useMemo(() => {
-    if (!searchQuery) return dbProducts;
+    const seenCodes = new Map<string, any>();
+    const uniqueProducts: any[] = [];
+
+    for (const p of dbProducts) {
+      const codeKey = String(p?.code || p?.skuCode || p?.sku || p?.article || "").trim().toUpperCase();
+      if (!codeKey) {
+        uniqueProducts.push(p);
+        continue;
+      }
+      const existing = seenCodes.get(codeKey);
+      if (!existing) {
+        seenCodes.set(codeKey, p);
+        uniqueProducts.push(p);
+      } else {
+        // Merge any external marketplace links onto the primary product entry
+        if (!existing.amazonLink && p.amazonLink) existing.amazonLink = p.amazonLink;
+        if (!existing.flipkartLink && p.flipkartLink) existing.flipkartLink = p.flipkartLink;
+      }
+    }
+
+    if (!searchQuery) return uniqueProducts;
 
     const normalizedQ = searchQuery.replace(/(\d),(\d)/g, "$1$2");
     let qMin: number | null = null;
@@ -324,9 +344,9 @@ export default function CategoryClient({
       if (aboveMatch) qMin = Number(aboveMatch[1]);
     }
 
-    if (qMin === null && qMax === null) return dbProducts;
+    if (qMin === null && qMax === null) return uniqueProducts;
 
-    return dbProducts.filter((p) => {
+    return uniqueProducts.filter((p) => {
       const pr = getProductPrice(p);
       if (qMin !== null && pr < qMin) return false;
       if (qMax !== null && pr > qMax) return false;
