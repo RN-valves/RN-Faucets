@@ -210,11 +210,31 @@ export default function CustomerOrdersPage() {
       }}
     >
       <Header />
+      <style>{`
+        @media (max-width: 640px) {
+          .order-tracker-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            row-gap: 20px !important;
+          }
+          .invoice-modal-card {
+            padding: 20px 16px !important;
+          }
+          .invoice-bill-ship-grid {
+            grid-template-columns: 1fr !important;
+            gap: 16px !important;
+          }
+          .invoice-footer-bar {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 12px !important;
+          }
+        }
+      `}</style>
 
       <section
         data-header-theme="light"
         style={{
-          width: "100vw",
+          width: "100%",
           padding: "130px clamp(16px, 5vw, 80px) 70px",
           boxSizing: "border-box",
           fontFamily: "'Manrope', Helvetica, Arial, sans-serif",
@@ -689,6 +709,7 @@ export default function CustomerOrdersPage() {
 
                           {/* 4 Steps Visual Tracker */}
                           <div
+                            className="order-tracker-grid"
                             style={{
                               display: "grid",
                               gridTemplateColumns: "repeat(4, 1fr)",
@@ -1110,6 +1131,7 @@ export default function CustomerOrdersPage() {
           }}
         >
           <div
+            className="invoice-modal-card"
             style={{
               background: "#FFFFFF",
               borderRadius: "10px",
@@ -1190,6 +1212,7 @@ export default function CustomerOrdersPage() {
 
             {/* Bill / Ship To */}
             <div
+              className="invoice-bill-ship-grid"
               style={{
                 display: "grid",
                 gridTemplateColumns: "1fr 1fr",
@@ -1234,9 +1257,11 @@ export default function CustomerOrdersPage() {
             </div>
 
             {/* Invoice Table */}
+            <div style={{ overflowX: "auto", width: "100%" }}>
             <table
               style={{
                 width: "100%",
+                minWidth: "420px",
                 fontSize: "13px",
                 borderCollapse: "collapse",
                 margin: "24px 0",
@@ -1280,9 +1305,11 @@ export default function CustomerOrdersPage() {
                 </tr>
               </tfoot>
             </table>
+            </div>
 
             {/* Action buttons */}
             <div
+              className="invoice-footer-bar"
               style={{
                 display: "flex",
                 justifyContent: "space-between",

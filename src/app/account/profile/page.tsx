@@ -185,7 +185,7 @@ export default function CustomerProfilePage() {
       <section
         data-header-theme="light"
         style={{
-          width: "100vw",
+          width: "100%",
           padding: "130px clamp(16px, 5vw, 80px) 70px",
           boxSizing: "border-box",
           fontFamily: "'Manrope', Helvetica, Arial, sans-serif",
@@ -481,7 +481,7 @@ export default function CustomerProfilePage() {
                   style={{
                     padding: "24px",
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))",
                     gap: "20px",
                   }}
                 >
@@ -642,7 +642,7 @@ export default function CustomerProfilePage() {
                   style={{
                     padding: "24px",
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))",
                     gap: "20px",
                   }}
                 >
@@ -760,7 +760,7 @@ export default function CustomerProfilePage() {
                   style={{
                     padding: "24px",
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))",
                     gap: "20px",
                   }}
                 >

@@ -207,13 +207,13 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
   return (
     <section
       data-header-theme="dark"
-      className="luxury-categories-section"
+      className="luxury-categories-section rn-section-portrait-cap"
       style={{
         width: "100%",
-        minHeight: "100vh",
+        minHeight: "min(100vh, 68vw)",
         backgroundColor: "#000000",
         color: "#FFFFFF",
-        padding: "clamp(120px, 15vh, 140px) 0 clamp(24px, 3vh, 35px)",
+        padding: "clamp(64px, 8vh, 96px) 0 clamp(32px, 4vh, 48px)",
         overflow: "hidden",
         position: "relative",
         display: "flex",
@@ -237,10 +237,10 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
         }
 
         .luxury-card {
-          width: calc((100vw - (2 * var(--track-pad)) - (3 * var(--track-gap))) / 4);
-          min-width: calc((100vw - (2 * var(--track-pad)) - (3 * var(--track-gap))) / 4);
-          max-width: calc((100vw - (2 * var(--track-pad)) - (3 * var(--track-gap))) / 4);
-          flex: 0 0 calc((100vw - (2 * var(--track-pad)) - (3 * var(--track-gap))) / 4);
+          width: calc((100% - (3 * var(--track-gap))) / 4);
+          min-width: calc((100% - (3 * var(--track-gap))) / 4);
+          max-width: calc((100% - (3 * var(--track-gap))) / 4);
+          flex: 0 0 calc((100% - (3 * var(--track-gap))) / 4);
           text-decoration: none;
           color: inherit;
           display: flex;
@@ -408,14 +408,16 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
 
         @media (max-width: 1023px) and (min-width: 768px) {
           .luxury-categories-section {
+            padding: 64px 0 40px !important;
             --track-pad: 28px;
             --track-gap: 22px;
+            min-height: auto !important;
           }
           .luxury-card {
-            width: calc((100vw - (2 * var(--track-pad)) - (2 * var(--track-gap))) / 3) !important;
-            min-width: calc((100vw - (2 * var(--track-pad)) - (2 * var(--track-gap))) / 3) !important;
-            max-width: calc((100vw - (2 * var(--track-pad)) - (2 * var(--track-gap))) / 3) !important;
-            flex: 0 0 calc((100vw - (2 * var(--track-pad)) - (2 * var(--track-gap))) / 3) !important;
+            width: calc((100% - (2 * var(--track-gap))) / 3) !important;
+            min-width: calc((100% - (2 * var(--track-gap))) / 3) !important;
+            max-width: calc((100% - (2 * var(--track-gap))) / 3) !important;
+            flex: 0 0 calc((100% - (2 * var(--track-gap))) / 3) !important;
           }
           .luxury-card.stagger-mid {
             margin-top: 10px !important;
@@ -431,7 +433,7 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
 
         @media (max-width: 767px) {
           .luxury-categories-section {
-            padding: 95px 0 35px !important;
+            padding: 52px 0 36px !important;
             min-height: auto !important;
             --track-pad: 16px;
             --track-gap: 16px;
@@ -453,10 +455,10 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
             min-height: auto !important;
           }
           .luxury-heading-line1 {
-            font-size: 16px !important;
+            font-size: 14px !important;
           }
           .luxury-heading-line2 {
-            font-size: 22px !important;
+            font-size: clamp(19px, 5.2vw, 23px) !important;
           }
         }
       `}</style>
@@ -475,13 +477,13 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
             display: "flex",
             justifyContent: "space-between",
             alignItems: "flex-end",
-            flexWrap: "wrap",
-            gap: "16px",
-            marginBottom: "clamp(10px, 1.8vh, 16px)",
+            flexWrap: "nowrap",
+            gap: "12px",
+            marginBottom: "clamp(14px, 2vh, 20px)",
           }}
         >
           {/* Two-Line Editorial Typography */}
-          <div>
+          <div style={{ minWidth: 0, flex: 1 }}>
             <span
               className="luxury-heading-line1"
               style={{

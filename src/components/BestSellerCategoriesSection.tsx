@@ -468,7 +468,7 @@ export default function BestSellerCategoriesSection({
   const lastWheelTimeRef = useRef(0);
 
   const isMobile = useCallback(() => {
-    return typeof window !== "undefined" && window.innerWidth <= 900;
+    return typeof window !== "undefined" && window.innerWidth <= 1024;
   }, []);
 
   const slideTo = useCallback(
@@ -635,12 +635,12 @@ export default function BestSellerCategoriesSection({
     <section
       ref={sectionRef}
       data-header-theme="light"
-      className="best-seller-section"
+      className="best-seller-section rn-section-portrait-cap"
       onMouseLeave={handlePointerUp}
       style={{
         position: "relative",
         width: "100%",
-        minHeight: "100vh",
+        minHeight: "min(100vh, 72vw)",
         background: "#FFFFFF",
         display: "flex",
         alignItems: "center",
@@ -707,7 +707,7 @@ export default function BestSellerCategoriesSection({
           transform: scale(0.96);
         }
 
-        @media (max-width: 1540px), (max-height: 900px) and (min-width: 901px) {
+        @media (max-width: 1540px), (max-height: 900px) and (min-width: 1025px) {
           .best-seller-section {
             padding: 88px 44px 36px !important;
           }
@@ -744,12 +744,12 @@ export default function BestSellerCategoriesSection({
             font-size: clamp(14px, 1.6vw, 17px) !important;
           }
         }
-        @media (max-width: 900px) {
+        @media (max-width: 1024px) {
           .best-seller-section {
             flex-direction: column !important;
             height: auto !important;
             min-height: auto !important;
-            padding: 96px 20px 48px !important;
+            padding: 56px 20px 48px !important;
             align-items: flex-start !important;
             overflow: visible !important;
           }
@@ -766,6 +766,21 @@ export default function BestSellerCategoriesSection({
             font-size: 15px !important;
             margin-top: 14px !important;
             max-width: 100% !important;
+          }
+          .best-seller-controls-row {
+            max-width: 100% !important;
+            width: 100% !important;
+            margin-top: 24px !important;
+            gap: 12px !important;
+          }
+          .best-seller-dots-group {
+            gap: 6px !important;
+            overflow-x: auto;
+            max-width: calc(100% - 104px);
+            scrollbar-width: none;
+          }
+          .best-seller-dots-group::-webkit-scrollbar {
+            display: none;
           }
           .best-seller-right {
             width: 100% !important;
@@ -848,6 +863,7 @@ export default function BestSellerCategoriesSection({
 
         {/* Indicators + Arrow Navigation */}
         <div
+          className="best-seller-controls-row"
           style={{
             display: "flex",
             alignItems: "center",
@@ -857,6 +873,7 @@ export default function BestSellerCategoriesSection({
           }}
         >
           <div
+            className="best-seller-dots-group"
             style={{
               display: "flex",
               alignItems: "center",

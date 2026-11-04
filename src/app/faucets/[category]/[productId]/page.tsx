@@ -810,16 +810,19 @@ export default function FaucetProductPage({
   const activeGalleryImage = product.gallery[selectedImage] ?? product.image;
 
   return (
-    <main style={{ width: "100%", minHeight: "100vh", backgroundColor: "#ffffff" }}>
+    <main style={{ width: "100%", minHeight: "100vh", backgroundColor: "#ffffff", overflowX: "hidden" }}>
       <Header />
 
       <section
         data-header-theme="light"
+        className="product-detail-outer-section"
         style={{
           maxWidth: "1360px",
           margin: "0 auto",
           padding: "115px 28px 80px",
           boxSizing: "border-box",
+          width: "100%",
+          overflowX: "hidden",
         }}
       >
         {/* Top Navigation & Breadcrumbs Bar */}
@@ -828,14 +831,16 @@ export default function FaucetProductPage({
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            gap: "16px",
+            gap: "12px",
             fontFamily: "'Manrope', system-ui, sans-serif",
             fontSize: "13px",
             marginBottom: "28px",
             flexWrap: "wrap",
+            minWidth: 0,
+            maxWidth: "100%",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "nowrap", minWidth: 0, maxWidth: "100%", flex: "1 1 240px" }}>
             <button
               type="button"
               onClick={() => window.history.back()}
@@ -854,6 +859,7 @@ export default function FaucetProductPage({
                 fontWeight: 700,
                 boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
                 transition: "all 0.2s ease",
+                flexShrink: 0,
               }}
             >
               <ChevronLeft size={16} />
@@ -865,11 +871,15 @@ export default function FaucetProductPage({
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "8px",
+                gap: "6px",
                 color: "#64748b",
-                fontSize: "13px",
+                fontSize: "12.5px",
                 overflowX: "auto",
                 whiteSpace: "nowrap",
+                minWidth: 0,
+                maxWidth: "100%",
+                flex: 1,
+                scrollbarWidth: "none",
               }}
             >
               <Link href="/" style={{ color: "#64748b", textDecoration: "none" }}>
@@ -1280,6 +1290,7 @@ export default function FaucetProductPage({
 
               {/* Product Meta Details Box */}
               <div
+                className="pdp-meta-grid"
                 style={{
                   background: "#fbfbfc",
                   border: "1px solid #eaeaea",
@@ -2482,7 +2493,6 @@ export default function FaucetProductPage({
           .also-like-arrow-right {
             display: none;
           }
-        }
 
           .variant-grid {
             grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2532,10 +2542,26 @@ export default function FaucetProductPage({
         }
 
         @media (max-width: 640px) {
-          .variant-grid,
+          .product-detail-outer-section {
+            padding: 96px 16px 60px !important;
+          }
+          .pdp-meta-grid {
+            grid-template-columns: 1fr !important;
+            gap: 8px !important;
+          }
+          .variant-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+          }
           .feature-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
+        }
+        @media (max-width: 360px) {
+          .variant-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+        @media (max-width: 640px) {
 
           .a-plus-spec-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2550,7 +2576,7 @@ export default function FaucetProductPage({
           }
 
           .also-like-section {
-            margin-inline: -28px;
+            margin-inline: -16px;
             padding: 64px 16px 72px;
           }
 
@@ -2667,8 +2693,8 @@ export default function FaucetProductPage({
                 Discounts are automatically calculated on the <strong>Checkout page</strong> based on your final cart total:
               </p>
 
-              <div style={{ border: "1px solid #e2e8f0", borderRadius: "10px", overflow: "hidden" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12.5px" }}>
+              <div style={{ border: "1px solid #e2e8f0", borderRadius: "10px", overflowX: "auto" }}>
+                <table style={{ width: "100%", minWidth: "360px", borderCollapse: "collapse", fontSize: "12.5px" }}>
                   <thead>
                     <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0", color: "#0f172a" }}>
                       <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700 }}>Min Cart</th>

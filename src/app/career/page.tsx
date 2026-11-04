@@ -429,18 +429,40 @@ export default function CareerPage() {
         </div>
 
         {/* ── Key Company Metrics Bar ── */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-            gap: "20px",
-            marginBottom: "64px",
-            width: "100%",
-          }}
-        >
+        <style>{`
+          .career-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 20px;
+            margin-bottom: 64px;
+            width: 100%;
+          }
+          @media (max-width: 1024px) {
+            .career-stats-grid {
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+              gap: 16px;
+              margin-bottom: 48px;
+            }
+          }
+          @media (max-width: 640px) {
+            .career-stats-grid {
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+              gap: 12px;
+              margin-bottom: 40px;
+            }
+            .career-stat-card {
+              padding: 18px 14px !important;
+            }
+            .career-stat-val {
+              font-size: 24px !important;
+            }
+          }
+        `}</style>
+        <div className="career-stats-grid">
           {STATS.map((stat) => (
             <div
               key={stat.label}
+              className="career-stat-card"
               style={{
                 background: "#FFFFFF",
                 border: "1px solid #E2E8F0",
@@ -451,6 +473,7 @@ export default function CareerPage() {
               }}
             >
               <div
+                className="career-stat-val"
                 style={{
                   fontSize: "32px",
                   fontWeight: 800,
@@ -649,7 +672,7 @@ export default function CareerPage() {
                     gap: "20px",
                   }}
                 >
-                  <div style={{ flex: "1 1 560px", minWidth: 280 }}>
+                  <div style={{ flex: "1 1 560px", minWidth: "min(100%, 280px)" }}>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "10px" }}>
                       <span
                         style={{
@@ -770,8 +793,6 @@ export default function CareerPage() {
         >
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns: "1.2fr 1fr",
               gap: "48px",
               alignItems: "start",
             }}
@@ -842,7 +863,7 @@ export default function CareerPage() {
                     </div>
                   )}
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }} className="grid grid-cols-1 sm:grid-cols-2">
+                  <div style={{ gap: "16px" }} className="grid grid-cols-1 sm:grid-cols-2">
                     <div>
                       <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#334155", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "6px" }}>
                         Full Name *
@@ -882,7 +903,7 @@ export default function CareerPage() {
                     </div>
                   </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }} className="grid grid-cols-1 sm:grid-cols-2">
+                  <div style={{ gap: "16px" }} className="grid grid-cols-1 sm:grid-cols-2">
                     <div>
                       <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#334155", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "6px" }}>
                         Contact Number *
@@ -926,7 +947,7 @@ export default function CareerPage() {
                     </div>
                   </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }} className="grid grid-cols-1 sm:grid-cols-2">
+                  <div style={{ gap: "16px" }} className="grid grid-cols-1 sm:grid-cols-2">
                     <div>
                       <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#334155", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "6px" }}>
                         Total Experience

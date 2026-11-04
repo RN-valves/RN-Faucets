@@ -646,7 +646,7 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
     const ctx = gsap.context(() => {
       gsap.fromTo(
         leftRef.current,
-        { x: -50, opacity: 0 },
+        { x: -24, opacity: 0.98 },
         {
           x: 0,
           opacity: 1,
@@ -664,7 +664,7 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
       if (cards && cards.length > 0) {
         gsap.fromTo(
           cards,
-          { opacity: 0, y: 30 },
+          { opacity: 0.98, y: 20 },
           {
             opacity: 1,
             y: 0,
@@ -839,7 +839,7 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
             font-size: 40px !important;
           }
         }
-        @media (max-width: 860px) {
+        @media (max-width: 1024px) {
           .insta-reels-section {
             flex-direction: column !important;
             align-items: flex-start !important;
@@ -1052,8 +1052,8 @@ export default function InstagramReelsSection({ data }: InstagramReelsSectionPro
               scrollbarWidth: "none",
               cursor: isGrabbing ? "grabbing" : "grab",
               userSelect: "none",
-              padding: "32px 0",
-              margin: "-32px 0",
+              padding: "32px 10px",
+              margin: "-32px -10px",
             }}
           >
             {loopReels.map((reel, i) => (

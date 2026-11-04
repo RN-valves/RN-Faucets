@@ -140,12 +140,12 @@ export default function OtherProductsSection({
       <div className="other-products-container">
         {/* Header with Title & Navigation Controls */}
         <div className="other-products-header">
-          <div>
+          <div style={{ minWidth: 0, flex: 1 }}>
             <span className="other-products-subtitle">EXPLORE SIMILAR</span>
             <h3 className="other-products-title">{title}</h3>
           </div>
 
-          <div className="other-products-nav">
+          <div className="other-products-nav" style={{ flexShrink: 0 }}>
             <button
               type="button"
               onClick={() => scroll("left")}
@@ -298,9 +298,9 @@ export default function OtherProductsSection({
           display: flex;
           justify-content: space-between;
           align-items: flex-end;
-          margin-bottom: 32px;
-          flex-wrap: wrap;
-          gap: 16px;
+          margin-bottom: 28px;
+          flex-wrap: nowrap;
+          gap: 12px;
         }
 
         .other-products-subtitle {

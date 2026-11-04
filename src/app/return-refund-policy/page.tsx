@@ -23,7 +23,7 @@ export default function ReturnRefundPolicyPage() {
 
       <style jsx global>{`
         .policy-page-wrap {
-          width: 100vw;
+          width: 100%;
           padding: 130px clamp(16px, 5vw, 80px) 70px;
           box-sizing: border-box;
           background: #ffffff;
@@ -157,7 +157,7 @@ export default function ReturnRefundPolicyPage() {
               </div>
 
               {/* 4 Core Return Rules */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginBottom: "32px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: "20px", marginBottom: "32px" }}>
                 {/* Rule 1 */}
                 <div className="rule-card">
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>

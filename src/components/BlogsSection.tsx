@@ -116,7 +116,7 @@ export default function BlogsSection({ data, initialBlogs = [] }: BlogsSectionPr
       data-header-theme="light"
       className="blogs-section"
       style={{
-        width: "100vw",
+        width: "100%",
         background: "#F3F3F3",
         padding: "110px 48px 64px",
         boxSizing: "border-box",
@@ -203,6 +203,12 @@ export default function BlogsSection({ data, initialBlogs = [] }: BlogsSectionPr
           .blogs-section {
             padding: 18px 16px 36px !important;
           }
+          .blogs-header-spacer {
+            display: none !important;
+          }
+          .blogs-header-title {
+            text-align: left !important;
+          }
         }
       `}</style>
 
@@ -215,8 +221,9 @@ export default function BlogsSection({ data, initialBlogs = [] }: BlogsSectionPr
           marginBottom: "26px",
         }}
       >
-        <div style={{ width: "150px" }} />
+        <div className="blogs-header-spacer" style={{ width: "150px" }} />
         <h2
+          className="blogs-header-title"
           style={{
             margin: 0,
             fontFamily: "'Manrope', Helvetica, Arial, sans-serif",

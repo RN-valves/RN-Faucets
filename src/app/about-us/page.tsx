@@ -125,11 +125,12 @@ export default function AboutUsPage() {
       {/* Section 1: header + full-bleed hero image */}
       <section
         data-header-theme="dark"
+        className="rn-hero-portrait-cap"
         style={{
           position: "relative",
           width: "100%",
-          height: "100vh",
-          minHeight: "560px",
+          height: "min(100vh, 65vw)",
+          minHeight: "340px",
           overflow: "hidden",
           background: "#0A1D2D",
         }}
@@ -161,14 +162,15 @@ export default function AboutUsPage() {
       {aboutSetting?.introVisionMission?.visible !== false && (
         <section
           data-header-theme="light"
+          className="rn-section-portrait-cap"
           style={{
             background: "#FFFFFF",
-            minHeight: "100vh",
-            height: "100vh",
+            minHeight: "min(100vh, 72vw)",
+            height: "auto",
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
-            padding: "clamp(40px, 6vh, 72px) clamp(24px, 5vw, 80px)",
+            padding: "clamp(40px, 6vh, 72px) clamp(20px, 5vw, 80px)",
             boxSizing: "border-box",
           }}
         >
@@ -220,7 +222,7 @@ export default function AboutUsPage() {
             </div>
 
             {/* Vision + Mission row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 items-stretch min-h-[280px] flex-1 max-h-[420px]">
+            <div className="grid grid-cols-1 md:grid-cols-2 items-stretch min-h-[280px] flex-1 md:max-h-[420px]">
               <div
                 style={{
                   background: ACCENT,

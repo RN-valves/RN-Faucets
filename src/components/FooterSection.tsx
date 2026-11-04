@@ -228,8 +228,14 @@ export default function FooterSection({ data }: FooterSectionProps) {
             }
             @media (max-width: 640px) {
               .rn-footer-grid {
-                grid-template-columns: 1fr;
-                gap: 24px;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 24px 16px;
+              }
+              .rn-footer-grid > div:first-child {
+                grid-column: 1 / -1;
+              }
+              .rn-footer-grid > nav:last-of-type {
+                grid-column: 1 / -1;
               }
             }
             .rn-footer-nav-link {

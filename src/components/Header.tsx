@@ -899,7 +899,7 @@ export default function Header({ data }: HeaderProps) {
 
           <div className="rn-header-divider" style={{ width: "1px", height: "20px", backgroundColor: textColor }}></div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "clamp(10px, 2vw, 24px)" }}>
             {/* User Account / Login — dropdown */}
             <div className="relative" ref={userDropdownRef}>
               <button
@@ -1403,6 +1403,17 @@ export default function Header({ data }: HeaderProps) {
 
             .rn-header-action-icons {
               gap: 12px !important;
+            }
+          }
+
+          /* Tablet & Desktop-Site-on-Mobile Range (max-width: 1080px) */
+          @media (max-width: 1080px) {
+            .rn-header-nav-tabs {
+              margin-left: clamp(78px, 10vw, 118px) !important;
+              gap: 12px !important;
+            }
+            .rn-header-right-group {
+              gap: 10px !important;
             }
           }
 

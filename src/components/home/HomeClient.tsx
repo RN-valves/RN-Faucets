@@ -414,7 +414,7 @@ export default function HomeClient({
             position: relative;
             width: 100%;
             height: min(100vh, 56.5vw);
-            min-height: 280px;
+            min-height: 480px;
             overflow: hidden;
             background: #020914;
           }
@@ -426,18 +426,36 @@ export default function HomeClient({
             flex-direction: column;
             align-items: center;
             justify-content: flex-end;
-            padding: 0 20px clamp(52px, 10vh, 110px);
+            padding: 0 20px clamp(68px, 10vh, 110px);
             text-align: center;
             gap: 0;
             pointer-events: none;
           }
-          @media (max-width: 768px) {
+          @media (max-width: 1024px) and (min-width: 769px) {
             .rn-hero-section {
-              height: clamp(250px, 56.5vw, 460px);
-              min-height: 250px;
+              height: clamp(520px, 62vw, 680px);
+              min-height: 520px;
             }
             .rn-hero-overlay-content {
-              padding: 0 16px 44px;
+              padding: 0 24px 74px;
+            }
+          }
+          @media (max-width: 768px) {
+            .rn-hero-section {
+              height: clamp(440px, 68vh, 580px);
+              min-height: 440px;
+            }
+            .rn-hero-overlay-content {
+              padding: 0 16px 68px;
+            }
+          }
+          @media (max-width: 920px) and (max-height: 500px) {
+            .rn-hero-section {
+              height: clamp(320px, 90vh, 420px);
+              min-height: 320px;
+            }
+            .rn-hero-overlay-content {
+              padding: 0 16px 58px;
             }
           }
         `}</style>

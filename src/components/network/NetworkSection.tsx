@@ -125,7 +125,7 @@ export default function NetworkSection({ data }: NetworkSectionProps) {
     <section
       ref={sectionRef}
       data-header-theme="light"
-      className="relative flex h-screen min-h-screen w-full items-center justify-center overflow-hidden bg-[#F8FAFC] px-[clamp(20px,5vw,72px)] py-[clamp(32px,5vh,64px)]"
+      className="rn-section-portrait-cap relative flex min-h-0 lg:min-h-screen w-full items-center justify-center overflow-hidden bg-[#F8FAFC] px-[clamp(20px,5vw,72px)] py-[clamp(48px,6vh,80px)]"
       style={{ fontFamily: "'Plus Jakarta Sans', 'Manrope', system-ui, sans-serif" }}
     >
       {/* Ambient orbs + grid */}

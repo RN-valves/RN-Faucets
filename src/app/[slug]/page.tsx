@@ -117,17 +117,141 @@ export default function DynamicCategoryPage({ params }: { params: Promise<{ slug
   return (
     <main style={{ width: "100%", minHeight: "100vh", backgroundColor: "#ffffff" }}>
       <Header />
+      <style>{`
+        .slug-hero-section {
+          position: relative;
+          width: 100%;
+          height: min(100vh, 65vw);
+          min-height: 360px;
+          overflow: hidden;
+          background-color: #090d16;
+        }
+        .slug-intro-section {
+          padding: 48px 48px 44px;
+          background-color: #ffffff;
+          box-sizing: border-box;
+        }
+        .slug-top-grid-section {
+          padding: 0 48px 32px;
+          background-color: #ffffff;
+          box-sizing: border-box;
+        }
+        .slug-bottom-grid-section {
+          padding: 0 48px 64px;
+          background-color: #ffffff;
+          box-sizing: border-box;
+        }
+        .slug-unified-mobile-section {
+          display: none;
+        }
+        .slug-blogs-section {
+          padding: 48px 48px 80px;
+          background-color: #ffffff;
+          box-sizing: border-box;
+        }
+        .slug-cards-grid {
+          display: grid;
+          gap: 28px;
+        }
+        .slug-blogs-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 24px;
+        }
+        @media (max-width: 1024px) {
+          .slug-intro-section {
+            padding: 36px 24px 32px !important;
+          }
+          .slug-top-grid-section,
+          .slug-bottom-grid-section {
+            display: none !important;
+          }
+          .slug-unified-mobile-section {
+            display: block !important;
+            padding: 0 24px 48px !important;
+            background-color: #ffffff;
+            box-sizing: border-box;
+          }
+          .slug-blogs-section {
+            padding: 36px 24px 64px !important;
+          }
+          .slug-cards-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 20px !important;
+          }
+          .slug-blogs-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 20px !important;
+          }
+          .slug-top-card {
+            height: 460px !important;
+          }
+          .slug-bottom-card {
+            height: 400px !important;
+          }
+        }
+        @media (max-width: 640px) {
+          .slug-hero-section {
+            height: clamp(320px, 68vw, 420px) !important;
+            min-height: 320px !important;
+          }
+          .slug-intro-section {
+            padding: 24px 16px 20px !important;
+          }
+          .slug-unified-mobile-section {
+            padding: 0 14px 36px !important;
+          }
+          .slug-blogs-section {
+            padding: 28px 16px 52px !important;
+          }
+          .slug-cards-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 12px !important;
+          }
+          .slug-blogs-grid {
+            grid-template-columns: 1fr !important;
+            gap: 20px !important;
+          }
+          .slug-top-card,
+          .slug-bottom-card {
+            height: 290px !important;
+            padding: 14px 12px 14px !important;
+          }
+          .subcategory-card h3 {
+            font-size: 15px !important;
+            line-height: 1.25 !important;
+            margin: 0 0 4px 0 !important;
+          }
+          .subcategory-card p {
+            font-size: 12px !important;
+            line-height: 1.35 !important;
+            display: -webkit-box !important;
+            -webkit-line-clamp: 2 !important;
+            -webkit-box-orient: vertical !important;
+            overflow: hidden !important;
+          }
+          .slug-blogs-spacer {
+            display: none !important;
+          }
+          .slug-blogs-heading {
+            text-align: left !important;
+          }
+        }
+        @media (max-width: 350px) {
+          .slug-cards-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .slug-top-card,
+          .slug-bottom-card {
+            height: 310px !important;
+          }
+        }
+      `}</style>
 
       {/* ── 1. Fullscreen Hero Section with Category Banner ── */}
       <section
         data-header-theme="dark"
-        style={{
-          position: "relative",
-          width: "100vw",
-          height: "100vh",
-          overflow: "hidden",
-          backgroundColor: "#090d16",
-        }}
+        className="slug-hero-section rn-hero-portrait-cap"
       >
         <Image
           src={heroBannerImage}
@@ -183,11 +307,7 @@ export default function DynamicCategoryPage({ params }: { params: Promise<{ slug
       {/* ── 2. Breadcrumb & Section Introduction ── */}
       <section
         data-header-theme="light"
-        style={{
-          padding: "48px 48px 44px",
-          backgroundColor: "#ffffff",
-          boxSizing: "border-box",
-        }}
+        className="slug-intro-section"
       >
         {/* Breadcrumb */}
         <nav
@@ -221,32 +341,29 @@ export default function DynamicCategoryPage({ params }: { params: Promise<{ slug
           style={{
             textAlign: "center",
             fontFamily: "'Manrope', system-ui, sans-serif",
-            fontSize: "clamp(26px, 3.2vw, 44px)",
+            fontSize: "clamp(20px, 3vw, 42px)",
             fontWeight: 500,
-            lineHeight: 1.25,
-            letterSpacing: "-0.03em",
+            lineHeight: 1.32,
+            letterSpacing: "-0.025em",
             color: "#111111",
             maxWidth: "920px",
             margin: "0 auto",
           }}
         >
-          {categoryTitle}
+          {String(categoryTitle || "").replace(/\|(\S)/g, " | $1")}
         </h2>
       </section>
 
       {/* ── 3. Showcase Grid (Top Subcategories) ── */}
       <section
         data-header-theme="light"
-        style={{
-          padding: "0 48px 32px",
-          backgroundColor: "#ffffff",
-          boxSizing: "border-box",
-        }}
+        className="slug-top-grid-section"
       >
         <div
+          className="slug-cards-grid"
           style={{
             display: "grid",
-            gridTemplateColumns: `repeat(${Math.min(topCards.length, 3)}, 1fr)`,
+            gridTemplateColumns: `repeat(${Math.min(topCards.length, 3)}, minmax(0, 1fr))`,
             gap: "28px",
           }}
         >
@@ -268,7 +385,7 @@ export default function DynamicCategoryPage({ params }: { params: Promise<{ slug
                 position: "relative",
                 transition: "transform 0.35s ease, box-shadow 0.35s ease",
               }}
-              className="subcategory-card group"
+              className="subcategory-card slug-top-card group"
             >
               {card.isComingSoon && (
                 <span
@@ -360,16 +477,13 @@ export default function DynamicCategoryPage({ params }: { params: Promise<{ slug
       {bottomCards.length > 0 && (
         <section
           data-header-theme="light"
-          style={{
-            padding: "0 48px 64px",
-            backgroundColor: "#ffffff",
-            boxSizing: "border-box",
-          }}
+          className="slug-bottom-grid-section"
         >
           <div
+            className="slug-cards-grid"
             style={{
               display: "grid",
-              gridTemplateColumns: `repeat(${Math.min(bottomCards.length, 3)}, 1fr)`,
+              gridTemplateColumns: `repeat(${Math.min(bottomCards.length, 3)}, minmax(0, 1fr))`,
               gap: "28px",
             }}
           >
@@ -388,7 +502,7 @@ export default function DynamicCategoryPage({ params }: { params: Promise<{ slug
                   position: "relative",
                   transition: "transform 0.35s ease, box-shadow 0.35s ease",
                 }}
-                className="subcategory-card group"
+                className="subcategory-card slug-top-card group"
               >
                 <div
                   className="product-card__image-panel"
@@ -453,14 +567,127 @@ export default function DynamicCategoryPage({ params }: { params: Promise<{ slug
         </section>
       )}
 
+      {/* ── 4B. Unified Responsive Grid for Tablet & Mobile (≤1024px) so 2-Column Grid Has No Orphan Row ── */}
+      <section
+        data-header-theme="light"
+        className="slug-unified-mobile-section"
+      >
+        <div
+          className="slug-cards-grid"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+            gap: "20px",
+          }}
+        >
+          {showcaseItems.map((card) => (
+            <Link
+              key={`unified-${card.id}`}
+              href={card.href}
+              onClick={(e) => {
+                if (card.isComingSoon) e.preventDefault();
+              }}
+              style={{
+                textDecoration: "none",
+                padding: "24px 20px 24px",
+                display: "flex",
+                flexDirection: "column",
+                height: "460px",
+                boxSizing: "border-box",
+                cursor: card.isComingSoon ? "default" : "pointer",
+                position: "relative",
+                transition: "transform 0.35s ease, box-shadow 0.35s ease",
+              }}
+              className="subcategory-card slug-top-card group"
+            >
+              {card.isComingSoon && (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: "14px",
+                    right: "14px",
+                    backgroundColor: "rgba(0, 0, 0, 0.75)",
+                    color: "#ffffff",
+                    fontSize: "10px",
+                    fontWeight: 600,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    padding: "4px 10px",
+                    borderRadius: "16px",
+                    backdropFilter: "blur(4px)",
+                    zIndex: 10,
+                  }}
+                >
+                  Coming Soon
+                </span>
+              )}
+
+              <div
+                className="product-card__image-panel"
+                style={{
+                  flex: "1 1 auto",
+                  width: "100%",
+                  minHeight: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  overflow: "hidden",
+                  padding: "4px 4px 8px",
+                  boxSizing: "border-box",
+                }}
+              >
+                <img
+                  src={card.image}
+                  alt={card.title}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    maxWidth: "96%",
+                    maxHeight: "100%",
+                    objectFit: "contain",
+                    transform: "scale(1.12)",
+                    transition: "transform 0.45s ease",
+                  }}
+                  className={card.isComingSoon ? "" : "group-hover:scale-[1.18]"}
+                />
+              </div>
+
+              <div style={{ flexShrink: 0, marginTop: "10px", padding: "0 4px" }}>
+                <h3
+                  style={{
+                    fontFamily: "'Manrope', system-ui, sans-serif",
+                    fontSize: "18px",
+                    fontWeight: 600,
+                    lineHeight: 1.3,
+                    color: "#1a1a1a",
+                    margin: "0 0 6px 0",
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  {card.title}
+                </h3>
+                <p
+                  style={{
+                    fontFamily: "'Manrope', system-ui, sans-serif",
+                    fontSize: "13px",
+                    fontWeight: 400,
+                    color: "#475569",
+                    margin: 0,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {card.subtitle}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       {/* ── 5. Blogs Section ── */}
       <section
         data-header-theme="light"
-        style={{
-          padding: "48px 48px 80px",
-          backgroundColor: "#ffffff",
-          boxSizing: "border-box",
-        }}
+        className="slug-blogs-section"
       >
         <div
           style={{
@@ -470,8 +697,9 @@ export default function DynamicCategoryPage({ params }: { params: Promise<{ slug
             marginBottom: "36px",
           }}
         >
-          <div style={{ width: "120px" }} />
+          <div className="slug-blogs-spacer" style={{ width: "120px" }} />
           <h2
+            className="slug-blogs-heading"
             style={{
               fontFamily: "'Manrope', system-ui, sans-serif",
               fontSize: "32px",
@@ -500,13 +728,7 @@ export default function DynamicCategoryPage({ params }: { params: Promise<{ slug
           </Link>
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "24px",
-          }}
-        >
+        <div className="slug-blogs-grid">
           {blogs.map((blog) => (
             <Link
               key={blog.id || blog._id}

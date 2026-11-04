@@ -225,6 +225,37 @@ body {
   background: rgba(100, 116, 139, 0.65);
 }
 
+/* ── Global Responsive & Desktop-Site-on-Mobile Foundation ── */
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+/* Ensure grid and flex items can shrink properly on narrow viewports */
+.policy-layout-grid > *,
+.contact-layout-grid > *,
+.checkout-grid > * {
+  min-width: 0;
+}
+
+/* Portrait Desktop-Site Mode on Mobile Devices (e.g. 980x1700–980x2150 viewport):
+   Prevents 100vh full-screen sections from stretching to 1800px+ vertically
+   while keeping normal desktop (landscape) 100vh intact. */
+@media (min-width: 700px) and (max-width: 1100px) and (orientation: portrait) {
+  .rn-hero-portrait-cap {
+    height: clamp(520px, 68vw, 760px) !important;
+    min-height: clamp(520px, 68vw, 760px) !important;
+    max-height: 780px !important;
+  }
+  .rn-section-portrait-cap {
+    height: auto !important;
+    min-height: 0 !important;
+  }
+}
+
+
 
 
 

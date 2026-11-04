@@ -188,26 +188,35 @@ export default function AuthSplitSection() {
         boxSizing: "border-box",
       }}
     >
-      <div
-        style={{
-          width: "100%",
-          minHeight: "min(72vh, 640px)",
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 1fr) minmax(360px, 1fr)",
-          background: "#ffffff",
-          boxShadow: "0 8px 34px rgba(0,0,0,0.08)",
-          overflow: "hidden",
-        }}
-      >
+      <style>{`
+        .auth-split-grid {
+          width: 100%;
+          min-height: min(72vh, 640px);
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(min(100%, 360px), 1fr);
+          background: #ffffff;
+          box-shadow: 0 8px 34px rgba(0,0,0,0.08);
+          overflow: hidden;
+        }
+        .auth-split-banner {
+          min-height: 520px;
+          background-image: url(${LOGIN_BG});
+          background-size: cover;
+          background-position: center;
+        }
+        @media (max-width: 820px) {
+          .auth-split-grid {
+            grid-template-columns: 1fr !important;
+            min-height: auto !important;
+          }
+          .auth-split-banner {
+            min-height: 220px !important;
+          }
+        }
+      `}</style>
+      <div className="auth-split-grid">
         {/* Left Side Banner Image */}
-        <div
-          style={{
-            minHeight: "520px",
-            backgroundImage: `url(${LOGIN_BG})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        />
+        <div className="auth-split-banner" />
 
         {/* Right Side Form Panel */}
         <div
@@ -682,9 +691,9 @@ export default function AuthSplitSection() {
                     flexWrap: "wrap",
                     alignItems: "center",
                     justifyContent: "center",
-                    gap: "10px",
+                    gap: "6px 10px",
                     color: "#444444",
-                    fontSize: "14px",
+                    fontSize: "13px",
                   }}
                 >
                   <button
@@ -698,12 +707,14 @@ export default function AuthSplitSection() {
                       textDecoration: "underline",
                       textUnderlineOffset: "3px",
                       cursor: "pointer",
-                      fontSize: "14px",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      whiteSpace: "nowrap",
                     }}
                   >
                     Join as Personal User
                   </button>
-                  <span style={{ color: "#8a8a8a" }}>OR</span>
+                  <span style={{ color: "#8a8a8a", fontSize: "12px" }}>OR</span>
                   <button
                     type="button"
                     onClick={() => router.push("/business-user-registration")}
@@ -715,7 +726,9 @@ export default function AuthSplitSection() {
                       textDecoration: "underline",
                       textUnderlineOffset: "3px",
                       cursor: "pointer",
-                      fontSize: "14px",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      whiteSpace: "nowrap",
                     }}
                   >
                     Join as Business User

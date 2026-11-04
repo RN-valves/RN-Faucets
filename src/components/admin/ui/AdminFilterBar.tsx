@@ -39,7 +39,7 @@ export default function AdminFilterBar({
         boxSizing: "border-box",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, minWidth: "260px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, minWidth: "min(100%, 260px)", flexWrap: "wrap" }}>
         {onSearchChange && (
           <div style={{ flex: 1, maxWidth: "420px" }}>
             <AdminInput

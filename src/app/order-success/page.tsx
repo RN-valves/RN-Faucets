@@ -88,7 +88,7 @@ export default function OrderSuccessPage() {
       <section
         data-header-theme="light"
         style={{
-          width: "100vw",
+          width: "100%",
           padding: "150px clamp(16px, 5vw, 80px) 80px",
           boxSizing: "border-box",
           fontFamily: "'Manrope', Helvetica, Arial, sans-serif",

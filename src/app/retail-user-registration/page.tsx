@@ -79,9 +79,21 @@ export default function RetailUserRegistrationPage() {
       }}
     >
       <Header />
+      <style>{`
+        @media (max-width: 820px) {
+          .retail-reg-section > div > div {
+            grid-template-columns: 1fr !important;
+            min-height: auto !important;
+          }
+          .retail-reg-section > div > div > div:first-child {
+            min-height: 220px !important;
+          }
+        }
+      `}</style>
 
       <section
         data-header-theme="light"
+        className="retail-reg-section"
         style={{
           width: "100%",
           padding: "118px 0 72px",
@@ -103,7 +115,7 @@ export default function RetailUserRegistrationPage() {
               width: "100%",
               minHeight: "min(72vh, 640px)",
               display: "grid",
-              gridTemplateColumns: "minmax(0, 1fr) minmax(380px, 1fr)",
+              gridTemplateColumns: "minmax(0, 1fr) minmax(min(100%, 380px), 1fr)",
               background: "#ffffff",
               boxShadow: "0 8px 34px rgba(0,0,0,0.08)",
               overflow: "hidden",

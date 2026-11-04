@@ -98,7 +98,7 @@ export default function CartPage() {
       <section
         data-header-theme="light"
         style={{
-          width: "100vw",
+          width: "100%",
           padding: "130px clamp(16px, 5vw, 80px) 60px",
           boxSizing: "border-box",
           fontFamily: "'Manrope', Helvetica, Arial, sans-serif",

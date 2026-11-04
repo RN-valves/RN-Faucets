@@ -121,7 +121,7 @@ export default function JaquarSupportSection({ data }: JaquarSupportSectionProps
       className="jaquar-support-section"
       style={{
         position: "relative",
-        width: "100vw",
+        width: "100%",
         background: "#000000",
         boxSizing: "border-box",
         overflow: "hidden",
@@ -133,7 +133,7 @@ export default function JaquarSupportSection({ data }: JaquarSupportSectionProps
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
           width: 100%;
-          min-height: calc(100vh - 134px);
+          min-height: min(calc(100vh - 134px), 680px);
           background: #050505;
           overflow: hidden;
         }

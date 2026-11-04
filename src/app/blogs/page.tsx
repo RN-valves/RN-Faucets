@@ -87,7 +87,7 @@ function BlogsContent() {
       {/* Global Style Scopes */}
       <style jsx global>{`
         .blogs-page-wrap {
-          width: 100vw;
+          width: 100%;
           padding: 140px clamp(16px, 5vw, 80px) 70px;
           box-sizing: border-box;
           background: #ffffff;
@@ -281,7 +281,7 @@ function BlogsContent() {
             </div>
 
             {/* Search Box */}
-            <div style={{ position: "relative", minWidth: "260px" }}>
+            <div style={{ position: "relative", minWidth: "min(100%, 260px)", flex: "1 1 260px", maxWidth: "360px" }}>
               <Search
                 size={16}
                 style={{
@@ -335,7 +335,7 @@ function BlogsContent() {
           {/* Blog Articles Grid */}
           {loading ? (
             /* Skeleton Loading State */
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "28px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 340px), 1fr))", gap: "28px" }}>
               {[1, 2, 3].map((n) => (
                 <div
                   key={n}
@@ -392,7 +392,7 @@ function BlogsContent() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
+                gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 340px), 1fr))",
                 gap: "32px",
               }}
             >

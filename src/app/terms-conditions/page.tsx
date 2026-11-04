@@ -23,7 +23,7 @@ export default function TermsConditionsPage() {
 
       <style jsx global>{`
         .policy-page-wrap {
-          width: 100vw;
+          width: 100%;
           padding: 130px clamp(16px, 5vw, 80px) 70px;
           box-sizing: border-box;
           background: #ffffff;

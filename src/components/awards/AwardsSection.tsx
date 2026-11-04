@@ -145,7 +145,7 @@ export default function AwardsSection({ data }: AwardsSectionProps) {
     <section
       ref={sectionRef}
       data-header-theme="light"
-      className="relative flex h-screen min-h-screen w-full items-center justify-center overflow-hidden px-[clamp(20px,5vw,72px)] py-[clamp(72px,10vh,110px)]"
+      className="rn-section-portrait-cap relative flex min-h-0 lg:min-h-screen w-full items-center justify-center overflow-hidden px-[clamp(20px,5vw,72px)] py-[clamp(72px,10vh,110px)]"
       style={{
         fontFamily: "'Plus Jakarta Sans', 'Manrope', system-ui, sans-serif",
         background:

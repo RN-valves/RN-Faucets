@@ -1673,12 +1673,19 @@ export default function CategoryClient({
         .category-hero-container {
           position: relative;
           width: 100%;
-          height: ${searchQuery ? "38vh" : "100vh"};
-          min-height: ${searchQuery ? "260px" : "480px"};
+          height: ${searchQuery ? "38vh" : "min(100vh, 65vw)"};
+          min-height: ${searchQuery ? "260px" : "340px"};
           overflow: hidden;
           background: linear-gradient(90deg, #090d16 0%, #172033 50%, #090d16 100%);
           background-size: 200% 100%;
           animation: heroShimmer 2.4s ease-in-out infinite;
+        }
+
+        @media (max-width: 640px) {
+          .category-hero-container {
+            height: ${searchQuery ? "32vh" : "clamp(280px, 65vw, 420px)"};
+            min-height: ${searchQuery ? "220px" : "280px"};
+          }
         }
 
         .category-content-container {
@@ -1761,6 +1768,106 @@ export default function CategoryClient({
           }
         }
 
+        .category-toolbar-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          border-bottom: 1px solid #e5e7eb;
+          padding-bottom: 12px;
+          margin-bottom: 20px;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        .category-toolbar-left {
+          display: flex;
+          gap: 14px;
+          align-items: baseline;
+          flex-wrap: wrap;
+          min-width: 0;
+        }
+
+        .category-toolbar-title {
+          padding: 0 0 12px 0;
+          margin-bottom: -13px;
+          font-family: 'Manrope', system-ui, sans-serif;
+          font-size: 16px;
+          font-weight: 700;
+          color: #111111;
+          border-bottom: 2px solid #111111;
+          display: inline-block;
+        }
+
+        .category-toolbar-right {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-width: 0;
+        }
+
+        .category-sort-wrap {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-width: 0;
+        }
+
+        .category-sort-select {
+          padding: 7px 12px;
+          border-radius: 8px;
+          border: 1px solid #d1d5db;
+          background-color: #ffffff;
+          font-family: 'Manrope', system-ui, sans-serif;
+          font-size: 13px;
+          font-weight: 600;
+          color: #0f172a;
+          cursor: pointer;
+          outline: none;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+          max-width: 100%;
+        }
+
+        @media (max-width: 768px) {
+          .category-toolbar-row {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+            padding-bottom: 14px;
+          }
+          .category-toolbar-left {
+            justify-content: space-between;
+            width: 100%;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 10px;
+          }
+          .category-toolbar-title {
+            padding: 0;
+            margin-bottom: 0;
+            border-bottom: none;
+            font-size: 17px;
+          }
+          .category-toolbar-right {
+            width: 100%;
+            justify-content: space-between;
+            gap: 10px;
+          }
+          .category-sort-wrap {
+            flex: 1;
+            min-width: 0;
+          }
+          .category-sort-select {
+            flex: 1;
+            min-width: 0;
+            width: 100%;
+            padding: 8px 10px;
+            font-size: 12.5px;
+          }
+          .mobile-filter-trigger-btn {
+            flex-shrink: 0;
+            padding: 8px 14px !important;
+          }
+        }
+
         .products-grid-responsive {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1774,10 +1881,17 @@ export default function CategoryClient({
           }
         }
 
-        @media (max-width: 600px) {
+        @media (max-width: 640px) {
+          .products-grid-responsive {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px 10px;
+          }
+        }
+
+        @media (max-width: 350px) {
           .products-grid-responsive {
             grid-template-columns: repeat(1, minmax(0, 1fr));
-            gap: 16px;
+            gap: 14px;
           }
         }
 
@@ -1831,17 +1945,18 @@ export default function CategoryClient({
 
         @media (max-width: 768px) {
           .product-card-responsive {
-            padding: 16px 12px 14px;
+            padding: 12px 10px 12px;
+            border-radius: 12px;
           }
           .product-card-img-panel {
-            height: 210px;
+            height: 165px;
             padding: 4px;
           }
         }
 
-        @media (max-width: 520px) {
+        @media (max-width: 350px) {
           .product-card-img-panel {
-            height: 290px;
+            height: 200px;
           }
         }
 
@@ -2085,30 +2200,9 @@ export default function CategoryClient({
         </nav>
 
         {/* Tab & Controls Bar */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            borderBottom: "1px solid #e5e7eb",
-            paddingBottom: "12px",
-            marginBottom: "20px",
-            gap: "12px",
-          }}
-        >
-          <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-            <span
-              style={{
-                padding: "0 0 12px 0",
-                marginBottom: "-13px",
-                fontFamily: "'Manrope', system-ui, sans-serif",
-                fontSize: "16px",
-                fontWeight: 700,
-                color: "#111111",
-                borderBottom: "2px solid #111111",
-                display: "inline-block",
-              }}
-            >
+        <div className="category-toolbar-row">
+          <div className="category-toolbar-left">
+            <span className="category-toolbar-title">
               {displayTitle}
             </span>
             <span
@@ -2117,15 +2211,16 @@ export default function CategoryClient({
                 color: "#6b7280",
                 fontFamily: "'Manrope', system-ui, sans-serif",
                 fontWeight: 600,
+                whiteSpace: "nowrap",
               }}
             >
               Showing {Math.min(visibleCount, displayedProducts.length)} of {displayedProducts.length}
             </span>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div className="category-toolbar-right">
             {/* Sort By Dropdown */}
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <div className="category-sort-wrap">
               <span
                 style={{
                   fontFamily: "'Manrope', system-ui, sans-serif",
@@ -2140,19 +2235,7 @@ export default function CategoryClient({
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                style={{
-                  padding: "6px 12px",
-                  borderRadius: "8px",
-                  border: "1px solid #d1d5db",
-                  backgroundColor: "#ffffff",
-                  fontFamily: "'Manrope', system-ui, sans-serif",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  color: "#0f172a",
-                  cursor: "pointer",
-                  outline: "none",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-                }}
+                className="category-sort-select"
               >
                 <option value="recommended">Recommended (Grouped A-Z)</option>
                 <option value="size_small_large">Size: Small to Large</option>

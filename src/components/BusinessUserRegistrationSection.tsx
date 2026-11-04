@@ -117,24 +117,44 @@ export default function BusinessUserRegistrationSection() {
         boxSizing: "border-box",
       }}
     >
-      <div
-        style={{
-          width: "100%",
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 1.05fr) minmax(380px, 1fr)",
-          background: "#ffffff",
-          boxShadow: "0 8px 34px rgba(0,0,0,0.09)",
-          overflow: "hidden",
-          minHeight: "min(75vh, 660px)",
-        }}
-      >
+      <style>{`
+        .biz-reg-split-grid {
+          width: 100%;
+          display: grid;
+          grid-template-columns: minmax(0, 1.05fr) minmax(min(100%, 380px), 1fr);
+          background: #ffffff;
+          box-shadow: 0 8px 34px rgba(0,0,0,0.09);
+          overflow: hidden;
+          min-height: min(75vh, 660px);
+        }
+        .biz-reg-banner {
+          position: relative;
+          min-height: 520px;
+        }
+        .biz-reg-two-col {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          margin-bottom: 10px;
+        }
+        @media (max-width: 820px) {
+          .biz-reg-split-grid {
+            grid-template-columns: 1fr !important;
+            min-height: auto !important;
+          }
+          .biz-reg-banner {
+            min-height: 220px !important;
+          }
+        }
+        @media (max-width: 520px) {
+          .biz-reg-two-col {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
+      <div className="biz-reg-split-grid">
         {/* ── LEFT: Image ── */}
-        <div
-          style={{
-            position: "relative",
-            minHeight: "520px",
-          }}
-        >
+        <div className="biz-reg-banner">
           <Image
             src={BUSINESS_BG}
             alt="RN Valves & Faucets luxury bathware showcase"
@@ -204,14 +224,7 @@ export default function BusinessUserRegistrationSection() {
             </p>
 
             {/* Row: Company Name + GST */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "10px",
-                marginBottom: "10px",
-              }}
-            >
+            <div className="biz-reg-two-col">
               <input
                 type="text"
                 placeholder="Name of Company*"
@@ -251,14 +264,7 @@ export default function BusinessUserRegistrationSection() {
             </p>
 
             {/* Row: Full Name + Mobile */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "10px",
-                marginBottom: "10px",
-              }}
-            >
+            <div className="biz-reg-two-col">
               <input
                 type="text"
                 placeholder="Full Name*"

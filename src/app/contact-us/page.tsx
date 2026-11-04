@@ -110,7 +110,7 @@ export default function ContactUsPage() {
       {/* Global CSS for luxury styling */}
       <style jsx global>{`
         .contact-page-wrap {
-          width: 100vw;
+          width: 100%;
           padding: 140px clamp(16px, 5vw, 80px) 70px;
           box-sizing: border-box;
           background: #ffffff;
@@ -240,7 +240,7 @@ export default function ContactUsPage() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
               gap: "36px",
               alignItems: "stretch",
               marginBottom: "60px",

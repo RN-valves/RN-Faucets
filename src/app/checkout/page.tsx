@@ -668,7 +668,7 @@ export default function CheckoutPage() {
       {/* Global & Responsive Checkout Styles */}
       <style jsx global>{`
         .checkout-page-section {
-          width: 100vw;
+          width: 100%;
           padding: 130px clamp(16px, 5vw, 80px) 70px;
           box-sizing: border-box;
           font-family: 'Manrope', system-ui, -apple-system, sans-serif;

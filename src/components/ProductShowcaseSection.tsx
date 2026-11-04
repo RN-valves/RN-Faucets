@@ -45,15 +45,15 @@ export default function ProductShowcaseSection({ data }: ProductShowcaseProps) {
       tl.fromTo(
         imageRef.current,
         {
-          scale: 1.15,
-          opacity: 0,
-          y: 80,
+          scale: 1.08,
+          opacity: 0.95,
+          y: 30,
         },
         {
           scale: 1,
           opacity: 1,
           y: 0,
-          duration: 1.2,
+          duration: 1.1,
           ease: "power3.out",
         }
       );
@@ -62,13 +62,13 @@ export default function ProductShowcaseSection({ data }: ProductShowcaseProps) {
       tl.fromTo(
         textRef.current,
         {
-          opacity: 0,
-          y: 40,
+          opacity: 0.95,
+          y: 24,
         },
         {
           opacity: 1,
           y: 0,
-          duration: 1.0,
+          duration: 0.9,
           ease: "power3.out",
         },
         "-=0.7"
@@ -84,9 +84,45 @@ export default function ProductShowcaseSection({ data }: ProductShowcaseProps) {
     <section
       ref={sectionRef}
       data-header-theme="dark"
-      className="h-screen w-screen relative overflow-hidden bg-black"
+      className="rn-showcase-section relative overflow-hidden bg-black w-full"
       aria-label="Explore by Space - Bathroom"
     >
+      <style>{`
+        .rn-showcase-section {
+          height: min(100vh, 62vw);
+          min-height: 440px;
+        }
+        .rn-showcase-text-overlay {
+          padding: 0 20px clamp(48px, 8vw, 120px);
+        }
+        @media (max-width: 1024px) and (min-width: 769px) {
+          .rn-showcase-section {
+            height: clamp(480px, 60vw, 640px);
+            min-height: 480px;
+          }
+          .rn-showcase-text-overlay {
+            padding: 0 24px 64px;
+          }
+        }
+        @media (max-width: 768px) {
+          .rn-showcase-section {
+            height: clamp(380px, 56vh, 480px);
+            min-height: 380px;
+          }
+          .rn-showcase-text-overlay {
+            padding: 0 16px 44px;
+          }
+        }
+        @media (max-width: 920px) and (max-height: 500px) {
+          .rn-showcase-section {
+            height: clamp(300px, 85vh, 400px);
+            min-height: 300px;
+          }
+          .rn-showcase-text-overlay {
+            padding: 0 16px 32px;
+          }
+        }
+      `}</style>
       {/* Background Image Scene */}
       <div
         ref={imageRef}
@@ -108,8 +144,8 @@ export default function ProductShowcaseSection({ data }: ProductShowcaseProps) {
       {/* Centered Bottom Text Overlay (Explore by Space / Bathroom) */}
       <div
         ref={textRef}
-        className="absolute inset-0 z-20 flex flex-col items-center justify-end text-center pointer-events-none"
-        style={{ paddingBottom: "20vh", willChange: "transform, opacity" }}
+        className="rn-showcase-text-overlay absolute inset-0 z-20 flex flex-col items-center justify-end text-center pointer-events-none"
+        style={{ willChange: "transform, opacity" }}
       >
         <p
           style={{

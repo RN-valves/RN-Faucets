@@ -137,7 +137,7 @@ export default function WhyBuySection({ data }: WhyBuySectionProps) {
       className="why-buy-section"
       style={{
         position: "relative",
-        width: "100vw",
+        width: "100%",
         background: "#FFFFFF",
         padding: "120px 64px 88px",
         boxSizing: "border-box",
@@ -172,7 +172,17 @@ export default function WhyBuySection({ data }: WhyBuySectionProps) {
             margin-bottom: 52px !important;
           }
         }
-        @media (max-width: 800px) {
+        @media (max-width: 1024px) {
+          .why-buy-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            row-gap: 32px !important;
+          }
+          .why-buy-col:nth-child(odd) {
+            border-left: none !important;
+            padding-left: 0 !important;
+          }
+        }
+        @media (max-width: 680px) {
           .why-buy-section {
             padding: 56px 24px 64px !important;
           }

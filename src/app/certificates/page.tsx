@@ -100,7 +100,7 @@ export default function CertificatesPage() {
 
       <style jsx global>{`
         .policy-page-wrap {
-          width: 100vw;
+          width: 100%;
           padding: 130px clamp(16px, 5vw, 80px) 70px;
           box-sizing: border-box;
           background: #ffffff;
@@ -242,7 +242,7 @@ export default function CertificatesPage() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))",
                     gap: "24px",
                   }}
                 >
@@ -367,7 +367,7 @@ export default function CertificatesPage() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))",
                     gap: "20px",
                   }}
                 >
