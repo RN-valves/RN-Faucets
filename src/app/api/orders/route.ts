@@ -187,16 +187,80 @@ export async function POST(request: Request) {
       if (dbProd) {
         const prodStatus = String(dbProd.status || "In Stock");
         if (
+          dbProd.isVisibleWebsite === false ||
           prodStatus === "Out of Stock" ||
           prodStatus === "Inactive" ||
           prodStatus === "InActive" ||
-          prodStatus === "Discontinued"
+          prodStatus.toLowerCase() === "inactive" ||
+          prodStatus === "Discontinued" ||
+          prodStatus.toLowerCase() === "discontinued"
         ) {
           return NextResponse.json(
-            { error: `Item "${dbProd.name || rawItem.name}" is currently out of stock.` },
+            {
+              error: `Item "${dbProd.name || rawItem.name}" is currently unavailable or out of stock and cannot be ordered.`,
+            },
             { status: 400 }
           );
         }
+
+        // Also verify that the product's Subcategory & Category are active and visible
+        const Subcategory = (await import("@/models/Subcategory")).default;
+        const Category = (await import("@/models/Category")).default;
+
+        if (dbProd.subcategoryId || dbProd.subcategoryName) {
+          const subConds: any[] = [];
+          if (dbProd.subcategoryId) subConds.push({ id: String(dbProd.subcategoryId) });
+          if (dbProd.subcategoryName) {
+            subConds.push({
+              name: new RegExp(`^${escapeRegex(String(dbProd.subcategoryName).trim())}$`, "i"),
+            });
+          }
+          const subDoc: any = await Subcategory.findOne({ $or: subConds })
+            .select("status isVisibleWebsite")
+            .lean();
+          if (
+            subDoc &&
+            (subDoc.isVisibleWebsite === false ||
+              String(subDoc.status || "").toLowerCase() === "inactive")
+          ) {
+            return NextResponse.json(
+              {
+                error: `Item "${dbProd.name || rawItem.name}" is currently unavailable and cannot be ordered.`,
+              },
+              { status: 400 }
+            );
+          }
+        }
+
+        if (dbProd.category) {
+          const catDoc: any = await Category.findOne({
+            $or: [
+              { name: new RegExp(`^${escapeRegex(String(dbProd.category).trim())}$`, "i") },
+              { slug: String(dbProd.category).trim().toLowerCase() },
+            ],
+          })
+            .select("status isVisibleWebsite")
+            .lean();
+          if (
+            catDoc &&
+            (catDoc.isVisibleWebsite === false ||
+              String(catDoc.status || "").toLowerCase() === "inactive")
+          ) {
+            return NextResponse.json(
+              {
+                error: `Item "${dbProd.name || rawItem.name}" is currently unavailable and cannot be ordered.`,
+              },
+              { status: 400 }
+            );
+          }
+        }
+      } else if (!adminSession) {
+        return NextResponse.json(
+          {
+            error: `Item "${rawItem.name || itemIdOrCode}" is no longer available in our catalogue.`,
+          },
+          { status: 400 }
+        );
       }
 
       const unitPrice = dbProd

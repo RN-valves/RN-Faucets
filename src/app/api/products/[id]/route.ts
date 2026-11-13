@@ -25,16 +25,75 @@ function buildProductFilter(rawId: string) {
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
     const { id } = await params;
+    const { searchParams } = new URL(request.url);
+    const isAdminQuery =
+      searchParams.get("admin") === "true" || searchParams.get("all") === "true";
+    const adminSession = isAdminQuery ? await requireAdminAuth(request) : null;
+
     const filter = buildProductFilter(id);
-    const product = await Product.findOne(filter).lean();
+    const product: any = await Product.findOne(filter).lean();
 
     if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
+
+    // Block public access to invisible or deactivated products (or products in deactivated categories/subcategories)
+    if (!adminSession) {
+      const prodStatus = String(product.status || "").toLowerCase();
+      if (
+        product.isVisibleWebsite === false ||
+        prodStatus === "inactive" ||
+        prodStatus === "discontinued"
+      ) {
+        return NextResponse.json({ error: "Product is not available" }, { status: 404 });
+      }
+
+      const Subcategory = (await import("@/models/Subcategory")).default;
+      const Category = (await import("@/models/Category")).default;
+
+      if (product.subcategoryId || product.subcategoryName) {
+        const subConds: any[] = [];
+        if (product.subcategoryId) subConds.push({ id: String(product.subcategoryId) });
+        if (product.subcategoryName) {
+          subConds.push({
+            name: new RegExp(`^${escapeRegex(String(product.subcategoryName).trim())}$`, "i"),
+          });
+        }
+        const subDoc: any = await Subcategory.findOne({ $or: subConds })
+          .select("status isVisibleWebsite")
+          .lean();
+        if (
+          subDoc &&
+          (subDoc.isVisibleWebsite === false ||
+            String(subDoc.status || "").toLowerCase() === "inactive")
+        ) {
+          return NextResponse.json({ error: "Product subcategory is not available" }, { status: 404 });
+        }
+      }
+
+      if (product.category) {
+        const catDoc: any = await Category.findOne({
+          $or: [
+            { name: new RegExp(`^${escapeRegex(String(product.category).trim())}$`, "i") },
+            { slug: String(product.category).trim().toLowerCase() },
+          ],
+        })
+          .select("status isVisibleWebsite")
+          .lean();
+        if (
+          catDoc &&
+          (catDoc.isVisibleWebsite === false ||
+            String(catDoc.status || "").toLowerCase() === "inactive")
+        ) {
+          return NextResponse.json({ error: "Product category is not available" }, { status: 404 });
+        }
+      }
+    }
+
     return NextResponse.json(product);
   } catch (error: any) {
     console.error("GET /api/products/[id] error:", error);

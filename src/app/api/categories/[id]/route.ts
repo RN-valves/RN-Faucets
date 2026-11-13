@@ -5,19 +5,31 @@ import { requireAdminAuth } from "@/lib/security";
 import { invalidateCatalogueAndHeaderCache } from "@/lib/catalogueData";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
     const { id } = await params;
+    const { searchParams } = new URL(request.url);
+    const isAdminQuery =
+      searchParams.get("admin") === "true" || searchParams.get("all") === "true";
+    const adminSession = isAdminQuery ? await requireAdminAuth(request) : null;
 
     // Search by ID or slug
-    const category = await Category.findOne({
+    const category: any = await Category.findOne({
       $or: [{ id }, { slug: id }],
     }).lean();
 
     if (!category) return NextResponse.json({ error: "Category not found" }, { status: 404 });
+
+    if (!adminSession) {
+      const catStatus = String(category.status || "").toLowerCase();
+      if (category.isVisibleWebsite === false || catStatus === "inactive") {
+        return NextResponse.json({ error: "Category is not available" }, { status: 404 });
+      }
+    }
+
     return NextResponse.json(category);
   } catch (error: any) {
     console.error("GET /api/categories/[id] error:", error);

@@ -26,18 +26,23 @@ export default function DynamicCategoryPage({ params }: { params: Promise<{ slug
   const { slug } = use(params);
   const isIndexSlug = !slug || slug.toLowerCase() === "index" || slug.toLowerCase() === "index.html";
   const [category, setCategory] = useState<CategoryData | null>(null);
+  const [isCategoryNotFound, setIsCategoryNotFound] = useState(false);
   const [subcategories, setSubcategories] = useState<any[]>([]);
   const [blogs, setBlogs] = useState<any[]>([]);
 
   useEffect(() => {
     if (isIndexSlug) return;
     async function loadCategoryAndSubcategories() {
+      setIsCategoryNotFound(false);
       try {
         // 1. Fetch Category by slug
         const catRes = await fetch(`/api/categories/${slug}`);
         const catData = catRes.ok ? await catRes.json() : null;
-        if (catData) {
+        if (catData && !catData.error) {
           setCategory(catData);
+        } else {
+          setIsCategoryNotFound(true);
+          return;
         }
 
         // 2. Fetch Subcategories
@@ -75,6 +80,50 @@ export default function DynamicCategoryPage({ params }: { params: Promise<{ slug
 
   if (isIndexSlug) {
     return <HomeClient />;
+  }
+
+  if (isCategoryNotFound) {
+    return (
+      <main style={{ width: "100%", minHeight: "100vh", backgroundColor: "#ffffff" }}>
+        <Header />
+        <section
+          data-header-theme="light"
+          style={{
+            maxWidth: "680px",
+            margin: "0 auto",
+            padding: "160px 24px 120px",
+            textAlign: "center",
+            fontFamily: "'Manrope', system-ui, sans-serif",
+          }}
+        >
+          <h1 style={{ fontSize: "28px", fontWeight: 800, color: "#0f172a", marginBottom: "12px" }}>
+            Category Unavailable
+          </h1>
+          <p style={{ fontSize: "15px", color: "#64748b", lineHeight: 1.6, marginBottom: "28px" }}>
+            This category is currently unavailable or has been removed from our active catalogue.
+          </p>
+          <Link
+            href="/"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "12px 28px",
+              borderRadius: "8px",
+              background: "#0f172a",
+              color: "#ffffff",
+              fontSize: "14px",
+              fontWeight: 700,
+              textDecoration: "none",
+            }}
+          >
+            Back to Home
+          </Link>
+        </section>
+        <SupportLinksSection />
+        <FooterSection />
+      </main>
+    );
   }
 
   const categoryName = category?.name || slug.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());

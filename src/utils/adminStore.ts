@@ -302,7 +302,10 @@ export const getAdminCategories = async (): Promise<AdminCategory[]> => {
 
 export const getAdminCategoryBySlug = async (slug: string): Promise<AdminCategory | null> => {
   try {
-    const res = await fetch(`/api/categories/${slug}`);
+    const res = await fetch(`/api/categories/${slug}?admin=true`, {
+      credentials: "include",
+      headers: { ...getAuthHeaders() },
+    });
     if (!res.ok) throw new Error("fetch failed");
     return res.json();
   } catch {
@@ -424,7 +427,10 @@ export const getAdminSubcategories = async (categoryId?: string): Promise<AdminS
 
 export const getAdminSubcategoryBySlug = async (slug: string): Promise<AdminSubcategory | null> => {
   try {
-    const res = await fetch(`/api/subcategories/${slug}`);
+    const res = await fetch(`/api/subcategories/${slug}?admin=true`, {
+      credentials: "include",
+      headers: { ...getAuthHeaders() },
+    });
     if (!res.ok) throw new Error("fetch failed");
     return res.json();
   } catch {
@@ -434,7 +440,10 @@ export const getAdminSubcategoryBySlug = async (slug: string): Promise<AdminSubc
 
 export const getAdminProductByCode = async (code: string): Promise<AdminProduct | null> => {
   try {
-    const res = await fetch(`/api/products/${code}`);
+    const res = await fetch(`/api/products/${code}?admin=true`, {
+      credentials: "include",
+      headers: { ...getAuthHeaders() },
+    });
     if (!res.ok) throw new Error("fetch failed");
     return res.json();
   } catch {

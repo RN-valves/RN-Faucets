@@ -5,17 +5,30 @@ import { requireAdminAuth } from "@/lib/security";
 import { invalidateCatalogueAndHeaderCache } from "@/lib/catalogueData";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
     const { id } = await params;
-    const subcategory = await Subcategory.findOne({
+    const { searchParams } = new URL(request.url);
+    const isAdminQuery =
+      searchParams.get("admin") === "true" || searchParams.get("all") === "true";
+    const adminSession = isAdminQuery ? await requireAdminAuth(request) : null;
+
+    const subcategory: any = await Subcategory.findOne({
       $or: [{ id }, { slug: id }],
     }).lean();
 
     if (!subcategory) return NextResponse.json({ error: "Subcategory not found" }, { status: 404 });
+
+    if (!adminSession) {
+      const subStatus = String(subcategory.status || "").toLowerCase();
+      if (subcategory.isVisibleWebsite === false || subStatus === "inactive") {
+        return NextResponse.json({ error: "Subcategory is not available" }, { status: 404 });
+      }
+    }
+
     return NextResponse.json(subcategory);
   } catch (error: any) {
     console.error("GET /api/subcategories/[id] error:", error);

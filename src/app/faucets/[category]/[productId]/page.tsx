@@ -374,6 +374,8 @@ export default function FaucetProductPage({
   const { category, productId } = use(params);
 
   const [dbProduct, setDbProduct] = useState<any>(null);
+  const [isProductNotFound, setIsProductNotFound] = useState(false);
+  const [isLoadingProduct, setIsLoadingProduct] = useState(true);
   const [dbVariants, setDbVariants] = useState<any[]>([]);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -385,6 +387,8 @@ export default function FaucetProductPage({
 
   useEffect(() => {
     async function loadData() {
+      setIsLoadingProduct(true);
+      setIsProductNotFound(false);
       try {
         let loadedProd: any = null;
         const res = await fetch(`/api/products/${productId}`);
@@ -393,8 +397,17 @@ export default function FaucetProductPage({
           if (data && !data.error) {
             loadedProd = data;
             setDbProduct(data);
+          } else {
+            setIsProductNotFound(true);
+            setIsLoadingProduct(false);
+            return;
           }
+        } else {
+          setIsProductNotFound(true);
+          setIsLoadingProduct(false);
+          return;
         }
+        setIsLoadingProduct(false);
 
         // Fetch active discount slabs
         try {
@@ -495,8 +508,9 @@ export default function FaucetProductPage({
         if (Array.isArray(items) && items.length > 0) {
           setDbVariants(items);
         }
-      } catch (err) {
+        } catch (err) {
         console.error("Error loading product detail data:", err);
+        setIsLoadingProduct(false);
       }
     }
     loadData();
@@ -599,11 +613,13 @@ export default function FaucetProductPage({
     : 0;
 
   const isExplicitlyOutOfStock =
+    !rawProduct ||
+    rawProduct.isVisibleWebsite === false ||
     product.status === "Out of Stock" ||
     product.status === "Inactive" ||
     product.status === "InActive" ||
     product.status === "Discontinued";
-  const inStock = !isExplicitlyOutOfStock && ((product.stock ?? 0) > 0 || product.status === "In Stock" || product.status === "Active");
+  const inStock = !isLoadingProduct && !isExplicitlyOutOfStock && ((product.stock ?? 0) > 0 || product.status === "In Stock" || product.status === "Active");
 
   const hierarchyBreadcrumb = useMemo(() => {
     const parts: string[] = [];
@@ -808,6 +824,49 @@ export default function FaucetProductPage({
   const displaySubcatHref = `/faucets/${category}`;
 
   const activeGalleryImage = product.gallery[selectedImage] ?? product.image;
+
+  if (isProductNotFound) {
+    return (
+      <main style={{ width: "100%", minHeight: "100vh", backgroundColor: "#ffffff", overflowX: "hidden" }}>
+        <Header />
+        <section
+          data-header-theme="light"
+          style={{
+            maxWidth: "680px",
+            margin: "0 auto",
+            padding: "160px 24px 120px",
+            textAlign: "center",
+            fontFamily: "'Manrope', system-ui, sans-serif",
+          }}
+        >
+          <h1 style={{ fontSize: "28px", fontWeight: 800, color: "#0f172a", marginBottom: "12px" }}>
+            Product Unavailable
+          </h1>
+          <p style={{ fontSize: "15px", color: "#64748b", lineHeight: 1.6, marginBottom: "28px" }}>
+            This product is currently unavailable or has been removed from our active catalogue.
+          </p>
+          <Link
+            href="/"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "12px 28px",
+              borderRadius: "8px",
+              background: "#0f172a",
+              color: "#ffffff",
+              fontSize: "14px",
+              fontWeight: 700,
+              textDecoration: "none",
+            }}
+          >
+            Explore Active Products
+          </Link>
+        </section>
+        <FooterSection />
+      </main>
+    );
+  }
 
   return (
     <main style={{ width: "100%", minHeight: "100vh", backgroundColor: "#ffffff", overflowX: "hidden" }}>

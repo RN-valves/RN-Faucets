@@ -31,9 +31,11 @@ async function getProductSeoData(productId: string) {
           { slug: decoded },
           { code: decoded },
         ],
+        isVisibleWebsite: { $ne: false },
+        status: { $nin: ["Inactive", "InActive", "inactive", "Discontinued", "discontinued"] },
       })
         .select(
-          "id slug name code category subcategory price mrp status image gallery description color warranty"
+          "id slug name code category subcategory price mrp status image gallery description color warranty isVisibleWebsite"
         )
         .lean();
       return product || null;

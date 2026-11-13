@@ -316,10 +316,44 @@ async function executeProductQuery(
       conditions.push({ status });
     }
 
-    // 8. Website Visibility Filter (Matches Laravel: is_visible_website == 1) & Exclude Deactivated Items
+    // 8. Website Visibility Filter (Matches Laravel: is_visible_website == 1) & Exclude Deactivated Items / Categories / Subcategories
     if (!isAll) {
       conditions.push({ isVisibleWebsite: { $ne: false } });
-      conditions.push({ status: { $nin: ["Inactive", "InActive", "inactive"] } });
+      conditions.push({ status: { $nin: ["Inactive", "InActive", "inactive", "Discontinued", "discontinued"] } });
+
+      // Also exclude products belonging to any Hidden or Inactive Subcategory or Category
+      const [hiddenSubs, hiddenCats] = await Promise.all([
+        Subcategory.find({
+          $or: [
+            { isVisibleWebsite: false },
+            { status: /^inactive$/i },
+          ],
+        })
+          .select("id name")
+          .lean(),
+        Category.find({
+          $or: [
+            { isVisibleWebsite: false },
+            { status: /^inactive$/i },
+          ],
+        })
+          .select("id name")
+          .lean(),
+      ]);
+
+      const hiddenSubIds = hiddenSubs.map((s: any) => String(s.id)).filter(Boolean);
+      const hiddenSubNames = hiddenSubs.map((s: any) => String(s.name || "").trim()).filter(Boolean);
+      if (hiddenSubIds.length > 0) {
+        conditions.push({ subcategoryId: { $nin: hiddenSubIds } });
+      }
+      if (hiddenSubNames.length > 0) {
+        conditions.push({ subcategoryName: { $nin: hiddenSubNames } });
+      }
+
+      const hiddenCatNames = hiddenCats.map((c: any) => String(c.name || "").trim()).filter(Boolean);
+      if (hiddenCatNames.length > 0) {
+        conditions.push({ category: { $nin: hiddenCatNames } });
+      }
     }
 
     // 9. New Arrival & Featured Filters

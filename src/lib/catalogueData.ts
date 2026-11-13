@@ -50,6 +50,12 @@ export async function getPublicCategoriesCached(): Promise<{
           .sort({ createdAt: -1 })
           .lean(),
         Product.aggregate([
+          {
+            $match: {
+              isVisibleWebsite: { $ne: false },
+              status: { $nin: ["Inactive", "InActive", "inactive", "Discontinued", "discontinued"] },
+            },
+          },
           { $group: { _id: "$category", count: { $sum: 1 } } },
         ]),
       ]);
@@ -102,6 +108,12 @@ export async function getPublicSubcategoriesCached(): Promise<{
           .sort({ displayOrder: 1, createdAt: -1 })
           .lean(),
         Product.aggregate([
+          {
+            $match: {
+              isVisibleWebsite: { $ne: false },
+              status: { $nin: ["Inactive", "InActive", "inactive", "Discontinued", "discontinued"] },
+            },
+          },
           { $group: { _id: "$subcategoryName", count: { $sum: 1 } } },
         ]),
       ]);

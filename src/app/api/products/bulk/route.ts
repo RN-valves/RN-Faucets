@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import Product from "@/models/Product";
 import { requireAdminAuth } from "@/lib/security";
+import { invalidateCatalogueAndHeaderCache } from "@/lib/catalogueData";
 
 export async function POST(request: Request) {
   try {
@@ -39,6 +40,7 @@ export async function POST(request: Request) {
 
     if (action === "delete") {
       await Product.deleteMany(filter);
+      await invalidateCatalogueAndHeaderCache();
       return NextResponse.json({ success: true, count: ids.length });
     }
 
@@ -55,6 +57,7 @@ export async function POST(request: Request) {
       } else {
         await Product.updateMany(filter, { $set: { status } });
       }
+      await invalidateCatalogueAndHeaderCache();
       return NextResponse.json({ success: true, count: ids.length });
     }
 
@@ -64,6 +67,7 @@ export async function POST(request: Request) {
         filter,
         { $set: { stock, stockPcs: stock, status: stockStatus } }
       );
+      await invalidateCatalogueAndHeaderCache();
       return NextResponse.json({ success: true, count: ids.length });
     }
 
@@ -72,16 +76,19 @@ export async function POST(request: Request) {
       if (subcategoryId !== undefined) updatePayload.subcategoryId = subcategoryId;
       if (subcategoryName !== undefined) updatePayload.subcategoryName = subcategoryName;
       await Product.updateMany(filter, { $set: updatePayload });
+      await invalidateCatalogueAndHeaderCache();
       return NextResponse.json({ success: true, count: ids.length });
     }
 
     if (action === "brand" && brand) {
       await Product.updateMany(filter, { $set: { brand } });
+      await invalidateCatalogueAndHeaderCache();
       return NextResponse.json({ success: true, count: ids.length });
     }
 
     if (action === "visibility" && typeof isVisibleWebsite === "boolean") {
       await Product.updateMany(filter, { $set: { isVisibleWebsite } });
+      await invalidateCatalogueAndHeaderCache();
       return NextResponse.json({ success: true, count: ids.length });
     }
 
@@ -108,6 +115,7 @@ export async function POST(request: Request) {
         await Product.updateMany(filter, { $set: updates });
       }
 
+      await invalidateCatalogueAndHeaderCache();
       return NextResponse.json({ success: true, count: ids.length });
     }
 

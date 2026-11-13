@@ -134,18 +134,28 @@ export default async function CategoryPage({
           { categoryName: activeCat.name },
         ];
       } else {
-        // Fallback for unknown slug: strictly match against the slug instead of returning all 7,398 products
-        const rawEscaped = category.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        const normEscaped = category.replace(/-/g, " ").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        productQuery.$or = [
-          { subcategorySlug: category },
-          { categorySlug: category },
-          { subcategoryId: category },
-          { categoryId: category },
-          { subcategoryName: { $regex: `^${normEscaped}$`, $options: "i" } },
-          { category: { $regex: `^${normEscaped}$`, $options: "i" } },
-          { subcategoryName: { $regex: `^${rawEscaped}$`, $options: "i" } },
-        ];
+        // Check if this slug belongs to an explicitly Inactive or Hidden subcategory/category
+        const [inactiveSub, inactiveCat] = await Promise.all([
+          Subcategory.findOne({ $or: [{ slug: category }, { id: category }] }).select("_id").lean(),
+          Category.findOne({ $or: [{ slug: category }, { id: category }] }).select("_id").lean(),
+        ]);
+
+        if (inactiveSub || inactiveCat) {
+          productQuery._id = { $exists: false }; // Force 0 products for deactivated subcategory/category
+        } else {
+          // Fallback for unknown slug: strictly match against the slug instead of returning all 7,398 products
+          const rawEscaped = category.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          const normEscaped = category.replace(/-/g, " ").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          productQuery.$or = [
+            { subcategorySlug: category },
+            { categorySlug: category },
+            { subcategoryId: category },
+            { categoryId: category },
+            { subcategoryName: { $regex: `^${normEscaped}$`, $options: "i" } },
+            { category: { $regex: `^${normEscaped}$`, $options: "i" } },
+            { subcategoryName: { $regex: `^${rawEscaped}$`, $options: "i" } },
+          ];
+        }
       }
     }
 

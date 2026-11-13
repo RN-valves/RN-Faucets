@@ -131,10 +131,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .select("slug id name updatedAt")
         .lean(),
       Product.find({
-        status: { $ne: "Out of Stock" },
+        status: { $nin: ["Out of Stock", "Inactive", "InActive", "inactive", "Discontinued", "discontinued"] },
         isVisibleWebsite: { $ne: false },
       })
-        .select("id slug category subcategory updatedAt")
+        .select("id slug category subcategory subcategoryId subcategoryName updatedAt")
         .limit(10000)
         .lean(),
       Blog.find({ status: "Published" })
@@ -164,8 +164,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.8,
       }));
 
+    const activeSubIds = new Set(
+      (subcategories || []).map((s: any) => String(s.id || "")).filter(Boolean)
+    );
+    const activeSubNames = new Set(
+      (subcategories || []).map((s: any) => String(s.name || "").toLowerCase().trim()).filter(Boolean)
+    );
+
     const productUrls: MetadataRoute.Sitemap = (products || [])
-      .filter((p: any) => Boolean(p.slug || p.id))
+      .filter((p: any) => {
+        if (!Boolean(p.slug || p.id)) return false;
+        const sId = String(p.subcategoryId || "").trim();
+        const sName = String(p.subcategoryName || p.subcategory || "").toLowerCase().trim();
+        if (sId && activeSubIds.size > 0 && !activeSubIds.has(sId)) return false;
+        if (!sId && sName && activeSubNames.size > 0 && !activeSubNames.has(sName)) return false;
+        return true;
+      })
       .map((p: any) => {
         const catSlug = slugifySegment(p.subcategory || p.category || "collection");
         const prodSlug = encodeURIComponent(String(p.slug || p.id));
