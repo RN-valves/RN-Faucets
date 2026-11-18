@@ -25,17 +25,36 @@ async function getProductSeoData(productId: string) {
     300,
     async () => {
       await connectDB();
+      const escaped = decoded.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const orConds: any[] = [
+        { id: decoded },
+        { slug: decoded },
+        { code: decoded },
+        { skuCode: decoded },
+        { urlKey: decoded },
+        { code: new RegExp(`^${escaped}$`, "i") },
+        { skuCode: new RegExp(`^${escaped}$`, "i") },
+        { urlKey: new RegExp(`^${escaped}$`, "i") },
+      ];
+      const lastHyphenIdx = decoded.lastIndexOf("-");
+      if (lastHyphenIdx > 0 && lastHyphenIdx < decoded.length - 3) {
+        const trailingToken = decoded.slice(lastHyphenIdx + 1).trim();
+        if (/^[a-z0-9]{5,20}$/i.test(trailingToken) && /\d/.test(trailingToken)) {
+          const tokenEsc = trailingToken.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          orConds.push(
+            { code: new RegExp(`^${tokenEsc}$`, "i") },
+            { skuCode: new RegExp(`^${tokenEsc}$`, "i") },
+            { id: trailingToken }
+          );
+        }
+      }
       const product: any = await Product.findOne({
-        $or: [
-          { id: decoded },
-          { slug: decoded },
-          { code: decoded },
-        ],
+        $or: orConds,
         isVisibleWebsite: { $ne: false },
         status: { $nin: ["Inactive", "InActive", "inactive", "Discontinued", "discontinued"] },
       })
         .select(
-          "id slug name code category subcategory price mrp status image gallery description color warranty isVisibleWebsite"
+          "id slug urlKey name code skuCode category subcategory subcategoryName price inSelling mrp inMrp status image gallery description color colorName warranty isVisibleWebsite"
         )
         .lean();
       return product || null;

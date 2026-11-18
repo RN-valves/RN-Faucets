@@ -41,6 +41,39 @@ export default function DynamicCategoryPage({ params }: { params: Promise<{ slug
         if (catData && !catData.error) {
           setCategory(catData);
         } else {
+          // 1B. Check if the root slug is a Subcategory (e.g. /m-series-collection)
+          const subSingleRes = await fetch(`/api/subcategories/${encodeURIComponent(slug)}`);
+          if (subSingleRes.ok) {
+            const subSingleData = await subSingleRes.json();
+            if (subSingleData && !subSingleData.error) {
+              window.location.replace(`/faucets/${encodeURIComponent(subSingleData.slug || slug)}`);
+              return;
+            }
+          }
+
+          // 1C. Check if the root slug is a Product urlKey / SKU (e.g. /wall-mounted-sink-cock-with-swivel-spout-flange-rnama32g09)
+          const prodSingleRes = await fetch(`/api/products/${encodeURIComponent(slug)}`);
+          if (prodSingleRes.ok) {
+            const prodSingleData = await prodSingleRes.json();
+            if (prodSingleData && !prodSingleData.error) {
+              const subSlug = String(
+                prodSingleData.subcategorySlug ||
+                  prodSingleData.subcategoryName ||
+                  prodSingleData.category ||
+                  "collection"
+              )
+                .toLowerCase()
+                .trim()
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/(^-|-$)/g, "") || "collection";
+              const prodIdentifier = prodSingleData.code || prodSingleData.skuCode || prodSingleData.id || slug;
+              window.location.replace(
+                `/faucets/${encodeURIComponent(subSlug)}/${encodeURIComponent(prodIdentifier)}`
+              );
+              return;
+            }
+          }
+
           setIsCategoryNotFound(true);
           return;
         }

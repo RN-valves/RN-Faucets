@@ -40,6 +40,81 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(`/${search}`, request.url), 301);
   }
 
+  // ── 0c. Redirect Legacy PHP / Google Indexed Product & Category Paths (301) ──
+  // 1. Strip leading /index.php/... prefix (e.g. /index.php/product/cat/subcat/slug -> /product/cat/subcat/slug)
+  if (lowerPath.startsWith("/index.php/")) {
+    const stripped = pathname.slice("/index.php".length) || "/";
+    const strippedLower = stripped.toLowerCase();
+
+    // If it is /index.php/product/... or /index.php/products/... -> redirect directly to /faucets/subcat/product
+    const prodMatch = stripped.match(/^\/products?\/(?:[^/]+\/)?([^/]+)\/([^/]+)\/?$/i);
+    if (prodMatch) {
+      return NextResponse.redirect(
+        new URL(`/faucets/${prodMatch[1]}/${prodMatch[2]}${search}`, request.url),
+        301
+      );
+    }
+    const singleProdMatch = stripped.match(/^\/products?\/([^/]+)\/?$/i);
+    if (singleProdMatch) {
+      return NextResponse.redirect(
+        new URL(`/faucets/all/${singleProdMatch[1]}${search}`, request.url),
+        301
+      );
+    }
+    const subMatch = stripped.match(/^\/(?:subcategory|sub-category|category|categories|collection|collections)\/(?:[^/]+\/)?([^/]+)\/?$/i);
+    if (subMatch && !strippedLower.startsWith("/admin")) {
+      return NextResponse.redirect(
+        new URL(`/faucets/${subMatch[1]}${search}`, request.url),
+        301
+      );
+    }
+
+    return NextResponse.redirect(new URL(`${stripped}${search}`, request.url), 301);
+  }
+
+  // 2. Legacy /product/... or /products/... URLs indexed in Google
+  // Examples:
+  //   /product/ptmt-taps-or-faucets/g20-pine-collection/bib-cock-foam-flow-with-flange-rng2019a32
+  //   /product/amara-collection/wall-mounted-sink-cock-with-swivel-spout-flange-rnama32g09
+  //   /product/wall-mounted-sink-cock-with-swivel-spout-flange-rnama32g09
+  if (lowerPath.startsWith("/product/") || lowerPath.startsWith("/products/")) {
+    const segments = pathname.split("/").filter(Boolean); // ["product", ...]
+    if (segments.length >= 3) {
+      const productSlug = segments[segments.length - 1];
+      const subcatSlug = segments[segments.length - 2];
+      return NextResponse.redirect(
+        new URL(`/faucets/${subcatSlug}/${productSlug}${search}`, request.url),
+        301
+      );
+    } else if (segments.length === 2) {
+      const productSlug = segments[1];
+      return NextResponse.redirect(
+        new URL(`/faucets/all/${productSlug}${search}`, request.url),
+        301
+      );
+    }
+  }
+
+  // 3. Legacy /category/... or /subcategory/... or /collection/... URLs indexed in Google
+  if (
+    lowerPath.startsWith("/category/") ||
+    lowerPath.startsWith("/categories/") ||
+    lowerPath.startsWith("/subcategory/") ||
+    lowerPath.startsWith("/subcategories/") ||
+    lowerPath.startsWith("/sub-category/") ||
+    lowerPath.startsWith("/collection/") ||
+    lowerPath.startsWith("/collections/")
+  ) {
+    const segments = pathname.split("/").filter(Boolean);
+    if (segments.length >= 2) {
+      const targetSlug = segments[segments.length - 1];
+      return NextResponse.redirect(
+        new URL(`/faucets/${targetSlug}${search}`, request.url),
+        301
+      );
+    }
+  }
+
   // ── 1. Admin Route Protection ───────────────────────────────────────────────
   if (pathname.startsWith("/admin") && pathname !== "/admin/login") {
     const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value;

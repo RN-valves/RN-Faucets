@@ -12,9 +12,28 @@ function buildProductFilter(rawId: string) {
     { code: id },
     { skuCode: id },
     { urlKey: id },
+    { slug: id },
     { code: new RegExp(`^${escapeRegex(id)}$`, "i") },
     { skuCode: new RegExp(`^${escapeRegex(id)}$`, "i") },
+    { urlKey: new RegExp(`^${escapeRegex(id)}$`, "i") },
+    { slug: new RegExp(`^${escapeRegex(id)}$`, "i") },
   ];
+
+  // If the incoming slug is a SEO product URL like "bib-cock-foam-flow-with-flange-rng2019a32",
+  // also extract the trailing SKU token ("rng2019a32") so it matches even if urlKey was modified
+  const lastHyphenIdx = id.lastIndexOf("-");
+  if (lastHyphenIdx > 0 && lastHyphenIdx < id.length - 3) {
+    const trailingToken = id.slice(lastHyphenIdx + 1).trim();
+    if (/^[a-z0-9]{5,20}$/i.test(trailingToken) && /\d/.test(trailingToken)) {
+      const tokenRegex = new RegExp(`^${escapeRegex(trailingToken)}$`, "i");
+      filterList.push(
+        { code: tokenRegex },
+        { skuCode: tokenRegex },
+        { id: trailingToken }
+      );
+    }
+  }
+
   if (!isNaN(Number(id))) {
     filterList.push({ id: Number(id) });
   }
