@@ -972,7 +972,7 @@ export default function FaucetProductPage({
               letterSpacing: "0.02em",
             }}
           >
-            Get ₹200 OFF On Orders Above ₹2500
+            Get 15% OFF on Orders Up to ₹5,000
           </span>
         </div>
 
