@@ -386,6 +386,7 @@ export default function FaucetProductPage({
   const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
 
   useEffect(() => {
+    setSelectedImage(0);
     async function loadData() {
       setIsLoadingProduct(true);
       setIsProductNotFound(false);
@@ -546,7 +547,7 @@ export default function FaucetProductPage({
         ? rawProduct.inMrp
         : (rawProduct?.inSelling ? rawProduct.inSelling * 2 : (rawProduct?.inMrp ? rawProduct.inMrp * 2 : 1390))
     ),
-    image: rawProduct?.image || "/api/media/website/catalogue/products/default/image.webp",
+    image: rawProduct?.image || "",
     gallery: (() => {
       const mainImg = rawProduct?.image;
       const rawGal = Array.isArray(rawProduct?.gallery) ? rawProduct.gallery.filter(Boolean) : [];
@@ -556,7 +557,7 @@ export default function FaucetProductPage({
       }
       if (mainImg) return [mainImg];
       if (rawGal.length > 0) return rawGal;
-      return ["/api/media/website/catalogue/products/default/image.webp"];
+      return [];
     })(),
     brand: rawProduct?.brand || "RN Valves & Faucets",
     material: rawProduct?.material || "Brass",
@@ -825,6 +826,22 @@ export default function FaucetProductPage({
 
   const activeGalleryImage = product.gallery[selectedImage] ?? product.image;
 
+  // Instant switch to a preloaded variant (colour or size) without resetting dbProduct to null or flashing the default fallback image
+  const handleVariantSwitch = (variant: any) => {
+    if (!variant) return;
+    setSelectedImage(0);
+    setDbProduct((prev: any) => ({
+      ...(prev || {}),
+      ...variant,
+      gallery:
+        Array.isArray(variant.gallery) && variant.gallery.length > 0
+          ? variant.gallery
+          : variant.image
+          ? [variant.image]
+          : prev?.gallery || [],
+    }));
+  };
+
   if (isProductNotFound) {
     return (
       <main style={{ width: "100%", minHeight: "100vh", backgroundColor: "#ffffff", overflowX: "hidden" }}>
@@ -878,7 +895,7 @@ export default function FaucetProductPage({
         style={{
           maxWidth: "1360px",
           margin: "0 auto",
-          padding: "115px 28px 80px",
+          padding: "138px 28px 80px",
           boxSizing: "border-box",
           width: "100%",
           overflowX: "hidden",
@@ -1027,17 +1044,19 @@ export default function FaucetProductPage({
                   boxShadow: "0 4px 20px rgba(0, 0, 0, 0.04)",
                 }}
               >
-                <Image
-                  src={activeGalleryImage}
-                  alt={product.name}
-                  fill
-                  unoptimized
-                  priority
-                  style={{
-                    objectFit: "contain",
-                    padding: "24px",
-                  }}
-                />
+                {activeGalleryImage ? (
+                  <Image
+                    src={activeGalleryImage}
+                    alt={product.name}
+                    fill
+                    unoptimized
+                    priority
+                    style={{
+                      objectFit: "contain",
+                      padding: "24px",
+                    }}
+                  />
+                ) : null}
 
                 {product.gallery.length > 1 && (
                   <>
@@ -1431,10 +1450,14 @@ export default function FaucetProductPage({
                         <Link
                           key={vId}
                           href={`/faucets/${category}/${encodeURIComponent(vId)}`}
+                          scroll={false}
+                          onClick={() => handleVariantSwitch(variant)}
                           style={{
                             textDecoration: "none",
                             border:
-                              vId === product.id ? "2px solid #111111" : "1px solid #d8d8d8",
+                              vId === product.id || String(vId) === String(product.code)
+                                ? "2px solid #111111"
+                                : "1px solid #d8d8d8",
                             backgroundColor: "#ffffff",
                             padding: "8px 6px 6px",
                             color: "#111111",
@@ -1523,6 +1546,8 @@ export default function FaucetProductPage({
                           <Link
                             key={vId || vSize}
                             href={`/faucets/${category}/${encodeURIComponent(vId)}`}
+                            scroll={false}
+                            onClick={() => handleVariantSwitch(variant)}
                             style={{
                               textDecoration: "none",
                               display: "inline-flex",
@@ -2600,9 +2625,19 @@ export default function FaucetProductPage({
           }
         }
 
+        @media (max-width: 1280px) {
+          .product-detail-outer-section {
+            padding: 122px 24px 72px !important;
+          }
+        }
+        @media (max-width: 768px) {
+          .product-detail-outer-section {
+            padding: 102px 16px 60px !important;
+          }
+        }
         @media (max-width: 640px) {
           .product-detail-outer-section {
-            padding: 96px 16px 60px !important;
+            padding: 100px 16px 60px !important;
           }
           .pdp-meta-grid {
             grid-template-columns: 1fr !important;
