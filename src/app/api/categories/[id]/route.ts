@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Category from "@/models/Category";
 import { requireAdminAuth } from "@/lib/security";
+import { getOrSetCache } from "@/lib/redis";
 import { invalidateCatalogueAndHeaderCache } from "@/lib/catalogueData";
 
 export async function GET(
@@ -9,26 +10,54 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await connectDB();
     const { id } = await params;
     const { searchParams } = new URL(request.url);
     const isAdminQuery =
       searchParams.get("admin") === "true" || searchParams.get("all") === "true";
     const adminSession = isAdminQuery ? await requireAdminAuth(request) : null;
 
+    if (!adminSession) {
+      const normalizedKey = decodeURIComponent(id).trim().toLowerCase();
+      const { data, cacheStatus } = await getOrSetCache(
+        `rn:catalogue:category-single:v2:${normalizedKey}`,
+        600,
+        async () => {
+          await connectDB();
+          const category: any = await Category.findOne({
+            $or: [{ id }, { slug: id }],
+          }).lean();
+          if (!category) return { __notFound: true, error: "Category not found" };
+          const catStatus = String(category.status || "").toLowerCase();
+          if (category.isVisibleWebsite === false || catStatus === "inactive") {
+            return { __notFound: true, error: "Category is not available" };
+          }
+          return category;
+        },
+        120
+      );
+
+      if (!data || (data as any).__notFound) {
+        return NextResponse.json(
+          { error: (data as any)?.error || "Category not found" },
+          { status: 404, headers: { "X-Cache": cacheStatus } }
+        );
+      }
+
+      return NextResponse.json(data, {
+        headers: {
+          "X-Cache": cacheStatus,
+          "Cache-Control": "public, s-maxage=120, stale-while-revalidate=600",
+        },
+      });
+    }
+
+    await connectDB();
     // Search by ID or slug
     const category: any = await Category.findOne({
       $or: [{ id }, { slug: id }],
     }).lean();
 
     if (!category) return NextResponse.json({ error: "Category not found" }, { status: 404 });
-
-    if (!adminSession) {
-      const catStatus = String(category.status || "").toLowerCase();
-      if (category.isVisibleWebsite === false || catStatus === "inactive") {
-        return NextResponse.json({ error: "Category is not available" }, { status: 404 });
-      }
-    }
 
     return NextResponse.json(category);
   } catch (error: any) {

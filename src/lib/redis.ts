@@ -26,7 +26,7 @@ if (!global.__rnInFlightCache) {
   global.__rnInFlightCache = inFlightCache;
 }
 
-const MAX_L1_KEYS = 250;
+const MAX_L1_KEYS = 2500;
 
 function resolveRedisUrl(): string | null {
   const url =

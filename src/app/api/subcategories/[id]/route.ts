@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Subcategory from "@/models/Subcategory";
 import { requireAdminAuth } from "@/lib/security";
+import { getOrSetCache } from "@/lib/redis";
 import { invalidateCatalogueAndHeaderCache } from "@/lib/catalogueData";
 
 export async function GET(
@@ -9,25 +10,53 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await connectDB();
     const { id } = await params;
     const { searchParams } = new URL(request.url);
     const isAdminQuery =
       searchParams.get("admin") === "true" || searchParams.get("all") === "true";
     const adminSession = isAdminQuery ? await requireAdminAuth(request) : null;
 
+    if (!adminSession) {
+      const normalizedKey = decodeURIComponent(id).trim().toLowerCase();
+      const { data, cacheStatus } = await getOrSetCache(
+        `rn:catalogue:subcategory-single:v2:${normalizedKey}`,
+        600,
+        async () => {
+          await connectDB();
+          const subcategory: any = await Subcategory.findOne({
+            $or: [{ id }, { slug: id }],
+          }).lean();
+          if (!subcategory) return { __notFound: true, error: "Subcategory not found" };
+          const subStatus = String(subcategory.status || "").toLowerCase();
+          if (subcategory.isVisibleWebsite === false || subStatus === "inactive") {
+            return { __notFound: true, error: "Subcategory is not available" };
+          }
+          return subcategory;
+        },
+        120
+      );
+
+      if (!data || (data as any).__notFound) {
+        return NextResponse.json(
+          { error: (data as any)?.error || "Subcategory not found" },
+          { status: 404, headers: { "X-Cache": cacheStatus } }
+        );
+      }
+
+      return NextResponse.json(data, {
+        headers: {
+          "X-Cache": cacheStatus,
+          "Cache-Control": "public, s-maxage=120, stale-while-revalidate=600",
+        },
+      });
+    }
+
+    await connectDB();
     const subcategory: any = await Subcategory.findOne({
       $or: [{ id }, { slug: id }],
     }).lean();
 
     if (!subcategory) return NextResponse.json({ error: "Subcategory not found" }, { status: 404 });
-
-    if (!adminSession) {
-      const subStatus = String(subcategory.status || "").toLowerCase();
-      if (subcategory.isVisibleWebsite === false || subStatus === "inactive") {
-        return NextResponse.json({ error: "Subcategory is not available" }, { status: 404 });
-      }
-    }
 
     return NextResponse.json(subcategory);
   } catch (error: any) {

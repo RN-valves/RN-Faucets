@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import Product from "@/models/Product";
 import { requireAdminAuth, escapeRegex } from "@/lib/security";
+import { getOrSetCache } from "@/lib/redis";
 import { invalidateCatalogueAndHeaderCache } from "@/lib/catalogueData";
 
 function buildProductFilter(rawId: string) {
@@ -48,70 +49,100 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await connectDB();
     const { id } = await params;
     const { searchParams } = new URL(request.url);
     const isAdminQuery =
       searchParams.get("admin") === "true" || searchParams.get("all") === "true";
     const adminSession = isAdminQuery ? await requireAdminAuth(request) : null;
 
+    // Fast path for public traffic: serve from L1 In-Memory / L2 Redis with stampede protection
+    if (!adminSession) {
+      const normalizedKey = decodeURIComponent(id).trim().toLowerCase();
+      const cacheKey = `rn:catalogue:product-detail:v2:${normalizedKey}`;
+      const { data, cacheStatus } = await getOrSetCache(
+        cacheKey,
+        300,
+        async () => {
+          await connectDB();
+          const filter = buildProductFilter(id);
+          const product: any = await Product.findOne(filter).lean();
+          if (!product) return { __notFound: true, error: "Product not found" };
+
+          const prodStatus = String(product.status || "").toLowerCase();
+          if (
+            product.isVisibleWebsite === false ||
+            prodStatus === "inactive" ||
+            prodStatus === "discontinued"
+          ) {
+            return { __notFound: true, error: "Product is not available" };
+          }
+
+          const Subcategory = (await import("@/models/Subcategory")).default;
+          const Category = (await import("@/models/Category")).default;
+
+          if (product.subcategoryId || product.subcategoryName) {
+            const subConds: any[] = [];
+            if (product.subcategoryId) subConds.push({ id: String(product.subcategoryId) });
+            if (product.subcategoryName) {
+              subConds.push({
+                name: new RegExp(`^${escapeRegex(String(product.subcategoryName).trim())}$`, "i"),
+              });
+            }
+            const subDoc: any = await Subcategory.findOne({ $or: subConds })
+              .select("status isVisibleWebsite")
+              .lean();
+            if (
+              subDoc &&
+              (subDoc.isVisibleWebsite === false ||
+                String(subDoc.status || "").toLowerCase() === "inactive")
+            ) {
+              return { __notFound: true, error: "Product subcategory is not available" };
+            }
+          }
+
+          if (product.category) {
+            const catDoc: any = await Category.findOne({
+              $or: [
+                { name: new RegExp(`^${escapeRegex(String(product.category).trim())}$`, "i") },
+                { slug: String(product.category).trim().toLowerCase() },
+              ],
+            })
+              .select("status isVisibleWebsite")
+              .lean();
+            if (
+              catDoc &&
+              (catDoc.isVisibleWebsite === false ||
+                String(catDoc.status || "").toLowerCase() === "inactive")
+            ) {
+              return { __notFound: true, error: "Product category is not available" };
+            }
+          }
+
+          return product;
+        },
+        120
+      );
+
+      if (!data || (data as any).__notFound) {
+        return NextResponse.json(
+          { error: (data as any)?.error || "Product not found" },
+          { status: 404, headers: { "X-Cache": cacheStatus } }
+        );
+      }
+
+      return NextResponse.json(data, {
+        headers: {
+          "X-Cache": cacheStatus,
+          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+        },
+      });
+    }
+
+    await connectDB();
     const filter = buildProductFilter(id);
     const product: any = await Product.findOne(filter).lean();
 
     if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
-
-    // Block public access to invisible or deactivated products (or products in deactivated categories/subcategories)
-    if (!adminSession) {
-      const prodStatus = String(product.status || "").toLowerCase();
-      if (
-        product.isVisibleWebsite === false ||
-        prodStatus === "inactive" ||
-        prodStatus === "discontinued"
-      ) {
-        return NextResponse.json({ error: "Product is not available" }, { status: 404 });
-      }
-
-      const Subcategory = (await import("@/models/Subcategory")).default;
-      const Category = (await import("@/models/Category")).default;
-
-      if (product.subcategoryId || product.subcategoryName) {
-        const subConds: any[] = [];
-        if (product.subcategoryId) subConds.push({ id: String(product.subcategoryId) });
-        if (product.subcategoryName) {
-          subConds.push({
-            name: new RegExp(`^${escapeRegex(String(product.subcategoryName).trim())}$`, "i"),
-          });
-        }
-        const subDoc: any = await Subcategory.findOne({ $or: subConds })
-          .select("status isVisibleWebsite")
-          .lean();
-        if (
-          subDoc &&
-          (subDoc.isVisibleWebsite === false ||
-            String(subDoc.status || "").toLowerCase() === "inactive")
-        ) {
-          return NextResponse.json({ error: "Product subcategory is not available" }, { status: 404 });
-        }
-      }
-
-      if (product.category) {
-        const catDoc: any = await Category.findOne({
-          $or: [
-            { name: new RegExp(`^${escapeRegex(String(product.category).trim())}$`, "i") },
-            { slug: String(product.category).trim().toLowerCase() },
-          ],
-        })
-          .select("status isVisibleWebsite")
-          .lean();
-        if (
-          catDoc &&
-          (catDoc.isVisibleWebsite === false ||
-            String(catDoc.status || "").toLowerCase() === "inactive")
-        ) {
-          return NextResponse.json({ error: "Product category is not available" }, { status: 404 });
-        }
-      }
-    }
 
     return NextResponse.json(product);
   } catch (error: any) {

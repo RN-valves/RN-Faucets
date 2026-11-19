@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Discount from "@/models/Discount";
 import { requireAdminAuth, escapeRegex } from "@/lib/security";
+import { getOrSetCache, invalidateCache } from "@/lib/redis";
 
 const DEFAULT_MOCK_DISCOUNTS = [
   {
@@ -124,6 +125,39 @@ export async function GET(request: Request) {
     const status = searchParams.get("status") || "All";
     const activeOnly = searchParams.get("activeOnly") === "true";
 
+    if (activeOnly && !q) {
+      const { data, cacheStatus } = await getOrSetCache(
+        "rn:discounts:active:v1",
+        600,
+        async () => {
+          await connectDB();
+          const now = new Date();
+          const dateStr = now.toISOString().split("T")[0];
+          const discounts = await Discount.find({
+            status: "Active",
+            $or: [
+              { expiredAt: { $exists: false } },
+              { expiredAt: null },
+              { expiredAt: "" },
+              { expiredAt: { $gte: now } },
+              { expiredAt: { $gte: dateStr } },
+            ],
+          })
+            .sort({ startValue: 1 })
+            .lean();
+          return { discounts, total: discounts.length };
+        },
+        300
+      );
+      return NextResponse.json(data, {
+        headers: {
+          "X-Cache": cacheStatus,
+          "Cache-Control": "public, s-maxage=120, stale-while-revalidate=600",
+        },
+      });
+    }
+
+    await connectDB();
     const count = await Discount.countDocuments();
     if (count === 0) {
       await Discount.insertMany(DEFAULT_MOCK_DISCOUNTS);
@@ -194,6 +228,7 @@ export async function POST(request: Request) {
       status: body.status || "Active",
     });
 
+    await invalidateCache("rn:discounts:");
     return NextResponse.json(newDiscount, { status: 201 });
   } catch (error: any) {
     console.error("POST /api/discounts error:", error);

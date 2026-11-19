@@ -2,13 +2,33 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Blog from "@/models/Blog";
 import { escapeRegex, requireAdminAuth, sanitizeObject } from "@/lib/security";
+import { getOrSetCache, invalidateCache } from "@/lib/redis";
 
 export async function GET(request: Request) {
   try {
-    await connectDB();
     const { searchParams } = new URL(request.url);
     const q = searchParams.get("q") || "";
 
+    if (!q) {
+      const { data, cacheStatus } = await getOrSetCache(
+        "rn:blogs:list:v1",
+        600,
+        async () => {
+          await connectDB();
+          const blogs = await Blog.find({}).sort({ createdAt: -1 }).lean();
+          return { blogs, total: blogs.length };
+        },
+        300
+      );
+      return NextResponse.json(data, {
+        headers: {
+          "X-Cache": cacheStatus,
+          "Cache-Control": "public, s-maxage=120, stale-while-revalidate=600",
+        },
+      });
+    }
+
+    await connectDB();
     const query: any = {};
     if (q) {
       const safeQ = escapeRegex(q);
@@ -53,6 +73,7 @@ export async function POST(request: Request) {
       publishedAt,
     });
 
+    await invalidateCache(["rn:blogs:", "rn:home:"]);
     return NextResponse.json(newBlog, { status: 201 });
   } catch (error: any) {
     console.error("POST /api/blogs error:", error);

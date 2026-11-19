@@ -5,8 +5,9 @@ import Category from "@/models/Category";
 import Product from "@/models/Product";
 import Blog from "@/models/Blog";
 import HomeClient from "@/components/home/HomeClient";
+import { getOrSetCache } from "@/lib/redis";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300; // ISR + Redis/L1 Memory Cache (5 minutes)
 
 export const metadata: Metadata = {
   title: "RN Valves & Faucets | Trusted Bath Fittings Since 2000",
@@ -60,40 +61,63 @@ export default async function Home() {
   let initialBlogs: any[] = [];
 
   try {
-    await connectDB();
+    const { data } = await getOrSetCache(
+      "rn:home:ssr-bundle:v1",
+      300,
+      async () => {
+        await connectDB();
 
-    const [settingRes, catRes, prodRes, blogRes] = await Promise.allSettled([
-      HomeSetting.findOne().lean(),
-      Category.find({
-        status: { $ne: "Inactive" },
-        isVisibleWebsite: { $ne: false },
-        isVisible: { $ne: false },
-      }).lean(),
-      Product.find({
-        status: { $ne: "Inactive" },
-        isVisibleWebsite: { $ne: false },
-        isVisible: { $ne: false },
-      })
-        .limit(60)
-        .lean(),
-      Blog.find({ status: "Published" })
-        .select("-content")
-        .sort({ publishedAt: -1, createdAt: -1 })
-        .limit(6)
-        .lean(),
-    ]);
+        const [settingRes, catRes, prodRes, blogRes] = await Promise.allSettled([
+          HomeSetting.findOne().lean(),
+          Category.find({
+            status: { $ne: "Inactive" },
+            isVisibleWebsite: { $ne: false },
+            isVisible: { $ne: false },
+          }).lean(),
+          Product.find({
+            status: { $ne: "Inactive" },
+            isVisibleWebsite: { $ne: false },
+            isVisible: { $ne: false },
+          })
+            .select(
+              "id code skuCode name image price inMrp inSelling size article colorName category subcategoryName subcategoryId isFeatured newArrival status isVisibleWebsite"
+            )
+            .limit(60)
+            .lean(),
+          Blog.find({ status: "Published" })
+            .select("-content")
+            .sort({ publishedAt: -1, createdAt: -1 })
+            .limit(6)
+            .lean(),
+        ]);
 
-    if (settingRes.status === "fulfilled" && settingRes.value) {
-      initialHomeSetting = JSON.parse(JSON.stringify(settingRes.value));
-    }
-    if (catRes.status === "fulfilled" && catRes.value?.length) {
-      initialCategories = JSON.parse(JSON.stringify(catRes.value));
-    }
-    if (prodRes.status === "fulfilled" && prodRes.value?.length) {
-      initialProducts = JSON.parse(JSON.stringify(prodRes.value));
-    }
-    if (blogRes.status === "fulfilled" && blogRes.value?.length) {
-      initialBlogs = JSON.parse(JSON.stringify(blogRes.value));
+        return {
+          homeSetting:
+            settingRes.status === "fulfilled" && settingRes.value
+              ? JSON.parse(JSON.stringify(settingRes.value))
+              : null,
+          categories:
+            catRes.status === "fulfilled" && catRes.value?.length
+              ? JSON.parse(JSON.stringify(catRes.value))
+              : [],
+          products:
+            prodRes.status === "fulfilled" && prodRes.value?.length
+              ? JSON.parse(JSON.stringify(prodRes.value))
+              : [],
+          blogs:
+            blogRes.status === "fulfilled" && blogRes.value?.length
+              ? JSON.parse(JSON.stringify(blogRes.value))
+              : [],
+        };
+      },
+      120
+    );
+
+    if (data) {
+      initialHomeSetting = data.homeSetting;
+      initialCategories = data.categories || [];
+      initialProducts = data.products || [];
+      initialBlogs = data.blogs || [];
     }
   } catch (err) {
     console.error("Database connection error in Home page:", err);
