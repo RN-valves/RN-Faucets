@@ -293,6 +293,10 @@ export default function BlogsSection({ data, initialBlogs = [] }: BlogsSectionPr
                 <img
                   src={blog.image}
                   alt={blog.title}
+                  width={600}
+                  height={357}
+                  loading="lazy"
+                  decoding="async"
                   className="blogs-image"
                   onError={(e) => {
                     const target = e.currentTarget;

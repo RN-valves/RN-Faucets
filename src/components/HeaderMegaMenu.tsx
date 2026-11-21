@@ -440,6 +440,10 @@ export default function HeaderMegaMenu({
               key={previewBanner}
               src={previewBanner}
               alt={previewTitle}
+              width={380}
+              height={250}
+              loading="lazy"
+              decoding="async"
               style={{
                 width: "100%",
                 height: "100%",

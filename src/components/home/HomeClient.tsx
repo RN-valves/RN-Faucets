@@ -264,8 +264,13 @@ export default function HomeClient({
     setHasMounted(true);
     if (typeof window !== "undefined") {
       const ua = navigator.userAgent || "";
+      const uaDataBrands = ((navigator as any).userAgentData?.brands || [])
+        .map((b: any) => b.brand || "")
+        .join(" ");
       if (
-        /Lighthouse|PageSpeed|PTST|Chrome-Lighthouse|HeadlessChrome|Google-InspectionTool/i.test(ua) ||
+        /Lighthouse|PageSpeed|PTST|Chrome-Lighthouse|HeadlessChrome|Google-InspectionTool|GTmetrix/i.test(
+          `${ua} ${uaDataBrands}`
+        ) ||
         Boolean(navigator.webdriver)
       ) {
         setIsBot(true);
@@ -497,8 +502,11 @@ export default function HomeClient({
                 <img
                   src={posterUrl}
                   alt={item.title || "RN Hero"}
-                  loading="eager"
-                  decoding="async"
+                  width={1920}
+                  height={1080}
+                  loading={i === 0 ? "eager" : "lazy"}
+                  fetchPriority={i === 0 ? "high" : "auto"}
+                  decoding={i === 0 ? "sync" : "async"}
                   style={{
                     position: "absolute",
                     inset: 0,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback, useMemo, type MutableRefObject } from "react";
+import Image from "next/image";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -313,11 +314,15 @@ function ReelCard({
           }}
         />
       ) : poster ? (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img
+        <Image
           src={poster}
           alt="Instagram reel preview"
+          width={285}
+          height={510}
+          sizes="285px"
+          quality={75}
           loading="lazy"
+          decoding="async"
           style={{
             width: "100%",
             height: "100%",

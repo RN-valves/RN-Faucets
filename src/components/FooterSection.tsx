@@ -96,29 +96,47 @@ export default function FooterSection({ data }: FooterSectionProps) {
         width: "100%",
         overflow: "hidden",
         backgroundColor: "#022B52",
-        position: "relative",   /* needed so content sits on top of img */
+        backgroundImage:
+          "radial-gradient(ellipse at 82% 18%, rgba(0, 174, 239, 0.22) 0%, transparent 55%), radial-gradient(ellipse at 14% 88%, rgba(0, 119, 182, 0.28) 0%, transparent 60%), linear-gradient(135deg, #022B52 0%, #03396C 52%, #011F3B 100%)",
+        position: "relative",
         color: "#ffffff",
         fontFamily: "'Manrope','Poppins',sans-serif",
       }}
     >
-      {/* ── ORIGINAL background image — untouched ── */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="https://jalbath.com/wp-content/uploads/2026/01/footer-bg-svg.svg"
-        alt=""
+      {/* ── Lightweight inline architectural wave backdrop (replaces 601 KB external jalbath.com SVG) ── */}
+      <svg
         aria-hidden="true"
+        viewBox="0 0 1440 420"
+        preserveAspectRatio="none"
         style={{
           position: "absolute",
-          top: 0,
-          left: 0,
+          inset: 0,
           width: "100%",
           height: "100%",
-          objectFit: "cover",
-          display: "block",
           pointerEvents: "none",
           userSelect: "none",
+          opacity: 0.14,
         }}
-      />
+      >
+        <path
+          d="M0,96 C320,210 620,-20 960,110 C1180,195 1320,140 1440,80 L1440,420 L0,420 Z"
+          fill="url(#rnFooterWave1)"
+        />
+        <path
+          d="M0,240 C380,130 760,340 1140,210 C1280,162 1370,185 1440,220 L1440,420 L0,420 Z"
+          fill="url(#rnFooterWave2)"
+        />
+        <defs>
+          <linearGradient id="rnFooterWave1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#00AEEF" stopOpacity="0.65" />
+            <stop offset="100%" stopColor="#022B52" stopOpacity="0.1" />
+          </linearGradient>
+          <linearGradient id="rnFooterWave2" x1="100%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#38BDF8" stopOpacity="0.45" />
+            <stop offset="100%" stopColor="#01162B" stopOpacity="0.05" />
+          </linearGradient>
+        </defs>
+      </svg>
 
       {/* ── All content sits on top via z-index ── */}
       <div className="rn-footer-container" style={{ position: "relative", zIndex: 1, maxWidth: 1320, margin: "0 auto", padding: "40px clamp(20px, 4vw, 48px) 0" }}>
@@ -130,6 +148,10 @@ export default function FooterSection({ data }: FooterSectionProps) {
             <img
               src={footerLogo}
               alt="RN Valves & Faucets"
+              width={80}
+              height={85}
+              loading="lazy"
+              decoding="async"
               onError={(e) => {
                 const target = e.currentTarget;
                 if (!target.src.endsWith("/rn-header-logo.svg")) {
@@ -146,9 +168,9 @@ export default function FooterSection({ data }: FooterSectionProps) {
 
           {/* Col 1 — Get In Touch */}
           <div>
-            <h2 style={{ fontSize: 22, fontWeight: 600, color: "#ffffff", margin: "0 0 12px 0", letterSpacing: "-0.01em" }}>
+            <h4 style={{ fontSize: 22, fontWeight: 600, color: "#ffffff", margin: "0 0 12px 0", letterSpacing: "-0.01em" }}>
               Get In Touch
-            </h2>
+            </h4>
             <div style={{ height: 1, background: "rgba(255,255,255,0.25)", marginBottom: 18 }} />
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", lineHeight: 1.75, margin: "0 0 8px 0", whiteSpace: "pre-line" }}>
               {addressText}
@@ -187,6 +209,9 @@ export default function FooterSection({ data }: FooterSectionProps) {
 
           {/* Col 2 */}
           <nav aria-label="Footer links 1" style={{ paddingTop: 4 }}>
+            <h5 className="sr-only" style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", border: 0 }}>
+              Company Navigation
+            </h5>
             {(data?.col1Links && data.col1Links.length > 0 ? data.col1Links : NAV_COL_1)
               .filter((l) => !l.label?.toLowerCase().includes("catalogue") && !l.href?.toLowerCase().includes("catalogue"))
               .map((l) => (
@@ -196,6 +221,9 @@ export default function FooterSection({ data }: FooterSectionProps) {
 
           {/* Col 3 */}
           <nav aria-label="Footer links 2" style={{ paddingTop: 4 }}>
+            <h5 className="sr-only" style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", border: 0 }}>
+              Product Collections
+            </h5>
             {(data?.col2Links && data.col2Links.length > 0 ? data.col2Links : NAV_COL_2)
               .filter((l) => !l.label?.toLowerCase().includes("warranty"))
               .map((l) => (
@@ -205,6 +233,9 @@ export default function FooterSection({ data }: FooterSectionProps) {
 
           {/* Col 4 */}
           <nav aria-label="Footer links 3" style={{ paddingTop: 4 }}>
+            <h6 className="sr-only" style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", border: 0 }}>
+              Policies &amp; Support
+            </h6>
             {NAV_COL_3.map((l) => (
               <Link key={l.label} href={l.href} className="rn-footer-nav-link">
                 {l.label}

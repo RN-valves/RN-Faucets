@@ -388,13 +388,17 @@ export default function RootLayout({
         <link rel="shortcut icon" href="/favicon.ico?v=3" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" />
 
-        {/* DNS Preconnects for high-speed tracking & asset delivery */}
-        <link rel="preconnect" href="https://www.googletagmanager.com" />
+        {/* DNS Prefetch & Preconnects for high-speed asset delivery */}
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
-        <link rel="preconnect" href="https://connect.facebook.net" />
         <link rel="dns-prefetch" href="https://connect.facebook.net" />
         <link rel="preconnect" href="https://rnvalves.media" />
         <link rel="dns-prefetch" href="https://rnvalves.media" />
+        <link
+          rel="preload"
+          as="image"
+          href="/api/media/website/home/hero/0-poster.webp"
+          fetchPriority="high"
+        />
 
         {/* Structured Data (Schema.org JSON-LD) */}
         <script
@@ -410,18 +414,6 @@ export default function RootLayout({
             height="0"
             width="0"
             style={{ display: "none", visibility: "hidden" }}
-          />
-        </noscript>
-
-        {/* Meta Pixel (noscript) */}
-        <noscript>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            height="1"
-            width="1"
-            style={{ display: "none" }}
-            src="https://www.facebook.com/tr?id=7247974241981487&ev=PageView&noscript=1"
-            alt=""
           />
         </noscript>
 

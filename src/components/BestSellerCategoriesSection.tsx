@@ -211,6 +211,17 @@ interface BestSellerCategoriesSectionProps {
   initialCategories?: any[];
 }
 
+function getOptimizedProductImageUrl(src?: string, width = 380, quality = 78): string {
+  if (!src) return `/api/media/website/catalogue/products/default/image.webp?w=${width}&q=${quality}`;
+  const normalized = src.replace(/^https?:\/\/(www\.)?rnvalves\.com/i, "");
+  if (normalized.startsWith("/api/media/")) {
+    const sep = normalized.includes("?") ? "&" : "?";
+    if (normalized.includes("w=")) return normalized;
+    return `${normalized}${sep}w=${width}&q=${quality}`;
+  }
+  return normalized;
+}
+
 function processCategoryProducts(
   items: any[],
   catData: any[],
@@ -432,7 +443,6 @@ export default function BestSellerCategoriesSection({
   const productsSequence = productsList.length > 0 ? [
     ...productsList,
     ...productsList.map((p, i) => ({ ...p, id: (p.id || i) + productsList.length })),
-    ...productsList.map((p, i) => ({ ...p, id: (p.id || i) + productsList.length * 2 })),
   ] : [];
 
   const sectionTitle =
@@ -498,9 +508,8 @@ export default function BestSellerCategoriesSection({
         ease: "power3.out",
         overwrite: "auto",
         onComplete: () => {
-          if (targetIndex >= productsList.length * 2) {
-            const resetIdx =
-              (targetIndex % productsList.length) + productsList.length;
+          if (targetIndex >= productsList.length) {
+            const resetIdx = targetIndex % productsList.length;
             setVirtualIndex(resetIdx);
             gsap.set(sliderTrackRef.current, { x: -(resetIdx * STEP) });
           }
@@ -1018,20 +1027,30 @@ export default function BestSellerCategoriesSection({
                     justifyContent: "center",
                   }}
                 >
-                  <Image
-                    src={product.image}
-                    alt={product.name}
-                    fill
-                    sizes={`${cardWidth}px`}
-                    loading="lazy"
-                    decoding="async"
-                    unoptimized
-                    style={{
-                      objectFit: "contain",
-                      objectPosition: "center",
-                      pointerEvents: "none",
-                    }}
-                  />
+                  {(() => {
+                    const optimizedSrc = getOptimizedProductImageUrl(product.image, 360, 78);
+                    const isLocalApiMedia = optimizedSrc.startsWith("/api/media/");
+                    return (
+                      <Image
+                        src={optimizedSrc}
+                        alt={product.name}
+                        width={360}
+                        height={360}
+                        sizes="(max-width: 768px) 240px, 340px"
+                        quality={75}
+                        loading="lazy"
+                        decoding="async"
+                        unoptimized={isLocalApiMedia}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "contain",
+                          objectPosition: "center",
+                          pointerEvents: "none",
+                        }}
+                      />
+                    );
+                  })()}
                 </div>
 
                 {/* Product info panel — name, SKU, price, Add to Cart */}

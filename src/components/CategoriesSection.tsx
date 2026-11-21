@@ -20,6 +20,18 @@ export interface CategoryItem {
 
 const DEFAULT_CATEGORY_PLACEHOLDER = "/api/media/website/catalogue/products/default/image.webp";
 
+function getOptimizedCategoryImageUrl(src?: string, width = 480, quality = 78): string {
+  if (!src) return `${DEFAULT_CATEGORY_PLACEHOLDER}?w=${width}&q=${quality}`;
+  const normalized = src
+    .replace(/^https?:\/\/(www\.)?rnvalves\.com/i, "");
+  if (normalized.startsWith("/api/media/")) {
+    const sep = normalized.includes("?") ? "&" : "?";
+    if (normalized.includes("w=")) return normalized;
+    return `${normalized}${sep}w=${width}&q=${quality}`;
+  }
+  return normalized;
+}
+
 interface CategoriesSectionProps {
   data?: {
     visible?: boolean;
@@ -60,6 +72,7 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
   const [isLoaded, setIsLoaded] = useState(() => Boolean(initialCategories && initialCategories.length > 0));
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
+  const [hoveredCardId, setHoveredCardId] = useState<string | number | null>(null);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
@@ -117,13 +130,26 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
     const el = scrollContainerRef.current;
     if (!el) return;
 
-    updateScrollState();
-    el.addEventListener("scroll", updateScrollState, { passive: true });
-    window.addEventListener("resize", updateScrollState);
+    let rafId: number | null = null;
+    const scheduleUpdate = () => {
+      if (rafId === null) {
+        rafId = window.requestAnimationFrame(() => {
+          rafId = null;
+          updateScrollState();
+        });
+      }
+    };
+
+    scheduleUpdate();
+    el.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
 
     return () => {
-      el.removeEventListener("scroll", updateScrollState);
-      window.removeEventListener("resize", updateScrollState);
+      el.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
     };
   }, [updateScrollState]);
 
@@ -578,14 +604,24 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
           })
         ) : (
           categoriesList.map((cat, idx) => {
+            const cardKey = cat.id || idx;
             const hasHoverImg = Boolean(cat.hoverImage && cat.hoverImage !== cat.image);
+            const showHoverImg = hasHoverImg && hoveredCardId === cardKey;
             const offsetClass = getCardOffsetClass(idx);
+            const primarySrc = getOptimizedCategoryImageUrl(cat.image, 440, 78);
+            const hoverSrc = hasHoverImg ? getOptimizedCategoryImageUrl(cat.hoverImage, 440, 78) : "";
 
             return (
               <Link
-                key={cat.id || idx}
+                key={cardKey}
                 href={cat.href || `/${cat.slug}`}
-                className={`luxury-card ${offsetClass}${hasHoverImg ? " has-hover-img" : ""}`}
+                className={`luxury-card ${offsetClass}${showHoverImg ? " has-hover-img" : ""}`}
+                onMouseEnter={() => {
+                  if (hasHoverImg) setHoveredCardId(cardKey);
+                }}
+                onFocus={() => {
+                  if (hasHoverImg) setHoveredCardId(cardKey);
+                }}
                 onClick={(e) => {
                   if (hasMovedRef.current) {
                     e.preventDefault();
@@ -598,10 +634,11 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
                 <div className="luxury-img-primary">
                   <div style={{ position: "relative", width: "100%", height: "100%" }}>
                     <Image
-                      src={cat.image}
+                      src={primarySrc}
                       alt={cat.name}
-                      fill
-                      sizes="400px"
+                      width={440}
+                      height={660}
+                      sizes="(max-width: 767px) 260px, (max-width: 1023px) 300px, 360px"
                       loading="lazy"
                       decoding="async"
                       unoptimized
@@ -613,6 +650,8 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
                         }
                       }}
                       style={{
+                        width: "100%",
+                        height: "100%",
                         objectFit: "cover",
                         objectPosition: "center",
                         pointerEvents: "none",
@@ -621,26 +660,29 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
                   </div>
                 </div>
 
-                {/* 2nd Hover Image (Smoothly Fades In on Cursor Hover) */}
-                {hasHoverImg && (
+                {/* 2nd Hover Image (Loaded on demand upon hover to save 2.5+ MB on initial page load) */}
+                {showHoverImg && (
                   <div className="luxury-img-hover">
                     <div style={{ position: "relative", width: "100%", height: "100%" }}>
                       <Image
-                        src={cat.hoverImage!}
+                        src={hoverSrc}
                         alt={`${cat.name} hover preview`}
-                        fill
-                        sizes="400px"
-                        loading="lazy"
+                        width={440}
+                        height={660}
+                        sizes="(max-width: 767px) 260px, (max-width: 1023px) 300px, 360px"
+                        loading="eager"
                         decoding="async"
                         unoptimized
                         onError={(e) => {
                           const target = e.currentTarget;
                           if (!target.dataset.fallback) {
                             target.dataset.fallback = "1";
-                            target.src = cat.image || DEFAULT_CATEGORY_PLACEHOLDER;
+                            target.src = primarySrc || DEFAULT_CATEGORY_PLACEHOLDER;
                           }
                         }}
                         style={{
+                          width: "100%",
+                          height: "100%",
                           objectFit: "cover",
                           objectPosition: "center",
                           pointerEvents: "none",

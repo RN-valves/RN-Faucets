@@ -364,7 +364,14 @@ export default function SupportModal({ open, onClose }: SupportModalProps) {
         {/* Full-bleed bg image across entire modal */}
         <div className="support-modal-bg" aria-hidden="true">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={BANNER_IMG} alt="" />
+          <img
+            src={BANNER_IMG}
+            alt="RN Valves & Faucets Support"
+            width={820}
+            height={540}
+            loading="lazy"
+            decoding="async"
+          />
         </div>
 
         {/* Left — clear bathroom image (no overlay) */}

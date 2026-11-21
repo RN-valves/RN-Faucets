@@ -628,16 +628,26 @@ export default function Header({ data }: HeaderProps) {
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, [userDropdownOpen]);
 
-  /* ── Dynamic scroll theme detection for light vs dark sections ── */
+  /* ── Dynamic scroll theme detection for light vs dark sections (RAF-batched to prevent forced reflow) ── */
   useEffect(() => {
-    const handleScroll = () => {
+    let rafId: number | null = null;
+
+    const evaluateScroll = () => {
+      rafId = null;
+      const scrollY = window.scrollY;
       // On homepage, header becomes solid/frosted as soon as user scrolls past hero (scrollY >= 50px)
       // On inner pages (product list, product details, cart, etc.), header has frosted background right from the top
-      const isPastTop = window.scrollY >= (isHome ? 50 : 8);
+      const isPastTop = scrollY >= (isHome ? 50 : 8);
       setIsScrolled(isPastTop);
-      setIsLogoCompact(window.scrollY > 35);
+      setIsLogoCompact(scrollY > 35);
 
-      const sections = Array.from(document.querySelectorAll("section, [data-header-theme]"));
+      // Fast path on homepage top: hero is always dark, skip DOM getBoundingClientRect() completely during initial load
+      if (isHome && scrollY < 180) {
+        setIsDarkBg(true);
+        return;
+      }
+
+      const sections = Array.from(document.querySelectorAll("[data-header-theme], section"));
       const headerPoint = 45; // top mid-header height px
 
       let darkBg = isHome;
@@ -651,7 +661,6 @@ export default function Header({ data }: HeaderProps) {
           } else if (themeAttr === "dark") {
             darkBg = true;
           } else {
-            // Computed background color check fallback
             const bg = window.getComputedStyle(sec).backgroundColor;
             if (
               bg &&
@@ -676,10 +685,21 @@ export default function Header({ data }: HeaderProps) {
       setIsDarkBg(darkBg);
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
+    const handleScroll = () => {
+      if (rafId === null) {
+        rafId = window.requestAnimationFrame(evaluateScroll);
+      }
+    };
 
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    rafId = window.requestAnimationFrame(evaluateScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
+    };
   }, [isHome, pathname]);
 
   // When hovering header OR when mega-menu is active OR when over light sections OR when scrolled down:
@@ -734,6 +754,8 @@ export default function Header({ data }: HeaderProps) {
           <img 
             src={logoSrc} 
             alt="RN Valves & Faucets" 
+            width={156}
+            height={165}
             onError={(e) => {
               const target = e.currentTarget;
               if (!target.src.endsWith(DEFAULT_LOGO)) {
@@ -2155,10 +2177,12 @@ export default function Header({ data }: HeaderProps) {
             
             {/* Menu Items */}
             <ul style={{ listStyle: "none", padding: 0, margin: "44px 0 0" }}>
-              {USER_MENU_LINKS.map((link) => (
+              {USER_MENU_LINKS.map((link) => {
+                const targetHref = USER_MENU_ROUTES[link] || "/catalogues";
+                return (
                 <li key={link} style={{ marginBottom: "26px", border: "none", boxShadow: "none" }}>
                   <a
-                    href="#"
+                    href={targetHref}
                     onClick={(e) => {
                       e.preventDefault();
                       const route = USER_MENU_ROUTES[link];
@@ -2225,7 +2249,8 @@ export default function Header({ data }: HeaderProps) {
                     {link}
                   </a>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           </div>
 
@@ -2236,13 +2261,14 @@ export default function Header({ data }: HeaderProps) {
             />
           ) : (
             <div className="user-menu-media-panel">
-              {menuVideoSrc && menuVideoSrc.match(/\.(mp4|webm|mov|m4v)(\?.*)?$/i) ? (
+              {userMenuOpen && menuVideoSrc && menuVideoSrc.match(/\.(mp4|webm|mov|m4v)(\?.*)?$/i) ? (
                 <video
                   src={menuVideoSrc}
                   autoPlay
                   loop
                   muted
                   playsInline
+                  preload="metadata"
                   style={{
                     width: "100%",
                     height: "100%",
@@ -2250,11 +2276,14 @@ export default function Header({ data }: HeaderProps) {
                     objectPosition: "right top",
                   }}
                 />
-              ) : (
+              ) : userMenuOpen ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   src={menuVideoSrc || DEFAULT_MENU_VIDEO}
                   alt="Flowing water from a premium faucet"
+                  width={960}
+                  height={1080}
+                  loading="lazy"
                   style={{
                     width: "100%",
                     height: "100%",
@@ -2262,7 +2291,7 @@ export default function Header({ data }: HeaderProps) {
                     objectPosition: "right top",
                   }}
                 />
-              )}
+              ) : null}
             </div>
           )}
         </div>
