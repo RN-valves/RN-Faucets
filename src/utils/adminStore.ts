@@ -775,16 +775,73 @@ const SERVER_UPLOAD_MAX_BYTES = 500 * 1024 * 1024; // Up to 500MB supported via 
 
 export const uploadFileToR2 = async (file: File, key: string): Promise<{ success: boolean; url?: string; key?: string; error?: string }> => {
   try {
-    // 1. Prefer direct browser → R2 via presigned URL (bypasses server bandwidth)
+    const authHeaders = getAuthHeaders();
+    const safeFileName = (file.name || "image.webp").replace(/[^a-zA-Z0-9._-]/g, "_");
+    const safeKey = key.replace(/[^a-zA-Z0-9/._-]/g, "_");
+
+    // 1. Primary: Direct server binary stream POST (fast, zero CORS issues, supports up to 500MB)
+    try {
+      const res = await fetch(
+        `/api/upload?key=${encodeURIComponent(safeKey)}&filename=${encodeURIComponent(safeFileName)}`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            ...authHeaders,
+            "x-file-key": encodeURIComponent(safeKey),
+            "x-file-name": encodeURIComponent(safeFileName),
+            "content-type": file.type || "application/octet-stream",
+          },
+          body: file,
+        }
+      );
+
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.success && data?.url) {
+        return data;
+      }
+
+      // If binary stream failed (e.g., proxy stripped raw body), try standard multipart FormData POST
+      const formData = new FormData();
+      formData.append("file", file, safeFileName);
+      formData.append("key", safeKey);
+
+      const formRes = await fetch("/api/upload", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          ...authHeaders,
+        },
+        body: formData,
+      });
+
+      const formJson = await formRes.json().catch(() => null);
+      if (formRes.ok && formJson?.success && formJson?.url) {
+        return formJson;
+      }
+
+      if (!res.ok && !formRes.ok) {
+        console.warn("Server upload returned non-OK:", res.status, data?.error || formJson?.error);
+      }
+    } catch (serverUploadErr) {
+      console.warn("Primary server upload attempt failed, trying presigned R2 fallback:", serverUploadErr);
+    }
+
+    // 2. Fallback: Direct browser → R2 via presigned URL
     try {
       const presignedParams = new URLSearchParams({
-        key,
-        filename: file.name,
+        key: safeKey,
+        filename: safeFileName,
         contentType: file.type || "application/octet-stream",
         size: String(file.size),
       });
 
-      const presignedRes = await fetch(`/api/upload?${presignedParams.toString()}`);
+      const presignedRes = await fetch(`/api/upload?${presignedParams.toString()}`, {
+        credentials: "include",
+        headers: {
+          ...authHeaders,
+        },
+      });
       if (presignedRes.ok) {
         const presignedData = await presignedRes.json();
         if (presignedData.success && presignedData.presignedUrl) {
@@ -803,37 +860,22 @@ export const uploadFileToR2 = async (file: File, key: string): Promise<{ success
               key: presignedData.key,
             };
           }
-
-          console.warn(
-            "Presigned R2 PUT failed (likely CORS or network), falling back to binary stream upload:",
-            directUploadRes.status,
-            await directUploadRes.text().catch(() => "")
-          );
         }
       } else {
         const errBody = await presignedRes.json().catch(() => null);
-        console.warn("Presigned URL request failed:", presignedRes.status, errBody?.error);
+        return {
+          success: false,
+          error: errBody?.error || `Upload failed (Status ${presignedRes.status})`,
+        };
       }
-    } catch (presignedErr) {
-      console.warn("Presigned upload attempt failed, falling back to server upload:", presignedErr);
+    } catch (presignedErr: any) {
+      return {
+        success: false,
+        error: presignedErr?.message || "Upload failed due to network error",
+      };
     }
 
-    // 2. Fallback: Direct binary stream POST (bypasses all multipart FormData parser limits up to 500MB)
-    const res = await fetch("/api/upload", {
-      method: "POST",
-      headers: {
-        "x-file-key": encodeURIComponent(key),
-        "x-file-name": encodeURIComponent(file.name),
-        "content-type": file.type || "application/octet-stream",
-      },
-      body: file,
-    });
-
-    const data = await res.json().catch(() => null);
-    if (!res.ok) {
-      return { success: false, error: data?.error || `Upload failed (Status ${res.status})` };
-    }
-    return data || { success: false, error: "Empty response from upload API" };
+    return { success: false, error: "Failed to upload file to storage" };
   } catch (err: any) {
     return { success: false, error: err?.message || "Network error during upload" };
   }
@@ -843,7 +885,8 @@ export const deleteFileFromR2 = async (key: string): Promise<boolean> => {
   try {
     const res = await fetch("/api/upload", {
       method: "DELETE",
-      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify({ key }),
     });
     return res.ok;

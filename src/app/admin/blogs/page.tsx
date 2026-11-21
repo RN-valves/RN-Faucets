@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import AdminHeader from "@/components/admin/AdminHeader";
 import { useAdminTheme } from "@/app/admin/layout";
-import { uploadFileToR2 } from "@/utils/adminStore";
+import { uploadFileToR2, getAuthHeaders } from "@/utils/adminStore";
 import AdminButton from "@/components/admin/ui/AdminButton";
 import AdminFilterBar from "@/components/admin/ui/AdminFilterBar";
 import AdminCard from "@/components/admin/ui/AdminCard";
@@ -214,8 +214,7 @@ function BlogsContent() {
   };
 
   const getAdminHeaders = (): Record<string, string> => {
-    const savedToken = typeof window !== "undefined" ? localStorage.getItem("rn_admin_token") : null;
-    return savedToken ? { Authorization: `Bearer ${savedToken}` } : {};
+    return getAuthHeaders();
   };
 
   const handleDeleteBlog = async (item: BlogItem) => {
@@ -247,6 +246,9 @@ function BlogsContent() {
         if (res.ok) {
           setShowBlogModal(false);
           fetchBlogs();
+        } else {
+          const errData = await res.json().catch(() => null);
+          alert(errData?.error || "Failed to update blog article.");
         }
       } else {
         const res = await fetch("/api/blogs", {
@@ -258,10 +260,14 @@ function BlogsContent() {
         if (res.ok) {
           setShowBlogModal(false);
           fetchBlogs();
+        } else {
+          const errData = await res.json().catch(() => null);
+          alert(errData?.error || "Failed to create blog article.");
         }
       }
     } catch (err) {
       console.error("Failed to save blog:", err);
+      alert("Network error while saving blog article.");
     }
   };
 
@@ -345,23 +351,31 @@ function BlogsContent() {
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: "blog" | "news") => {
-    const file = e.target.files?.[0];
+    const inputEl = e.target;
+    const file = inputEl.files?.[0];
     if (!file) return;
 
     setUploadingImage(true);
-    const r2Key = `${target}/cover_${Date.now()}_${file.name.replace(/\s+/g, "_")}`;
-    const res = await uploadFileToR2(file, r2Key);
-    setUploadingImage(false);
+    try {
+      const safeName = (file.name || "cover.webp").replace(/[^a-zA-Z0-9._-]/g, "_");
+      const r2Key = `website/${target}/cover_${Date.now()}_${safeName}`;
+      const res = await uploadFileToR2(file, r2Key);
 
-    if (res.success && res.url) {
-      const imageUrl: string = res.url;
-      if (target === "blog") {
-        setBlogFormData((prev) => ({ ...prev, image: imageUrl }));
+      if (res.success && res.url) {
+        const imageUrl: string = res.url;
+        if (target === "blog") {
+          setBlogFormData((prev) => ({ ...prev, image: imageUrl }));
+        } else {
+          setNewsFormData((prev) => ({ ...prev, image: imageUrl }));
+        }
       } else {
-        setNewsFormData((prev) => ({ ...prev, image: imageUrl }));
+        alert(res.error || "Failed to upload image.");
       }
-    } else {
-      alert("Failed to upload image.");
+    } catch (err: any) {
+      alert(err?.message || "Failed to upload image.");
+    } finally {
+      setUploadingImage(false);
+      inputEl.value = "";
     }
   };
 
@@ -1115,16 +1129,36 @@ function BlogsContent() {
                       border: `1px solid ${border}`,
                       background: inputBg,
                       color: textMain,
-                      cursor: "pointer",
+                      cursor: uploadingImage ? "wait" : "pointer",
                       display: "flex",
                       alignItems: "center",
                       gap: "4px",
                       fontSize: "12px",
+                      whiteSpace: "nowrap",
                     }}
                   >
-                    <Upload size={14} /> Upload
+                    <Upload size={14} /> {uploadingImage ? "Uploading..." : "Upload"}
                   </button>
                 </div>
+                {blogFormData.image && (
+                  <div style={{ marginTop: "8px", display: "flex", alignItems: "center", gap: "10px" }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={blogFormData.image}
+                      alt="Cover preview"
+                      style={{
+                        width: "84px",
+                        height: "52px",
+                        objectFit: "cover",
+                        borderRadius: "6px",
+                        border: `1px solid ${border}`,
+                      }}
+                    />
+                    <span style={{ fontSize: "11.5px", color: "#16A34A", fontWeight: 600 }}>
+                      ✓ Cover image ready (click &quot;Save Article&quot; to apply)
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div>

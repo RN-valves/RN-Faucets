@@ -175,18 +175,26 @@ export default function AdminNewsPage() {
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const inputEl = e.target;
+    const file = inputEl.files?.[0];
     if (!file) return;
 
     setUploadingImage(true);
-    const r2Key = `news/cover_${Date.now()}_${file.name.replace(/\s+/g, "_")}`;
-    const res = await uploadFileToR2(file, r2Key);
-    setUploadingImage(false);
+    try {
+      const safeName = (file.name || "cover.webp").replace(/[^a-zA-Z0-9._-]/g, "_");
+      const r2Key = `website/news/cover_${Date.now()}_${safeName}`;
+      const res = await uploadFileToR2(file, r2Key);
 
-    if (res.success && res.url) {
-      setFormData((prev) => ({ ...prev, image: res.url || "" }));
-    } else {
-      alert("Failed to upload image.");
+      if (res.success && res.url) {
+        setFormData((prev) => ({ ...prev, image: res.url || "" }));
+      } else {
+        alert(res.error || "Failed to upload image.");
+      }
+    } catch (err: any) {
+      alert(err?.message || "Failed to upload image.");
+    } finally {
+      setUploadingImage(false);
+      inputEl.value = "";
     }
   };
 
