@@ -21,7 +21,7 @@ export async function GET(request: Request) {
 
     // Cache public search and category product queries in Redis (5 min TTL)
     if (!isAll) {
-      const cacheKey = `rn:catalogue:products:v4:q:${searchParams.toString().toLowerCase()}`;
+      const cacheKey = `rn:catalogue:products:v5:q:${searchParams.toString().toLowerCase()}`;
       const { data, cacheStatus } = await getOrSetCache(
         cacheKey,
         300,
@@ -203,22 +203,37 @@ async function executeProductQuery(
               .filter((w) => !stopWords.has(w.toLowerCase()))
               .map((w) => escapeRegex(w));
 
-      const getFieldOrConditions = (term: string) => [
-        { name: { $regex: term, $options: "i" } },
-        { code: { $regex: term, $options: "i" } },
-        { skuCode: { $regex: term, $options: "i" } },
-        { article: { $regex: term, $options: "i" } },
-        { category: { $regex: term, $options: "i" } },
-        { subcategoryName: { $regex: term, $options: "i" } },
-        { subcategoryId: { $regex: term, $options: "i" } },
-        { colorName: { $regex: term, $options: "i" } },
-        { size: { $regex: term, $options: "i" } },
-        { brand: { $regex: term, $options: "i" } },
-        { material: { $regex: term, $options: "i" } },
-        { searchKeywords: { $regex: term, $options: "i" } },
-        { title: { $regex: term, $options: "i" } },
-        { description: { $regex: term, $options: "i" } },
-      ];
+      const getFieldOrConditions = (term: string) => {
+        // If the search token is purely numeric (e.g. Article number "1710", "0611", "6171"),
+        // match strictly against the article number or the article portion of SKU/code right after the letter prefix,
+        // preventing false positives like "1710" matching inside "RNOS61710508" (Article 6171 + Size 0508 -> "6[1710]508").
+        if (/^\d+$/.test(term)) {
+          const strippedZeros = term.replace(/^0+/, "") || term;
+          return [
+            { article: { $regex: `^(?:[a-zA-Z-_]*)0*${strippedZeros}(?:[^0-9]|$)`, $options: "i" } },
+            { code: { $regex: `^(?:[a-zA-Z-_]*)0*${strippedZeros}`, $options: "i" } },
+            { skuCode: { $regex: `^(?:[a-zA-Z-_]*)0*${strippedZeros}`, $options: "i" } },
+            { name: { $regex: `(?:^|[^0-9])${term}(?:[^0-9]|$)`, $options: "i" } },
+          ];
+        }
+
+        return [
+          { name: { $regex: term, $options: "i" } },
+          { code: { $regex: term, $options: "i" } },
+          { skuCode: { $regex: term, $options: "i" } },
+          { article: { $regex: term, $options: "i" } },
+          { category: { $regex: term, $options: "i" } },
+          { subcategoryName: { $regex: term, $options: "i" } },
+          { subcategoryId: { $regex: term, $options: "i" } },
+          { colorName: { $regex: term, $options: "i" } },
+          { size: { $regex: term, $options: "i" } },
+          { brand: { $regex: term, $options: "i" } },
+          { material: { $regex: term, $options: "i" } },
+          { searchKeywords: { $regex: term, $options: "i" } },
+          { title: { $regex: term, $options: "i" } },
+          { description: { $regex: term, $options: "i" } },
+        ];
+      };
 
       if (words.length === 1) {
         keywordConditionRef = { $or: getFieldOrConditions(words[0]) };
