@@ -72,6 +72,25 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(`${stripped}${search}`, request.url), 301);
   }
 
+  // 1b. Legacy Laravel /posts/{slug} or /post/{slug} or /blog/{slug} -> redirect to /blogs/{slug}
+  if (
+    lowerPath.startsWith("/posts/") ||
+    lowerPath.startsWith("/post/") ||
+    lowerPath.startsWith("/blog/")
+  ) {
+    const segments = pathname.split("/").filter(Boolean);
+    if (segments.length >= 2) {
+      const targetSlug = segments[segments.length - 1];
+      if (targetSlug.toLowerCase() === "blogs" || targetSlug.toLowerCase() === "blog") {
+        return NextResponse.redirect(new URL(`/blogs${search}`, request.url), 301);
+      }
+      return NextResponse.redirect(
+        new URL(`/blogs/${targetSlug}${search}`, request.url),
+        301
+      );
+    }
+  }
+
   // 2. Legacy /product/... or /products/... URLs indexed in Google
   // Examples:
   //   /product/ptmt-taps-or-faucets/g20-pine-collection/bib-cock-foam-flow-with-flange-rng2019a32

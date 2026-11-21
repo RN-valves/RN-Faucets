@@ -41,7 +41,7 @@ export default function BlogsSection({ data, initialBlogs = [] }: BlogsSectionPr
         title: b.title,
         slug: b.slug,
         image: normalizeBlogImage(b.image),
-        href: `/blogs?slug=${encodeURIComponent(b.slug || "")}`,
+        href: b.slug ? `/blogs/${encodeURIComponent(b.slug)}` : "/blogs",
       }));
     }
     return [];
@@ -66,7 +66,7 @@ export default function BlogsSection({ data, initialBlogs = [] }: BlogsSectionPr
             title: b.title,
             slug: b.slug,
             image: normalizeBlogImage(b.image),
-            href: `/blogs?slug=${encodeURIComponent(b.slug || "")}`,
+            href: b.slug ? `/blogs/${encodeURIComponent(b.slug)}` : "/blogs",
           }));
           setDbBlogs(mapped);
         }
@@ -76,11 +76,19 @@ export default function BlogsSection({ data, initialBlogs = [] }: BlogsSectionPr
 
   const blogsList: BlogItem[] = useMemo(() => {
     if (validPropsBlogs.length > 0) {
-      return validPropsBlogs.map((b) => ({
-        ...b,
-        image: normalizeBlogImage(b.image),
-        href: b.href || (b.slug ? `/blogs?slug=${encodeURIComponent(b.slug)}` : "/blogs"),
-      }));
+      return validPropsBlogs.map((b) => {
+        const cleanHref =
+          b.href && !b.href.includes("?slug=")
+            ? b.href
+            : b.slug
+            ? `/blogs/${encodeURIComponent(b.slug)}`
+            : "/blogs";
+        return {
+          ...b,
+          image: normalizeBlogImage(b.image),
+          href: cleanHref,
+        };
+      });
     }
     return dbBlogs;
   }, [validPropsBlogs, dbBlogs]);

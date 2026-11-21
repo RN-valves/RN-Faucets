@@ -4,9 +4,9 @@ import { useEffect, useState, Suspense } from "react";
 import Header from "@/components/Header";
 import FooterSection from "@/components/FooterSection";
 import SupportLinksSection from "@/components/SupportLinksSection";
-import { Calendar, User, ArrowRight, Search, X, ChevronRight, BookOpen, Clock } from "lucide-react";
+import { Calendar, User, ArrowRight, Search, X, ChevronRight, BookOpen } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 interface BlogItem {
   _id: string;
@@ -26,9 +26,20 @@ function BlogsContent() {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
-  const [readingBlog, setReadingBlog] = useState<BlogItem | null>(null);
   const searchParams = useSearchParams();
+  const router = useRouter();
   const slugParam = searchParams.get("slug");
+  const categoryParam = searchParams.get("category");
+
+  useEffect(() => {
+    if (slugParam) {
+      router.replace(`/blogs/${encodeURIComponent(slugParam)}`);
+      return;
+    }
+    if (categoryParam) {
+      setSelectedCategory(categoryParam);
+    }
+  }, [slugParam, categoryParam, router]);
 
   useEffect(() => {
     async function fetchBlogs() {
@@ -39,13 +50,6 @@ function BlogsContent() {
           const data = await res.json();
           const items: BlogItem[] = data.blogs || [];
           setBlogs(items);
-
-          if (slugParam) {
-            const matched = items.find((b) => b.slug === slugParam);
-            if (matched) {
-              setReadingBlog(matched);
-            }
-          }
         }
       } catch (err) {
         console.error("Failed to fetch blogs:", err);
@@ -54,7 +58,7 @@ function BlogsContent() {
       }
     }
     fetchBlogs();
-  }, [slugParam]);
+  }, []);
 
   const rawCategories = Array.from(new Set(blogs.map((b) => b.category).filter(Boolean)));
   const categories = ["All", ...rawCategories];
@@ -396,11 +400,14 @@ function BlogsContent() {
                 gap: "32px",
               }}
             >
-              {filteredBlogs.map((b) => (
-                <article
+              {filteredBlogs.map((b) => {
+                const targetSlug = b.slug || b.id;
+                return (
+                <Link
                   key={b._id || b.id}
+                  href={`/blogs/${encodeURIComponent(targetSlug)}`}
                   className="blog-card"
-                  onClick={() => setReadingBlog(b)}
+                  style={{ textDecoration: "none", color: "inherit" }}
                 >
                   <div>
                     {/* Thumbnail Image */}
@@ -409,6 +416,10 @@ function BlogsContent() {
                       <img
                         src={b.image || "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80"}
                         alt={b.title}
+                        width={420}
+                        height={220}
+                        loading="lazy"
+                        decoding="async"
                         className="blog-card-img"
                         onError={(e) => {
                           const target = e.currentTarget;
@@ -527,186 +538,13 @@ function BlogsContent() {
                       Read Article <ArrowRight size={14} />
                     </span>
                   </div>
-                </article>
-              ))}
+                </Link>
+                );
+              })}
             </div>
           )}
         </div>
       </section>
-
-      {/* Detailed Article Reader Modal */}
-      {readingBlog && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0, 0, 0, 0.6)",
-            backdropFilter: "blur(5px)",
-            zIndex: 10000,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "16px",
-          }}
-        >
-          <div
-            style={{
-              background: "#FFFFFF",
-              borderRadius: "16px",
-              maxWidth: "760px",
-              width: "100%",
-              maxHeight: "90vh",
-              overflowY: "auto",
-              boxShadow: "0 25px 50px rgba(0,0,0,0.25)",
-              position: "relative",
-            }}
-          >
-            {/* Close Button */}
-            <button
-              type="button"
-              onClick={() => setReadingBlog(null)}
-              style={{
-                position: "absolute",
-                top: "18px",
-                right: "18px",
-                width: "36px",
-                height: "36px",
-                borderRadius: "50%",
-                background: "#F1F5F9",
-                border: "none",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#0F172A",
-                zIndex: 10,
-              }}
-            >
-              <X size={18} />
-            </button>
-
-            {/* Article Image Banner */}
-            <div style={{ position: "relative", width: "100%", height: "300px", overflow: "hidden" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={readingBlog.image}
-                alt={readingBlog.title}
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                onError={(e) => {
-                  const target = e.currentTarget;
-                  const originalSrc = readingBlog.image || "";
-                  if (originalSrc && !target.src.includes("www.rnvalves.com") && !originalSrc.startsWith("http")) {
-                    const cleanPath = originalSrc.startsWith("/") ? originalSrc : `/${originalSrc}`;
-                    target.src = `https://www.rnvalves.com${cleanPath}`;
-                  } else {
-                    target.src = "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80";
-                  }
-                }}
-              />
-            </div>
-
-            {/* Article Body Content */}
-            <div style={{ padding: "32px 36px 40px" }}>
-              {/* Meta */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  fontSize: "12.5px",
-                  color: "#64748B",
-                  marginBottom: "16px",
-                  flexWrap: "wrap",
-                }}
-              >
-                <span
-                  style={{
-                    fontWeight: 700,
-                    color: "#0284C7",
-                    background: "#F0F9FF",
-                    border: "1px solid #BAE6FD",
-                    padding: "3px 10px",
-                    borderRadius: "20px",
-                  }}
-                >
-                  {readingBlog.category}
-                </span>
-                <span>•</span>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
-                  <Calendar size={13} />
-                  {readingBlog.publishedAt}
-                </span>
-                <span>•</span>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
-                  <User size={13} />
-                  By {readingBlog.author}
-                </span>
-              </div>
-
-              {/* Title */}
-              <h1
-                style={{
-                  fontSize: "24px",
-                  fontWeight: 800,
-                  color: "#0F172A",
-                  lineHeight: 1.3,
-                  margin: "0 0 16px",
-                }}
-              >
-                {readingBlog.title}
-              </h1>
-
-              {/* Summary lead */}
-              {readingBlog.summary && (
-                <p
-                  style={{
-                    fontSize: "15px",
-                    fontWeight: 500,
-                    color: "#334155",
-                    lineHeight: 1.6,
-                    borderLeft: "3px solid #00AEEF",
-                    paddingLeft: "16px",
-                    margin: "0 0 24px",
-                  }}
-                >
-                  {readingBlog.summary}
-                </p>
-              )}
-
-              {/* Full Article Text */}
-              <div
-                style={{
-                  fontSize: "14.5px",
-                  color: "#475569",
-                  lineHeight: 1.8,
-                }}
-                className="blog-content-body"
-                dangerouslySetInnerHTML={{ __html: readingBlog.content }}
-              />
-
-              {/* Bottom Close Action */}
-              <div style={{ marginTop: "32px", paddingTop: "20px", borderTop: "1px solid #F1F5F9", textAlign: "right" }}>
-                <button
-                  type="button"
-                  onClick={() => setReadingBlog(null)}
-                  style={{
-                    padding: "10px 24px",
-                    background: "#000000",
-                    color: "#FFFFFF",
-                    border: "none",
-                    borderRadius: "6px",
-                    fontWeight: 600,
-                    fontSize: "13.5px",
-                    cursor: "pointer",
-                  }}
-                >
-                  Close Article
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <SupportLinksSection />
       <FooterSection />
