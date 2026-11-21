@@ -62,7 +62,7 @@ export default async function Home() {
 
   try {
     const { data } = await getOrSetCache(
-      "rn:home:ssr-bundle:v1",
+      "rn:home:ssr-bundle:v2",
       300,
       async () => {
         await connectDB();
@@ -91,15 +91,23 @@ export default async function Home() {
             .lean(),
         ]);
 
+        const rawCategories =
+          catRes.status === "fulfilled" && Array.isArray(catRes.value)
+            ? [...catRes.value]
+            : [];
+        const sortedCategories = rawCategories.sort((a: any, b: any) => {
+          const orderA = Number(a.displayOrder) > 0 ? Number(a.displayOrder) : 999999;
+          const orderB = Number(b.displayOrder) > 0 ? Number(b.displayOrder) : 999999;
+          if (orderA !== orderB) return orderA - orderB;
+          return 0;
+        });
+
         return {
           homeSetting:
             settingRes.status === "fulfilled" && settingRes.value
               ? JSON.parse(JSON.stringify(settingRes.value))
               : null,
-          categories:
-            catRes.status === "fulfilled" && catRes.value?.length
-              ? JSON.parse(JSON.stringify(catRes.value))
-              : [],
+          categories: JSON.parse(JSON.stringify(sortedCategories)),
           products:
             prodRes.status === "fulfilled" && prodRes.value?.length
               ? JSON.parse(JSON.stringify(prodRes.value))

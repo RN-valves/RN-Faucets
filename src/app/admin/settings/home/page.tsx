@@ -9,6 +9,7 @@ import {
   deleteFileFromR2,
   getAdminProducts,
   getAdminCategories,
+  updateAdminCategory,
 } from "@/utils/adminStore";
 import { useAdminTheme } from "@/app/admin/layout";
 import { AdminProduct, AdminCategory } from "@/types/admin";
@@ -592,40 +593,191 @@ export default function AdminHomeSettingPage() {
 
             {/* Category Cards Section */}
             <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: "12px", padding: "24px", boxShadow: shadow }}>
-              <h3 style={{ margin: "0 0 16px 0", color: textMain, fontSize: "16px", borderBottom: `1px solid ${border}`, paddingBottom: "12px" }}>
-                Explore Product Categories (Referencing Database Categories or R2 Assets)
-              </h3>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", borderBottom: `1px solid ${border}`, paddingBottom: "12px", marginBottom: "16px" }}>
+                <div>
+                  <h3 style={{ margin: 0, color: textMain, fontSize: "16px" }}>
+                    Explore Product Categories — Homepage Card Sequence
+                  </h3>
+                  <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: textMuted }}>
+                    Set the display sequence (Rank #1, #2, #3...) for the homepage &quot;Explore Product Categories&quot; cards. Changes save immediately to the Category Master.
+                  </p>
+                </div>
+                <a
+                  href="/admin/catalogue/categories"
+                  style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 14px", borderRadius: "8px", background: "#0077B6", color: "#FFFFFF", fontSize: "12px", fontWeight: 700, textDecoration: "none" }}
+                >
+                  Open Category Master <ExternalLink size={13} />
+                </a>
+              </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-                {settings.categoriesSection?.categories?.map((cat: any, index: number) => {
-                  const categoryId = cat.id || index + 1;
-                  const r2Key = `website/home/categories/${categoryId}.webp`;
-
-                  return (
-                    <div key={categoryId} style={{ border: `1px solid ${border}`, borderRadius: "10px", padding: "16px", background: inputBg, display: "flex", flexDirection: "column", gap: "10px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontWeight: 800, fontSize: "13px", color: "#0077B6" }}>Category Card #{index + 1}</span>
-                      </div>
-
-                      <input type="text" placeholder="Category Name" value={cat.name} onChange={(e) => {
-                        const updated = [...settings.categoriesSection.categories];
-                        updated[index].name = e.target.value;
-                        setSettings({ ...settings, categoriesSection: { ...settings.categoriesSection, categories: updated } });
-                      }} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: `1px solid ${border}`, background: cardBg, color: textMain }} />
-
-                      <R2UploadPicker
-                        label="Category Card Image"
-                        r2Key={r2Key}
-                        currentUrl={cat.image}
-                        onUploadSuccess={(url) => {
-                          const updated = [...settings.categoriesSection.categories];
-                          updated[index].image = url;
-                          setSettings({ ...settings, categoriesSection: { ...settings.categoriesSection, categories: updated } });
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {[...dbCategories]
+                  .filter((cat) => cat.status !== "Inactive" && cat.isVisibleWebsite !== false)
+                  .sort((a, b) => {
+                    const orderA = a.displayOrder && a.displayOrder > 0 ? a.displayOrder : 999999;
+                    const orderB = b.displayOrder && b.displayOrder > 0 ? b.displayOrder : 999999;
+                    if (orderA !== orderB) return orderA - orderB;
+                    return (a.name || "").localeCompare(b.name || "");
+                  })
+                  .map((cat, index, sortedArr) => {
+                    const thumb = (cat as any).homeImage || cat.image || "";
+                    return (
+                      <div
+                        key={cat.id}
+                        style={{
+                          border: `1px solid ${border}`,
+                          borderRadius: "10px",
+                          padding: "12px 16px",
+                          background: inputBg,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: "14px",
+                          flexWrap: "wrap",
                         }}
-                      />
-                    </div>
-                  );
-                })}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: "220px", flex: 1 }}>
+                          <span
+                            style={{
+                              minWidth: "34px",
+                              height: "28px",
+                              borderRadius: "6px",
+                              background: "#0077B6",
+                              color: "#FFFFFF",
+                              fontWeight: 800,
+                              fontSize: "12px",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            #{index + 1}
+                          </span>
+                          {thumb ? (
+                            <img
+                              src={thumb}
+                              alt={cat.name}
+                              style={{ width: "44px", height: "54px", objectFit: "cover", borderRadius: "6px", border: `1px solid ${border}`, background: "#0D1117" }}
+                            />
+                          ) : (
+                            <div style={{ width: "44px", height: "54px", borderRadius: "6px", border: `1px solid ${border}`, display: "flex", alignItems: "center", justifyContent: "center", color: textMuted }}>
+                              <ImageIcon size={18} />
+                            </div>
+                          )}
+                          <div>
+                            <div style={{ fontWeight: 800, fontSize: "14px", color: textMain }}>{cat.name}</div>
+                            <div style={{ fontSize: "11.5px", color: "#0077B6", fontFamily: "monospace" }}>/{cat.slug}</div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <label style={{ fontSize: "12px", fontWeight: 700, color: textMuted }}>Rank:</label>
+                          <input
+                            key={`${cat.id}-${cat.displayOrder || 0}`}
+                            type="number"
+                            min="1"
+                            defaultValue={cat.displayOrder && cat.displayOrder > 0 ? cat.displayOrder : index + 1}
+                            onBlur={async (e) => {
+                              const newOrder = Number(e.target.value);
+                              if (newOrder > 0 && newOrder !== (cat.displayOrder || 0)) {
+                                await updateAdminCategory(cat.id, { displayOrder: newOrder });
+                                const refreshed = await getAdminCategories();
+                                setDbCategories(refreshed);
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                            }}
+                            style={{
+                              width: "60px",
+                              padding: "6px 8px",
+                              borderRadius: "6px",
+                              border: `1.5px solid #0077B6`,
+                              background: cardBg,
+                              color: textMain,
+                              fontWeight: 800,
+                              fontSize: "13px",
+                              textAlign: "center",
+                            }}
+                          />
+
+                          <button
+                            type="button"
+                            disabled={index === 0}
+                            title="Move Up"
+                            onClick={async () => {
+                              if (index === 0) return;
+                              const reordered = [...sortedArr];
+                              const temp = reordered[index - 1];
+                              reordered[index - 1] = reordered[index];
+                              reordered[index] = temp;
+                              await Promise.all(
+                                reordered.map((c, idx) => updateAdminCategory(c.id, { displayOrder: idx + 1 }))
+                              );
+                              const refreshed = await getAdminCategories();
+                              setDbCategories(refreshed);
+                            }}
+                            style={{
+                              padding: "6px 8px",
+                              borderRadius: "6px",
+                              border: `1px solid ${border}`,
+                              background: cardBg,
+                              color: index === 0 ? textMuted : textMain,
+                              cursor: index === 0 ? "not-allowed" : "pointer",
+                              opacity: index === 0 ? 0.4 : 1,
+                            }}
+                          >
+                            <ArrowUp size={14} />
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={index === sortedArr.length - 1}
+                            title="Move Down"
+                            onClick={async () => {
+                              if (index === sortedArr.length - 1) return;
+                              const reordered = [...sortedArr];
+                              const temp = reordered[index + 1];
+                              reordered[index + 1] = reordered[index];
+                              reordered[index] = temp;
+                              await Promise.all(
+                                reordered.map((c, idx) => updateAdminCategory(c.id, { displayOrder: idx + 1 }))
+                              );
+                              const refreshed = await getAdminCategories();
+                              setDbCategories(refreshed);
+                            }}
+                            style={{
+                              padding: "6px 8px",
+                              borderRadius: "6px",
+                              border: `1px solid ${border}`,
+                              background: cardBg,
+                              color: index === sortedArr.length - 1 ? textMuted : textMain,
+                              cursor: index === sortedArr.length - 1 ? "not-allowed" : "pointer",
+                              opacity: index === sortedArr.length - 1 ? 0.4 : 1,
+                            }}
+                          >
+                            <ArrowDown size={14} />
+                          </button>
+
+                          <a
+                            href={`/admin/catalogue/categories/${cat.slug}`}
+                            style={{
+                              padding: "6px 12px",
+                              borderRadius: "6px",
+                              border: `1px solid ${border}`,
+                              background: cardBg,
+                              color: "#0077B6",
+                              fontSize: "12px",
+                              fontWeight: 700,
+                              textDecoration: "none",
+                            }}
+                          >
+                            Edit Card Images
+                          </a>
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
             </div>
           </div>

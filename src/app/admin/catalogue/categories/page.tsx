@@ -46,7 +46,7 @@ export default function AdminCategoriesListingPage() {
   const [visibilityFilter, setVisibilityFilter] = useState<"All" | "Visible" | "Hidden">("All");
   const [sortBy, setSortBy] = useState<"displayOrder" | "createdAt" | "name" | "discount" | "tax">("displayOrder");
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(10);
+  const [perPage, setPerPage] = useState(25);
 
   // Subcategory Modal State
   const [showAddSubModal, setShowAddSubModal] = useState(false);
@@ -436,6 +436,7 @@ export default function AdminCategoriesListingPage() {
                         <td style={{ padding: "14px 20px" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                             <input
+                              key={`${cat.id}-${cat.displayOrder || 0}`}
                               type="number"
                               min="0"
                               defaultValue={cat.displayOrder || 0}

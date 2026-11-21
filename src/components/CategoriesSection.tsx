@@ -16,6 +16,7 @@ export interface CategoryItem {
   href?: string;
   slug?: string;
   productCount?: number;
+  displayOrder?: number;
 }
 
 const DEFAULT_CATEGORY_PLACEHOLDER = "/api/media/website/catalogue/products/default/image.webp";
@@ -42,9 +43,18 @@ interface CategoriesSectionProps {
   initialCategories?: any[];
 }
 
+const sortCategoriesByDisplayOrder = (items: CategoryItem[]): CategoryItem[] => {
+  return [...items].sort((a, b) => {
+    const orderA = a.displayOrder && a.displayOrder > 0 ? a.displayOrder : 999999;
+    const orderB = b.displayOrder && b.displayOrder > 0 ? b.displayOrder : 999999;
+    if (orderA !== orderB) return orderA - orderB;
+    return 0;
+  });
+};
+
 const mapCategoryItems = (dataArr: any[]): CategoryItem[] => {
   if (!Array.isArray(dataArr)) return [];
-  return dataArr
+  const mapped = dataArr
     .filter(
       (cat: any) =>
         cat.status !== "Inactive" &&
@@ -62,7 +72,9 @@ const mapCategoryItems = (dataArr: any[]): CategoryItem[] => {
       homeImage: cat.homeImage || "",
       homeHoverImage: cat.homeHoverImage || "",
       productCount: cat.productCount || 0,
+      displayOrder: Number(cat.displayOrder || 0),
     }));
+  return sortCategoriesByDisplayOrder(mapped);
 };
 
 export default function CategoriesSection({ data, initialCategories = [] }: CategoriesSectionProps) {
@@ -72,7 +84,9 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
   const [isLoaded, setIsLoaded] = useState(() => Boolean(initialCategories && initialCategories.length > 0));
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
-  const [hoveredCardId, setHoveredCardId] = useState<string | number | null>(null);
+  const [activatedHoverIds, setActivatedHoverIds] = useState<Record<string, boolean>>({});
+  const [loadedHoverIds, setLoadedHoverIds] = useState<Record<string, boolean>>({});
+  const [failedHoverIds, setFailedHoverIds] = useState<Record<string, boolean>>({});
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
@@ -116,8 +130,8 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
       ? validPropsCategories
       : [];
 
-  // Reverse order: last categories appear first, first categories appear last
-  const categoriesList: CategoryItem[] = [...baseCategoriesList].reverse();
+  // Respect admin-configured displayOrder (Rank #1, #2, #3...)
+  const categoriesList: CategoryItem[] = sortCategoriesByDisplayOrder(baseCategoriesList);
 
   const updateScrollState = useCallback(() => {
     const el = scrollContainerRef.current;
@@ -604,9 +618,11 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
           })
         ) : (
           categoriesList.map((cat, idx) => {
-            const cardKey = cat.id || idx;
+            const cardKey = String(cat.id || idx);
             const hasHoverImg = Boolean(cat.hoverImage && cat.hoverImage !== cat.image);
-            const showHoverImg = hasHoverImg && hoveredCardId === cardKey;
+            const shouldMountHoverImg = hasHoverImg && Boolean(activatedHoverIds[cardKey]);
+            const canTransitionToHover =
+              shouldMountHoverImg && Boolean(loadedHoverIds[cardKey]) && !failedHoverIds[cardKey];
             const offsetClass = getCardOffsetClass(idx);
             const primarySrc = getOptimizedCategoryImageUrl(cat.image, 440, 78);
             const hoverSrc = hasHoverImg ? getOptimizedCategoryImageUrl(cat.hoverImage, 440, 78) : "";
@@ -615,12 +631,16 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
               <Link
                 key={cardKey}
                 href={cat.href || `/${cat.slug}`}
-                className={`luxury-card ${offsetClass}${showHoverImg ? " has-hover-img" : ""}`}
+                className={`luxury-card ${offsetClass}${canTransitionToHover ? " has-hover-img" : ""}`}
                 onMouseEnter={() => {
-                  if (hasHoverImg) setHoveredCardId(cardKey);
+                  if (hasHoverImg && !activatedHoverIds[cardKey]) {
+                    setActivatedHoverIds((prev) => ({ ...prev, [cardKey]: true }));
+                  }
                 }}
                 onFocus={() => {
-                  if (hasHoverImg) setHoveredCardId(cardKey);
+                  if (hasHoverImg && !activatedHoverIds[cardKey]) {
+                    setActivatedHoverIds((prev) => ({ ...prev, [cardKey]: true }));
+                  }
                 }}
                 onClick={(e) => {
                   if (hasMovedRef.current) {
@@ -660,8 +680,8 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
                   </div>
                 </div>
 
-                {/* 2nd Hover Image (Loaded on demand upon hover to save 2.5+ MB on initial page load) */}
-                {showHoverImg && (
+                {/* 2nd Hover Image (Loaded on demand upon hover; primary image stays visible until loaded) */}
+                {shouldMountHoverImg && (
                   <div className="luxury-img-hover">
                     <div style={{ position: "relative", width: "100%", height: "100%" }}>
                       <Image
@@ -673,12 +693,11 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
                         loading="eager"
                         decoding="async"
                         unoptimized
-                        onError={(e) => {
-                          const target = e.currentTarget;
-                          if (!target.dataset.fallback) {
-                            target.dataset.fallback = "1";
-                            target.src = primarySrc || DEFAULT_CATEGORY_PLACEHOLDER;
-                          }
+                        onLoad={() => {
+                          setLoadedHoverIds((prev) => ({ ...prev, [cardKey]: true }));
+                        }}
+                        onError={() => {
+                          setFailedHoverIds((prev) => ({ ...prev, [cardKey]: true }));
                         }}
                         style={{
                           width: "100%",

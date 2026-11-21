@@ -46,7 +46,7 @@ export async function getPublicCategoriesCached(): Promise<{
 
       const [rawCategories, counts] = await Promise.all([
         Category.find(filter)
-          .select("id name slug image banner icon description displayOrder status isVisibleWebsite createdAt")
+          .select("id name slug image homeImage homeHoverImage banner icon description displayOrder status isVisibleWebsite createdAt")
           .sort({ createdAt: -1 })
           .lean(),
         Product.aggregate([
