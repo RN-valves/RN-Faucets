@@ -317,10 +317,11 @@ function ReelCard({
         <Image
           src={poster}
           alt="Instagram reel preview"
-          width={285}
-          height={510}
+          width={570}
+          height={1020}
           sizes="285px"
-          quality={75}
+          quality={100}
+          unoptimized
           loading="lazy"
           decoding="async"
           style={{

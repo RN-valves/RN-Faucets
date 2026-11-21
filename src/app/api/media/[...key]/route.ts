@@ -45,16 +45,18 @@ export async function GET(
     }
 
     const url = new URL(req.url);
+    const hasExplicitWidth = url.searchParams.has("w");
+    const hasExplicitQuality = url.searchParams.has("q");
     const requestedWidthRaw = parseInt(url.searchParams.get("w") || "0", 10);
-    const requestedQualityRaw = parseInt(url.searchParams.get("q") || "80", 10);
+    const requestedQualityRaw = parseInt(url.searchParams.get("q") || "92", 10);
     const requestedWidth =
-      !isNaN(requestedWidthRaw) && requestedWidthRaw > 0
-        ? Math.min(Math.max(requestedWidthRaw, 32), 2560)
+      hasExplicitWidth && !isNaN(requestedWidthRaw) && requestedWidthRaw > 0
+        ? Math.min(Math.max(requestedWidthRaw, 32), 3840)
         : 0;
     const requestedQuality =
-      !isNaN(requestedQualityRaw) && requestedQualityRaw > 0
-        ? Math.min(Math.max(requestedQualityRaw, 40), 95)
-        : 80;
+      hasExplicitQuality && !isNaN(requestedQualityRaw) && requestedQualityRaw > 0
+        ? Math.min(Math.max(requestedQualityRaw, 60), 100)
+        : 92;
     const versionParam = url.searchParams.get("v") || url.searchParams.get("t") || "";
 
     const lowerKey = key.toLowerCase();
@@ -75,7 +77,7 @@ export async function GET(
         const cachedHeaders = new Headers({
           "Content-Type": cached.contentType,
           "X-Content-Type-Options": "nosniff",
-          "Cache-Control": "public, max-age=31536000, immutable",
+          "Cache-Control": "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800",
           ETag: cached.etag,
           "Content-Length": String(cached.buffer.length),
         });
@@ -149,8 +151,7 @@ export async function GET(
       );
     }
 
-    // Use long 1-year cache lifetime for all static R2 media assets (satisfies Lighthouse efficient cache lifetimes)
-    headers.set("Cache-Control", "public, max-age=31536000, immutable");
+    headers.set("Cache-Control", "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800");
 
     const isRasterImage =
       contentType === "image/png" ||
@@ -158,12 +159,11 @@ export async function GET(
       contentType === "image/webp" ||
       contentType === "image/avif";
 
+    // Only run sharp when explicitly requested via ?w= or ?q= query params so default images retain 100% original studio quality
     const shouldOptimizeWithSharp =
       isRasterImage &&
       !rangeHeader &&
-      (requestedWidth > 0 ||
-        (lowerKey.endsWith(".webp") && contentType !== "image/webp") ||
-        (response.ContentLength !== undefined && response.ContentLength > 140000));
+      (requestedWidth > 0 || hasExplicitQuality);
 
     if (!shouldOptimizeWithSharp && response.ETag) {
       headers.set("ETag", response.ETag);
@@ -213,25 +213,19 @@ export async function GET(
       } else if (shouldOptimizeWithSharp) {
         try {
           let pipeline = sharp(buffer, { failOn: "none" });
-          const targetWidth =
-            requestedWidth > 0
-              ? requestedWidth
-              : lowerKey.includes("catalogue/categories/") && lowerKey.includes("home_")
-              ? 640
-              : 1600;
-          pipeline = pipeline.resize({
-            width: targetWidth,
-            withoutEnlargement: true,
-          });
+          if (requestedWidth > 0) {
+            pipeline = pipeline.resize({
+              width: requestedWidth,
+              withoutEnlargement: true,
+            });
+          }
           const optimized = await pipeline
-            .webp({ quality: requestedQuality, effort: 3 })
+            .webp({ quality: requestedQuality, effort: 4 })
             .toBuffer();
 
-          if (optimized.length < buffer.length || requestedWidth > 0 || contentType !== "image/webp") {
-            buffer = optimized;
-            contentType = "image/webp";
-            headers.set("Content-Type", "image/webp");
-          }
+          buffer = optimized;
+          contentType = "image/webp";
+          headers.set("Content-Type", "image/webp");
         } catch {
           // Fallback to raw buffer if sharp fails on unexpected bytes
         }

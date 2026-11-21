@@ -24,11 +24,10 @@ export default function ProductShowcaseSection({ data }: ProductShowcaseProps) {
   const textRef = useRef<HTMLDivElement>(null);
 
   const rawImageUrl = data?.image || "";
-  const imageUrl = rawImageUrl
-    ? rawImageUrl.startsWith("/api/media/") && !rawImageUrl.includes("w=")
-      ? `${rawImageUrl}${rawImageUrl.includes("?") ? "&" : "?"}w=1400&q=78`
-      : rawImageUrl
-    : "";
+  const imageUrl =
+    rawImageUrl && rawImageUrl.startsWith("/api/media/") && !rawImageUrl.includes("hd=1")
+      ? `${rawImageUrl}${rawImageUrl.includes("?") ? "&" : "?"}hd=1`
+      : rawImageUrl;
   const subtitleText = data?.subtitle || "Explore by Space";
   const titleText = data?.title || "Bathroom";
 
@@ -137,13 +136,13 @@ export default function ProductShowcaseSection({ data }: ProductShowcaseProps) {
         <Image
           src={imageUrl}
           alt={titleText}
-          width={1400}
-          height={900}
+          width={1920}
+          height={1080}
           sizes="100vw"
           loading="lazy"
           decoding="async"
-          quality={78}
-          unoptimized={imageUrl.startsWith("/api/media/")}
+          quality={100}
+          unoptimized
           className="object-cover object-center w-full h-full"
         />
       </div>

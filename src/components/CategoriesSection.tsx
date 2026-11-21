@@ -21,14 +21,11 @@ export interface CategoryItem {
 
 const DEFAULT_CATEGORY_PLACEHOLDER = "/api/media/website/catalogue/products/default/image.webp";
 
-function getOptimizedCategoryImageUrl(src?: string, width = 480, quality = 78): string {
-  if (!src) return `${DEFAULT_CATEGORY_PLACEHOLDER}?w=${width}&q=${quality}`;
-  const normalized = src
-    .replace(/^https?:\/\/(www\.)?rnvalves\.com/i, "");
-  if (normalized.startsWith("/api/media/")) {
-    const sep = normalized.includes("?") ? "&" : "?";
-    if (normalized.includes("w=")) return normalized;
-    return `${normalized}${sep}w=${width}&q=${quality}`;
+function getOptimizedCategoryImageUrl(src?: string): string {
+  if (!src) return DEFAULT_CATEGORY_PLACEHOLDER;
+  const normalized = src.replace(/^https?:\/\/(www\.)?rnvalves\.com/i, "");
+  if (normalized.startsWith("/api/media/") && !normalized.includes("hd=1")) {
+    return `${normalized}${normalized.includes("?") ? "&" : "?"}hd=1`;
   }
   return normalized;
 }
@@ -624,8 +621,8 @@ export default function CategoriesSection({ data, initialCategories = [] }: Cate
             const canTransitionToHover =
               shouldMountHoverImg && Boolean(loadedHoverIds[cardKey]) && !failedHoverIds[cardKey];
             const offsetClass = getCardOffsetClass(idx);
-            const primarySrc = getOptimizedCategoryImageUrl(cat.image, 440, 78);
-            const hoverSrc = hasHoverImg ? getOptimizedCategoryImageUrl(cat.hoverImage, 440, 78) : "";
+            const primarySrc = getOptimizedCategoryImageUrl(cat.image);
+            const hoverSrc = hasHoverImg ? getOptimizedCategoryImageUrl(cat.hoverImage) : "";
 
             return (
               <Link

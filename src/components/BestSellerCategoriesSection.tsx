@@ -211,13 +211,11 @@ interface BestSellerCategoriesSectionProps {
   initialCategories?: any[];
 }
 
-function getOptimizedProductImageUrl(src?: string, width = 380, quality = 78): string {
-  if (!src) return `/api/media/website/catalogue/products/default/image.webp?w=${width}&q=${quality}`;
+function getOptimizedProductImageUrl(src?: string): string {
+  if (!src) return "/api/media/website/catalogue/products/default/image.webp";
   const normalized = src.replace(/^https?:\/\/(www\.)?rnvalves\.com/i, "");
-  if (normalized.startsWith("/api/media/")) {
-    const sep = normalized.includes("?") ? "&" : "?";
-    if (normalized.includes("w=")) return normalized;
-    return `${normalized}${sep}w=${width}&q=${quality}`;
+  if (normalized.startsWith("/api/media/") && !normalized.includes("hd=1")) {
+    return `${normalized}${normalized.includes("?") ? "&" : "?"}hd=1`;
   }
   return normalized;
 }
@@ -1028,19 +1026,18 @@ export default function BestSellerCategoriesSection({
                   }}
                 >
                   {(() => {
-                    const optimizedSrc = getOptimizedProductImageUrl(product.image, 360, 78);
-                    const isLocalApiMedia = optimizedSrc.startsWith("/api/media/");
+                    const optimizedSrc = getOptimizedProductImageUrl(product.image);
                     return (
                       <Image
                         src={optimizedSrc}
                         alt={product.name}
-                        width={360}
-                        height={360}
-                        sizes="(max-width: 768px) 240px, 340px"
-                        quality={75}
+                        width={600}
+                        height={600}
+                        sizes="(max-width: 768px) 280px, 400px"
+                        quality={100}
                         loading="lazy"
                         decoding="async"
-                        unoptimized={isLocalApiMedia}
+                        unoptimized
                         style={{
                           width: "100%",
                           height: "100%",
