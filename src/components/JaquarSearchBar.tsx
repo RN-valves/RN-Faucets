@@ -117,6 +117,17 @@ const PRESET_KEYWORDS = [
   "brushed golden",
 ];
 
+const COMPETITOR_BRANDS_CLIENT_REGEX =
+  /\b(jaquar|jaguar|jaguare|hindware|kohler|cera|parryware|grohe|essco|jal|kerovit|roca|toto|somany|johnson)\b/gi;
+
+function sanitizeRnBrandClient(raw: string): string {
+  return String(raw || "")
+    .replace(COMPETITOR_BRANDS_CLIENT_REGEX, "rn")
+    .replace(/\brn\s+rn\b/gi, "rn")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /**
  * Ultra-fast (<2ms) multi-word phrase matcher & ranker across the 7,398-product corpus
  */
@@ -192,7 +203,7 @@ export default function JaquarSearchBar({ isDarkBg = false }: JaquarSearchBarPro
   useEffect(() => {
     let mounted = true;
     try {
-      const cachedRaw = sessionStorage.getItem("rn_phrase_corpus_v3");
+      const cachedRaw = sessionStorage.getItem("rn_phrase_corpus_v4");
       if (cachedRaw) {
         const parsed = JSON.parse(cachedRaw);
         if (Array.isArray(parsed?.corpus) && parsed.corpus.length > 0) {
@@ -218,7 +229,7 @@ export default function JaquarSearchBar({ isDarkBg = false }: JaquarSearchBarPro
           setServerCorpus(data.corpus);
           try {
             sessionStorage.setItem(
-              "rn_phrase_corpus_v3",
+              "rn_phrase_corpus_v4",
               JSON.stringify({ phrases: data.phrases, corpus: data.corpus })
             );
           } catch {}
@@ -331,7 +342,11 @@ export default function JaquarSearchBar({ isDarkBg = false }: JaquarSearchBarPro
         }
 
         const combined = Array.from(
-          new Set([...instantMatches, ...aiMatches, ...apiMatches])
+          new Set(
+            [...instantMatches, ...apiMatches, ...aiMatches]
+              .map((s) => sanitizeRnBrandClient(s))
+              .filter(Boolean)
+          )
         ).slice(0, 8);
 
         setSuggestions(combined);

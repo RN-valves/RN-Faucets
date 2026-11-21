@@ -76,16 +76,27 @@ const CORE_PRODUCT_TYPES = [
 const GEMINI_ENDPOINT =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
 
-function normalizePhrase(raw: string): string {
+const COMPETITOR_BRANDS_REGEX =
+  /\b(jaquar|jaguar|jaguare|hindware|kohler|cera|parryware|grohe|essco|jal|kerovit|roca|toto|somany|johnson)\b/gi;
+
+function sanitizeRnBrandPhrase(raw: string): string {
   return String(raw || "")
-    .toLowerCase()
-    .replace(/\([^)]*\)/g, " ")
-    .replace(/\|.*$/g, " ")
-    .replace(/\bart\s*no\.?\s*\w+/gi, " ")
-    .replace(/\batr\s*no\.?\s*\w+/gi, " ")
-    .replace(/[^a-z0-9\s-&/]/g, " ")
+    .replace(COMPETITOR_BRANDS_REGEX, "rn")
+    .replace(/\brn\s+rn\b/gi, "rn")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function normalizePhrase(raw: string): string {
+  return sanitizeRnBrandPhrase(
+    String(raw || "")
+      .toLowerCase()
+      .replace(/\([^)]*\)/g, " ")
+      .replace(/\|.*$/g, " ")
+      .replace(/\bart\s*no\.?\s*\w+/gi, " ")
+      .replace(/\batr\s*no\.?\s*\w+/gi, " ")
+      .replace(/[^a-z0-9\s-&/]/g, " ")
+  );
 }
 
 /**
@@ -97,7 +108,7 @@ async function getCataloguePhraseIndex(): Promise<{
   corpus: string[];
 }> {
   const { data } = await getOrSetCache(
-    "rn:search:catalogue_phrase_index:v3",
+    "rn:search:catalogue_phrase_index:v4",
     3600,
     async () => {
       await connectDB();
@@ -232,11 +243,12 @@ async function getCataloguePhraseIndex(): Promise<{
         }
       }
 
-      // 7. Build typewriter phrases from Gemini AI + Jaquar-style highlights
+      // 7. Build typewriter phrases from Gemini AI + RN luxury highlights
       let geminiTypewriter: string[] = [];
       try {
         geminiTypewriter = await callGeminiForPhrases(
-          `You are powering the luxury search bar placeholder typewriter on RN Valves & Faucets (exact Jaquar.com style).
+          `You are powering the luxury search bar placeholder typewriter on RN Valves & Faucets.
+ONLY use the brand name "RN" (never mention any other brand).
 Return a JSON array of 8 natural-language search phrases (WITHOUT "Search for" prefix) matching these exact patterns:
 - "Sanitaryware ranging from 1000 to 15000 rupees"
 - "Shower panel for bathroom"
@@ -331,7 +343,7 @@ async function callGeminiForPhrases(prompt: string): Promise<string[]> {
   const parsed = JSON.parse(rawText);
   if (Array.isArray(parsed)) {
     return parsed
-      .map((item) => String(item || "").trim())
+      .map((item) => sanitizeRnBrandPhrase(String(item || "").trim()))
       .filter((item) => item.length > 3 && item.length <= 70);
   }
   return [];
@@ -354,7 +366,46 @@ export async function GET(request: Request) {
       );
     }
 
-    const fastMatches = rankPhrases(q, index.corpus, 8);
+    const fastMatches = rankPhrases(q, index.corpus, 8).map(sanitizeRnBrandPhrase);
+
+    // If user typed a numeric Article number (e.g. "6910", "1710", "0611"), look up real RN products for that Article
+    if (/^\d+$/.test(q)) {
+      const stripped = q.replace(/^0+/, "") || q;
+      await connectDB();
+      const matchedProds = await Product.find({
+        isVisibleWebsite: { $ne: false },
+        status: { $nin: ["Inactive", "InActive", "inactive", "Discontinued", "discontinued"] },
+        $or: [
+          { article: { $regex: `^(?:[a-zA-Z-_]*)0*${stripped}(?:[^0-9]|$)`, $options: "i" } },
+          { code: { $regex: `^(?:[a-zA-Z-_]*)0*${stripped}`, $options: "i" } },
+          { skuCode: { $regex: `^(?:[a-zA-Z-_]*)0*${stripped}`, $options: "i" } },
+        ],
+      })
+        .select("name article code subcategoryName colorName")
+        .limit(12)
+        .lean();
+
+      const articleSuggestions = new Set<string>();
+      for (const p of matchedProds as any[]) {
+        const cleanName = sanitizeRnBrandPhrase(String(p.name || "").toLowerCase());
+        const art = String(p.article || q).toLowerCase();
+        if (cleanName) {
+          articleSuggestions.add(cleanName.includes(art) ? cleanName : `${cleanName} ${art}`);
+        }
+        if (p.colorName && cleanName) {
+          const cleanColor = String(p.colorName).toLowerCase().replace(/-/g, " ").trim();
+          if (cleanColor && cleanColor !== "-") {
+            articleSuggestions.add(`${cleanName} ${art} in ${cleanColor}`);
+          }
+        }
+      }
+      if (articleSuggestions.size === 0) {
+        articleSuggestions.add(`rn article ${q}`);
+      }
+      return NextResponse.json({
+        suggestions: Array.from(articleSuggestions).slice(0, 8),
+      });
+    }
 
     if (fastMatches.length >= 5 || !process.env.GEMINI_API_KEY) {
       return NextResponse.json({ suggestions: fastMatches });
@@ -362,14 +413,16 @@ export async function GET(request: Request) {
 
     const safeKey = q.replace(/[^a-z0-9\s-]/g, "").slice(0, 32);
     const { data: aiSuggestions } = await getOrSetCache<string[]>(
-      `rn:search:gemini_suggest:v3:${safeKey}`,
+      `rn:search:gemini_suggest:v4:${safeKey}`,
       3600,
       async () => {
         try {
           const res = await callGeminiForPhrases(
-            `A customer on RN Valves & Faucets typed "${q}". Return a JSON array of 6 natural Jaquar-style lowercase bathroom faucet/shower search phrases matching "${q}" (such as "${q} for bathroom", "suggest ${q} below 5000 rupees", "${q} in black chrome", "${q} ranging from 1000 to 5000 rupees").`
+            `A customer on RN Valves & Faucets typed "${q}".
+STRICT RULE: ONLY use the brand "RN" (NEVER mention Jaquar, Hindware, Kohler, Cera, Parryware, Grohe, or any other brand).
+Return a JSON array of 6 natural lowercase RN bathroom faucet/shower search phrases matching "${q}" (such as "rn ${q} for bathroom", "suggest rn ${q} below 5000 rupees", "rn ${q} in black chrome", "rn ${q} ranging from 1000 to 5000 rupees").`
           );
-          return res.map((s) => s.toLowerCase());
+          return res.map((s) => sanitizeRnBrandPhrase(s.toLowerCase()));
         } catch {
           return [];
         }
@@ -377,7 +430,7 @@ export async function GET(request: Request) {
       600
     );
 
-    const merged = Array.from(new Set([...fastMatches, ...aiSuggestions])).slice(0, 8);
+    const merged = Array.from(new Set([...fastMatches, ...aiSuggestions.map(sanitizeRnBrandPhrase)])).slice(0, 8);
     return NextResponse.json({ suggestions: merged });
   } catch {
     return NextResponse.json({
